@@ -43,6 +43,10 @@ export function setupAuth(app, getDb) {
   addColumn('full_name');
   addColumn('department');
   addColumn('contacts');
+  addColumn('last_name');
+  addColumn('first_name');
+  addColumn('patronymic');
+  addColumn('email');
 
   // Создать дефолтных пользователей если таблица пустая
   const count = db().prepare('SELECT COUNT(*) as c FROM users').get();
@@ -82,6 +86,49 @@ export function setupAuth(app, getDb) {
         contacts: user.contacts || null
       });
     } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
+  // POST /api/register (публичная регистрация)
+  app.post('/api/register', (req, res) => {
+    try {
+      const { last_name, first_name, patronymic = '', email, password, password_confirm } = req.body || {};
+
+      if (!last_name || !first_name || !email || !password)
+        return res.status(400).json({ error: 'Заполните все обязательные поля' });
+      if (password !== password_confirm)
+        return res.status(400).json({ error: 'Пароли не совпадают' });
+      if (password.length < 6)
+        return res.status(400).json({ error: 'Пароль должен содержать не менее 6 символов' });
+
+      const login = email.trim().toLowerCase();
+      const fullName = [last_name.trim(), first_name.trim(), patronymic.trim()].filter(Boolean).join(' ');
+
+      db().prepare(
+        'INSERT INTO users (login, password_hash, role, full_name, last_name, first_name, patronymic, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+      ).run(
+        login, hashPassword(password), 'user', fullName,
+        last_name.trim(), first_name.trim(), patronymic.trim(), email.trim()
+      );
+
+      const user = db().prepare('SELECT * FROM users WHERE login = ?').get(login);
+      const token = generateToken();
+      db().prepare('INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)').run(
+        token, user.id, new Date().toISOString()
+      );
+
+      res.json({
+        ok: true,
+        token,
+        role: 'user',
+        login,
+        full_name: fullName,
+        department: user.department || null,
+        contacts: user.contacts || null
+      });
+    } catch (e) {
+      if (e.message && e.message.includes('UNIQUE')) return res.status(400).json({ error: 'Пользователь с таким email уже зарегистрирован' });
       res.status(500).json({ error: String(e.message) });
     }
   });

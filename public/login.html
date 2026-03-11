@@ -13,6 +13,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 24px;
     }
     .card {
       background: #1a1d27;
@@ -20,7 +21,7 @@
       border-radius: 16px;
       padding: 48px 40px;
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.4);
     }
     .logo {
@@ -37,28 +38,20 @@
       font-size: 28px;
       margin-bottom: 12px;
     }
-    .logo h1 {
-      color: #fff;
-      font-size: 20px;
-      font-weight: 600;
-    }
-    .logo p {
-      color: #6b7280;
-      font-size: 13px;
-      margin-top: 4px;
-    }
-    .field {
-      margin-bottom: 16px;
-    }
+    .logo h1 { color: #fff; font-size: 20px; font-weight: 600; }
+    .logo p  { color: #6b7280; font-size: 13px; margin-top: 4px; }
+
+    .field { margin-bottom: 14px; }
     label {
       display: block;
       color: #9ca3af;
       font-size: 13px;
       margin-bottom: 6px;
     }
+    label .req { color: #ef4444; }
     input {
       width: 100%;
-      padding: 12px 16px;
+      padding: 11px 16px;
       background: #0f1117;
       border: 1px solid #2a2d3a;
       border-radius: 8px;
@@ -69,6 +62,7 @@
     }
     input:focus { border-color: #6366f1; }
     input::placeholder { color: #4b5563; }
+
     .btn {
       width: 100%;
       padding: 13px;
@@ -84,17 +78,47 @@
     }
     .btn:hover { opacity: 0.9; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .error {
-      background: #2d1b1b;
-      border: 1px solid #7f1d1d;
+
+    .btn-outline {
+      width: 100%;
+      padding: 13px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.35);
       border-radius: 8px;
-      color: #fca5a5;
+      color: #a5b4fc;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-outline:hover {
+      background: rgba(99, 102, 241, 0.18);
+      border-color: rgba(99, 102, 241, 0.55);
+    }
+
+    .msg {
+      border-radius: 8px;
       font-size: 13px;
       padding: 10px 14px;
       margin-bottom: 16px;
       display: none;
     }
-    .error.show { display: block; }
+    .msg.show { display: block; }
+    .msg.error { background: #2d1b1b; border: 1px solid #7f1d1d; color: #fca5a5; }
+    .msg.success { background: #1a2d1a; border: 1px solid #166534; color: #86efac; }
+
+    .back-link {
+      text-align: center;
+      margin-top: 18px;
+      color: #6b7280;
+      font-size: 13px;
+    }
+    .back-link a { color: #818cf8; text-decoration: none; cursor: pointer; }
+    .back-link a:hover { text-decoration: underline; }
+
+    .section { display: none; }
+    .section.active { display: block; }
   </style>
 </head>
 <body>
@@ -102,81 +126,144 @@
     <div class="logo">
       <div class="logo-icon">🤖</div>
       <h1>MIK AI Platform</h1>
-      <p>Войдите в свой аккаунт</p>
+      <p id="subtitle">Войдите в свой аккаунт</p>
     </div>
 
-    <div class="error" id="errorMsg"></div>
+    <!-- Форма входа -->
+    <div class="section active" id="loginSection">
+      <div class="msg error" id="loginErr"></div>
 
-    <div class="field">
-      <label>Логин</label>
-      <input type="text" id="login" placeholder="Введите логин" autocomplete="username">
+      <div class="field">
+        <label>Логин</label>
+        <input type="text" id="login" placeholder="Введите логин" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Пароль</label>
+        <input type="password" id="password" placeholder="Введите пароль" autocomplete="current-password">
+      </div>
+
+      <button class="btn" id="loginBtn" onclick="doLogin()">Войти</button>
+      <button class="btn-outline" onclick="showSection('register')">Создать аккаунт</button>
     </div>
-    <div class="field">
-      <label>Пароль</label>
-      <input type="password" id="password" placeholder="Введите пароль" autocomplete="current-password">
+
+    <!-- Форма регистрации -->
+    <div class="section" id="registerSection">
+      <div class="msg error"   id="regErr"></div>
+      <div class="msg success" id="regOk"></div>
+
+      <div class="field">
+        <label>Фамилия <span class="req">*</span></label>
+        <input type="text" id="reg_last_name" placeholder="Иванов">
+      </div>
+      <div class="field">
+        <label>Имя <span class="req">*</span></label>
+        <input type="text" id="reg_first_name" placeholder="Иван">
+      </div>
+      <div class="field">
+        <label>Отчество</label>
+        <input type="text" id="reg_patronymic" placeholder="Иванович">
+      </div>
+      <div class="field">
+        <label>Рабочая почта <span class="req">*</span></label>
+        <input type="email" id="reg_email" placeholder="ivanov@company.ru">
+      </div>
+      <div class="field">
+        <label>Пароль <span class="req">*</span></label>
+        <input type="password" id="reg_password" placeholder="Минимум 6 символов">
+      </div>
+      <div class="field">
+        <label>Повторите пароль <span class="req">*</span></label>
+        <input type="password" id="reg_password2" placeholder="Повторите пароль">
+      </div>
+
+      <button class="btn" id="regBtn" onclick="doRegister()">Создать аккаунт</button>
+      <div class="back-link">
+        Уже есть аккаунт? <a onclick="showSection('login')">Войти</a>
+      </div>
     </div>
-    <button class="btn" id="loginBtn" onclick="doLogin()">Войти</button>
   </div>
 
   <script>
-    // Форма входа
+    const subtitles = { login: 'Войдите в свой аккаунт', register: 'Создайте аккаунт' };
 
-    document.getElementById('password').addEventListener('keydown', e => {
-      if (e.key === 'Enter') doLogin();
-    });
+    function showSection(name) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById(name + 'Section').classList.add('active');
+      document.getElementById('subtitle').textContent = subtitles[name];
+    }
+
+    document.getElementById('password').addEventListener('keydown',    e => { if (e.key === 'Enter') doLogin(); });
+    document.getElementById('reg_password2').addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
+
+    function saveAuth(data) {
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('auth_role',  data.role);
+      localStorage.setItem('auth_login', data.login);
+      const mikAuth = {
+        isAuthorized: true, token: data.token, role: data.role, login: data.login,
+        full_name: data.full_name || null, department: data.department || null, contacts: data.contacts || null
+      };
+      localStorage.setItem('mikAuth', JSON.stringify(mikAuth));
+      if (data.full_name) localStorage.setItem('auth_full_name', data.full_name);
+    }
 
     async function doLogin() {
-      const login = document.getElementById('login').value.trim();
+      const login    = document.getElementById('login').value.trim();
       const password = document.getElementById('password').value;
       const btn = document.getElementById('loginBtn');
-      const err = document.getElementById('errorMsg');
+      const err = document.getElementById('loginErr');
 
       err.classList.remove('show');
-      if (!login || !password) {
-        err.textContent = 'Введите логин и пароль';
-        err.classList.add('show');
-        return;
+      if (!login || !password) { err.textContent = 'Введите логин и пароль'; err.classList.add('show'); return; }
+
+      btn.disabled = true; btn.textContent = 'Вход...';
+      try {
+        const res  = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ login, password }) });
+        const data = await res.json();
+        if (!res.ok) { err.textContent = data.error || 'Ошибка входа'; err.classList.add('show'); btn.disabled = false; btn.textContent = 'Войти'; return; }
+        saveAuth(data);
+        window.location = data.role === 'admin' ? '/admin' : '/profile';
+      } catch {
+        err.textContent = 'Ошибка сервера'; err.classList.add('show'); btn.disabled = false; btn.textContent = 'Войти';
+      }
+    }
+
+    async function doRegister() {
+      const last_name  = document.getElementById('reg_last_name').value.trim();
+      const first_name = document.getElementById('reg_first_name').value.trim();
+      const patronymic = document.getElementById('reg_patronymic').value.trim();
+      const email      = document.getElementById('reg_email').value.trim();
+      const password   = document.getElementById('reg_password').value;
+      const password2  = document.getElementById('reg_password2').value;
+      const btn = document.getElementById('regBtn');
+      const err = document.getElementById('regErr');
+      const ok  = document.getElementById('regOk');
+
+      err.classList.remove('show'); ok.classList.remove('show');
+
+      if (!last_name || !first_name || !email || !password) {
+        err.textContent = 'Заполните все обязательные поля'; err.classList.add('show'); return;
+      }
+      if (password !== password2) {
+        err.textContent = 'Пароли не совпадают'; err.classList.add('show'); return;
+      }
+      if (password.length < 6) {
+        err.textContent = 'Пароль должен содержать не менее 6 символов'; err.classList.add('show'); return;
       }
 
-      btn.disabled = true;
-      btn.textContent = 'Вход...';
-
+      btn.disabled = true; btn.textContent = 'Регистрация...';
       try {
-        const res = await fetch('/api/login', {
+        const res  = await fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ login, password })
+          body: JSON.stringify({ last_name, first_name, patronymic, email, password, password_confirm: password2 })
         });
         const data = await res.json();
-
-        if (!res.ok) {
-          err.textContent = data.error || 'Ошибка входа';
-          err.classList.add('show');
-          btn.disabled = false;
-          btn.textContent = 'Войти';
-          return;
-        }
-
-        localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('auth_role', data.role);
-        localStorage.setItem('auth_login', data.login);
-        if (data.full_name) localStorage.setItem('auth_full_name', data.full_name);
-        localStorage.setItem('mikAuth', JSON.stringify({
-          isAuthorized: true,
-          token: data.token,
-          role: data.role,
-          login: data.login,
-          full_name: data.full_name || null,
-          department: data.department || null,
-          contacts: data.contacts || null
-        }));
-
-        window.location = data.role === 'admin' ? '/admin' : '/profile';
-      } catch (e) {
-        err.textContent = 'Ошибка сервера';
-        err.classList.add('show');
-        btn.disabled = false;
-        btn.textContent = 'Войти';
+        if (!res.ok) { err.textContent = data.error || 'Ошибка регистрации'; err.classList.add('show'); btn.disabled = false; btn.textContent = 'Создать аккаунт'; return; }
+        saveAuth(data);
+        window.location = '/profile';
+      } catch {
+        err.textContent = 'Ошибка сервера'; err.classList.add('show'); btn.disabled = false; btn.textContent = 'Создать аккаунт';
       }
     }
   </script>

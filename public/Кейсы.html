@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Кейсы — витрина ИИ‑инструментов</title>
+
+  <style>
+    :root{
+      --bg: #070A10;
+      --panel: rgba(255,255,255,.06);
+      --panel-2: rgba(255,255,255,.08);
+      --stroke: rgba(255,255,255,.12);
+      --stroke-2: rgba(255,255,255,.18);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --muted-2: rgba(255,255,255,.56);
+      --ok: rgba(38, 210, 152, .95);
+      --warn: rgba(255, 193, 7, .95);
+      --pilot: rgba(0, 200, 120, .95);
+      --danger: rgba(255, 96, 96, .95);
+
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --blur: blur(14px);
+
+      --radius: 18px;
+      --radius-sm: 12px;
+
+      --max: 1100px;
+      --gap: clamp(14px, 2vw, 22px);
+      --pad: clamp(16px, 2.4vw, 26px);
+
+      --header-h: 68px;
+
+      --focus: 0 0 0 3px rgba(0,210,110,.35);
+    }
+
+    *{ box-sizing: border-box; }
+    html{ scroll-behavior: smooth; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background:
+        radial-gradient(1100px 520px at 18% 10%, rgba(0,170,100,.14), transparent 60%),
+        radial-gradient(1000px 520px at 82% 18%, rgba(0,220,130,.10), transparent 62%),
+        radial-gradient(1000px 520px at 28% 82%, rgba(255,255,255,.06), transparent 66%),
+        linear-gradient(180deg, #070b14, #05070d);
+      color: var(--text);
+      line-height: 1.45;
+      overflow-x: hidden;
+    }
+    a{ color: inherit; text-decoration: none; }
+    button, input, select, textarea{
+      font: inherit;
+      color: inherit;
+    }
+    :focus-visible{ outline: none; box-shadow: var(--focus); border-radius: 10px; }
+
+    .progress{
+      position: fixed;
+      top:0;
+      left:0;
+      height: 3px;
+      width: 100%;
+      z-index: 1000;
+      background: rgba(255,255,255,.05);
+    }
+    .progress > i{
+      display:block;
+      height:100%;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(0,180,100,.95), rgba(0,230,130,.95));
+      transition: width .08s linear;
+    }
+
+    header{
+      position: sticky;
+      top:0;
+      z-index: 900;
+      height: var(--header-h);
+      backdrop-filter: var(--blur);
+      background: rgba(2,18,12,.85);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .topbar{
+      max-width: var(--max);
+      margin:0 auto;
+      height: 100%;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      padding: 0 var(--pad);
+      gap: 12px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-width: 220px;
+    }
+    .brand .logo{
+      width: 34px; height:34px;
+      border-radius: 10px;
+      background: radial-gradient(circle at 30% 30%, rgba(0,170,100,.95), rgba(0,220,130,.75));
+      box-shadow: 0 10px 25px rgba(0,0,0,.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .brand .logo:before{
+      content:"";
+      position:absolute; inset:-20px;
+      background: radial-gradient(circle at 40% 40%, rgba(255,255,255,.25), transparent 55%);
+      transform: rotate(15deg);
+    }
+    .brand .name{
+      font-weight: 700;
+      letter-spacing: .2px;
+      font-size: 14px;
+      line-height: 1.25;
+      color: rgba(255,255,255,.9);
+    }
+
+    nav{
+      display:flex;
+      align-items:center;
+      gap: 6px;
+    }
+    .nowrap{ white-space: nowrap; }
+    .navlink{
+      padding: 10px 12px;
+      border-radius: 12px;
+      color: rgba(255,255,255,.78);
+      border: 1px solid transparent;
+      transition: background .15s ease, border-color .15s ease, color .15s ease;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .navlink:hover{
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.10);
+      color: rgba(255,255,255,.92);
+    }
+    .navlink.active{
+      background: rgba(0,170,100,.14);
+      border-color: rgba(0,170,100,.26);
+      color: rgba(255,255,255,.95);
+    }
+
+    .profile-btn{
+      margin-left: 8px;
+      padding-inline: 14px;
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.05);
+      cursor:pointer;
+      min-height: 40px;
+      font-size: 14px;
+    }
+
+    .burger{
+      display:none;
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+    }
+    .burger i{
+      width: 18px; height: 2px;
+      background: rgba(255,255,255,.86);
+      position: relative;
+      display:block;
+      border-radius: 10px;
+    }
+    .burger i:before,
+    .burger i:after{
+      content:"";
+      position:absolute;
+      left:0;
+      width: 18px; height:2px;
+      background: rgba(255,255,255,.86);
+      border-radius: 10px;
+    }
+    .burger i:before{ top:-6px; }
+    .burger i:after{ top: 6px; }
+
+    .mobile-menu{
+      display:none;
+      position: absolute;
+      left:0; right:0;
+      top: var(--header-h);
+      background: rgba(2,18,12,.96);
+      backdrop-filter: var(--blur);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      padding: 12px var(--pad) 16px;
+    }
+    .mobile-menu .navlink{
+      display:block;
+      width: 100%;
+      margin: 6px 0;
+    }
+
+    main{ display:block; }
+    section{
+      scroll-margin-top: calc(var(--header-h) + 14px);
+      padding: 40px 0;
+    }
+    .wrap{
+      max-width: var(--max);
+      margin:0 auto;
+      padding: 0 var(--pad);
+    }
+
+    .panel{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: var(--blur);
+    }
+    .panel.pad{ padding: var(--pad); }
+    .muted{ color: var(--muted); }
+    .muted2{ color: var(--muted-2); }
+
+    .h2{
+      font-size: clamp(22px, 2.2vw, 30px);
+      line-height: 1.15;
+      margin: 0 0 10px 0;
+    }
+    .lead{
+      color: var(--muted);
+      margin: 0;
+      max-width: 78ch;
+    }
+
+    /* HERO */
+    #hero{
+      padding: 86px 0 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-box{
+      position: relative;
+      overflow: hidden;
+      border-radius: clamp(18px, 3vw, 26px);
+      padding: clamp(22px, 3.4vw, 42px);
+      background:
+        radial-gradient(900px 400px at 15% 25%, rgba(0,190,110,.18), transparent 60%),
+        radial-gradient(900px 400px at 85% 10%, rgba(0,220,120,.14), transparent 60%),
+        rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 18px 60px rgba(0,0,0,.45);
+      backdrop-filter: var(--blur);
+    }
+    .grid-anim{
+      pointer-events:none;
+      position:absolute;
+      inset:-40px;
+      opacity:.28;
+      background-image:
+        linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(closest-side at 35% 30%, rgba(0,0,0,.9), transparent 70%);
+      transform: translateZ(0);
+      animation: drift 18s linear infinite;
+      filter: blur(.2px);
+    }
+    @keyframes drift{
+      from{ transform: translate3d(0,0,0); }
+      to{ transform: translate3d(-44px,-44px,0); }
+    }
+    .hero-title{
+      font-size: clamp(28px, 3.4vw, 42px);
+      line-height: 1.07;
+      margin: 0 0 14px;
+      max-width: 40ch;
+    }
+    .hero-desc{
+      color: rgba(255,255,255,.78);
+      margin: 0 0 18px;
+      max-width: 70ch;
+      font-size: clamp(15px, 1.35vw, 18px);
+    }
+
+    .hero-meta{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted-2);
+    }
+    .hero-meta span{
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.3);
+    }
+
+    /* Контролы каталога */
+    .controls{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .field{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--stroke);
+      background: rgba(5,7,14,.8);
+      min-height: 40px;
+    }
+    .field input,
+    .field select{
+      border:none;
+      outline:none;
+      background: transparent;
+      width: 100%;
+      color: inherit;
+    }
+    .field select{
+      padding-right: 4px;
+    }
+
+    .statusline{
+      font-size: 13px;
+      color: var(--muted-2);
+      margin-bottom: 14px;
+    }
+
+    /* Карточки кейсов */
+    .case-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: var(--gap);
+    }
+    .case-card{
+      position: relative;
+      padding: 16px 16px 14px;
+      border-radius: 18px;
+      background:
+        radial-gradient(130% 170% at 0% 0%, rgba(0,170,100,.45), transparent 60%),
+        rgba(10,12,18,.96);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 26px 70px rgba(0,0,0,.7);
+      color: #fff;
+      overflow: hidden;
+      display:flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+    }
+    .case-card:hover{
+      transform: translateY(-3px);
+      box-shadow: 0 32px 80px rgba(0,0,0,.85);
+      border-color: rgba(0,190,110,.65);
+    }
+    .case-top{
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items:flex-start;
+    }
+    .case-title{
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0 0 4px;
+    }
+    .case-meta{
+      font-size: 12px;
+      color: rgba(255,255,255,.80);
+      margin: 0;
+    }
+    .badges{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 11px;
+    }
+    .badge{
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.20);
+      background: rgba(0,0,0,.25);
+      white-space: nowrap;
+    }
+    .badge.status-ready{ border-color: rgba(0,220,120,.8); color: rgba(0,220,120,.96); background: rgba(0,220,120,.12); }
+    .badge.status-draft{ border-color: rgba(255,193,7,.8); color: rgba(255,193,7,.96); background: rgba(255,193,7,.10); }
+    .badge.status-pilot{ border-color: rgba(0,190,110,.9); color: rgba(0,190,110,.98); background: rgba(0,190,110,.16); }
+
+    .tools-tags{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+      font-size: 11px;
+      color: rgba(255,255,255,.86);
+    }
+    .tools-tags span{
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.45);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+
+    .case-footer{
+      margin-top: 10px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: rgba(255,255,255,.80);
+    }
+    .case-usage{
+      opacity:.9;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      cursor:pointer;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      user-select:none;
+      min-height: 40px;
+      white-space: nowrap;
+      font-size: 14px;
+    }
+    .btn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.08);
+      border-color: rgba(255,255,255,.20);
+    }
+    .btn.small{
+      padding: 8px 11px;
+      border-radius: 12px;
+      min-height: 34px;
+      font-size: 13px;
+    }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
+      border-color: rgba(255,255,255,.18);
+      color: rgba(255,255,255,.97);
+    }
+
+    .btn-ghost{
+      background: rgba(0,0,0,.35);
+      border-color: rgba(255,255,255,.16);
+    }
+    .btn-ghost.used{
+      opacity:.85;
+      border-style:dashed;
+    }
+
+    .hintline{
+      font-size: 12px;
+      color: var(--muted-2);
+    }
+
+    /* Обратная связь */
+    .form-grid{
+      display:grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: var(--gap);
+    }
+    .form-card{
+      border-radius: 16px;
+      border: 1px solid var(--stroke);
+      background: rgba(5,7,14,.90);
+      padding: 16px 18px 18px;
+    }
+    .form-card h3{
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+    .form-card label{
+      display:block;
+      font-size: 13px;
+      margin: 10px 0 4px;
+      color: var(--muted-2);
+    }
+    .form-card input,
+    .form-card select,
+    .form-card textarea{
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--stroke);
+      background: rgba(4,6,12,.95);
+      padding: 8px 10px;
+      font-size: 13px;
+      outline:none;
+      color: inherit;
+    }
+    .form-card textarea{
+      min-height: 120px;
+      resize: vertical;
+    }
+    .success{
+      margin-top: 10px;
+      font-size: 13px;
+      color: rgba(120,240,180,.95);
+    }
+
+    /* Toast + модальные окна */
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%) translateY(30px);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 2000;
+      background: rgba(10,12,18,.92);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      padding: 10px 12px;
+      color: rgba(255,255,255,.88);
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      transition: opacity .18s ease, transform .18s ease;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      max-width: min(520px, 92vw);
+      text-align: left;
+      font-size: 13px;
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .overlay{
+      position: fixed;
+      inset:0;
+      background: rgba(2,4,10,.70);
+      backdrop-filter: blur(18px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index: 1800;
+      padding: 20px;
+    }
+    .overlay.show{
+      display:flex;
+    }
+    .modal{
+      width: min(780px, 100%);
+      max-height: min(560px, 90vh);
+      background: rgba(6,8,16,.98);
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow: 0 24px 90px rgba(0,0,0,.75);
+      padding: 18px 18px 16px;
+      display:flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .modal .head{
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items:flex-start;
+    }
+    .modal .head h3{
+      margin:0 0 4px;
+      font-size: 18px;
+    }
+    .modal .body{
+      overflow:auto;
+      padding-right: 4px;
+      font-size: 13px;
+    }
+    .modal .close{
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.4);
+      width: 32px;
+      height: 32px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+    }
+
+    .case-steps{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 14px;
+      margin-top: 10px;
+    }
+    .case-step{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: radial-gradient(120% 160% at 0% 0%, rgba(0,170,100,.35), transparent 60%), rgba(5,7,14,.98);
+      padding: 10px 11px 11px;
+    }
+    .case-step h4{
+      margin:0 0 6px;
+      font-size: 14px;
+    }
+    .case-step ul{
+      padding-left: 18px;
+      margin: 0;
+    }
+    .case-step li{
+      margin: 2px 0;
+    }
+    .codebox{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.30);
+      padding: 8px 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12.8px;
+      color: rgba(255,255,255,.90);
+      margin-top: 8px;
+    }
+    .codebox textarea{
+      width: 100%;
+      min-height: 90px;
+      border: none;
+      outline: none;
+      background: transparent;
+      resize: vertical;
+      color: inherit;
+      font: inherit;
+    }
+
+    @media (max-width: 980px){
+      .case-grid{
+        grid-template-columns: 1fr;
+      }
+      .case-steps{
+        grid-template-columns: 1fr;
+      }
+      .form-grid{
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 760px){
+      nav{ display:none; }
+      .burger{ display:flex; }
+      .mobile-menu.show{ display:block; }
+      #hero{ padding-top: 76px; }
+    }
+    .accordion{
+      margin-top: 16px;
+      display:grid;
+      gap: 12px;
+    }
+    .acc-item{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: 0 18px 36px rgba(0,0,0,.35);
+      overflow: hidden;
+      position: relative;
+    }
+    .acc-head{
+      position: relative;
+      z-index: 1;
+      padding: 14px 16px 12px;
+      cursor:pointer;
+      user-select:none;
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .acc-title b{
+      display:block;
+      font-size: 15px;
+      margin-bottom: 2px;
+    }
+    .acc-title span{
+      font-size: 13px;
+      color: var(--muted-2);
+    }
+    .acc-body{
+      display:none;
+      position: relative;
+      z-index: 1;
+      padding: 0 16px 16px;
+    }
+    .acc-item.open .acc-body{ display:block; }
+    .acc-item.open .acc-body::before{
+      content:"";
+      display:block;
+      height: 1px;
+      background: rgba(255,255,255,.08);
+      margin: 4px 0 14px;
+    }
+
+    .mik-services-grid{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: var(--gap);
+    }
+    .mik-card{
+      position: relative;
+      padding: 18px 18px 18px;
+      border-radius: 20px;
+      background:
+        radial-gradient(120% 160% at 0% 0%, rgba(0,140,70,.55), transparent 65%),
+        radial-gradient(140% 180% at 120% 0%, rgba(0,200,100,.40), transparent 70%),
+        rgba(3,18,10,.96);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 26px 70px rgba(0,0,0,.7);
+      color: #fff;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+    }
+    .mik-card:hover{
+      transform: translateY(-3px);
+      box-shadow: 0 32px 80px rgba(0,0,0,.85);
+      border-color: rgba(0,200,100,.65);
+    }
+    .mik-card h5{
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+    .mik-card p{
+      margin: 0;
+      font-size: 13px;
+    }
+    .mik-meta{
+      margin-top: 10px;
+      font-size: 12px;
+      opacity: .9;
+    }
+    .mik-card.is-stub{
+      opacity:.45;
+      border-style: dashed;
+      display: none;
+    }
+    .mik-card.is-stub.shown { display: block; }
+    .pub-extra { display: none; }
+    .pub-extra.shown { display: block; }
+    .mik-card.is-future{
+      display:none;
+    }
+
+    .public-services-grid{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: var(--gap);
+    }
+    .public-card{
+      padding: 16px 16px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      cursor: pointer;
+      transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+    }
+    .public-card:hover{
+      transform: translateY(-3px);
+      box-shadow: 0 24px 70px rgba(0,0,0,.65);
+      border-color: rgba(120,140,255,.5);
+      background: rgba(255,255,255,.055);
+    }
+    .public-card h5{
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+    .public-card p{
+      margin: 0;
+      font-size: 13px;
+    }
+    .public-desc{ color: rgba(255,255,255,.78); }
+    .public-best{
+      margin-top: 6px;
+      color: rgba(255,255,255,.9);
+    }
+
+    /* Промпты внутри каталога */
+    .prompt-grid{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .prompt-card{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.20);
+      padding: 12px;
+    }
+    .prompt-card-title{
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,.92);
+      margin: 0 0 2px;
+    }
+    .prompt-card-meta{
+      font-size: 12.5px;
+      color: rgba(255,255,255,.66);
+      margin: 0;
+    }
+    .codebox{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.30);
+      padding: 8px 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12.8px;
+      color: rgba(255,255,255,.90);
+      margin-top: 8px;
+    }
+    .codebox textarea.prompt-input{
+      width: 100%;
+      min-height: 120px;
+      border: none;
+      outline: none;
+      background: transparent;
+      resize: vertical;
+      color: inherit;
+      font: inherit;
+    }
+    .prompt-card-actions{
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
+
+  <header>
+    <div class="topbar">
+      <a class="brand" href="/">
+        <span class="logo" aria-hidden="true"></span>
+        <span class="name">Витрина ИИ‑сервисов</span>
+      </a>
+      <nav aria-label="Основная навигация">
+        <a class="navlink" href="/training" data-section="training">Обучение</a>
+        <a class="navlink active" href="/cases" data-section="cases">Кейсы</a>
+        <a class="navlink" href="/chat.html" data-section="chat">Чат с ИИ</a>
+        <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
+        <a class="navlink" href="#feedback" data-section="feedback">Обратная связь</a>
+        <a class="profile-btn" href="/profile" id="profileBtn">
+          <span class="nowrap">Личный кабинет</span>
+        </a>
+      </nav>
+      <button class="burger" id="burgerBtn" aria-label="Открыть меню" aria-controls="mobileMenu" aria-expanded="false">
+        <i aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню" role="dialog">
+      <a class="navlink" href="/training" data-section="training">Обучение</a>
+      <a class="navlink active" href="/cases" data-section="cases">Кейсы</a>
+      <a class="navlink" href="/chat.html" data-section="chat">Чат с ИИ</a>
+      <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
+      <a class="navlink" href="#feedback" data-section="feedback">Обратная связь</a>
+      <a class="profile-btn" href="/profile">
+        <span class="nowrap">Личный кабинет</span>
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section id="hero">
+      <div class="wrap">
+        <div class="hero-box">
+          <div class="grid-anim" aria-hidden="true"></div>
+          <h1 class="hero-title">Каталог кейсов: готовые сценарии использования ИИ</h1>
+          <p class="hero-desc">
+            Здесь собраны практические сценарии, где несколько ИИ‑инструментов работают вместе:
+            от «презентации за 5 минут» до видеоролика и протокола встречи. Открывайте кейс —
+            получайте пошаговый маршрут и шаблоны запросов.
+          </p>
+          <div class="hero-meta">
+            <span>Готовые цепочки из 2+ ИИ‑сервисов</span>
+            <span>Формулировки промптов для каждого шага</span>
+            <span>Подходит для сотрудников без опыта в ИИ</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- БИБЛИОТЕКА ПРОМПТОВ -->
+    <section id="prompts">
+      <div class="wrap">
+        <div class="panel pad">
+          <h2 class="h2">Библиотека промптов</h2>
+          <p class="lead">Раздел структурирован по направлениям — раскройте нужный, скопируйте промпт и подставьте значения в [квадратные скобки].</p>
+          <div class="accordion" id="promptsAccordion" style="margin-top:18px;">
+            <p class="muted" style="padding:12px 0;">Загрузка промптов…</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- КАТАЛОГ КЕЙСОВ -->
+    <section id="cases">
+      <div class="wrap">
+        <div class="panel pad">
+          <h2 class="h2">Каталог кейсов</h2>
+          <p class="lead">Выберите задачу — получите готовый сценарий и шаблон запроса для каждого шага.</p>
+
+          <div class="controls" style="margin-top:18px;">
+            <div class="field" style="flex:1; min-width: 180px;">
+              <span class="muted2">🔎</span>
+              <input id="caseSearch" type="text" placeholder="Поиск по кейсам (например: презентация, видео, протокол)" />
+            </div>
+            <div class="field">
+              <select id="caseTask">
+                <option value="all">Все задачи</option>
+              </select>
+            </div>
+            <div class="field">
+              <select id="caseContext">
+                <option value="all">Все контексты</option>
+              </select>
+            </div>
+            <div class="field">
+              <select id="caseRole">
+                <option value="all">Любая роль</option>
+              </select>
+            </div>
+            <button class="btn small" id="caseReset">Сбросить</button>
+          </div>
+
+          <div class="statusline" id="caseStatus"></div>
+
+          <div class="case-grid" id="casesCards"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ОБРАТНАЯ СВЯЗЬ -->
+    <section id="feedback">
+      <div class="wrap">
+        <div class="panel pad">
+          <h2 class="h2">Обратная связь</h2>
+          <p class="lead">Идеи, улучшения, новые промпты и кейсы для этого каталога.</p>
+          <p class="muted" style="margin:10px 0 0;">
+            Напишите, каких сценариев вам не хватает, или поделитесь рабочим кейсом. Заявки сохраняются локально
+            на вашем устройстве, их можно выгрузить в JSON и отправить команде.
+          </p>
+
+          <div class="form-grid" style="margin-top:18px;">
+            <div class="form-card">
+              <h3>Кто вы</h3>
+              <label for="fb_fio">ФИО</label>
+              <input id="fb_fio" type="text" placeholder="Например: Иванов Иван" />
+
+              <label for="fb_department">Подразделение</label>
+              <select id="fb_department">
+                <option value="">Выберите</option>
+                <option>Аналитический центр</option>
+                <option>ЕЦП</option>
+                <option>Центр развития Сколково</option>
+                <option>Платформа i.moscow и ИИ</option>
+                <option>ИС РПП</option>
+                <option value="other">Другое</option>
+              </select>
+
+              <div id="fb_department_other_wrap" style="display:none;">
+                <label for="fb_department_other">Уточните подразделение</label>
+                <input id="fb_department_other" type="text" placeholder="Название подразделения" />
+              </div>
+
+              <h3 style="margin-top:16px;">Как связаться</h3>
+              <div class="hintline" style="margin: 0 0 8px;">Достаточно одного канала связи.</div>
+
+              <label for="fb_phone">Телефон</label>
+              <input id="fb_phone" type="text" placeholder="+7 …" />
+
+              <label for="fb_telegram">Telegram</label>
+              <input id="fb_telegram" type="text" placeholder="@username" />
+
+              <label for="fb_email">Email</label>
+              <input id="fb_email" type="email" placeholder="name@domain.ru" />
+            </div>
+
+            <div class="form-card">
+              <h3>Суть</h3>
+
+              <label for="fb_type">Тип</label>
+              <select id="fb_type">
+                <option value="">Выберите</option>
+                <option value="idea">Идея/улучшение</option>
+                <option value="new_prompt">Новый промпт</option>
+                <option value="new_case">Новый кейс</option>
+                <option value="error">Ошибка/неточность</option>
+                <option value="access">Доступ/инструменты</option>
+                <option value="other">Другое</option>
+              </select>
+
+              <label for="fb_section">Раздел</label>
+              <select id="fb_section">
+                <option value="">Выберите</option>
+                <option value="cases">Кейсы</option>
+                <option value="training">Обучение</option>
+                <option value="tools">Инструменты</option>
+                <option value="other">Другое</option>
+              </select>
+
+              <label for="fb_message">Сообщение</label>
+              <textarea id="fb_message" placeholder="Опишите, что нужно улучшить / добавить, и приведите пример кейса (если есть)."></textarea>
+              <div class="hintline">Чем конкретнее пример, тем быстрее мы сможем улучшить каталог.</div>
+
+              <label for="fb_link">Ссылка/источник (опционально)</label>
+              <input id="fb_link" type="text" placeholder="URL или внутренний источник" />
+
+              <label for="fb_rating">Оценка раздела (0–5, опционально)</label>
+              <select id="fb_rating">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+
+              <div style="margin-top: 14px; display:flex; gap:10px; flex-wrap: wrap;">
+                <button class="btn primary" id="fb_submit" type="button">Отправить (сохранить локально)</button>
+                <button class="btn" id="fb_export" type="button">Экспортировать заявки (JSON)</button>
+              </div>
+
+              <div class="success" id="fb_success"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Modal: Case detail -->
+  <div class="overlay" id="caseOverlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Сценарий кейса">
+      <div class="head">
+        <div>
+          <h3 id="caseModalTitle">Кейс</h3>
+          <div id="caseModalBadges" style="margin-top:8px; display:flex; gap:8px; flex-wrap: wrap;"></div>
+        </div>
+        <button class="close" id="caseModalClose" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="body" id="caseModalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    const LS_FEEDBACK = "cases_feedback_tickets";
+    const LS_CASE_USED = "cases_used_map";
+
+    // Данные загружаются из API, при ошибке — встроенные
+    let casesData = [];
+
+    // Маппинг из формата БД в формат страницы
+    function mapApiCase(c) {
+      return {
+        id: c.id,
+        title: c.title || c.id,
+        status: c.maturity || 'draft',
+        used: c.used || 0,
+        task: c.taskCategory || c.task || 'Общее',
+        context: c.context || 'Общее',
+        role: Array.isArray(c.role) ? c.role.join(' / ') : (c.role || 'Специалист'),
+        tools: Array.isArray(c.tools) ? c.tools : (c.tools ? c.tools.split(',').map(s=>s.trim()) : []),
+        goal: c.whenToUse || c.goal || '',
+        steps: c.steps || (c.promptTemplate ? [{
+          title: 'Промпт',
+          bullets: c.result ? [c.result] : [],
+          prompt: c.promptTemplate
+        }] : [])
+      };
+    }
+
+    async function loadCasesFromApi() {
+      try {
+        const res = await fetch('/api/cases');
+        if (res.ok) {
+          const arr = await res.json();
+          if (arr && arr.length) {
+            casesData = arr.map(mapApiCase);
+            return true;
+          }
+        }
+      } catch(e) {}
+      return false;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      if (!toast) return;
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    function copyText(text) {
+      if (!text) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+          () => showToast("Текст скопирован"),
+          () => showToast("Не удалось скопировать текст")
+        );
+        return;
+      }
+      const tmp = document.createElement("textarea");
+      tmp.style.position = "fixed";
+      tmp.style.opacity = "0";
+      tmp.value = text;
+      document.body.appendChild(tmp);
+      tmp.select();
+      try {
+        document.execCommand("copy");
+        showToast("Текст скопирован");
+      } catch {
+        showToast("Не удалось скопировать текст");
+      }
+      document.body.removeChild(tmp);
+    }
+
+    function getJson(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key) || ""); } catch { return fallback; }
+    }
+    function setJson(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function renderCases() {
+      const container = document.getElementById("casesCards");
+      const statusEl = document.getElementById("caseStatus");
+      if (!container) return;
+
+      const search = (document.getElementById("caseSearch").value || "").toLowerCase();
+      const task = document.getElementById("caseTask").value;
+      const context = document.getElementById("caseContext").value;
+      const role = document.getElementById("caseRole").value;
+
+      const usedMap = getJson(LS_CASE_USED, {});
+
+      const filtered = casesData.filter(c => {
+        if (task !== "all" && c.task !== task) return false;
+        if (context !== "all" && c.context !== context) return false;
+        if (role !== "all" && c.role !== role) return false;
+        if (search) {
+          const haystack = (c.title + " " + c.goal + " " + c.tools.join(" ")).toLowerCase();
+          if (!haystack.includes(search)) return false;
+        }
+        return true;
+      });
+
+      container.innerHTML = "";
+      filtered.forEach(c => {
+        const totalUsed = (c.used || 0) + (usedMap[c.id] || 0);
+        const card = document.createElement("article");
+        card.className = "case-card";
+        card.dataset.id = c.id;
+
+        const statusBadgeClass =
+          c.status === "ready" ? "status-ready" :
+          c.status === "pilot" ? "status-pilot" :
+          "status-draft";
+        const statusLabel =
+          c.status === "ready" ? "Готовый" :
+          c.status === "pilot" ? "Пилот" :
+          "Черновик";
+
+        card.innerHTML = `
+          <div class="case-top">
+            <div>
+              <h3 class="case-title">${escapeHtml(c.title)}</h3>
+              <p class="case-meta">${escapeHtml(c.goal)}</p>
+              <div class="badges">
+                <span class="badge ${statusBadgeClass}">${statusLabel}</span>
+                <span class="badge">${escapeHtml(c.task)}</span>
+                <span class="badge">${escapeHtml(c.context)}</span>
+              </div>
+              <div class="tools-tags">
+                ${c.tools.map(t => `<span>${escapeHtml(t)}</span>`).join("")}
+              </div>
+            </div>
+          </div>
+          <div class="case-footer">
+            <div class="case-usage">Использован: ${totalUsed}</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn small primary" type="button" data-open-case="${c.id}">Открыть сценарий</button>
+              <button class="btn small btn-ghost ${usedMap[c.id] ? "used" : ""}" type="button" data-mark-used="${c.id}">Я использовал этот кейс</button>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      if (statusEl) {
+        statusEl.textContent = `Найдено: ${filtered.length} из ${casesData.length}`;
+      }
+    }
+
+    function initFilters() {
+      const taskSelect = document.getElementById("caseTask");
+      const contextSelect = document.getElementById("caseContext");
+      const roleSelect = document.getElementById("caseRole");
+
+      const tasks = Array.from(new Set(casesData.map(c => c.task)));
+      const contexts = Array.from(new Set(casesData.map(c => c.context)));
+      const roles = Array.from(new Set(casesData.map(c => c.role)));
+
+      tasks.forEach(v => {
+        const o = document.createElement("option");
+        o.value = v;
+        o.textContent = v;
+        taskSelect.appendChild(o);
+      });
+      contexts.forEach(v => {
+        const o = document.createElement("option");
+        o.value = v;
+        o.textContent = v;
+        contextSelect.appendChild(o);
+      });
+      roles.forEach(v => {
+        const o = document.createElement("option");
+        o.value = v;
+        o.textContent = v;
+        roleSelect.appendChild(o);
+      });
+    }
+
+    function openCaseModal(id) {
+      const data = casesData.find(c => c.id === id);
+      if (!data) return;
+      const overlay = document.getElementById("caseOverlay");
+      const titleEl = document.getElementById("caseModalTitle");
+      const badgesEl = document.getElementById("caseModalBadges");
+      const bodyEl = document.getElementById("caseModalBody");
+      if (!overlay || !titleEl || !badgesEl || !bodyEl) return;
+
+      const statusBadgeClass =
+        data.status === "ready" ? "status-ready" :
+        data.status === "pilot" ? "status-pilot" :
+        "status-draft";
+      const statusLabel =
+        data.status === "ready" ? "Готовый" :
+        data.status === "pilot" ? "Пилот" :
+        "Черновик";
+
+      titleEl.textContent = data.title;
+      badgesEl.innerHTML = `
+        <span class="badge ${statusBadgeClass}">${statusLabel}</span>
+        <span class="badge">${escapeHtml(data.task)}</span>
+        <span class="badge">${escapeHtml(data.context)}</span>
+        <span class="badge">${escapeHtml(data.role)}</span>
+      `;
+
+      const stepsHtml = data.steps.map((step, idx) => {
+        const promptId = `${data.id}_step_${idx}`;
+        const bullets = step.bullets && step.bullets.length
+          ? `<ul>${step.bullets.map(li => `<li>${escapeHtml(li)}</li>`).join("")}</ul>`
+          : "";
+        const promptBox = step.prompt ? `
+          <div class="codebox">
+            <textarea id="${promptId}" readonly>${escapeHtml(step.prompt)}</textarea>
+            <div style="margin-top:6px; display:flex; justify-content:flex-end;">
+              <button class="btn small" type="button" data-copy="#${promptId}">Копировать промпт</button>
+            </div>
+          </div>
+        ` : "";
+        return `
+          <div class="case-step">
+            <h4>${escapeHtml(step.title)}</h4>
+            ${bullets}
+            ${promptBox}
+          </div>
+        `;
+      }).join("");
+
+      bodyEl.innerHTML = `
+        <p class="muted">${escapeHtml(data.goal)}</p>
+        <div class="hintline" style="margin:8px 0 10px;">
+          Каждый кейс строится как цепочка из нескольких ИИ‑сервисов. Используйте промпты как черновики и подставляйте свои данные.
+        </div>
+        <div class="case-steps">
+          ${stepsHtml}
+        </div>
+      `;
+
+      overlay.classList.add("show");
+      overlay.setAttribute("aria-hidden", "false");
+    }
+
+    function closeCaseModal() {
+      const overlay = document.getElementById("caseOverlay");
+      if (!overlay) return;
+      overlay.classList.remove("show");
+      overlay.setAttribute("aria-hidden", "true");
+    }
+
+    async function loadDepartments() {
+      const depSelect = document.getElementById("fb_department");
+      if (!depSelect) return;
+      try {
+        const res = await fetch("/api/departments");
+        if (res.ok) {
+          const arr = await res.json();
+          if (arr && arr.length) {
+            // Keep first option "Выберите", replace rest (keep "Другое" at end)
+            const currentVal = depSelect.value;
+            depSelect.innerHTML = '<option value="">Выберите</option>';
+            arr.forEach(name => {
+              const o = document.createElement("option");
+              o.value = name;
+              o.textContent = name;
+              depSelect.appendChild(o);
+            });
+            const other = document.createElement("option");
+            other.value = "other";
+            other.textContent = "Другое";
+            depSelect.appendChild(other);
+            depSelect.value = currentVal;
+          }
+        }
+      } catch(_) {}
+    }
+
+    function initFeedbackForm() {
+      const depSelect = document.getElementById("fb_department");
+      loadDepartments();
+      const depOtherWrap = document.getElementById("fb_department_other_wrap");
+      const depOther = document.getElementById("fb_department_other");
+      const successEl = document.getElementById("fb_success");
+
+      if (depSelect && depOtherWrap) {
+        depSelect.addEventListener("change", () => {
+          const show = depSelect.value === "other";
+          depOtherWrap.style.display = show ? "block" : "none";
+          if (!show && depOther) depOther.value = "";
+        });
+      }
+
+      const submitBtn = document.getElementById("fb_submit");
+      const exportBtn = document.getElementById("fb_export");
+
+      submitBtn?.addEventListener("click", () => {
+        const fio = document.getElementById("fb_fio").value.trim();
+        const department = depSelect?.value || "";
+        const departmentOther = depOther?.value.trim() || "";
+        const phone = document.getElementById("fb_phone").value.trim();
+        const tg = document.getElementById("fb_telegram").value.trim();
+        const email = document.getElementById("fb_email").value.trim();
+        const type = document.getElementById("fb_type").value;
+        const section = document.getElementById("fb_section").value;
+        const message = document.getElementById("fb_message").value.trim();
+        const link = document.getElementById("fb_link").value.trim();
+        const rating = document.getElementById("fb_rating").value;
+
+        if (!type || !message) {
+          showToast("Заполните хотя бы тип и сообщение");
+          return;
+        }
+        if (!phone && !tg && !email) {
+          showToast("Укажите хотя бы один способ связи");
+          return;
+        }
+
+        const payload = {
+          created_at: new Date().toISOString(),
+          fio,
+          department,
+          department_other: department === "other" ? departmentOther : "",
+          phone,
+          telegram: tg,
+          email,
+          type,
+          section,
+          message,
+          link,
+          rating
+        };
+
+        const arr = getJson(LS_FEEDBACK, []);
+        arr.push(payload);
+        setJson(LS_FEEDBACK, arr);
+
+        if (successEl) {
+          successEl.textContent = "Заявка сохранена локально. Для отправки можно выгрузить JSON и передать его команде.";
+        }
+        showToast("Заявка сохранена локально");
+      });
+
+      exportBtn?.addEventListener("click", () => {
+        const data = getJson(LS_FEEDBACK, []);
+        if (!data.length) {
+          showToast("Нет сохранённых заявок");
+          return;
+        }
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "cases-feedback.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // прогресс‑бар по скроллу
+      const progressEl = document.getElementById("progressBar");
+      if (progressEl) {
+        const onScroll = () => {
+          const h = document.documentElement;
+          const max = h.scrollHeight - h.clientHeight;
+          const value = max > 0 ? (window.scrollY / max) * 100 : 0;
+          progressEl.style.width = value + "%";
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+      }
+
+      // бургер + мобильное меню
+      const burger = document.getElementById("burgerBtn");
+      const mobileMenu = document.getElementById("mobileMenu");
+      if (burger && mobileMenu) {
+        burger.addEventListener("click", () => {
+          const isOpen = mobileMenu.classList.toggle("show");
+          burger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+        mobileMenu.addEventListener("click", (e) => {
+          const link = e.target.closest("a.navlink");
+          if (link) {
+            mobileMenu.classList.remove("show");
+            burger.setAttribute("aria-expanded", "false");
+          }
+        });
+      }
+
+      // Загружаем кейсы из API, потом инициализируем
+      loadCasesFromApi().then(() => {
+        initFilters();
+        renderCases();
+      });
+      initFeedbackForm();
+
+      // события фильтров
+      document.getElementById("caseSearch")?.addEventListener("input", () => renderCases());
+      document.getElementById("caseTask")?.addEventListener("change", () => renderCases());
+      document.getElementById("caseContext")?.addEventListener("change", () => renderCases());
+      document.getElementById("caseRole")?.addEventListener("change", () => renderCases());
+      document.getElementById("caseReset")?.addEventListener("click", () => {
+        document.getElementById("caseSearch").value = "";
+        document.getElementById("caseTask").value = "all";
+        document.getElementById("caseContext").value = "all";
+        document.getElementById("caseRole").value = "all";
+        renderCases();
+      });
+
+      // делегирование на карточках
+      document.addEventListener("click", (e) => {
+        const openBtn = e.target.closest("[data-open-case]");
+        if (openBtn) {
+          const id = openBtn.getAttribute("data-open-case");
+          if (id) openCaseModal(id);
+          return;
+        }
+        const markBtn = e.target.closest("[data-mark-used]");
+        if (markBtn) {
+          const id = markBtn.getAttribute("data-mark-used");
+          if (!id) return;
+          const map = getJson(LS_CASE_USED, {});
+          map[id] = (map[id] || 0) + 1;
+          setJson(LS_CASE_USED, map);
+          markBtn.classList.add("used");
+          showToast("Отметили кейс как использованный");
+          renderCases();
+          return;
+        }
+        const copyBtn = e.target.closest("[data-copy]");
+        if (copyBtn) {
+          const selector = copyBtn.getAttribute("data-copy");
+          if (!selector) return;
+          const el = document.querySelector(selector);
+          if (!el) return;
+          const text = "value" in el ? el.value : el.innerText;
+          copyText(text);
+          return;
+        }
+      });
+
+      // модальное окно
+      document.getElementById("caseModalClose")?.addEventListener("click", () => closeCaseModal());
+      document.getElementById("caseOverlay")?.addEventListener("click", (e) => {
+        if (e.target.id === "caseOverlay") closeCaseModal();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeCaseModal();
+      });
+    });
+  
+    async function loadFromApi(path) {
+      try {
+        const res = await fetch(path);
+        if (res.ok) { const d = await res.json(); if (Array.isArray(d) && d.length) return d; }
+      } catch(_) {}
+      return null;
+    }
+
+    function escHtml(s) {
+      return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+    }
+
+    // ── Init MIK tools (статика уже в HTML, просто инициализируем кнопку) ──────
+    function renderMikTools() {
+      const grid = document.getElementById('mikServicesGrid');
+      if (!grid) return;
+      initShowMore('showMoreMik', '.mik-card.is-stub', grid);
+    }
+
+    // ── Generic showMore initializer ──────────────────────────────────────────
+    function initShowMore(btnId, selector, container) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+      const cards = Array.from((container || document).querySelectorAll(selector));
+      if (!cards.length) { newBtn.style.display = 'none'; return; }
+      // Карточки уже скрыты через CSS — просто вешаем обработчик
+      newBtn.style.display = '';
+      newBtn.textContent = 'Показать ещё';
+      newBtn.addEventListener('click', () => {
+        const isShown = cards[0].classList.contains('shown');
+        cards.forEach(c => c.classList.toggle('shown', !isShown));
+        newBtn.textContent = isShown ? 'Показать ещё' : 'Скрыть';
+      });
+    }
+
+    // ── Init public tools (статика уже в HTML, просто инициализируем кнопку) ───
+    function renderPublicTools() {
+      const grid = document.getElementById('publicServicesGrid');
+      if (!grid) return;
+      initShowMore('showMorePub', '.pub-extra', grid);
+    }
+
+    // ── Render prompts accordion ───────────────────────────────────────────────
+    // ── Render prompts accordion ───────────────────────────────────────────────
+    async function renderPrompts() {
+      const container = document.getElementById('promptsAccordion');
+      if (!container) return;
+      const prompts = await loadFromApi('/api/prompts');
+      if (!prompts) {
+        container.innerHTML = `
+          <div class="acc-item open">
+            <div class="acc-head"><div class="acc-title"><b>Коммуникации (письма, записки, ответы)</b><span>Официальный стиль, лимит объёма, варианты формулировок.</span></div><span class="muted2">▾</span></div>
+            <div class="acc-body"><div class="prompt-grid">
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Официальное письмо (универсальное)</div><div class="prompt-card-meta">Черновик официального письма по тезисам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_1" readonly>Роль: ты специалист Центра.
+Цель: подготовить официальное письмо [кому] по теме: [тема].
+Контекст: 1–3 предложения — ситуация и что нужно сделать.
+Формат: 120–180 слов, деловой стиль без канцелярита.
+Ограничения: не добавляй факты, которых нет во вводных.
+Вывод: предложи 2 варианта письма + тему (subject).</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_1">Копировать</button></div></div>
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Письмо‑приглашение на встречу</div><div class="prompt-card-meta">Краткое приглашение с предложением слотов.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_2" readonly>Роль: организатор встречи.
+Цель: письмо‑приглашение на встречу по теме: [тема].
+Формат: до 150 слов, официальный но живой тон.
+Структура: 1) повод; 2) три варианта слотов; 3) просьба подтвердить время.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_2">Копировать</button></div></div>
+            </div></div>
+          </div>
+          <div class="acc-item">
+            <div class="acc-head"><div class="acc-title"><b>Аналитика (справки, сравнения, выводы)</b><span>Таблицы, риски, допущения и проверяемость.</span></div><span class="muted2">▾</span></div>
+            <div class="acc-body"><div class="prompt-grid">
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Справка по документу</div><div class="prompt-card-meta">Короткая выжимка, требования, риски и вопросы.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_analytics_1" readonly>Роль: аналитик.
+Цель: краткая справка по документу.
+Контекст: вставь текст документа.
+Формат: 1) резюме; 2) требования; 3) риски и пробелы; 4) вопросы для уточнения.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_analytics_1">Копировать</button></div></div>
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Сравнительный анализ вариантов</div><div class="prompt-card-meta">Сравнение 2–4 вариантов по единым критериям.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_analytics_2" readonly>Роль: аналитик.
+Цель: сравнить варианты решения задачи.
+Контекст: опиши 2–4 варианта и критерии выбора.
+Формат: таблица (вариант / плюсы / риски / сроки) + выводы.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_analytics_2">Копировать</button></div></div>
+            </div></div>
+          </div>
+          <div class="acc-item">
+            <div class="acc-head"><div class="acc-title"><b>Проекты (протоколы, ТЗ, требования)</b><span>Протоколы, задачи, owner/срок, критерии приёмки.</span></div><span class="muted2">▾</span></div>
+            <div class="acc-body"><div class="prompt-grid">
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Протокол встречи из заметок</div><div class="prompt-card-meta">Структурированный протокол по заметкам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_1" readonly>Роль: секретарь или PM встречи.
+Цель: оформить протокол по итогам встречи.
+Заметки: [вставь конспект].
+Формат: 1) участники; 2) повестка; 3) решения; 4) поручения (кто/что/срок); 5) вопросы.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_1">Копировать</button></div></div>
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Черновик ТЗ по задаче</div><div class="prompt-card-meta">Структурный черновик технического задания.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_2" readonly>Роль: постановщик задачи.
+Цель: черновик ТЗ по проекту.
+Контекст: кто заказчик, цель, ожидаемый результат.
+Формат: цель / scope / требования / ограничения / критерии приёмки.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_2">Копировать</button></div></div>
+            </div></div>
+          </div>
+          <div class="acc-item">
+            <div class="acc-head"><div class="acc-title"><b>Отчётность и презентации</b><span>Еженедельные статусы, структура презентации.</span></div><span class="muted2">▾</span></div>
+            <div class="acc-body"><div class="prompt-grid">
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Еженедельный статус по проекту</div><div class="prompt-card-meta">Отчёт по прогрессу, рискам и следующим шагам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_report_1" readonly>Роль: руководитель проекта.
+Цель: статус за неделю.
+Контекст: что сделано, что в работе, какие блокеры.
+Формат: 1) общий статус; 2) таблица задач (задача/статус/владелец); 3) риски.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_report_1">Копировать</button></div></div>
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Структура презентации для решения</div><div class="prompt-card-meta">Список слайдов для презентации руководству.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_report_2" readonly>Роль: автор презентации.
+Цель: структура презентации по теме: [тема].
+Формат: список слайдов до 12 с описанием.
+Обязательно: проблема, цель, варианты, анализ, рекомендация, план, риски.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_report_2">Копировать</button></div></div>
+            </div></div>
+          </div>`;
+        container.querySelectorAll('.acc-item .acc-head').forEach(head => {
+          head.addEventListener('click', () => {
+            const item = head.closest('.acc-item');
+            const wasOpen = item.classList.contains('open');
+            container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
+            if (!wasOpen) item.classList.add('open');
+          });
+        });
+        return;
+      }
+
+      // Group by sectionTitle
+      const sections = [];
+      const sectionMap = {};
+      prompts.forEach(p => {
+        const key = p.sectionTitle || 'Другое';
+        if (!sectionMap[key]) {
+          sectionMap[key] = { title: key, subtitle: p.sectionSubtitle || '', items: [] };
+          sections.push(sectionMap[key]);
+        }
+        sectionMap[key].items.push(p);
+      });
+
+      container.innerHTML = sections.map((sec, si) => `
+        <div class="acc-item${si === 0 ? ' open' : ''}">
+          <div class="acc-head">
+            <div class="acc-title">
+              <b>${escHtml(sec.title)}</b>
+              <span>${escHtml(sec.subtitle)}</span>
+            </div>
+            <span class="muted2">▾</span>
+          </div>
+          <div class="acc-body">
+            <div class="prompt-grid">
+              ${sec.items.map(p => `
+                <div class="prompt-card">
+                  <div class="prompt-card-head">
+                    <div>
+                      <div class="prompt-card-title">${escHtml(p.title)}</div>
+                      <div class="prompt-card-meta">${escHtml(p.meta||'')}</div>
+                    </div>
+                  </div>
+                  <div class="codebox" style="margin-top:10px;">
+                    <textarea class="prompt-input" id="prompt_${escHtml(p.id)}" readonly>${escHtml(p.text||'')}</textarea>
+                  </div>
+                  <div class="prompt-card-actions">
+                    <button class="btn small" type="button" data-copy="#prompt_${escHtml(p.id)}">Копировать</button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Re-bind accordion clicks
+      container.querySelectorAll('.acc-item .acc-head').forEach(head => {
+        head.addEventListener('click', () => {
+          const item = head.closest('.acc-item');
+          const wasOpen = item.classList.contains('open');
+          container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
+          if (!wasOpen) item.classList.add('open');
+        });
+      });
+    }
+
+</script>
+</body>
+</html>
+

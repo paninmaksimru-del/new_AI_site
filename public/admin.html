@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Админ-панель — MIK AI Platform</title>
+  <style>
+    :root{
+      --bg: #070A10; --panel: rgba(255,255,255,.06); --stroke: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.92); --muted: rgba(255,255,255,.6);
+      --ok: rgba(38,210,152,.95); --warn: rgba(255,193,7,.95);
+      --danger: rgba(255,96,96,.95); --accent: rgba(78,135,255,.95);
+      --radius: 14px; --pad: 16px; --max: 1000px;
+    }
+    *{ box-sizing: border-box; }
+    body{ margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; }
+    a{ color:#7cb8ff; }
+    header{ position:sticky; top:0; z-index:10; background:rgba(7,10,16,.95); border-bottom:1px solid var(--stroke); padding:var(--pad) 0; }
+    .wrap{ max-width:var(--max); margin:0 auto; padding:0 var(--pad); }
+    .topbar{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .brand{ font-weight:700; font-size:16px; }
+    .nav-right{ display:flex; align-items:center; gap:8px; }
+    .user-badge{ font-size:13px; color:var(--muted); }
+    .panel{ background:var(--panel); border:1px solid var(--stroke); border-radius:var(--radius); padding:var(--pad); margin:16px 0; }
+    .panel h2{ margin:0 0 8px; font-size:18px; }
+    .panel h3{ margin:14px 0 8px; font-size:14px; color:var(--muted); }
+    .btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08); color:inherit; cursor:pointer; font:inherit; transition:background .15s,border-color .15s; white-space:nowrap; }
+    .btn:hover{ background:rgba(255,255,255,.13); border-color:rgba(255,255,255,.3); }
+    .btn.small{ padding:6px 10px; font-size:13px; border-radius:9px; }
+    .btn.danger{ border-color:var(--danger); color:var(--danger); }
+    .btn.danger:hover{ background:rgba(255,96,96,.15); }
+    .btn.ok{ border-color:var(--ok); color:var(--ok); }
+    .btn.ok:hover{ background:rgba(38,210,152,.12); }
+    .btn.accent{ border-color:var(--accent); color:var(--accent); }
+    .field{ margin-bottom:12px; }
+    .field label{ display:block; margin-bottom:4px; color:var(--muted); font-size:13px; }
+    .field input,.field select,.field textarea{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--stroke); background:rgba(0,0,0,.3); color:var(--text); font:inherit; outline:none; transition:border-color .15s; }
+    .field input:focus,.field select:focus,.field textarea:focus{ border-color:var(--accent); }
+    .field textarea{ min-height:80px; resize:vertical; }
+    .field-row{ display:flex; gap:12px; flex-wrap:wrap; }
+    .field-row .field{ flex:1; min-width:160px; }
+    .tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; border-bottom:1px solid var(--stroke); padding-bottom:12px; }
+    .tabs .tabbtn{ padding:8px 14px; border-radius:10px; border:1px solid transparent; background:rgba(255,255,255,.04); color:var(--muted); cursor:pointer; font:inherit; transition:all .15s; }
+    .tabs .tabbtn:hover{ background:rgba(255,255,255,.08); color:var(--text); }
+    .tabs .tabbtn.active{ background:rgba(78,135,255,.2); border-color:rgba(78,135,255,.4); color:var(--text); }
+    .tabpane{ display:none; }
+    .tabpane.active{ display:block; }
+    .list-item{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.2); margin-bottom:8px; flex-wrap:wrap; }
+    .list-item span{ flex:1; min-width:0; word-break:break-word; }
+    .list-actions{ display:flex; gap:8px; flex-shrink:0; }
+    ul.plain{ list-style:none; padding:0; margin:0; }
+    .badge{ display:inline-block; padding:3px 7px; border-radius:7px; font-size:12px; background:rgba(255,255,255,.1); margin-left:6px; }
+    .badge.ok{ background:rgba(38,210,152,.15); color:var(--ok); }
+    .badge.warn{ background:rgba(255,193,7,.15); color:var(--warn); }
+    .badge.danger{ background:rgba(255,96,96,.15); color:var(--danger); }
+    .badge.accent{ background:rgba(78,135,255,.15); color:var(--accent); }
+    .hint{ font-size:12px; color:var(--muted); margin-top:2px; }
+    .muted{ color:var(--muted); font-size:14px; }
+    .loading{ color:var(--muted); padding:16px 0; font-size:14px; }
+    .actions-bar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+    .toast-bar{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(20,25,40,.97); border:1px solid var(--stroke); border-radius:12px; padding:12px 20px; font-size:14px; z-index:1000; opacity:0; transition:opacity .25s; pointer-events:none; white-space:nowrap; }
+    .toast-bar.show{ opacity:1; }
+    .toast-bar.ok-toast{ border-color:var(--ok); color:var(--ok); }
+    .toast-bar.err-toast{ border-color:var(--danger); color:var(--danger); }
+    .step-block input, .step-block textarea { background:rgba(0,0,0,.35); }
+    .step-block { transition: box-shadow .15s; }
+    .step-block:hover { box-shadow: 0 0 0 1px rgba(78,135,255,.3); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">🛠 Админ-панель</div>
+      <div class="nav-right">
+        <span class="user-badge" id="userName"></span>
+        <a href="/dashboard" class="btn small">Дашборд</a>
+        <a href="/" class="btn small">Платформа</a>
+        <button class="btn small danger" onclick="logout()">Выйти</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="tabs" role="tablist">
+    <button class="tabbtn active" data-tab="users">👥 Пользователи</button>
+    <button class="tabbtn" data-tab="dept">🏢 Подразделения</button>
+    <button class="tabbtn" data-tab="cases">📋 Кейсы</button>
+    <button class="tabbtn" data-tab="prompts">💬 Промпты</button>
+    <button class="tabbtn" data-tab="tools">🔧 Инструменты</button>
+    <button class="tabbtn" data-tab="tasks">✅ Задачи</button>
+    <button class="tabbtn" data-tab="browser">🌐 Браузер</button>
+  </div>
+
+  <!-- USERS -->
+  <div id="tab_users" class="tabpane active">
+    <div class="panel">
+      <h2>Пользователи</h2>
+      <p class="muted">Управление доступом к платформе. Пароли хранятся в зашифрованном виде (SHA-256).</p>
+      <div class="panel" style="margin-top:12px;">
+        <h3>Создать пользователя</h3>
+        <div class="field-row">
+          <div class="field"><label>Логин</label><input type="text" id="newUserLogin" placeholder="ivan.petrov" /></div>
+          <div class="field"><label>Пароль</label><input type="password" id="newUserPassword" placeholder="минимум 6 символов" /></div>
+          <div class="field" style="max-width:200px;"><label>Роль</label>
+            <select id="newUserRole">
+              <option value="user">user — сотрудник</option>
+              <option value="admin">admin — администратор</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn ok" id="btnCreateUser">Создать пользователя</button>
+      </div>
+      <h3>Список пользователей</h3>
+      <ul class="plain" id="userList"><li class="loading">Загрузка...</li></ul>
+    </div>
+  </div>
+
+  <!-- DEPARTMENTS -->
+  <div id="tab_dept" class="tabpane">
+    <div class="panel">
+      <h2>Подразделения</h2>
+      <p class="muted">Используются в фильтрах дашборда, кейсов и формы обратной связи.</p>
+      <div class="field-row" style="align-items:flex-end; margin-top:12px;">
+        <div class="field" style="flex:1;"><label>Название</label><input type="text" id="deptName" placeholder="Например: Платформа i.moscow и ИИ" /></div>
+        <div class="field" style="width:auto;flex:0;padding-top:0;"><label>&nbsp;</label><button class="btn ok" id="deptAdd">Добавить</button></div>
+      </div>
+      <ul class="plain" id="deptList"><li class="loading">Загрузка...</li></ul>
+    </div>
+  </div>
+
+  <!-- CASES -->
+  <div id="tab_cases" class="tabpane">
+    <div class="panel">
+      <h2>Кейсы</h2>
+      <p class="muted">Сценарии использования ИИ — раздел «Кейсы». Редактирование по ID обновляет существующие карточки.</p>
+      <div class="actions-bar"><button class="btn accent" id="caseAdd">+ Новый кейс</button></div>
+      <div id="caseForm" style="display:none;" class="panel">
+        <h3 id="caseFormTitle">Новый кейс</h3>
+        <div class="field-row">
+          <div class="field"><label>ID (латиница, подчёркивания)</label><input type="text" id="caseId" placeholder="case_protocol" /></div>
+          <div class="field"><label>Название</label><input type="text" id="caseTitle" placeholder="Протокол встречи за 15 минут" /></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Категория задачи</label><input type="text" id="caseTaskCategory" placeholder="Провести встречу / зафиксировать итоги" /></div>
+          <div class="field"><label>Контекст</label><input type="text" id="caseContext" placeholder="Управление" /></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Роли (через запятую)</label><input type="text" id="caseRole" placeholder="Руководитель, Проектный менеджер" /></div>
+          <div class="field" style="max-width:200px;"><label>Зрелость</label>
+            <select id="caseMaturity"><option value="ready">✅ Готовый</option><option value="pilot">🔬 Пилот</option><option value="draft">📝 Черновик</option></select>
+          </div>
+        </div>
+        <div class="field"><label>Когда использовать / цель</label><input type="text" id="caseWhenToUse" /></div>
+        <div class="field"><label>Результат</label><input type="text" id="caseResult" /></div>
+        <div class="field"><label>Инструменты (через запятую)</label><input type="text" id="caseTools" /></div>
+        <div style="margin-top:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <label style="font-size:14px;color:var(--muted);margin:0;">Шаги кейса</label>
+            <button class="btn small accent" type="button" id="addStepBtn">+ Добавить шаг</button>
+          </div>
+          <div id="stepsEditor"></div>
+        </div>
+        <div class="field-row" style="margin-top:16px;">
+          <button class="btn ok" id="caseSave">Сохранить кейс</button>
+          <button class="btn small" id="caseCancel">Отмена</button>
+        </div>
+      </div>
+      <ul class="plain" id="caseList"><li class="loading">Загрузка...</li></ul>
+    </div>
+  </div>
+
+  <!-- PROMPTS -->
+  <div id="tab_prompts" class="tabpane">
+    <div class="panel">
+      <h2>Промпты</h2>
+      <p class="muted">Библиотека промптов на главной странице. Редактирование по ID обновляет существующие блоки.</p>
+      <div class="actions-bar"><button class="btn accent" id="promptAdd">+ Новый промпт</button></div>
+      <div id="promptForm" style="display:none;" class="panel">
+        <h3 id="promptFormTitle">Новый промпт</h3>
+        <div class="field"><label>ID</label><input type="text" id="promptId" placeholder="prompt_comm_1" /></div>
+        <div class="field-row">
+          <div class="field"><label>Раздел</label><input type="text" id="promptSectionTitle" placeholder="Коммуникации (письма, записки)" /></div>
+          <div class="field"><label>Подзаголовок раздела</label><input type="text" id="promptSectionSubtitle" /></div>
+        </div>
+        <div class="field"><label>Название промпта</label><input type="text" id="promptTitle" /></div>
+        <div class="field"><label>Описание</label><input type="text" id="promptMeta" /></div>
+        <div class="field"><label>Текст промпта</label><textarea id="promptText" style="min-height:120px;"></textarea></div>
+        <div class="field-row">
+          <button class="btn ok" id="promptSave">Сохранить</button>
+          <button class="btn small" id="promptCancel">Отмена</button>
+        </div>
+      </div>
+      <ul class="plain" id="promptList"><li class="loading">Загрузка...</li></ul>
+    </div>
+  </div>
+
+  <!-- TOOLS -->
+  <div id="tab_tools" class="tabpane">
+    <div class="panel">
+      <h2>Инструменты</h2>
+      <p class="muted">Каталог ИИ-инструментов. Редактирование по ID обновляет карточки в каталоге.</p>
+      <div class="actions-bar"><button class="btn accent" id="toolAdd">+ Новый инструмент</button></div>
+      <div id="toolForm" style="display:none;" class="panel">
+        <h3 id="toolFormTitle">Новый инструмент</h3>
+        <div class="field-row">
+          <div class="field"><label>ID</label><input type="text" id="toolId" placeholder="tool_chatgpt" /></div>
+          <div class="field"><label>Название</label><input type="text" id="toolName" placeholder="ChatGPT" /></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Категория</label>
+            <select id="toolCategory">
+              <option value="documents">documents</option><option value="analytics">analytics</option>
+              <option value="meetings">meetings</option><option value="automation">automation</option>
+              <option value="knowledge">knowledge</option><option value="dev">dev</option><option value="graphics">graphics</option>
+            </select>
+          </div>
+          <div class="field"><label>Оф. контур</label>
+            <select id="toolOfficial"><option value="ok">✅ ok</option><option value="limited">⚠️ limited</option><option value="no">❌ no</option></select>
+          </div>
+          <div class="field"><label>Доступ</label>
+            <select id="toolAccess"><option value="ready">ready</option><option value="request">request</option></select>
+          </div>
+          <div class="field" style="max-width:110px;"><label>VPN</label>
+            <select id="toolVpn"><option value="0">Нет</option><option value="1">Да</option></select>
+          </div>
+        </div>
+        <div class="field"><label>Задачи (через запятую)</label><input type="text" id="toolTasks" /></div>
+        <div class="field"><label>Подразделения (через запятую)</label><input type="text" id="toolDepartments" /></div>
+        <div class="field"><label>Лучше для (через запятую)</label><input type="text" id="toolBestFor" /></div>
+        <div class="field"><label>Риски</label><input type="text" id="toolRisks" /></div>
+        <div class="field-row">
+          <button class="btn ok" id="toolSave">Сохранить</button>
+          <button class="btn small" id="toolCancel">Отмена</button>
+        </div>
+      </div>
+      <ul class="plain" id="toolList"><li class="loading">Загрузка...</li></ul>
+    </div>
+  </div>
+
+  <!-- TASKS -->
+  <div id="tab_tasks" class="tabpane">
+    <div class="panel">
+      <h2>Задачи (для дашборда)</h2>
+      <p class="muted">Топ задач где сотрудники используют ИИ — отображаются на дашборде.</p>
+      <div class="actions-bar"><button class="btn accent" id="taskAdd">+ Новая задача</button></div>
+      <div id="taskForm" style="display:none;" class="panel">
+        <h3 id="taskFormTitle">Новая задача</h3>
+        <div class="field-row">
+          <div class="field"><label>ID</label><input type="text" id="taskId" placeholder="t_prepare_doc" /></div>
+          <div class="field"><label>Название</label><input type="text" id="taskName" placeholder="подготовить документ" /></div>
+        </div>
+        <div class="field"><label>Инструменты</label><input type="text" id="taskTools" placeholder="ChatGPT / YandexGPT / Copilot" /></div>
+        <div class="field" style="max-width:200px;"><label>Вес (0–1)</label><input type="number" id="taskWeight" step="0.01" min="0" max="1" value="1" /></div>
+        <div class="field-row">
+          <button class="btn ok" id="taskSave">Сохранить</button>
+          <button class="btn small" id="taskCancel">Отмена</button>
+        </div>
+      </div>
+      <ul class="plain" id="taskList"><li class="loading">Загрузка...</li></ul>
+    </div>
+  </div>
+  <div id="tab_browser" class="tabpane">
+    <div class="panel">
+      <h2>Единый браузер — Dolphin Anty</h2>
+      <p class="muted">Настройки блока «Единый браузер», который отображается на странице <b>Обучение</b>.</p>
+
+      <div class="field-row" style="margin-top:16px; align-items:flex-end;">
+        <div class="field" style="flex:0 0 180px;">
+          <label>Видимость блока</label>
+          <select id="brwVisible">
+            <option value="1">Показывать</option>
+            <option value="0">Скрыть</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Ссылка «Скачать»</label>
+          <input id="brwDownload" type="url" value="https://dolphin.ru.com/" />
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Ссылка «Регистрация»</label>
+          <input id="brwRegister" type="url" value="https://app.dolphin-anty.com" />
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:4px;">
+        <label>Заголовок блока</label>
+        <input id="brwTitle" type="text" value="Единый браузер для всех ИИ‑сервисов" />
+      </div>
+      <div class="field">
+        <label>Подзаголовок</label>
+        <input id="brwSubtitle" type="text" value="Dolphin Anty — изолированные профили для каждого сервиса. Без конфликта аккаунтов, без следов в корпоративном браузере." />
+      </div>
+
+      <div style="margin-top:16px;">
+        <label style="display:block; font-size:13px; color:rgba(255,255,255,.6); margin-bottom:10px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;">Шаги инструкции</label>
+        <div id="brwSteps" style="display:flex; flex-direction:column; gap:8px;">
+          <div class="field-row">
+            <span style="min-width:26px; font-size:12px; font-weight:700; color:rgba(0,210,110,.8);">01</span>
+            <input type="text" value="Скачайте и установите" style="flex:1;" />
+            <input type="text" value="Windows 10/11 · macOS 12+ · ~180 МБ" style="flex:2;" />
+          </div>
+          <div class="field-row">
+            <span style="min-width:26px; font-size:12px; font-weight:700; color:rgba(0,210,110,.8);">02</span>
+            <input type="text" value="Создайте аккаунт" style="flex:1;" />
+            <input type="text" value="Рабочая почта · бесплатно · 10 профилей" style="flex:2;" />
+          </div>
+          <div class="field-row">
+            <span style="min-width:26px; font-size:12px; font-weight:700; color:rgba(0,210,110,.8);">03</span>
+            <input type="text" value="Создайте профили" style="flex:1;" />
+            <input type="text" value="По одному на каждый сервис: ChatGPT, Claude, DeepSeek…" style="flex:2;" />
+          </div>
+          <div class="field-row">
+            <span style="min-width:26px; font-size:12px; font-weight:700; color:rgba(0,210,110,.8);">04</span>
+            <input type="text" value="Войдите в сервисы" style="flex:1;" />
+            <input type="text" value="Сессия сохранится — повторный ввод пароля не нужен" style="flex:2;" />
+          </div>
+          <div class="field-row">
+            <span style="min-width:26px; font-size:12px; font-weight:700; color:rgba(0,210,110,.8);">05</span>
+            <input type="text" value="Запускайте несколько профилей одновременно" style="flex:1;" />
+            <input type="text" value="Каждый профиль — отдельное окно" style="flex:2;" />
+          </div>
+        </div>
+      </div>
+
+      <div class="field-row" style="margin-top:20px;">
+        <button class="btn ok" onclick="saveBrowserConfig()">Сохранить</button>
+        <a href="/training#browser" target="_blank" class="btn small" style="text-decoration:none;">↗ Открыть на странице</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast-bar" id="toast"></div>
+
+<script>
+// AUTH
+(function(){
+  try {
+    var auth = JSON.parse(localStorage.getItem('mikAuth') || '{}');
+    if (!auth || auth.isAuthorized !== true) { window.location.replace('/login'); return; }
+    if (auth.role !== 'admin') { window.location.replace('/profile'); return; }
+    var el = document.getElementById('userName');
+    if (el) el.textContent = '👤 ' + (auth.login || 'admin');
+  } catch(e) { window.location.replace('/login'); }
+})();
+
+function logout() {
+  const token = localStorage.getItem('auth_token');
+  fetch('/api/logout', { method:'POST', headers:{'Content-Type':'application/json','x-auth-token':token}, body:JSON.stringify({token}) })
+    .finally(() => { localStorage.clear(); window.location = '/login'; });
+}
+
+// TOAST
+let _tt;
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast-bar show ' + (type==='ok' ? 'ok-toast' : 'err-toast');
+  clearTimeout(_tt);
+  _tt = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// API
+const hdrs = () => ({ 'Content-Type':'application/json', 'x-auth-token': localStorage.getItem('auth_token')||'' });
+async function api(path, opts={}) {
+  const res = await fetch(path, { ...opts, headers: { ...hdrs(), ...(opts.headers||{}) } });
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || res.status); }
+  return res.json();
+}
+function esc(s) { return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
+
+// TABS
+document.querySelectorAll('.tabbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tabpane').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab_'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── USERS ─────────────────────────────────────────────────────────────────────
+async function loadUsers() {
+  const ul = document.getElementById('userList');
+  try {
+    const users = await api('/api/users');
+    ul.innerHTML = users.length ? users.map(u => `
+      <li class="list-item">
+        <span><b>${esc(u.login)}</b><span class="badge ${u.role==='admin'?'accent':'ok'}">${esc(u.role)}</span></span>
+        <div class="list-actions">
+          ${u.login!=='admin' ? `<button class="btn small danger" onclick="delUser(${u.id},'${esc(u.login)}')">Удалить</button>` : '<span class="hint">системный</span>'}
+        </div>
+      </li>`).join('') : '<li class="loading">Пользователей нет</li>';
+  } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
+}
+async function delUser(id, login) {
+  if (!confirm(`Удалить "${login}"?`)) return;
+  try { await api(`/api/users/${id}`, {method:'DELETE'}); toast(`${login} удалён`); loadUsers(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+document.getElementById('btnCreateUser').addEventListener('click', async () => {
+  const login = document.getElementById('newUserLogin').value.trim();
+  const password = document.getElementById('newUserPassword').value;
+  const role = document.getElementById('newUserRole').value;
+  if (!login||!password) { toast('Заполните логин и пароль','err'); return; }
+  if (password.length<6) { toast('Пароль минимум 6 символов','err'); return; }
+  try {
+    await api('/api/users', {method:'POST', body:JSON.stringify({login,password,role})});
+    toast(`Пользователь ${login} создан`);
+    document.getElementById('newUserLogin').value='';
+    document.getElementById('newUserPassword').value='';
+    loadUsers();
+  } catch(e) { toast(e.message,'err'); }
+});
+
+// ── DEPARTMENTS ───────────────────────────────────────────────────────────────
+async function loadDepts() {
+  const ul = document.getElementById('deptList');
+  try {
+    const arr = await api('/api/departments');
+    ul.innerHTML = arr.length ? arr.map((name,i) => `
+      <li class="list-item">
+        <span>${esc(name)}</span>
+        <div class="list-actions"><button class="btn small danger" onclick="delDept('${esc(name)}')">Удалить</button></div>
+      </li>`).join('') : '<li class="loading">Подразделений нет</li>';
+  } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
+}
+async function delDept(name) {
+  try { await api(`/api/departments/${encodeURIComponent(name)}`, {method:'DELETE'}); toast('Удалено'); loadDepts(); }
+  catch(e) { toast(e.message,'err'); }
+}
+document.getElementById('deptAdd').addEventListener('click', async () => {
+  const name = document.getElementById('deptName').value.trim();
+  if (!name) return;
+  try { await api('/api/departments', {method:'POST', body:JSON.stringify({name})}); document.getElementById('deptName').value=''; toast('Добавлено'); loadDepts(); }
+  catch(e) { toast(e.message,'err'); }
+});
+
+// ── CASES ─────────────────────────────────────────────────────────────────────
+async function loadCases() {
+  const ul = document.getElementById('caseList');
+  try {
+    const arr = await api('/api/cases');
+    ul.innerHTML = arr.length ? arr.map(c => `
+      <li class="list-item">
+        <span><b>${esc(c.title||c.id)}</b><span class="badge">${esc(c.id)}</span><span class="badge ${c.maturity==='ready'?'ok':c.maturity==='pilot'?'warn':''}">${esc(c.maturity||'')}</span></span>
+        <div class="list-actions">
+          <button class="btn small" onclick="openCase('${esc(c.id)}')">Изменить</button>
+          <button class="btn small danger" onclick="delCase('${esc(c.id)}')">Удалить</button>
+        </div>
+      </li>`).join('') : '<li class="loading">Кейсов нет — добавьте первый</li>';
+  } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
+}
+// ── STEPS EDITOR ─────────────────────────────────────────────────────────────
+let stepsData = []; // [{title, bullets:[], prompt}]
+
+function renderStepsEditor() {
+  const container = document.getElementById('stepsEditor');
+  if (!container) return;
+  if (!stepsData.length) {
+    container.innerHTML = '<p class="hint" style="padding:8px 0;">Шагов нет — нажмите «+ Добавить шаг»</p>';
+    return;
+  }
+  container.innerHTML = stepsData.map((step, si) => `
+    <div class="step-block" data-step="${si}" style="border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px;margin-bottom:12px;background:rgba(0,0,0,.2);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <b style="font-size:13px;color:var(--muted);">Шаг ${si+1}</b>
+        <div style="display:flex;gap:6px;">
+          ${si > 0 ? `<button class="btn small" onclick="moveStep(${si},-1)">↑</button>` : ''}
+          ${si < stepsData.length-1 ? `<button class="btn small" onclick="moveStep(${si},1)">↓</button>` : ''}
+          <button class="btn small danger" onclick="removeStep(${si})">Удалить</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Название шага</label>
+        <input type="text" value="${esc(step.title||'')}" oninput="stepsData[${si}].title=this.value" placeholder="Шаг 1 — структура и тезисы (ChatGPT)" />
+      </div>
+      <div class="field">
+        <label>Пункты (каждый с новой строки)</label>
+        <textarea style="min-height:70px;" oninput="stepsData[${si}].bullets=this.value.split('\n').map(s=>s.trim()).filter(Boolean)" placeholder="Сформулировать цель&#10;Попросить ИИ предложить структуру&#10;Уточнить формулировки">${esc((step.bullets||[]).join('\n'))}</textarea>
+      </div>
+      <div class="field">
+        <label>Промпт для этого шага</label>
+        <textarea style="min-height:90px;" oninput="stepsData[${si}].prompt=this.value" placeholder="Роль: ...&#10;Цель: ...&#10;Формат: ...">${esc(step.prompt||'')}</textarea>
+      </div>
+    </div>
+  `).join('');
+}
+
+function moveStep(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= stepsData.length) return;
+  [stepsData[idx], stepsData[newIdx]] = [stepsData[newIdx], stepsData[idx]];
+  renderStepsEditor();
+}
+
+function removeStep(idx) {
+  stepsData.splice(idx, 1);
+  renderStepsEditor();
+}
+
+document.getElementById('addStepBtn').addEventListener('click', () => {
+  stepsData.push({ title: '', bullets: [], prompt: '' });
+  renderStepsEditor();
+  // Scroll to new step
+  const blocks = document.querySelectorAll('.step-block');
+  if (blocks.length) blocks[blocks.length-1].scrollIntoView({behavior:'smooth', block:'nearest'});
+});
+
+async function openCase(id) {
+  stepsData = [];
+  document.getElementById('caseForm').style.display='block';
+  document.getElementById('caseFormTitle').textContent = id ? 'Изменить кейс' : 'Новый кейс';
+  ['caseId','caseTitle','caseTaskCategory','caseContext','caseRole','caseWhenToUse','caseResult','caseTools'].forEach(f => document.getElementById(f).value='');
+  document.getElementById('caseMaturity').value='ready';
+  if (id) {
+    try {
+      const arr = await api('/api/cases');
+      const c = arr.find(x=>x.id===id);
+      if (c) {
+        document.getElementById('caseId').value=c.id;
+        document.getElementById('caseTitle').value=c.title||'';
+        document.getElementById('caseTaskCategory').value=c.taskCategory||'';
+        document.getElementById('caseContext').value=c.context||'';
+        document.getElementById('caseRole').value=Array.isArray(c.role)?c.role.join(', '):(c.role||'');
+        document.getElementById('caseMaturity').value=c.maturity||'ready';
+        document.getElementById('caseWhenToUse').value=c.whenToUse||'';
+        document.getElementById('caseResult').value=c.result||'';
+        document.getElementById('caseTools').value=Array.isArray(c.tools)?c.tools.join(', '):(c.tools||'');
+        // Загружаем шаги
+        stepsData = (c.steps||[]).map(s => ({
+          title: s.title||'',
+          bullets: Array.isArray(s.bullets)?s.bullets:[],
+          prompt: s.prompt||''
+        }));
+      }
+    } catch(e) { toast('Ошибка загрузки','err'); }
+  }
+  renderStepsEditor();
+  document.getElementById('caseForm').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+async function delCase(id) {
+  if (!confirm(`Удалить кейс "${id}"?`)) return;
+  try { await api(`/api/cases/${encodeURIComponent(id)}`,{method:'DELETE'}); toast('Кейс удалён'); loadCases(); }
+  catch(e) { toast(e.message,'err'); }
+}
+document.getElementById('caseAdd').addEventListener('click', ()=>openCase(null));
+document.getElementById('caseCancel').addEventListener('click', ()=>{ document.getElementById('caseForm').style.display='none'; });
+document.getElementById('caseSave').addEventListener('click', async () => {
+  const id = document.getElementById('caseId').value.trim().replace(/\s+/g,'_')||'case_new';
+  // Собираем шаги из stepsData (oninput уже обновляет массив)
+  const steps = stepsData.map(s => ({
+    title: s.title||'',
+    bullets: s.bullets||[],
+    prompt: s.prompt||''
+  }));
+  const item = {
+    id,
+    title: document.getElementById('caseTitle').value.trim(),
+    taskCategory: document.getElementById('caseTaskCategory').value.trim(),
+    context: document.getElementById('caseContext').value.trim(),
+    role: document.getElementById('caseRole').value.trim().split(',').map(s=>s.trim()).filter(Boolean),
+    maturity: document.getElementById('caseMaturity').value,
+    whenToUse: document.getElementById('caseWhenToUse').value.trim(),
+    result: document.getElementById('caseResult').value.trim(),
+    tools: document.getElementById('caseTools').value.trim().split(',').map(s=>s.trim()).filter(Boolean),
+    steps
+  };
+  try {
+    await api(`/api/cases/${encodeURIComponent(id)}`,{method:'PUT',body:JSON.stringify(item)});
+    toast('Кейс сохранён');
+    document.getElementById('caseForm').style.display='none';
+    stepsData = [];
+    loadCases();
+  } catch(e) { toast(e.message,'err'); }
+});
+
+// ── PROMPTS ───────────────────────────────────────────────────────────────────
+async function loadPrompts() {
+  const ul = document.getElementById('promptList');
+  try {
+    const arr = await api('/api/prompts');
+    ul.innerHTML = arr.length ? arr.map(p => `
+      <li class="list-item">
+        <span><b>${esc(p.title||p.id)}</b><span class="badge">${esc(p.id)}</span><span class="hint" style="margin-left:8px;">${esc(p.sectionTitle||'')}</span></span>
+        <div class="list-actions">
+          <button class="btn small" onclick="openPrompt('${esc(p.id)}')">Изменить</button>
+          <button class="btn small danger" onclick="delPrompt('${esc(p.id)}')">Удалить</button>
+        </div>
+      </li>`).join('') : '<li class="loading">Промптов нет</li>';
+  } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
+}
+async function openPrompt(id) {
+  document.getElementById('promptForm').style.display='block';
+  document.getElementById('promptFormTitle').textContent = id ? 'Изменить промпт' : 'Новый промпт';
+  ['promptId','promptSectionTitle','promptSectionSubtitle','promptTitle','promptMeta','promptText'].forEach(f=>document.getElementById(f).value='');
+  if (id) {
+    try {
+      const arr = await api('/api/prompts');
+      const p = arr.find(x=>x.id===id);
+      if (p) {
+        document.getElementById('promptId').value=p.id;
+        document.getElementById('promptSectionTitle').value=p.sectionTitle||'';
+        document.getElementById('promptSectionSubtitle').value=p.sectionSubtitle||'';
+        document.getElementById('promptTitle').value=p.title||'';
+        document.getElementById('promptMeta').value=p.meta||'';
+        document.getElementById('promptText').value=p.text||'';
+      }
+    } catch(e) { toast('Ошибка загрузки','err'); }
+  }
+  document.getElementById('promptForm').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+async function delPrompt(id) {
+  if (!confirm(`Удалить промпт "${id}"?`)) return;
+  try { await api(`/api/prompts/${encodeURIComponent(id)}`,{method:'DELETE'}); toast('Промпт удалён'); loadPrompts(); }
+  catch(e) { toast(e.message,'err'); }
+}
+document.getElementById('promptAdd').addEventListener('click', ()=>openPrompt(null));
+document.getElementById('promptCancel').addEventListener('click', ()=>{ document.getElementById('promptForm').style.display='none'; });
+document.getElementById('promptSave').addEventListener('click', async () => {
+  const id = document.getElementById('promptId').value.trim()||'prompt_new';
+  const item = {
+    id, sectionTitle:document.getElementById('promptSectionTitle').value.trim(),
+    sectionSubtitle:document.getElementById('promptSectionSubtitle').value.trim(),
+    title:document.getElementById('promptTitle').value.trim(),
+    meta:document.getElementById('promptMeta').value.trim(),
+    text:document.getElementById('promptText').value.trim()
+  };
+  try { await api(`/api/prompts/${encodeURIComponent(id)}`,{method:'PUT',body:JSON.stringify(item)}); toast('Промпт сохранён'); document.getElementById('promptForm').style.display='none'; loadPrompts(); }
+  catch(e) { toast(e.message,'err'); }
+});
+
+// ── TOOLS ─────────────────────────────────────────────────────────────────────
+async function loadTools() {
+  const ul = document.getElementById('toolList');
+  try {
+    const arr = await api('/api/tools');
+    ul.innerHTML = arr.length ? arr.map(t => `
+      <li class="list-item">
+        <span><b>${esc(t.name||t.id)}</b><span class="badge">${esc(t.id)}</span><span class="badge ${t.official==='ok'?'ok':t.official==='limited'?'warn':'danger'}">${esc(t.official||'')}</span></span>
+        <div class="list-actions">
+          <button class="btn small" onclick="openTool('${esc(t.id)}')">Изменить</button>
+          <button class="btn small danger" onclick="delTool('${esc(t.id)}')">Удалить</button>
+        </div>
+      </li>`).join('') : '<li class="loading">Инструментов нет</li>';
+  } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
+}
+async function openTool(id) {
+  document.getElementById('toolForm').style.display='block';
+  document.getElementById('toolFormTitle').textContent = id ? 'Изменить инструмент' : 'Новый инструмент';
+  ['toolId','toolName','toolTasks','toolDepartments','toolBestFor','toolRisks'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('toolCategory').value='documents';
+  document.getElementById('toolOfficial').value='limited';
+  document.getElementById('toolAccess').value='request';
+  document.getElementById('toolVpn').value='0';
+  if (id) {
+    try {
+      const arr = await api('/api/tools');
+      const t = arr.find(x=>x.id===id);
+      if (t) {
+        document.getElementById('toolId').value=t.id;
+        document.getElementById('toolName').value=t.name||'';
+        document.getElementById('toolCategory').value=t.category||'documents';
+        document.getElementById('toolOfficial').value=t.official||'limited';
+        document.getElementById('toolAccess').value=t.access||'request';
+        document.getElementById('toolVpn').value=t.vpn?'1':'0';
+        document.getElementById('toolTasks').value=Array.isArray(t.tasks)?t.tasks.join(', '):'';
+        document.getElementById('toolDepartments').value=Array.isArray(t.departments)?t.departments.join(', '):'';
+        document.getElementById('toolBestFor').value=Array.isArray(t.bestFor)?t.bestFor.join(', '):'';
+        document.getElementById('toolRisks').value=t.risks||'';
+      }
+    } catch(e) { toast('Ошибка загрузки','err'); }
+  }
+  document.getElementById('toolForm').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+async function delTool(id) {
+  if (!confirm(`Удалить инструмент "${id}"?`)) return;
+  try { await api(`/api/tools/${encodeURIComponent(id)}`,{method:'DELETE'}); toast('Удалено'); loadTools(); }
+  catch(e) { toast(e.message,'err'); }
+}
+document.getElementById('toolAdd').addEventListener('click', ()=>openTool(null));
+document.getElementById('toolCancel').addEventListener('click', ()=>{ document.getElementById('toolForm').style.display='none'; });
+document.getElementById('toolSave').addEventListener('click', async () => {
+  const id = document.getElementById('toolId').value.trim()||'tool_new';
+  const item = {
+    id, name:document.getElementById('toolName').value.trim(),
+    category:document.getElementById('toolCategory').value,
+    official:document.getElementById('toolOfficial').value,
+    access:document.getElementById('toolAccess').value,
+    vpn:document.getElementById('toolVpn').value==='1',
+    tasks:document.getElementById('toolTasks').value.trim().split(',').map(s=>s.trim()).filter(Boolean),
+    departments:document.getElementById('toolDepartments').value.trim().split(',').map(s=>s.trim()).filter(Boolean),
+    bestFor:document.getElementById('toolBestFor').value.trim().split(',').map(s=>s.trim()).filter(Boolean),
+    risks:document.getElementById('toolRisks').value.trim(), onboarding:[]
+  };
+  try { await api(`/api/tools/${encodeURIComponent(id)}`,{method:'PUT',body:JSON.stringify(item)}); toast('Сохранено'); document.getElementById('toolForm').style.display='none'; loadTools(); }
+  catch(e) { toast(e.message,'err'); }
+});
+
+// ── TASKS ─────────────────────────────────────────────────────────────────────
+async function loadTasks() {
+  const ul = document.getElementById('taskList');
+  try {
+    const arr = await api('/api/tasks');
+    ul.innerHTML = arr.length ? arr.map(t => `
+      <li class="list-item">
+        <span><b>${esc(t.name||t.id)}</b><span class="badge">${esc(t.id)}</span><span class="hint" style="margin-left:8px;">вес: ${t.weight??1}</span></span>
+        <div class="list-actions">
+          <button class="btn small" onclick="openTask('${esc(t.id)}')">Изменить</button>
+          <button class="btn small danger" onclick="delTask('${esc(t.id)}')">Удалить</button>
+        </div>
+      </li>`).join('') : '<li class="loading">Задач нет</li>';
+  } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
+}
+async function openTask(id) {
+  document.getElementById('taskForm').style.display='block';
+  document.getElementById('taskFormTitle').textContent = id ? 'Изменить задачу' : 'Новая задача';
+  ['taskId','taskName','taskTools'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('taskWeight').value=1;
+  if (id) {
+    try {
+      const arr = await api('/api/tasks');
+      const t = arr.find(x=>x.id===id);
+      if (t) { document.getElementById('taskId').value=t.id; document.getElementById('taskName').value=t.name||''; document.getElementById('taskTools').value=t.tools||''; document.getElementById('taskWeight').value=t.weight??1; }
+    } catch(e) { toast('Ошибка загрузки','err'); }
+  }
+  document.getElementById('taskForm').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+async function delTask(id) {
+  if (!confirm(`Удалить задачу "${id}"?`)) return;
+  try { await api(`/api/tasks/${encodeURIComponent(id)}`,{method:'DELETE'}); toast('Удалено'); loadTasks(); }
+  catch(e) { toast(e.message,'err'); }
+}
+document.getElementById('taskAdd').addEventListener('click', ()=>openTask(null));
+document.getElementById('taskCancel').addEventListener('click', ()=>{ document.getElementById('taskForm').style.display='none'; });
+document.getElementById('taskSave').addEventListener('click', async () => {
+  const id = document.getElementById('taskId').value.trim()||'t_new';
+  const item = { id, name:document.getElementById('taskName').value.trim(), tools:document.getElementById('taskTools').value.trim(), weight:parseFloat(document.getElementById('taskWeight').value)||1 };
+  try { await api(`/api/tasks/${encodeURIComponent(id)}`,{method:'PUT',body:JSON.stringify(item)}); toast('Сохранено'); document.getElementById('taskForm').style.display='none'; loadTasks(); }
+  catch(e) { toast(e.message,'err'); }
+});
+
+// INIT
+document.addEventListener('DOMContentLoaded', () => {
+  loadUsers(); loadDepts(); loadCases(); loadPrompts(); loadTools(); loadTasks();
+});
+
+// ── BROWSER CONFIG ────────────────────────────────────────────────────────────
+async function saveBrowserConfig() {
+  const payload = {
+    visible:  document.getElementById('brwVisible')?.value,
+    download: document.getElementById('brwDownload')?.value,
+    register: document.getElementById('brwRegister')?.value,
+    title:    document.getElementById('brwTitle')?.value,
+    subtitle: document.getElementById('brwSubtitle')?.value,
+    steps: Array.from(document.querySelectorAll('#brwSteps .field-row')).map(row => {
+      const inputs = row.querySelectorAll('input[type=text]');
+      return { label: inputs[0]?.value, hint: inputs[1]?.value };
+    })
+  };
+  try {
+    const res = await api('/api/browser-config', { method:'POST', body: JSON.stringify(payload) });
+    toast('Настройки браузера сохранены');
+  } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
+}
+
+</script>
+</body>
+</html>

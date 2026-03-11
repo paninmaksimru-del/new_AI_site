@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Чат с ИИ — Фонд МИК</title>
+  <style>
+    :root {
+      --bg: #070A10;
+      --panel: rgba(255,255,255,.06);
+      --stroke: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --muted-2: rgba(255,255,255,.56);
+      --ok: rgba(38,210,152,.95);
+      --warn: rgba(255,193,7,.95);
+      --pilot: rgba(120,140,255,.95);
+      --danger: rgba(255,96,96,.95);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --blur: blur(14px);
+      --pad: clamp(16px,2.4vw,26px);
+      --header-h: 68px;
+      --focus: 0 0 0 3px rgba(120,140,255,.35);
+      --sb-w: 300px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;
+      background:
+        radial-gradient(1200px 700px at 15% 85%, rgba(0,90,55,.9), transparent 58%),
+        radial-gradient(900px 600px at 85% 15%, rgba(0,70,45,.7), transparent 55%),
+        radial-gradient(700px 500px at 50% 50%, rgba(0,50,35,.4), transparent 65%),
+        linear-gradient(160deg, #021510 0%, #031a12 40%, #042018 70%, #021408 100%);
+      color: var(--text);
+      line-height: 1.45;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: inherit; text-decoration: none; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    :focus-visible { outline: none; box-shadow: var(--focus); border-radius: 10px; }
+
+    /* PROGRESS */
+    .progress { position: fixed; top: 0; left: 0; height: 3px; width: 100%; z-index: 1000; background: rgba(255,255,255,.05); pointer-events: none; }
+    .progress > i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, rgba(0,180,100,.95), rgba(0,230,130,.95)); transition: width .08s linear; }
+
+    /* HEADER */
+    header {
+      flex-shrink: 0; height: var(--header-h);
+      backdrop-filter: var(--blur); background: rgba(2,18,12,.88);
+      border-bottom: 1px solid rgba(255,255,255,.08); z-index: 900;
+    }
+    .topbar { height: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--pad); gap: 12px; }
+    .brand { display: flex; align-items: center; }
+    .brand .logo { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; background: transparent !important; box-shadow: none !important; }
+    nav { display: flex; align-items: center; gap: 4px; }
+    .navlink { padding: 9px 11px; border-radius: 11px; color: rgba(255,255,255,.75); border: 1px solid transparent; font-size: 14px; white-space: nowrap; transition: background .14s, color .14s, border-color .14s; }
+    .navlink:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1); color: rgba(255,255,255,.92); }
+    .navlink.active { background: rgba(0,180,100,.14); border-color: rgba(0,200,110,.24); color: #fff; }
+    .profile-btn { margin-left: 8px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; border-radius: 14px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.05); cursor: pointer; min-height: 38px; font-size: 14px; }
+    .burger { display: none; width: 42px; height: 42px; border-radius: 13px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); align-items: center; justify-content: center; cursor: pointer; }
+    .burger i { width: 18px; height: 2px; background: rgba(255,255,255,.86); position: relative; display: block; border-radius: 10px; }
+    .burger i:before, .burger i:after { content: ""; position: absolute; left: 0; width: 18px; height: 2px; background: rgba(255,255,255,.86); border-radius: 10px; }
+    .burger i:before { top: -6px; } .burger i:after { top: 6px; }
+
+    /* LAYOUT */
+    .page-body { display: flex; flex: 1; min-height: 0; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--sb-w); flex-shrink: 0; background: rgba(2,16,10,.97); border-right: 1px solid rgba(255,255,255,.08); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-header { padding: 12px 10px 10px; border-bottom: 1px solid rgba(255,255,255,.07); flex-shrink: 0; }
+    .new-chat-btn { width: 100%; padding: 9px 13px; border-radius: 11px; border: 1px solid rgba(0,200,110,.28); background: rgba(0,180,100,.1); cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: rgba(255,255,255,.88); transition: background .13s, border-color .13s; }
+    .new-chat-btn:hover { background: rgba(0,180,100,.18); border-color: rgba(0,200,110,.45); }
+    .sb-scroll { flex: 1; overflow-y: auto; padding: 6px 0; }
+    .sb-scroll::-webkit-scrollbar { width: 4px; }
+    .sb-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 4px; }
+
+    /* Projects */
+    .project-group { margin-bottom: 2px; }
+    .project-head { display: flex; align-items: center; justify-content: space-between; padding: 5px 12px 3px; cursor: pointer; user-select: none; }
+    .project-head-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .project-arrow { font-size: 10px; color: rgba(0,200,110,.7); transition: transform .18s; flex-shrink: 0; }
+    .project-group.open .project-arrow { transform: rotate(90deg); }
+    .project-name { font-size: 11px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: rgba(0,200,110,.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .project-badge { font-size: 10px; padding: 1px 5px; border-radius: 10px; background: rgba(0,170,90,.14); color: rgba(0,200,110,.8); flex-shrink: 0; }
+    .project-add-btn { width: 20px; height: 20px; border-radius: 5px; border: none; background: transparent; color: rgba(255,255,255,.3); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: background .11s, color .11s; flex-shrink: 0; }
+    .project-add-btn:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.8); }
+    .project-chats { display: none; }
+    .project-group.open .project-chats { display: block; }
+
+    /* Chat items */
+    .chat-item { display: flex; align-items: center; gap: 7px; padding: 7px 10px 7px 20px; cursor: pointer; color: rgba(255,255,255,.62); font-size: 13px; transition: background .11s, color .11s; }
+    .chat-item:hover { background: rgba(0,170,90,.09); color: rgba(255,255,255,.88); }
+    .chat-item.active { background: rgba(0,170,90,.15); color: #fff; border-left: 2px solid rgba(0,200,110,.55); }
+    .chat-item-icon { font-size: 13px; flex-shrink: 0; opacity: .6; }
+    .chat-item-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chat-item-model { font-size: 10px; padding: 1px 5px; border-radius: 5px; background: rgba(255,255,255,.07); color: var(--muted-2); flex-shrink: 0; }
+    .chat-item-menu { opacity: 0; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 4px; border: none; background: transparent; color: var(--muted-2); cursor: pointer; font-size: 14px; transition: background .1s, opacity .11s; }
+    .chat-item:hover .chat-item-menu { opacity: 1; }
+    .chat-item-menu:hover { background: rgba(255,255,255,.1); color: #fff; }
+
+    .sb-section-label { padding: 8px 12px 3px; font-size: 10.5px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: rgba(255,255,255,.28); }
+    .sb-divider { height: 1px; background: rgba(255,255,255,.07); margin: 5px 10px; }
+    .sb-footer { border-top: 1px solid rgba(255,255,255,.07); padding: 6px 0; flex-shrink: 0; }
+    .sb-footer-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; color: rgba(255,255,255,.38); font-size: 13px; cursor: pointer; transition: background .11s, color .11s; }
+    .sb-footer-item:hover { background: rgba(255,255,255,.04); color: rgba(255,255,255,.72); }
+
+    /* MAIN */
+    .main-content { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .chat-root { flex: 1; display: flex; flex-direction: column; min-height: 0; max-width: 860px; width: 100%; margin: 0 auto; padding: 0 var(--pad); }
+
+    /* MODEL BAR */
+    .chat-topbar { flex-shrink: 0; padding: 11px 0 9px; border-bottom: 1px solid rgba(255,255,255,.07); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .model-selector-wrap { position: relative; }
+    .model-selector-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px; border-radius: 13px; border: 1px solid rgba(255,255,255,.13); background: rgba(255,255,255,.06); cursor: pointer; font-size: 13.5px; color: rgba(255,255,255,.88); transition: background .12s, border-color .12s; white-space: nowrap; }
+    .model-selector-btn:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); }
+    .ms-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .ms-arrow { font-size: 10px; color: var(--muted-2); margin-left: 2px; }
+
+    /* Dropdown */
+    .model-dropdown { display: none; position: absolute; top: calc(100% + 8px); left: 0; width: 340px; z-index: 800; background: rgba(5,20,12,.98); border: 1px solid rgba(255,255,255,.12); border-radius: 15px; box-shadow: 0 16px 50px rgba(0,0,0,.65); backdrop-filter: blur(18px); overflow: hidden; max-height: 70vh; overflow-y: auto; }
+    .model-dropdown::-webkit-scrollbar { width: 4px; }
+    .model-dropdown::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 4px; }
+    .model-dropdown.open { display: block; animation: dropIn .15s ease; }
+    @keyframes dropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    .md-section { padding: 8px 0 2px; }
+    .md-section-title { padding: 0 13px 5px; font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: rgba(255,255,255,.28); }
+    .md-option { display: flex; align-items: center; gap: 10px; padding: 8px 13px; cursor: pointer; transition: background .11s; }
+    .md-option:hover { background: rgba(0,170,90,.1); }
+    .md-option.selected { background: rgba(0,170,90,.13); }
+    .md-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot-green { background: #26d298; } .dot-blue { background: #789cff; } .dot-amber { background: #ffc107; }
+    .dot-red { background: #ff6b6b; } .dot-purple { background: #c084fc; } .dot-cyan { background: #22d3ee; }
+    .md-info { flex: 1; min-width: 0; }
+    .md-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .md-desc { font-size: 11px; color: var(--muted-2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .md-tag { font-size: 10px; padding: 1px 6px; border-radius: 5px; flex-shrink: 0; background: rgba(255,255,255,.07); color: var(--muted-2); white-space: nowrap; }
+    .md-tag.new { background: rgba(0,180,100,.13); color: rgba(0,220,120,.85); }
+    .md-tag.fast { background: rgba(255,193,7,.1); color: rgba(255,210,60,.85); }
+    .md-separator { height: 1px; background: rgba(255,255,255,.07); margin: 3px 0; }
+
+    .chat-topbar-right { display: flex; align-items: center; gap: 8px; }
+    .history-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 20px; border: 1px dashed rgba(255,255,255,.17); background: transparent; font-size: 12px; color: rgba(255,255,255,.5); cursor: pointer; transition: all .12s; }
+    .history-btn:hover { background: rgba(255,255,255,.05); color: rgba(255,255,255,.78); border-color: rgba(255,255,255,.27); }
+
+    /* MESSAGES */
+    .messages-area { flex: 1; overflow-y: auto; padding: 22px 0 14px; display: flex; flex-direction: column; gap: 18px; min-height: 0; }
+    .messages-area::-webkit-scrollbar { width: 5px; }
+    .messages-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 5px; }
+
+    /* Empty state */
+    .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 28px 20px; gap: 9px; }
+    .empty-icon { width: 60px; height: 60px; border-radius: 18px; background: radial-gradient(circle at 40% 30%, rgba(0,180,100,.26), rgba(0,80,50,.1)); border: 1px solid rgba(0,200,110,.16); display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 2px; box-shadow: 0 8px 26px rgba(0,0,0,.32); }
+    .empty-title { font-size: clamp(20px, 2.6vw, 28px); font-weight: 700; margin: 0; background: linear-gradient(135deg, #fff 0%, rgba(0,220,130,.82) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .empty-desc { color: var(--muted); font-size: 14px; margin: 0; max-width: 48ch; }
+    .model-info-card { margin-top: 2px; padding: 10px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.04); font-size: 13px; color: var(--muted); max-width: 48ch; line-height: 1.6; }
+    .model-info-card strong { color: var(--text); }
+    .suggestions { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; margin-top: 16px; max-width: 600px; }
+    .suggestion-chip { padding: 7px 13px; border-radius: 18px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); font-size: 12.5px; color: rgba(255,255,255,.72); cursor: pointer; transition: all .12s; }
+    .suggestion-chip:hover { background: rgba(0,180,100,.11); border-color: rgba(0,200,110,.26); color: #fff; transform: translateY(-1px); }
+
+    /* Bubbles */
+    .msg { display: flex; gap: 10px; align-items: flex-start; animation: fadeUp .17s ease; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    .msg.user { flex-direction: row-reverse; }
+    .msg-avatar { width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .msg.assistant .msg-avatar { background: rgba(0,170,90,.12); border: 1px solid rgba(0,200,110,.16); font-size: 14px; }
+    .msg.user .msg-avatar { background: rgba(120,140,255,.12); border: 1px solid rgba(120,140,255,.16); font-size: 12px; }
+    .msg-body { display: flex; flex-direction: column; gap: 3px; max-width: min(640px, 84%); }
+    .msg.user .msg-body { align-items: flex-end; }
+    .msg-label { font-size: 11px; color: var(--muted-2); padding: 0 3px; }
+    .msg-bubble { padding: 11px 14px; border-radius: 15px; font-size: 14.5px; line-height: 1.65; }
+    .msg.assistant .msg-bubble { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-top-left-radius: 3px; }
+    .msg.user .msg-bubble { background: rgba(0,160,85,.16); border: 1px solid rgba(0,200,110,.19); border-top-right-radius: 3px; }
+    .typing-dots { display: flex; gap: 5px; align-items: center; padding: 2px 0; }
+    .typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: rgba(0,210,120,.65); animation: bounce 1.1s infinite ease-in-out; }
+    .typing-dots span:nth-child(2) { animation-delay: .18s; } .typing-dots span:nth-child(3) { animation-delay: .36s; }
+    @keyframes bounce { 0%,80%,100% { transform: scale(.7); opacity: .5; } 40% { transform: scale(1); opacity: 1; } }
+    .msg-actions { display: flex; gap: 5px; opacity: 0; transition: opacity .13s; margin-top: 2px; }
+    .msg:hover .msg-actions { opacity: 1; }
+    .msg-action-btn { padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); font-size: 11.5px; color: var(--muted); cursor: pointer; transition: all .1s; }
+    .msg-action-btn:hover { background: rgba(255,255,255,.09); color: var(--text); }
+
+    /* INPUT */
+    .input-zone { padding: 10px 0 16px; flex-shrink: 0; border-top: 1px solid rgba(255,255,255,.07); }
+    .input-wrap { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 17px; backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,.28); transition: border-color .13s, box-shadow .13s; }
+    .input-wrap:focus-within { border-color: rgba(0,200,110,.3); box-shadow: 0 4px 26px rgba(0,0,0,.35), 0 0 0 3px rgba(0,180,100,.06); }
+    .input-inner { display: flex; align-items: flex-end; gap: 6px; padding: 9px 8px 9px 14px; }
+    #userInput { flex: 1; background: transparent; border: none; outline: none; resize: none; font-size: 15px; color: var(--text); line-height: 1.5; max-height: 180px; min-height: 26px; padding: 4px 0; scrollbar-width: thin; }
+    #userInput::placeholder { color: var(--muted-2); }
+    .input-tools { display: flex; align-items: center; gap: 3px; padding-bottom: 1px; }
+    .tool-btn { width: 34px; height: 34px; border-radius: 9px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.38); font-size: 17px; transition: background .1s, color .1s; }
+    .tool-btn:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.78); }
+    .send-btn { width: 35px; height: 35px; border-radius: 10px; border: none; background: linear-gradient(135deg, rgba(0,175,95,.9), rgba(0,225,135,.7)); cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 15px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,175,95,.3); transition: transform .1s, opacity .1s, box-shadow .1s; }
+    .send-btn:hover { transform: scale(1.07); box-shadow: 0 6px 16px rgba(0,175,95,.45); }
+    .send-btn:disabled { opacity: .28; cursor: default; transform: none; box-shadow: none; }
+    .input-footer { display: flex; align-items: center; justify-content: space-between; padding: 2px 12px 7px; font-size: 11px; color: var(--muted-2); }
+    .input-formats { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
+    .fmt-tag { padding: 1px 5px; border-radius: 5px; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.04); font-size: 10px; }
+
+    /* File pills */
+    .file-preview-bar { display: none; flex-wrap: wrap; gap: 6px; padding: 7px 11px 0; }
+    .file-preview-bar.has-files { display: flex; }
+    .file-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px 4px 7px; border-radius: 8px; border: 1px solid rgba(255,255,255,.11); background: rgba(255,255,255,.07); font-size: 12px; max-width: 180px; }
+    .file-pill-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .file-pill-rm { cursor: pointer; color: var(--muted-2); font-size: 13px; line-height: 1; transition: color .1s; }
+    .file-pill-rm:hover { color: var(--danger); }
+    #fileInput { display: none; }
+
+    /* TOAST */
+    .toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(30px); opacity: 0; pointer-events: none; z-index: 2000; background: rgba(6,16,10,.97); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: 9px 16px; color: rgba(255,255,255,.88); box-shadow: 0 14px 44px rgba(0,0,0,.42); transition: opacity .15s, transform .15s; display: flex; align-items: center; gap: 7px; font-size: 13px; white-space: nowrap; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* CONTEXT MENU */
+    .ctx-menu { display: none; position: fixed; z-index: 1500; background: rgba(5,20,12,.98); border: 1px solid rgba(255,255,255,.12); border-radius: 11px; box-shadow: 0 12px 38px rgba(0,0,0,.5); padding: 5px; min-width: 155px; }
+    .ctx-menu.open { display: block; animation: dropIn .12s ease; }
+    .ctx-item { display: flex; align-items: center; gap: 8px; padding: 8px 11px; border-radius: 7px; font-size: 13px; cursor: pointer; color: rgba(255,255,255,.75); transition: background .1s; }
+    .ctx-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+    .ctx-item.danger { color: rgba(255,100,100,.8); }
+    .ctx-item.danger:hover { background: rgba(255,80,80,.09); }
+
+    /* MODAL */
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 1200; background: rgba(0,0,0,.52); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: rgba(5,20,12,.99); border: 1px solid rgba(255,255,255,.12); border-radius: 17px; padding: 22px; width: 370px; max-width: 92vw; box-shadow: 0 18px 56px rgba(0,0,0,.58); animation: dropIn .17s ease; }
+    .modal h3 { margin: 0 0 15px; font-size: 16px; }
+    .modal-input { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.13); background: rgba(255,255,255,.07); font-size: 14px; color: var(--text); outline: none; transition: border-color .12s; }
+    .modal-input:focus { border-color: rgba(0,200,110,.32); }
+    .modal-actions { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
+    .btn-sec { padding: 8px 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); font-size: 13px; cursor: pointer; transition: background .11s; }
+    .btn-sec:hover { background: rgba(255,255,255,.1); }
+    .btn-pri { padding: 8px 17px; border-radius: 10px; border: 1px solid rgba(0,200,110,.28); background: rgba(0,180,100,.16); font-size: 13px; color: rgba(255,255,255,.9); cursor: pointer; transition: background .11s; }
+    .btn-pri:hover { background: rgba(0,180,100,.26); }
+
+    .mobile-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: rgba(2,18,12,.98);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      padding: 10px var(--pad);
+      flex-direction: column;
+      gap: 4px;
+      z-index: 899;
+    }
+    .mobile-menu .navlink, .mobile-menu .profile-btn { display: block; width: 100%; padding: 10px 12px; border-radius: 11px; }
+    /* MOBILE */
+    @media (max-width: 820px) {
+      .sidebar { display: none; }
+      nav { display: none; }
+      .burger { display: flex; }
+      .chat-root { padding: 0 14px; }
+      .mobile-menu.show { display: flex; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="progress"><i id="progressBar"></i></div>
+
+<!-- HEADER -->
+<header>
+  <div class="topbar">
+    <div class="brand">
+      <a href="/" class="logo">
+        <img src="data:image/png;base64,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" alt="МИК" style="width:44px;height:44px;object-fit:contain;filter:invert(1);">
+      </a>
+    </div>
+    <nav aria-label="Основная навигация">
+      <a href="/" class="navlink">Витрина</a>
+      <a href="/training" class="navlink">Обучение</a>
+      <a href="/cases" class="navlink">Кейсы</a>
+      <a href="/chat.html" class="navlink active">Чат с ИИ</a>
+      <a href="/dashboard" class="navlink">Статистика</a>
+      <a href="/cases#feedback" class="navlink">Обратная связь</a>
+      <a class="profile-btn" href="/profile" id="profileBtn"><span>👤</span><span>Личный кабинет</span></a>
+    </nav>
+    <button class="burger" id="burgerBtn" aria-label="Меню" type="button"><i></i></button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню" role="dialog" style="display:none;">
+    <a class="navlink" href="/">Витрина</a>
+    <a class="navlink" href="/training">Обучение</a>
+    <a class="navlink" href="/cases">Кейсы</a>
+    <a class="navlink active" href="/chat.html">Чат с ИИ</a>
+    <a class="navlink" href="/dashboard">Статистика</a>
+    <a class="navlink" href="/cases#feedback">Обратная связь</a>
+    <a class="profile-btn" href="/profile">👤 Личный кабинет</a>
+  </div>
+</header>
+
+<div class="page-body">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-header">
+      <button class="new-chat-btn" id="newChatBtn" type="button">
+        <span>＋</span><span>Новый чат</span>
+      </button>
+    </div>
+    <div class="sb-scroll" id="sbScroll"></div>
+    <div class="sb-footer">
+      <div class="sb-footer-item" id="addProjectBtn">📁 Новый проект</div>
+      <a href="/" class="sb-footer-item">🧰 Все инструменты</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="chat-root">
+
+      <!-- Model bar -->
+      <div class="chat-topbar">
+        <div class="model-selector-wrap" id="modelSelectorWrap">
+          <button class="model-selector-btn" id="modelSelectorBtn" type="button">
+            <span class="ms-dot dot-green" id="msDot"></span>
+            <span id="msLabel">GPT-4o mini</span>
+            <span class="ms-arrow">▾</span>
+          </button>
+          <div class="model-dropdown" id="modelDropdown">
+
+            <div class="md-section">
+              <div class="md-section-title">OpenAI</div>
+              <div class="md-option" data-model="gpt-4o" data-dot="dot-green" data-label="GPT-4o"><span class="md-dot dot-green"></span><div class="md-info"><div class="md-name">GPT-4o</div><div class="md-desc">Мощная мультимодальная модель</div></div><span class="md-tag">Изображения</span></div>
+              <div class="md-option selected" data-model="gpt-4o-mini" data-dot="dot-green" data-label="GPT-4o mini"><span class="md-dot dot-green"></span><div class="md-info"><div class="md-name">GPT-4o mini</div><div class="md-desc">Быстрый и экономичный</div></div><span class="md-tag fast">Быстрый</span></div>
+              <div class="md-option" data-model="o1-mini" data-dot="dot-green" data-label="o1 mini"><span class="md-dot dot-green"></span><div class="md-info"><div class="md-name">o1 mini</div><div class="md-desc">Рассуждения, математика, код</div></div><span class="md-tag">Reasoning</span></div>
+            </div>
+
+            <div class="md-separator"></div>
+
+            <div class="md-section">
+              <div class="md-section-title">Anthropic Claude</div>
+              <div class="md-option" data-model="claude-opus-4" data-dot="dot-purple" data-label="Claude Opus 4"><span class="md-dot dot-purple"></span><div class="md-info"><div class="md-name">Claude Opus 4</div><div class="md-desc">Самая мощная модель Claude</div></div><span class="md-tag new">Новый</span></div>
+              <div class="md-option" data-model="claude-sonnet-4" data-dot="dot-purple" data-label="Claude Sonnet 4"><span class="md-dot dot-purple"></span><div class="md-info"><div class="md-name">Claude Sonnet 4</div><div class="md-desc">Баланс скорости и качества</div></div><span class="md-tag fast">Быстрый</span></div>
+              <div class="md-option" data-model="claude-haiku" data-dot="dot-purple" data-label="Claude Haiku 4.5"><span class="md-dot dot-purple"></span><div class="md-info"><div class="md-name">Claude Haiku 4.5</div><div class="md-desc">Лёгкий и очень быстрый</div></div><span class="md-tag fast">Быстрый</span></div>
+            </div>
+
+            <div class="md-separator"></div>
+
+            <div class="md-section">
+              <div class="md-section-title">Российские модели</div>
+              <div class="md-option" data-model="yandexgpt" data-dot="dot-amber" data-label="YandexGPT 5"><span class="md-dot dot-amber"></span><div class="md-info"><div class="md-name">YandexGPT 5</div><div class="md-desc">Интеграция с экосистемой Яндекс</div></div><span class="md-tag">RU</span></div>
+              <div class="md-option" data-model="gigachat" data-dot="dot-blue" data-label="GigaChat Max"><span class="md-dot dot-blue"></span><div class="md-info"><div class="md-name">GigaChat Max</div><div class="md-desc">Деловая переписка и документы</div></div><span class="md-tag">RU</span></div>
+            </div>
+
+            <div class="md-separator"></div>
+
+            <div class="md-section">
+              <div class="md-section-title">Другие</div>
+              <div class="md-option" data-model="mistral-large" data-dot="dot-cyan" data-label="Mistral Large"><span class="md-dot dot-cyan"></span><div class="md-info"><div class="md-name">Mistral Large</div><div class="md-desc">Европейская модель, код и анализ</div></div><span class="md-tag">Изображения</span></div>
+              <div class="md-option" data-model="mistral-small" data-dot="dot-cyan" data-label="Mistral Small"><span class="md-dot dot-cyan"></span><div class="md-info"><div class="md-name">Mistral Small</div><div class="md-desc">Быстрый и лёгкий</div></div><span class="md-tag fast">Быстрый</span></div>
+              <div class="md-option" data-model="gemini-pro" data-dot="dot-red" data-label="Gemini 2.5 Pro"><span class="md-dot dot-red"></span><div class="md-info"><div class="md-name">Gemini 2.5 Pro</div><div class="md-desc">Google, большой контекст</div></div><span class="md-tag new">Новый</span></div>
+            </div>
+
+          </div>
+        </div>
+        <div class="chat-topbar-right">
+          <button class="history-btn" id="historyBtn" type="button">🕐 История</button>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="messages-area" id="messagesArea">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">✦</div>
+          <h1 class="empty-title">Чат с ИИ</h1>
+          <p class="empty-desc" id="modelDesc">Выберите модель выше и задайте любой вопрос.</p>
+          <div class="model-info-card" id="modelInfoCard"><strong>GPT-4o mini</strong> — быстрый и экономичный помощник от OpenAI. Хорошо справляется с текстом, анализом и кодом.</div>
+          <div class="suggestions">
+            <button class="suggestion-chip" type="button">Сколько районов входит в состав города Москвы?</button>
+            <button class="suggestion-chip" type="button">Какие фестивали ежегодно проводятся в столице?</button>
+            <button class="suggestion-chip" type="button">Какие виды транспорта работают круглосуточно в Москве?</button>
+            <button class="suggestion-chip" type="button">Чем отличаются модели ИИ?</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="input-zone">
+        <div class="input-wrap">
+          <div class="file-preview-bar" id="filePreviewBar"></div>
+          <div class="input-inner">
+            <textarea id="userInput" rows="1" placeholder="Что вас интересует?"></textarea>
+            <div class="input-tools">
+              <button class="tool-btn" type="button" id="attachBtn" title="Прикрепить изображение">📎</button>
+              <button class="send-btn" type="button" id="sendBtn" disabled>➤</button>
+            </div>
+          </div>
+          <div class="input-footer">
+            <div class="input-formats">Изображения:&nbsp;<span class="fmt-tag">GIF</span><span class="fmt-tag">JPEG</span><span class="fmt-tag">PNG</span><span class="fmt-tag">WEBP</span></div>
+            <span id="charCount"></span>
+          </div>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" multiple>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Context menu -->
+<div class="ctx-menu" id="ctxMenu">
+  <div class="ctx-item" id="ctxRename">✏️ Переименовать</div>
+  <div class="ctx-item" id="ctxMove">📁 В проект</div>
+  <div class="ctx-item danger" id="ctxDelete">🗑 Удалить</div>
+</div>
+
+<!-- New project modal -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal">
+    <h3>Новый проект</h3>
+    <input class="modal-input" id="projectNameInput" type="text" placeholder="Название проекта" maxlength="50">
+    <div class="modal-actions">
+      <button class="btn-sec" id="projectCancelBtn" type="button">Отмена</button>
+      <button class="btn-pri" id="projectCreateBtn" type="button">Создать</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────
+// In-memory + localStorage stub.
+// TODO: replace saveState/loadState with real API calls when DB is ready.
+const DEFAULT_PROJECT = '__default__';
+
+let state = {
+  model: 'gpt-4o-mini', modelLabel: 'GPT-4o mini', modelDot: 'dot-green',
+  messages: [], pendingFiles: [], isLoading: false, activeChatId: null,
+  projects: [{ id: DEFAULT_PROJECT, name: null, open: true }],
+  chats: [],
+};
+
+function saveState() {
+  try { localStorage.setItem('mik_chat_v2', JSON.stringify({ projects: state.projects, chats: state.chats })); } catch(_) {}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem('mik_chat_v2');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s.projects) state.projects = s.projects;
+    if (s.chats) state.chats = s.chats;
+  } catch(_) {}
+}
+
+// ── MODEL META ─────────────────────────────────────────────
+const MODEL_META = {
+  'gpt-4o':         { desc: 'GPT-4o — мощная мультимодальная модель OpenAI. Поддерживает изображения и длинный контекст.', info: '<strong>GPT-4o</strong> — лучший выбор для сложных задач, анализа документов и работы с изображениями.' },
+  'gpt-4o-mini':    { desc: 'GPT-4o mini — быстрый и экономичный ассистент OpenAI для ежедневных задач.', info: '<strong>GPT-4o mini</strong> — быстрый и экономичный. Хорошо справляется с текстом, анализом и кодом.' },
+  'o1-mini':        { desc: 'o1 mini — модель OpenAI с расширенными возможностями рассуждения и решения задач.', info: '<strong>o1 mini</strong> — специализируется на логике, математике и сложных задачах программирования.' },
+  'claude-opus-4':  { desc: 'Claude Opus 4 — самая мощная модель Anthropic с глубоким пониманием контекста.', info: '<strong>Claude Opus 4</strong> — топ модель Anthropic для сложного анализа и написания текстов.' },
+  'claude-sonnet-4':{ desc: 'Claude Sonnet 4 — баланс скорости и качества от Anthropic.', info: '<strong>Claude Sonnet 4</strong> — быстрая и умная модель для большинства рабочих задач.' },
+  'claude-haiku':   { desc: 'Claude Haiku 4.5 — самая быстрая и лёгкая модель Anthropic.', info: '<strong>Claude Haiku 4.5</strong> — максимальная скорость для простых задач.' },
+  'yandexgpt':      { desc: 'YandexGPT 5 — российская модель, хорошо знает российские реалии и сервисы Яндекс.', info: '<strong>YandexGPT 5</strong> — деловая переписка, русскоязычные тексты, актуальная информация.' },
+  'gigachat':       { desc: 'GigaChat Max — языковая модель Сбербанка, оптимизирована под деловые документы.', info: '<strong>GigaChat Max</strong> — юридические тексты, деловые письма, российская документация.' },
+  'mistral-large':  { desc: 'Mistral Large — европейская модель Mistral AI. Сильна в коде и аналитике.', info: '<strong>Mistral Large</strong> — код, анализ данных, изображения. Обучена до 2025 года.' },
+  'mistral-small':  { desc: 'Mistral Small — быстрая лёгкая модель Mistral AI для ежедневных задач.', info: '<strong>Mistral Small</strong> — быстрый помощник для простых запросов.' },
+  'gemini-pro':     { desc: 'Gemini 2.5 Pro — модель Google с огромным контекстом и мультимодальными возможностями.', info: '<strong>Gemini 2.5 Pro</strong> — большой контекст, документы, изображения и видео.' },
+};
+
+// ── INIT ───────────────────────────────────────────────────
+window.DEMO_MODE = true; // false → real API
+loadState();
+renderSidebar();
+updateEmptyState();
+
+// ── MODEL DROPDOWN ─────────────────────────────────────────
+document.getElementById('modelSelectorBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('modelDropdown').classList.toggle('open');
+});
+document.addEventListener('click', () => document.getElementById('modelDropdown').classList.remove('open'));
+document.getElementById('modelDropdown').addEventListener('click', e => {
+  const opt = e.target.closest('.md-option');
+  if (!opt) return;
+  document.querySelectorAll('.md-option').forEach(o => o.classList.remove('selected'));
+  opt.classList.add('selected');
+  state.model = opt.dataset.model;
+  state.modelLabel = opt.dataset.label;
+  state.modelDot = opt.dataset.dot;
+  document.getElementById('msLabel').textContent = state.modelLabel;
+  document.getElementById('msDot').className = 'ms-dot ' + state.modelDot;
+  document.getElementById('modelDropdown').classList.remove('open');
+  updateEmptyState();
+});
+function updateEmptyState() {
+  const m = MODEL_META[state.model] || {};
+  document.getElementById('modelDesc').textContent = m.desc || '';
+  document.getElementById('modelInfoCard').innerHTML = m.info || '';
+}
+
+// ── SIDEBAR ────────────────────────────────────────────────
+function renderSidebar() {
+  const sb = document.getElementById('sbScroll');
+  sb.innerHTML = '';
+
+  state.projects.forEach(proj => {
+    const chats = state.chats.filter(c => (c.projectId || DEFAULT_PROJECT) === proj.id);
+    const isDefault = proj.id === DEFAULT_PROJECT;
+    const group = document.createElement('div');
+    group.className = 'project-group' + (proj.open !== false ? ' open' : '');
+    group.dataset.pid = proj.id;
+
+    if (!isDefault) {
+      group.innerHTML = `
+        <div class="project-head">
+          <div class="project-head-left">
+            <span class="project-arrow">›</span>
+            <span class="project-name">${escHtml(proj.name)}</span>
+            <span class="project-badge">${chats.length}</span>
+          </div>
+          <button class="project-add-btn" data-proj-new="${proj.id}" type="button" title="Новый чат">＋</button>
+        </div>`;
+    } else if (chats.length > 0) {
+      group.innerHTML = `<div class="sb-section-label">Чаты</div>`;
+    }
+
+    const chatsWrap = document.createElement('div');
+    chatsWrap.className = 'project-chats';
+
+    if (!isDefault && chats.length === 0) {
+      chatsWrap.innerHTML = `<div style="padding:5px 12px 6px 20px;font-size:11.5px;color:var(--muted-2);">Нет чатов</div>`;
+    }
+    chats.forEach(chat => {
+      const el = document.createElement('div');
+      el.className = 'chat-item' + (chat.id === state.activeChatId ? ' active' : '');
+      el.dataset.cid = chat.id;
+      el.innerHTML = `
+        <span class="chat-item-icon">—</span>
+        <span class="chat-item-text">${escHtml(chat.title)}</span>
+        <span class="chat-item-model">${escHtml(chat.modelLabel || chat.model)}</span>
+        <button class="chat-item-menu" data-cmenu="${chat.id}" type="button">⋯</button>`;
+      chatsWrap.appendChild(el);
+    });
+
+    group.appendChild(chatsWrap);
+    sb.appendChild(group);
+  });
+
+  // Events
+  sb.querySelectorAll('.project-head').forEach(h => {
+    h.addEventListener('click', e => {
+      if (e.target.closest('.project-add-btn')) return;
+      const g = h.closest('.project-group');
+      g.classList.toggle('open');
+      const p = state.projects.find(x => x.id === g.dataset.pid);
+      if (p) { p.open = g.classList.contains('open'); saveState(); }
+    });
+  });
+  sb.querySelectorAll('[data-proj-new]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); createNewChat(b.dataset.projNew); }));
+  sb.querySelectorAll('.chat-item').forEach(el => {
+    el.addEventListener('click', e => { if (e.target.closest('.chat-item-menu')) return; openChat(el.dataset.cid); });
+  });
+  sb.querySelectorAll('[data-cmenu]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openCtxMenu(e, b.dataset.cmenu); }));
+}
+
+// ── CHAT MANAGEMENT ────────────────────────────────────────
+document.getElementById('newChatBtn').addEventListener('click', () => createNewChat(DEFAULT_PROJECT));
+
+function createNewChat(projectId) {
+  if (state.activeChatId) {
+    const cur = state.chats.find(c => c.id === state.activeChatId);
+    if (cur) cur.messages = [...state.messages];
+  }
+  const id = 'chat_' + Date.now();
+  state.chats.unshift({ id, title: 'Новый чат', model: state.model, modelLabel: state.modelLabel, projectId: projectId || DEFAULT_PROJECT, createdAt: Date.now(), messages: [] });
+  if (!state.projects.find(p => p.id === DEFAULT_PROJECT)) state.projects.unshift({ id: DEFAULT_PROJECT, name: null, open: true });
+  state.activeChatId = id; state.messages = [];
+  saveState(); renderSidebar(); clearChatUI();
+}
+
+function openChat(chatId) {
+  if (state.activeChatId && state.activeChatId !== chatId) {
+    const cur = state.chats.find(c => c.id === state.activeChatId);
+    if (cur) { cur.messages = [...state.messages]; saveState(); }
+  }
+  const chat = state.chats.find(c => c.id === chatId);
+  if (!chat) return;
+  state.activeChatId = chatId; state.messages = [...(chat.messages || [])];
+  state.model = chat.model; state.modelLabel = chat.modelLabel || chat.model;
+  document.getElementById('msLabel').textContent = state.modelLabel;
+  document.querySelectorAll('.md-option').forEach(o => {
+    const sel = o.dataset.model === state.model;
+    o.classList.toggle('selected', sel);
+    if (sel) { state.modelDot = o.dataset.dot || 'dot-green'; }
+  });
+  document.getElementById('msDot').className = 'ms-dot ' + (state.modelDot || 'dot-green');
+  renderSidebar(); replayChatUI();
+}
+
+function clearChatUI() {
+  document.getElementById('messagesArea').innerHTML = '';
+  document.getElementById('messagesArea').appendChild(document.getElementById('emptyState'));
+  document.getElementById('emptyState').style.display = '';
+  updateEmptyState();
+}
+
+function replayChatUI() {
+  const ma = document.getElementById('messagesArea');
+  ma.innerHTML = '';
+  if (state.messages.length === 0) {
+    ma.appendChild(document.getElementById('emptyState'));
+    document.getElementById('emptyState').style.display = '';
+    updateEmptyState(); return;
+  }
+  document.getElementById('emptyState').style.display = 'none';
+  state.messages.forEach(m => {
+    const txt = typeof m.content === 'string' ? m.content : (m.content?.find?.(c => c.type === 'text')?.text || '');
+    appendMsgEl(m.role, txt, []);
+  });
+  scrollBottom();
+}
+
+// ── CONTEXT MENU ───────────────────────────────────────────
+let ctxTarget = null;
+const ctxMenu = document.getElementById('ctxMenu');
+function openCtxMenu(e, chatId) {
+  ctxTarget = chatId;
+  ctxMenu.style.left = Math.min(e.clientX, window.innerWidth - 180) + 'px';
+  ctxMenu.style.top  = e.clientY + 'px';
+  ctxMenu.classList.add('open');
+}
+document.addEventListener('click', () => ctxMenu.classList.remove('open'));
+document.getElementById('ctxRename').addEventListener('click', () => {
+  const chat = state.chats.find(c => c.id === ctxTarget); if (!chat) return;
+  const n = prompt('Новое название:', chat.title);
+  if (n?.trim()) { chat.title = n.trim(); saveState(); renderSidebar(); }
+});
+document.getElementById('ctxMove').addEventListener('click', () => {
+  const userProj = state.projects.filter(p => p.id !== DEFAULT_PROJECT);
+  if (!userProj.length) { showToast('Сначала создайте проект'); return; }
+  const opts = userProj.map((p, i) => `${i+1}. ${p.name}`).join('\n');
+  const ans = prompt(`Переместить в проект:\n${opts}`);
+  const idx = parseInt(ans) - 1;
+  if (isNaN(idx) || !userProj[idx]) return;
+  const chat = state.chats.find(c => c.id === ctxTarget);
+  if (chat) { chat.projectId = userProj[idx].id; saveState(); renderSidebar(); }
+});
+document.getElementById('ctxDelete').addEventListener('click', () => {
+  if (!confirm('Удалить чат?')) return;
+  state.chats = state.chats.filter(c => c.id !== ctxTarget);
+  if (state.activeChatId === ctxTarget) { state.activeChatId = null; state.messages = []; clearChatUI(); }
+  saveState(); renderSidebar();
+});
+
+// ── PROJECTS ───────────────────────────────────────────────
+document.getElementById('addProjectBtn').addEventListener('click', () => {
+  document.getElementById('projectNameInput').value = '';
+  document.getElementById('projectModal').classList.add('open');
+  setTimeout(() => document.getElementById('projectNameInput').focus(), 80);
+});
+document.getElementById('projectCancelBtn').addEventListener('click', () => document.getElementById('projectModal').classList.remove('open'));
+document.getElementById('projectCreateBtn').addEventListener('click', doCreateProject);
+document.getElementById('projectNameInput').addEventListener('keydown', e => { if (e.key === 'Enter') doCreateProject(); });
+function doCreateProject() {
+  const name = document.getElementById('projectNameInput').value.trim();
+  if (!name) return;
+  state.projects.push({ id: 'proj_' + Date.now(), name, open: true });
+  saveState(); renderSidebar();
+  document.getElementById('projectModal').classList.remove('open');
+  showToast(`📁 Проект «${name}» создан`);
+}
+
+// ── TEXTAREA ───────────────────────────────────────────────
+const userInput = document.getElementById('userInput');
+const sendBtn   = document.getElementById('sendBtn');
+userInput.addEventListener('input', () => {
+  userInput.style.height = 'auto';
+  userInput.style.height = Math.min(userInput.scrollHeight, 180) + 'px';
+  const l = userInput.value.length;
+  document.getElementById('charCount').textContent = l > 0 ? `${l} / 4000` : '';
+  sendBtn.disabled = l === 0 && state.pendingFiles.length === 0;
+});
+userInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!sendBtn.disabled) sendMessage(); } });
+
+// ── SUGGESTIONS ────────────────────────────────────────────
+document.querySelector('.suggestions').addEventListener('click', e => {
+  const chip = e.target.closest('.suggestion-chip');
+  if (!chip) return;
+  userInput.value = chip.textContent.trim();
+  userInput.dispatchEvent(new Event('input'));
+  sendMessage();
+});
+
+// ── FILES ──────────────────────────────────────────────────
+document.getElementById('attachBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', function() {
+  Array.from(this.files).forEach(f => {
+    const r = new FileReader();
+    r.onload = ev => { state.pendingFiles.push({ name: f.name, base64: ev.target.result.split(',')[1], type: f.type }); renderPills(); sendBtn.disabled = false; };
+    r.readAsDataURL(f);
+  });
+  this.value = '';
+});
+function renderPills() {
+  const fb = document.getElementById('filePreviewBar');
+  fb.innerHTML = state.pendingFiles.map((f,i) => `<div class="file-pill"><span>🖼</span><span class="file-pill-name" title="${escHtml(f.name)}">${escHtml(f.name)}</span><span class="file-pill-rm" data-idx="${i}">✕</span></div>`).join('');
+  fb.classList.toggle('has-files', state.pendingFiles.length > 0);
+}
+document.getElementById('filePreviewBar').addEventListener('click', e => {
+  const rm = e.target.closest('.file-pill-rm'); if (!rm) return;
+  state.pendingFiles.splice(+rm.dataset.idx, 1); renderPills();
+  if (!userInput.value.trim() && !state.pendingFiles.length) sendBtn.disabled = true;
+});
+
+// ── SEND ───────────────────────────────────────────────────
+sendBtn.addEventListener('click', sendMessage);
+async function sendMessage() {
+  const text = userInput.value.trim();
+  if (!text && !state.pendingFiles.length) return;
+  if (state.isLoading) return;
+
+  if (!state.activeChatId) {
+    const id = 'chat_' + Date.now();
+    const title = text.split(' ').slice(0,6).join(' ') || 'Новый чат';
+    state.chats.unshift({ id, title, model: state.model, modelLabel: state.modelLabel, projectId: DEFAULT_PROJECT, createdAt: Date.now(), messages: [] });
+    if (!state.projects.find(p => p.id === DEFAULT_PROJECT)) state.projects.unshift({ id: DEFAULT_PROJECT, name: null, open: true });
+    state.activeChatId = id; renderSidebar();
+  }
+
+  document.getElementById('emptyState').style.display = 'none';
+
+  const content = state.pendingFiles.length
+    ? [...state.pendingFiles.map(f => ({ type:'image', source:{ type:'base64', media_type:f.type, data:f.base64 }})), { type:'text', text }]
+    : text;
+
+  state.messages.push({ role:'user', content });
+  appendMsgEl('user', text, state.pendingFiles.slice());
+
+  const chat = state.chats.find(c => c.id === state.activeChatId);
+  if (chat && chat.title === 'Новый чат' && text) { chat.title = text.split(' ').slice(0,6).join(' '); renderSidebar(); }
+
+  userInput.value = ''; userInput.style.height = 'auto';
+  document.getElementById('charCount').textContent = '';
+  sendBtn.disabled = true;
+  state.pendingFiles = []; renderPills();
+
+  const tid = showTyping();
+  state.isLoading = true; setProgress(30);
+
+  try {
+    const reply = await callAI(state.messages);
+    removeTyping(tid); setProgress(100);
+    state.messages.push({ role:'assistant', content: reply });
+    appendMsgEl('assistant', reply, []);
+    if (chat) { chat.messages = [...state.messages]; saveState(); }
+  } catch(err) {
+    removeTyping(tid); setProgress(0);
+    showToast('⚠️ ' + (err.message || 'Ошибка'));
+  } finally {
+    state.isLoading = false;
+    setTimeout(() => setProgress(0), 600);
+  }
+}
+
+// ── API ────────────────────────────────────────────────────
+// TODO: connect real endpoints, disable DEMO_MODE
+async function callAI(messages) {
+  if (window.DEMO_MODE) {
+    await new Promise(r => setTimeout(r, 700 + Math.random()*800));
+    const last = messages[messages.length-1];
+    const q = typeof last.content === 'string' ? last.content : (last.content?.find?.(c => c.type==='text')?.text || '');
+    return demoReply(q);
+  }
+  const resp = await fetch(`/api/chat/${state.model}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ messages, model: state.model }),
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const d = await resp.json();
+  if (d.reply) return d.reply;
+  if (d.content) return d.content.filter(c=>c.type==='text').map(c=>c.text).join('\n');
+  if (d.text) return d.text;
+  throw new Error('Неожиданный формат ответа');
+}
+function demoReply(q) {
+  const l = q.toLowerCase();
+  if (l.includes('район')) return 'В состав Москвы входит 12 административных округов, которые делятся на 146 районов и 21 поселение.';
+  if (l.includes('транспорт')) return 'Круглосуточно в Москве работают: ночные автобусы (маршруты «Н»), метро по выходным ночам, такси и каршеринг.';
+  if (l.includes('фестивал')) return 'В Москве ежегодно: «Московская весна», «Путешествие в Рождество», «Лето в Москве», «Пасхальный дар» и многие другие.';
+  if (l.includes('модел')) return 'Модели ИИ различаются по архитектуре и специализации. Для кода — GPT-4o или Claude Sonnet, для русских задач — YandexGPT или GigaChat, для аналитики — Gemini Pro.';
+  return `[Демо • ${state.modelLabel}] Запрос получен. Подключите реальный API в функции callAI — установите window.DEMO_MODE = false.`;
+}
+
+// ── MSG RENDER ─────────────────────────────────────────────
+function appendMsgEl(role, text, files) {
+  const id = 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  const ma = document.getElementById('messagesArea');
+  const wrap = document.createElement('div');
+  wrap.className = `msg ${role}`; wrap.id = id;
+  const av = role === 'assistant' ? '✦' : '○';
+  let fHtml = files.map(f=>`<img src="data:${f.type};base64,${f.base64}" style="max-width:250px;max-height:180px;border-radius:9px;margin-bottom:5px;display:block;">`).join('');
+  const cHtml = fHtml + (text ? `<div>${escHtml(text).replace(/\n/g,'<br>')}</div>` : '');
+  wrap.innerHTML = `
+    <div class="msg-avatar" style="font-size:${role==='assistant'?'15px':'12px'}">${av}</div>
+    <div class="msg-body">
+      <div class="msg-label">${role==='assistant'?escHtml(state.modelLabel):'Вы'}</div>
+      <div class="msg-bubble">${cHtml}</div>
+      <div class="msg-actions"><button class="msg-action-btn" data-cpmsg="${id}" type="button">Копировать</button></div>
+    </div>`;
+  ma.appendChild(wrap); scrollBottom();
+}
+function showTyping() {
+  const id = 'typing_' + Date.now(); const ma = document.getElementById('messagesArea');
+  const w = document.createElement('div'); w.className = 'msg assistant'; w.id = id;
+  w.innerHTML = `<div class="msg-avatar" style="font-size:15px">✦</div><div class="msg-body"><div class="msg-label">${escHtml(state.modelLabel)}</div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>`;
+  ma.appendChild(w); scrollBottom(); return id;
+}
+function removeTyping(id) { document.getElementById(id)?.remove(); }
+function scrollBottom() { const ma = document.getElementById('messagesArea'); ma.scrollTop = ma.scrollHeight; }
+
+document.getElementById('messagesArea').addEventListener('click', e => {
+  const btn = e.target.closest('[data-cpmsg]'); if (!btn) return;
+  const b = document.getElementById(btn.dataset.cpmsg)?.querySelector('.msg-bubble');
+  if (b) navigator.clipboard.writeText(b.innerText).then(() => showToast('✅ Скопировано'));
+});
+document.getElementById('historyBtn').addEventListener('click', () => showToast('📋 История будет доступна после подключения базы данных'));
+document.getElementById('burgerBtn').addEventListener('click', () => {
+  const m = document.getElementById('mobileMenu');
+  if (m) m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+});
+
+
+// ── PROFILE BUTTON ─────────────────────────────────────────
+document.getElementById('profileBtn').addEventListener('click', () => {
+  const token = localStorage.getItem('auth_token');
+  const auth  = (() => { try { return JSON.parse(localStorage.getItem('mikAuth')); } catch(_) { return null; } })();
+  const isAuthed = token || (auth && auth.isAuthorized && auth.token);
+  window.location.href = isAuthed ? '/profile' : '/login.html';
+});
+
+// ── UTILS ──────────────────────────────────────────────────
+function setProgress(v) { document.getElementById('progressBar').style.width = v + '%'; }
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>

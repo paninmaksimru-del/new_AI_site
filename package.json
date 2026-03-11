@@ -1,0 +1,19 @@
+{
+  "name": "mik-ai-platform",
+  "version": "1.0.0",
+  "description": "Платформа внедрения ИИ инструментов (Фонд МИК)",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "init-db": "node server/init-db.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.6.0",
+    "express": "^4.21.1"
+  }
+}

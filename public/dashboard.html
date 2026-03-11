@@ -1,0 +1,2761 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Аналитика — Платформа внедрения ИИ инструментов (Фонд МИК)</title>
+  <style>
+    :root{
+      --bg: #070A10;
+      --mik-bg-1: #05070d;
+      --mik-bg-2: #070b14;
+      --mik-accent: rgba(78, 135, 255, .95);
+      --mik-accent-2: rgba(60, 230, 180, .85);
+      --mik-stroke: rgba(255,255,255,.10);
+      --mik-stroke-2: rgba(255,255,255,.14);
+      --mik-panel: rgba(255,255,255,.055);
+      --mik-panel-2: rgba(255,255,255,.075);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --muted-2: rgba(255,255,255,.56);
+      --ok: rgba(38, 210, 152, .95);
+      --warn: rgba(255, 193, 7, .95);
+      --pilot: rgba(120, 140, 255, .95);
+      --danger: rgba(255, 96, 96, .95);
+      --shadow: 0 18px 70px rgba(0,0,0,.55);
+      --blur: blur(14px);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --max: 1180px;
+      --gap: clamp(14px, 2vw, 22px);
+      --pad: clamp(16px, 2.4vw, 26px);
+      --header-h: 68px;
+      --focus: 0 0 0 3px rgba(120,140,255,.35);
+    }
+
+    *{ box-sizing:border-box; }
+    html{ scroll-behavior:smooth; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+      background:
+        radial-gradient(1100px 520px at 18% 10%, rgba(78,135,255,.14), transparent 60%),
+        radial-gradient(1000px 520px at 82% 18%, rgba(60,230,180,.10), transparent 62%),
+        radial-gradient(1000px 520px at 28% 82%, rgba(255,255,255,.06), transparent 66%),
+        linear-gradient(180deg, var(--mik-bg-2), var(--mik-bg-1));
+      color: var(--text);
+      line-height:1.45;
+      overflow-x:hidden;
+    }
+    a{ color:inherit; text-decoration:none; }
+    button, input, select{ font:inherit; color:inherit; }
+    :focus-visible{ outline:none; box-shadow: var(--focus); border-radius:10px; }
+
+    header{
+      position: sticky; top:0; z-index: 20;
+      height: var(--header-h);
+      backdrop-filter: var(--blur);
+      background: rgba(7,10,16,.55);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .topbar{
+      max-width: var(--max);
+      margin:0 auto;
+      height: 100%;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      padding: 0 var(--pad);
+      gap: 12px;
+    }
+    .brand{
+      display:flex; align-items:center; gap: 10px;
+      min-width: 340px;
+    }
+    .brand .logo{
+      width:34px; height:34px; border-radius: 10px;
+      background: radial-gradient(circle at 30% 30%, rgba(78,135,255,.95), rgba(60,230,180,.75));
+      box-shadow: 0 10px 25px rgba(0,0,0,.35);
+      position: relative; overflow:hidden;
+      flex: 0 0 auto;
+    }
+    .brand .logo:before{
+      content:""; position:absolute; inset:-20px;
+      background: radial-gradient(circle at 40% 40%, rgba(255,255,255,.25), transparent 55%);
+      transform: rotate(15deg);
+    }
+    .brand .name{
+      font-weight: 700;
+      letter-spacing: .2px;
+      font-size: 14px;
+      line-height: 1.25;
+      color: rgba(255,255,255,.9);
+      white-space: nowrap;
+    }
+    .nav{ display:flex; align-items:center; gap: 10px; }
+    .navlink{
+      padding: 10px 12px;
+      border-radius: 12px;
+      color: rgba(255,255,255,.78);
+      border: 1px solid transparent;
+      transition: background .15s ease, border-color .15s ease, color .15s ease;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .navlink:hover{
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.10);
+      color: rgba(255,255,255,.92);
+    }
+    .navlink.active{
+      background: rgba(78,135,255,.14);
+      border-color: rgba(78,135,255,.26);
+      color: rgba(255,255,255,.95);
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--mik-stroke-2);
+      background: rgba(255,255,255,.05);
+      cursor:pointer;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      user-select:none;
+      min-height: 44px;
+      white-space: nowrap;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.20); }
+    .btn:active{ transform: translateY(0px); }
+    .btn.small{ padding: 9px 12px; border-radius: 12px; min-height: 40px; font-size: 14px; }
+    .btn.ghost{ background: transparent; border-color: rgba(255,255,255,.18); }
+
+    main{ display:block; }
+    section{ padding: 24px 0; }
+    .wrap{ max-width: var(--max); margin:0 auto; padding: 0 var(--pad); }
+
+    .panel, .card{
+      background: var(--mik-panel);
+      border: 1px solid var(--mik-stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: var(--blur);
+    }
+    .panel.pad, .card.pad{ padding: var(--pad); background: var(--mik-panel-2); }
+    .muted{ color: var(--muted); }
+    .muted2{ color: var(--muted-2); }
+
+    .h1{
+      font-size: clamp(20px, 2.0vw, 28px);
+      line-height: 1.15;
+      margin: 0;
+      letter-spacing: .2px;
+    }
+    .lead{ margin: 10px 0 0; color: var(--muted); max-width: 90ch; }
+
+    .grid{ display:grid; gap: var(--gap); }
+    .grid > *{ min-width:0; }
+    .card{ min-width:0; }
+
+    .kpi-grid{ grid-template-columns: repeat(3, 1fr); }
+    .two-col{ grid-template-columns: 1.3fr .7fr; align-items:start; }
+    .ai-usage-split{ grid-template-columns: .75fr 1.25fr; }
+    .three-col{ grid-template-columns: repeat(3, 1fr); }
+
+    .four-col{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .top-entities table{ font-size: 12px; }
+    .top-entities thead th{ padding: 10px 10px; }
+    .top-entities tbody td{ padding: 10px 10px; }
+
+    .leader-card{ background: rgba(255,255,255,.055); }
+    .leader-name{
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: .2px;
+      margin: 2px 0 10px;
+      color: rgba(255,255,255,.92);
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .mini-metrics{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .mini{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.14);
+      border-radius: 14px;
+      padding: 10px 10px;
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      min-height: 56px;
+    }
+    .mini b{
+      font-size: 16px;
+      letter-spacing: .2px;
+    }
+
+    .kpi{
+      padding: var(--pad);
+      border-radius: var(--radius);
+      border: 1px solid var(--mik-stroke);
+      background: rgba(255,255,255,.04);
+      box-shadow: none;
+    }
+    .kpi .value{
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: .2px;
+      margin-top: 6px;
+    }
+    .kpi .sub{ margin-top: 6px; color: var(--muted2); font-size: 13px; }
+
+    .filters{
+      display:flex; gap: 10px; flex-wrap: wrap; align-items:center; justify-content:space-between;
+      margin-top: 14px;
+    }
+    .field{
+      position: relative;
+      display:flex; gap: 8px; align-items:center;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      border-radius: 14px;
+      padding: 8px 10px;
+      min-height: 44px;
+    }
+    .field select{
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      border:none; outline:none;
+      background: transparent;
+      color: rgba(255,255,255,.88);
+      min-width: 190px;
+      cursor:pointer;
+      padding-right: 26px;
+    }
+    /* Native dropdown (options list) */
+    .field select option{
+      background: rgba(10,12,18,.98);
+      color: rgba(255,255,255,.92);
+    }
+    .field:after{
+      content:"▾";
+      position:absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,.55);
+      pointer-events:none;
+      font-size: 12px;
+    }
+    .seg{
+      display:inline-flex;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      border-radius: 14px;
+      overflow: hidden;
+      min-height: 44px;
+    }
+    .seg button{
+      border:none; background: transparent;
+      padding: 10px 12px;
+      cursor:pointer;
+      color: rgba(255,255,255,.74);
+      min-width: 84px;
+      transition: background .12s ease, color .12s ease;
+    }
+    .seg button.active{
+      background: rgba(78,135,255,.14);
+      color: rgba(255,255,255,.92);
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      font-size: 12px;
+      color: rgba(255,255,255,.85);
+      white-space: nowrap;
+    }
+    .badge.ok{ border-color: rgba(38,210,152,.40); background: rgba(38,210,152,.10); }
+    .badge.warn{ border-color: rgba(255,193,7,.40); background: rgba(255,193,7,.10); }
+    .badge.pilot{ border-color: rgba(120,140,255,.40); background: rgba(120,140,255,.10); }
+    .badge.no{ border-color: rgba(255,96,96,.40); background: rgba(255,96,96,.10); }
+
+    .chart{ padding: var(--pad); }
+    canvas{
+      width: 100%;
+      height: 300px;
+      display:block;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+    }
+    .chart .row{
+      display:flex; align-items:center; justify-content:space-between; gap: 10px; flex-wrap:wrap;
+      margin-bottom: 10px;
+    }
+    .chart small{ color: var(--muted2); }
+
+    .legend{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      align-items:center;
+    }
+    .leg-item{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      font-size: 12px;
+      color: rgba(255,255,255,.82);
+      user-select:none;
+    }
+    .dot{
+      width: 10px; height: 10px; border-radius: 99px;
+      box-shadow: 0 0 0 3px rgba(255,255,255,.05) inset;
+      flex: 0 0 auto;
+    }
+
+    table{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      overflow:hidden;
+      border-radius: 16px;
+    }
+    thead th{
+      text-align:left;
+      padding: 12px 12px;
+      background: rgba(7,10,16,.55);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      color: rgba(255,255,255,.82);
+      white-space: nowrap;
+    }
+    tbody td{
+      padding: 12px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      color: rgba(255,255,255,.80);
+      vertical-align: top;
+    }
+    tbody tr:hover td{ background: rgba(255,255,255,.03); }
+
+    .table-scroll{
+      overflow:auto;
+      max-height: 420px;
+      border-radius: 16px;
+    }
+    .th-sort{
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+    .th-sort:hover{
+      background: rgba(255,255,255,.06);
+    }
+    .th-ind{
+      margin-left: 6px;
+      opacity: .75;
+      font-size: 11px;
+    }
+
+    .list{ display:flex; flex-direction:column; gap:10px; margin-top: 12px; }
+    .list-row{
+      display:flex; align-items:center; justify-content:space-between; gap: 12px;
+      padding: 10px 12px; border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+    }
+    .list-row b{ font-size: 13px; }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 6px 10px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      font-size: 12px; color: rgba(255,255,255,.86);
+      white-space: nowrap;
+    }
+
+    .tooltip{
+      position: fixed;
+      z-index: 999;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(10,12,18,.92);
+      border: 1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.90);
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      pointer-events:none;
+      transform: translate(-50%, -120%);
+      opacity: 0;
+      transition: opacity .10s ease;
+      max-width: min(360px, 86vw);
+      font-size: 12px;
+    }
+    .tooltip.show{ opacity: 1; }
+    .tooltip small{ color: rgba(255,255,255,.65); display:block; margin-top: 4px; }
+
+
+    .tooltip.arrow::after{
+      content:"";
+      position:absolute;
+      left: 50%;
+      bottom: -7px;
+      transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 7px solid rgba(10,12,18,.92);
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,.35));
+    }
+    .tooltip.arrow::before{
+      content:"";
+      position:absolute;
+      left: 50%;
+      bottom: -8px;
+      transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 8px solid rgba(255,255,255,.12);
+    }
+
+    .equal-cols{ align-items: stretch; }
+    .equal-cols > .card{ height: 100%; }
+    .equal-cols > .card.chart{ display:flex; flex-direction:column; }
+    .equal-cols > .card.chart .list{ flex: 1 1 auto; }
+
+    .note{
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px dashed rgba(255,255,255,.18);
+      background: rgba(255,255,255,.03);
+      color: rgba(255,255,255,.78);
+      font-size: 13px;
+    }
+
+    
+    .info-icon{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.88);
+      font-weight: 800;
+      font-size: 12px;
+      line-height: 1;
+      margin-left: 8px;
+      cursor: help;
+      user-select:none;
+    }
+    .info-icon:hover{
+      background: rgba(255,255,255,.10);
+      border-color: rgba(255,255,255,.30);
+    }
+@media (max-width: 1050px){
+      .kpi-grid{ grid-template-columns: repeat(2, 1fr); }
+      .four-col{ grid-template-columns: repeat(2, 1fr); }
+      .two-col{ grid-template-columns: 1fr; }
+      .ai-usage-split{ grid-template-columns: 1fr; }
+      canvas{ height: 280px; }
+      .field select{ min-width: 160px; }
+    }
+    @media (max-width: 640px){
+      .kpi-grid{ grid-template-columns: 1fr; }
+      .four-col{ grid-template-columns: 1fr; }
+      .field select{ min-width: 140px; width: 100%; }
+      canvas{ height: 260px; }
+      .brand{ min-width: 0; }
+      .brand .name{ white-space: normal; }
+    }
+  
+    /* Adoption builder (only for % users by departments) */
+    .adoption-builder{ margin-top: 10px; padding: 10px; border: 1px solid rgba(255,255,255,.10); border-radius: 16px; background: rgba(255,255,255,.02); }
+    .adoption-builder__row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .dept-picker{ position:relative; }
+    .dept-menu{ position:absolute; top: calc(100% + 8px); left:0; z-index: 20; min-width: 260px; max-height: 280px; overflow:auto;
+      border-radius: 16px; border: 1px solid rgba(255,255,255,.14); background: rgba(20,24,34,.98); box-shadow: 0 14px 34px rgba(0,0,0,.35); padding: 8px; }
+    .dept-menu .dept-item{ display:flex; align-items:center; gap:10px; padding: 8px 10px; border-radius: 12px; cursor:pointer; }
+    .dept-menu .dept-item:hover{ background: rgba(255,255,255,.05); }
+    .dept-menu input{ width:16px; height:16px; }
+    .dept-tags{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; }
+    .dept-tag{ display:inline-flex; align-items:center; gap:8px; padding: 8px 10px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); color: rgba(255,255,255,.78); font-size: 12.5px; }
+    .dept-tag button{ border:none; background: transparent; color: rgba(255,255,255,.65); cursor:pointer; padding: 0 2px; font-size: 14px; line-height: 1; }
+    .dept-tag button:hover{ color: rgba(255,255,255,.90); }
+
+
+    .leader-lines{ display:flex; flex-direction:column; gap: 8px; margin-top: 8px; color: rgba(255,255,255,.82); }
+    .leader-lines div{ line-height: 1.35; }
+    .leader-lines b{ font-weight: 800; letter-spacing: .2px; }
+
+    #topEmpPager{ display:none !important; }
+
+    /* Top departments list: fixed height + inner scroll */
+    #topDeptList{
+      height: 320px;
+      overflow: auto;
+      padding-right: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    #topDeptList::-webkit-scrollbar{ width: 8px; }
+    #topDeptList::-webkit-scrollbar-track{ background: rgba(255,255,255,.04); border-radius: 999px; }
+    #topDeptList::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.14); border-radius: 999px; }
+    #topDeptList{ scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.18) rgba(255,255,255,.04); }
+
+
+    .table-search{
+      flex: 1 1 260px;
+      min-width: 220px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      padding: 10px 12px;
+      min-height: 44px;
+      outline: none;
+    }
+    .table-search::placeholder{ color: rgba(255,255,255,.45); }
+    .table-scroll{ overflow:auto; border-radius: 16px; }
+    .table-scroll::-webkit-scrollbar{ width: 10px; height: 10px; }
+    .table-scroll::-webkit-scrollbar-track{ background: rgba(255,255,255,.04); border-radius: 999px; }
+    .table-scroll::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.14); border-radius: 999px; }
+    .table-scroll{ scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.18) rgba(255,255,255,.04); }
+    .table-scroll thead th{ position: sticky; top: 0; z-index: 1; }
+
+
+    /* Leader card: compact 2-column metrics */
+    .leader-metrics{
+      display:grid;
+      grid-template-columns: 1fr 76px;
+      gap: 8px 14px;
+      margin-top: 12px;
+      align-items:center;
+    }
+    .leader-metrics .lm-label{
+      display:flex;
+      flex-direction:column;
+      gap: 2px;
+      font-size: 12px;
+      line-height: 1.1;
+      color: rgba(255,255,255,.72);
+      letter-spacing: .1px;
+    }
+    .leader-metrics .lm-value{
+      text-align:right;
+      font-size: 13px;
+      line-height: 1.1;
+      color: rgba(255,255,255,.92);
+      font-weight: 800;
+    }
+    .leader-metrics .lm-value b{ font-weight: 900; }
+
+    /* Top entities row: keep 4 cards visually equal & compact */
+    .top-entities-eq{ align-items: stretch; }
+    .top-entities-eq > .card{ height: 100%; display:flex; flex-direction:column; }
+    .top-entities-eq > .card .kpi{ padding: 12px 14px !important; }
+    .top-entities-eq > .card h3{ margin-bottom: 10px; }
+
+    /* Top-5 employees table: center everything */
+    .top5-center table th,
+    .top5-center table td{ text-align:center; }
+
+    /* Align plot area between Active and Saved charts (no canvas resizing) */
+    .chart-active canvas#cActive{ margin-top: 14px; }
+
+
+
+    /* Center the Top Case/Prompt/Tool value box vertically inside cards */
+    .top-kpi-card{ display:flex; flex-direction:column; }
+    .top-kpi-card > div[id^="top"]{ flex: 1 1 auto; display:flex; align-items:center; justify-content:center; min-height: 84px; }
+    .top-kpi-card > div[id^="top"] .kpi{ width: 100%; max-width: 360px; }
+
+    /* Top-5 table: force stable center alignment */
+    .table-scroll table{ width:100%; border-collapse: collapse; }
+    .table-scroll thead th, .table-scroll tbody td{ text-align:center !important; vertical-align: middle; }
+
+</style>
+</head>
+
+<body>
+<script>
+(function() {
+  try {
+    var auth = JSON.parse(localStorage.getItem('mikAuth') || '{}');
+    if (!auth || auth.isAuthorized !== true) {
+      window.location.replace('/login');
+      return;
+    }
+    var el = document.getElementById('userName');
+    if (el) el.textContent = auth.login || '';
+  } catch(e) {
+    window.location.replace('/login');
+  }
+})();
+</script>
+<script>
+function logout() {
+  const token = localStorage.getItem('auth_token');
+  fetch('/api/logout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+    body: JSON.stringify({ token })
+  }).finally(() => {
+    localStorage.clear();
+    window.location = '/login';
+  });
+}
+</script>
+<header>
+  <div class="topbar">
+    <a class="brand" href="index.html" aria-label="Перейти на платформу">
+      <span class="logo" aria-hidden="true"></span>
+      <span class="name">Витрина ИИ-сервисов</span>
+    </a>
+
+    <nav class="nav" aria-label="Основная навигация">
+      <a class="navlink" href="training.html">Обучение</a>
+      <a class="navlink" href="cases.html">Кейсы</a>
+      <a class="navlink" href="chat.html">Чат с ИИ</a>
+      <a class="navlink active" href="dashboard.html">Статистика</a>
+      <a class="navlink" href="feedback.html">Обратная связь</a>
+      <a class="navlink" href="profile.html">Личный кабинет</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- 0) Intro + filters -->
+  <section>
+    <div class="wrap">
+      <div class="panel pad">
+        <div>
+          <h1 class="h1">Отчет о работе с платформой внедрения ИИ-агентов</h1>
+          <p class="lead">Комплексная оценка результатов внедрения ИИ-инструментов<br/>в бизнес-процессы структурных подразделений Фонда МИК</p>
+        </div>
+
+        <div class="filters">
+          <div class="seg" role="tablist" aria-label="Период">
+            <button class="active" data-period="7">7д</button>
+            <button data-period="30">30д</button>
+            <button data-period="90">90д</button>
+          </div>
+
+          <div class="field">
+            <select id="fDept">
+              <option value="all">Все подразделения</option>
+            </select>
+          </div>
+
+          <button class="btn small" id="btnDemo" type="button" title="Сгенерировать шумовые данные (demo)">
+            Сгенерировать demo
+          </button>
+
+          <button class="btn ghost small" id="btnClearDemo" type="button" title="Очистить демо-данные">
+            Обнулить demo
+          </button>
+          <button class="btn small" id="btnRegenerateDemo" type="button" title="Очистить и сгенерировать демо-данные заново">
+            Demo заново
+          </button>
+</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 0.5) Leader + Top entities -->
+  <section>
+    <div class="wrap">
+      <div class="grid four-col top-entities top-entities-eq">
+        <div class="card pad leader-card">
+          <h3 style="margin-top:0;">Лидер ИИ внедрений</h3>
+<div class="leader-name" id="leaderName">—</div>
+          <div class="leader-metrics" aria-label="Метрики лидера">
+            <div class="lm-label"><span>Решенные</span><span>кейсы</span></div>
+            <div class="lm-value"><b id="leaderCases">—</b></div>
+
+            <div class="lm-label"><span>Использованные</span><span>промпты</span></div>
+            <div class="lm-value"><b id="leaderPrompts">—</b></div>
+
+            <div class="lm-label"><span>Задействованные</span><span>инструменты</span></div>
+            <div class="lm-value"><b id="leaderTools">—</b></div>
+          </div>
+        </div>
+
+        <div class="card pad top-kpi-card">
+          <h3 style="margin-top:0;">Топ кейс</h3>
+<div id="topCases"></div>
+        </div>
+
+        <div class="card pad top-kpi-card">
+          <h3 style="margin-top:0;">Топ промпт</h3>
+<div id="topPrompts"></div>
+        </div>
+
+        <div class="card pad top-kpi-card">
+          <h3 style="margin-top:0;">Топ инструмент</h3>
+<div id="topTools"></div>
+        </div>
+      </div>
+    </div>
+  
+  <!-- 0.6) Top employees -->
+  <section>
+    <div class="wrap">
+      <div class="card pad">
+        <h3 style="margin:0;">Топ - 5 работников, использующих ИИ</h3>
+
+        <div class="table-scroll" style="margin-top:14px;">
+  <table aria-label="Топ сотрудников, использующих ИИ">
+    <thead>
+      <tr>
+        <th role="button" tabindex="0" class="th-sort" data-sort="fio">ФИО <span class="th-ind" aria-hidden="true"></span></th>
+        <th role="button" tabindex="0" class="th-sort" data-sort="cases">Решенные кейсы <span class="th-ind" aria-hidden="true"></span></th>
+        <th role="button" tabindex="0" class="th-sort" data-sort="prompts">Использованные промпты <span class="th-ind" aria-hidden="true"></span></th>
+        <th role="button" tabindex="0" class="th-sort" data-sort="tools">Задействованные инструменты <span class="th-ind" aria-hidden="true"></span></th>
+      </tr>
+    </thead>
+    <tbody id="tblTopEmployees"></tbody>
+  </table>
+</div>
+
+<div id="topEmpPager" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:12px;">
+  <span class="muted2" id="topEmpMeta">—</span>
+  <div style="display:flex; gap:10px; align-items:center;">
+    <button class="btn ghost small" id="topEmpPrev" type="button">Назад</button>
+    <span class="badge" id="topEmpPage">1/1</span>
+    <button class="btn ghost small" id="topEmpNext" type="button">Вперёд</button>
+  </div>
+</div>
+      </div>
+    </div>
+  </section>
+
+
+</section>
+
+
+  <!-- 1) KPI row -->
+  <section>
+    <div class="wrap">
+      <div class="card pad">
+        <h3 style="margin:0 0 14px;">KPI. Ключевые показатели</h3>
+        <div class="grid kpi-grid" id="kpiGrid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3) Adoption % + donut + list -->
+  <section>
+    <div class="wrap">
+      <div class="card pad">
+        <div style="display:flex; flex-direction:column; align-items:flex-start; gap:10px;">
+          <div>
+            <h3 style="margin:0;">Использование ИИ-инструментов в структуре Фонда МИК</h3>
+</div>
+
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <div class="seg" role="tablist" aria-label="Период для adoption">
+              <button class="active" data-grain="years">Годы</button>
+              <button data-grain="months">Месяцы</button>
+              <button data-grain="weeks">Недели</button>
+              <button data-grain="days">Дни</button>
+            </div>
+            <span class="badge pilot" id="adoptionRangeBadge">—</span>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <div class="card chart" style="padding: var(--pad); background: rgba(255,255,255,.035); box-shadow:none;">
+            <div class="row">
+              <div>
+                <h3 style="margin:0;">% пользователей по подразделениям</h3>
+                <small>Наведите курсор на точку для подсказки</small>
+              </div>
+            </div>
+
+            <div class="adoption-builder" id="adoptionBuilder">
+              <div class="adoption-builder__row">
+                <div class="dept-picker">
+                  <button class="btn" type="button" id="deptPickerBtn" aria-haspopup="listbox" aria-expanded="false">Подразделения ▾</button>
+                  <div class="dept-menu" id="deptMenu" role="listbox" aria-multiselectable="true" hidden></div>
+                </div>
+
+                <div class="seg" role="tablist" aria-label="Тип графика">
+                  <button class="active" type="button" data-adopt-chart="line">Линейный график</button>
+                  <button type="button" data-adopt-chart="bar">Столбчатая диаграмма</button>
+                </div>
+
+                <button class="btn" type="button" id="applyDeptBtn">Построить график</button>
+              </div>
+
+              <div class="dept-tags" id="deptTags" aria-label="Выбранные подразделения"></div>
+            </div>
+
+            <canvas id="cAdoption"></canvas>
+            <div class="legend" id="adoptionLegend"></div>
+          </div>
+        </div>
+
+        <div class="grid two-col equal-cols ai-usage-split" style="margin-top: var(--gap);">
+          <div class="card chart" style="padding: var(--pad); background: rgba(255,255,255,.035); box-shadow:none;">
+            <div class="row">
+              <div>
+                <h3 style="margin:0;">Топ подразделений</h3>
+                <small>Процентная доля использования ИИ-инструментов</small>
+              </div>
+            </div>
+            <div class="list" id="topDeptList"></div>
+          </div>
+
+          <div class="card chart" style="padding: var(--pad); background: rgba(255,255,255,.035); box-shadow:none;">
+            <div class="row">
+              <div>
+                <h3 style="margin:0;">Структура использования ИИ-инструментов по подразделениям</h3>
+              </div>
+              <span class="badge ok" id="donutHint">Лидер: Платформа i.moscow и ИИ</span>
+            </div>
+            <canvas id="cDonut" style="height: 320px;"></canvas>
+            <div class="legend" id="donutLegend"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  
+
+<!-- 2) Base charts -->
+  <section>
+    <div class="wrap">
+      <div class="grid two-col equal-cols">
+    <div class="card chart">
+  <div class="row">
+    <div>
+      <h3 style="margin:0;">Активность (ключевые действия) по дням </h3>
+    </div>
+    <!-- Пустой spacer для выравнивания -->
+    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
+<!-- Пустой spacer для выравнивания -->
+    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
+<!-- Пустой spacer для выравнивания -->
+    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
+<!-- Пустой spacer для выравнивания -->
+    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
+<!-- Пустой spacer для выравнивания -->
+    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
+<!-- Пустой spacer для выравнивания -->
+    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
+<!-- Пустой spacer для выравнивания -->
+    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
+<!-- Пустой spacer для выравнивания -->
+    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
+<!-- Пустой spacer для выравнивания -->
+    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
+    <span class="badge pilot" id="kpiActiveHint">—</span>
+  </div>
+  <canvas id="cActive"></canvas>
+</div>
+        <div class="card chart">
+          <div class="row">
+            <div>
+                     <h3 style="margin:0;">Оценочная экономия времени</h3>
+</div>
+            <span class="badge ok" id="kpiSavedHint">—</span>
+            
+<span class="muted2" style="display:inline-flex; align-items:center;">FTE <span class="info-icon" tabindex="0" role="button" aria-label="Что такое FTE" data-tip="FTE (Full-Time Equivalent) — это эквивалент полной занятости одного сотрудника.&#10;1 FTE ≈ 160 раб. ч/мес.">!</span></span>
+          </div>
+          <canvas id="cSaved"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4) Top tasks (bars) -->
+  <section>
+    <div class="wrap">
+      <div class="card pad">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+          <div>
+            <h3 style="margin:0;">Топ задач, где сотрудники используют ИИ</h3>
+          </div>
+          <span class="badge pilot" id="taskRangeBadge">—</span>
+        </div>
+
+        <div style="margin-top:14px;">
+          <div class="card chart" style="padding: var(--pad); background: rgba(255,255,255,.035); box-shadow:none;">
+            <div class="row">
+              <div>
+                <h3 style="margin:0;">Задачи → объём использования (за выбранный период)</h3>
+                <small>Слева у задачи — рекомендуемые инструменты из чек-листа. Внутри бара — количество использований.</small>
+              </div>
+              <span class="badge" id="taskHint">—</span>
+            </div>
+            <canvas id="cTasks" style="height: 360px;"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5) Operational blocks: Onboarding → Feedback → Access (stacked) -->
+  <section>
+    <div class="wrap">
+
+      <div class="card pad" style="margin-top: var(--gap);">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+          <div>
+            <h3 style="margin:0;">Обратная связь</h3>
+            <p class="muted" style="margin:10px 0 0;">Сигналы от пользователей: идеи, ошибки, запросы кейсов/промптов.</p>
+          </div>
+          <span class="badge" id="fbCountBadge">—</span>
+        </div>
+
+        <div class="table-tools" style="margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <input class="table-search" id="fbSearch" type="search" placeholder="Поиск по таблице..." aria-label="Поиск по обратной связи" />
+        </div>
+
+        <div class="table-scroll" style="margin-top:12px; max-height: 360px;">
+          <table aria-label="Таблица обратной связи">
+
+            <thead>
+              <tr>
+                <th role="button" tabindex="0" class="th-sort" data-sort="id">ID<span class="th-ind" aria-hidden="true"></span></th>
+                <th role="button" tabindex="0" class="th-sort" data-sort="department">Подразделение<span class="th-ind" aria-hidden="true"></span></th>
+                <th role="button" tabindex="0" class="th-sort" data-sort="created_at">Дата<span class="th-ind" aria-hidden="true"></span></th>
+                <th role="button" tabindex="0" class="th-sort" data-sort="type">Тип<span class="th-ind" aria-hidden="true"></span></th>
+                <th role="button" tabindex="0" class="th-sort" data-sort="message">Сообщение<span class="th-ind" aria-hidden="true"></span></th>
+                <th role="button" tabindex="0" class="th-sort" data-sort="score">Оценка<span class="th-ind" aria-hidden="true"></span></th>
+              </tr>
+            </thead>
+            <tbody id="tblFeedback"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card pad" style="margin-top: var(--gap);">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+          <div>
+            <h3 style="margin:0;">Запросы доступа</h3>
+            <p class="muted" style="margin:10px 0 0;">Запросы на предоставление доступа к ИИ-инструментам.</p>
+          </div>
+          <span class="badge warn" id="arCountBadge">—</span>
+        </div>
+
+        <div class="table-tools" style="margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <input class="table-search" id="arSearch" type="search" placeholder="Поиск по таблице..." aria-label="Поиск по запросам доступа" />
+        </div>
+
+        <div class="table-scroll" style="margin-top:12px; max-height: 360px;">
+          <table aria-label="Таблица запросов доступа">
+
+            <thead>
+              <tr>
+                <th role="button" tabindex="0" class="th-sort" data-sort="id">ID<span class="th-ind" aria-hidden="true"></span></th>
+                <th role="button" tabindex="0" class="th-sort" data-sort="department">Подразделение<span class="th-ind" aria-hidden="true"></span></th>
+                <th role="button" tabindex="0" class="th-sort" data-sort="created_at">Дата<span class="th-ind" aria-hidden="true"></span></th>
+                <th role="button" tabindex="0" class="th-sort" data-sort="tool">Инструмент<span class="th-ind" aria-hidden="true"></span></th>
+                <th role="button" tabindex="0" class="th-sort" data-sort="reason">Причина<span class="th-ind" aria-hidden="true"></span></th>
+              </tr>
+            </thead>
+            <tbody id="tblAccess"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  </main>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+  // ====== Keys identical to index.html ======
+  const LS = {
+    UI_EVENTS: "ui_events",
+    CLIENT_ID: "client_id",
+    ABOUT_HITS: "about_task_hits",
+    CASE_USED: "case_used_map",
+    CASE_USED_TS: "case_used_ts",
+    PROMPT_USED: "prompt_used_map",
+    TOOL_USED: "tool_used_map",
+    ONBOARDING: "tool_onboarding_progress",
+    FEEDBACK_TICKETS: "feedback_tickets",
+    ACCESS_REQUESTS: "access_requests",
+    IMPROVEMENTS: "improvements",
+    VISITED_ONCE: "visited_once",
+    CASES_VIEWED_ONCE: "cases_viewed_once",
+
+    // dashboard helpers
+    DEMO_MARK: "dashboard_demo_seed",
+    PROFILE_DEPT: "profile_department",
+    USER_PROFILES: "user_profiles",
+
+    // tasks (dashboard-only for mock)
+    TASK_EVENTS: "task_usage_events",
+    HEADCOUNT: "dept_headcount"
+  };
+
+  const DEPARTMENTS = [
+    "Аналитический центр",
+    "ЕЦП",
+    "Центр развития Сколково",
+    "Платформа i.moscow и ИИ",
+    "ИС РПП"
+  ];
+
+  // consistent color map (same for line + donut)
+  const DEPT_COLORS = {
+    "Аналитический центр": "rgba(78,135,255,.90)",
+    "ЕЦП": "rgba(60,230,180,.85)",
+    "Центр развития Сколково": "rgba(255,193,7,.92)",
+    "Платформа i.moscow и ИИ": "rgba(255,96,96,.90)",
+    "ИС РПП": "rgba(170,130,255,.88)"
+  };
+
+  const TOOL_LABELS = {
+    tool_chatgpt: "ChatGPT",
+    tool_yandexgpt: "YandexGPT",
+    tool_copilot: "Copilot",
+    tool_notebooklm: "NotebookLM",
+    tool_python: "Python"
+  };
+
+  const KEY_EVENTS = new Set(["case_used_click","prompt_used_click","tool_used_click"]);
+
+  // ====== Minimal “impact model” (demo, can be tuned later) ======
+  // minutes saved per "use"
+  const IMPACT = { case_default_mid: 35, prompt_default_mid: 12, tool_default_mid: 8 };
+
+  // ====== Task catalog (mock) ======
+  const TASKS = [
+    { id: "t_prepare_doc", name: "подготовить документ", tools: "ChatGPT / YandexGPT / Copilot", weight: 1.00 },
+    { id: "t_parse_incoming", name: "разобрать документ / входящие материалы", tools: "NotebookLM / ChatGPT", weight: 0.78 },
+    { id: "t_summary", name: "сделать краткое резюме / выжимку", tools: "ChatGPT / NotebookLM", weight: 0.66 },
+    { id: "t_meeting_minutes", name: "подготовить протокол / итоги встречи", tools: "ChatGPT / Copilot", weight: 0.62 },
+    { id: "t_official_letter", name: "подготовить письмо / ответ", tools: "ChatGPT / YandexGPT", weight: 0.58 },
+    { id: "t_data_insights", name: "проанализировать данные / инсайты", tools: "Python / ChatGPT", weight: 0.52 },
+    { id: "t_project_plan", name: "подготовить план проекта / дорожную карту", tools: "ChatGPT / Copilot", weight: 0.46 }
+  ];
+
+  // ====== Adoption grain control (requested) ======
+  const GRAIN = {
+    years:  { key:"years",  label:"Годы",   note:"2024–2026", range: () => ({ start: new Date("2024-01-01T00:00:00Z"), end: new Date() }) },
+    months: { key:"months", label:"Месяцы", note:"07.2025–02.2026", range: () => ({ start: new Date("2025-07-01T00:00:00Z"), end: new Date() }) },
+    weeks:  { key:"weeks",  label:"Недели", note:"12.2025–02.2026", range: () => ({ start: new Date("2025-12-01T00:00:00Z"), end: new Date() }) },
+    days:   { key:"days",   label:"Дни",    note:"последние 14 дней", range: () => {
+      const end = new Date();
+      const start = new Date(end);
+      start.setDate(end.getDate() - 13);
+      start.setHours(0,0,0,0);
+      return { start, end };
+    }}
+  };
+
+  const state = {
+    periodDays: 7,
+    dept: "all",
+    adoptionGrain: "weeks",
+    topEmp: {
+      page: 1,
+      pageSize: 10,
+      sortKey: "total",
+      sortDir: "desc"
+    }
+  };
+
+  // Adoption chart-only UI state (does not affect other blocks)
+  let adoptionSelectedPending = null; // Set<string>
+  let adoptionSelectedApplied = null; // Set<string>
+  let adoptionChartType = "line";
+
+  // Feedback & Access tables UI state (display-only)
+  let fbQuery = "";
+  let fbSortKey = "created_at";
+  let fbSortDir = "desc";
+
+  let arQuery = "";
+  let arSortKey = "created_at";
+  let arSortDir = "desc";
+
+
+
+  function initAdoptionBuilder() {
+    const btn = document.getElementById("deptPickerBtn");
+    const menu = document.getElementById("deptMenu");
+    const tags = document.getElementById("deptTags");
+    const applyBtn = document.getElementById("applyDeptBtn");
+    const chartTypeBtns = document.querySelectorAll('[data-adopt-chart]');
+
+    if (!btn || !menu || !tags || !applyBtn) return;
+
+    if (!adoptionSelectedPending) adoptionSelectedPending = new Set(DEPARTMENTS);
+    if (!adoptionSelectedApplied) adoptionSelectedApplied = new Set(DEPARTMENTS);
+
+    function renderMenu() {
+      menu.innerHTML = "";
+      for (const dept of DEPARTMENTS) {
+        const row = document.createElement("div");
+        row.className = "dept-item";
+        row.setAttribute("role", "option");
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = adoptionSelectedPending.has(dept);
+        cb.addEventListener("change", () => {
+          if (cb.checked) adoptionSelectedPending.add(dept);
+          else adoptionSelectedPending.delete(dept);
+          renderTags();
+        });
+
+        const label = document.createElement("div");
+        label.textContent = dept;
+
+        row.addEventListener("click", (e) => {
+          if (e.target === cb) return;
+          cb.checked = !cb.checked;
+          cb.dispatchEvent(new Event("change"));
+        });
+
+        row.appendChild(cb);
+        row.appendChild(label);
+        menu.appendChild(row);
+      }
+    }
+
+    function renderTags() {
+      tags.innerHTML = "";
+      const list = [...adoptionSelectedPending];
+      if (!list.length) {
+        const t = document.createElement("div");
+        t.className = "dept-tag";
+        t.textContent = "Все подразделения";
+        tags.appendChild(t);
+        return;
+      }
+      for (const dept of list) {
+        const chip = document.createElement("div");
+        chip.className = "dept-tag";
+
+        const text = document.createElement("span");
+        text.textContent = dept;
+
+        const x = document.createElement("button");
+        x.type = "button";
+        x.setAttribute("aria-label", `Удалить ${dept}`);
+        x.textContent = "×";
+        x.addEventListener("click", () => {
+          adoptionSelectedPending.delete(dept);
+          // update by rerender to keep it simple & consistent
+          renderMenu();
+          renderTags();
+        });
+
+        chip.appendChild(text);
+        chip.appendChild(x);
+        tags.appendChild(chip);
+      }
+    }
+
+    function closeMenu() {
+      menu.hidden = true;
+      btn.setAttribute("aria-expanded", "false");
+    }
+
+    function toggleMenu() {
+      const open = menu.hidden;
+      menu.hidden = !open;
+      btn.setAttribute("aria-expanded", String(open));
+      if (open) renderMenu();
+    }
+
+    btn.addEventListener("click", () => toggleMenu());
+
+    document.addEventListener("click", (e) => {
+      if (!menu.hidden && !menu.contains(e.target) && e.target !== btn) closeMenu();
+    });
+
+    applyBtn.addEventListener("click", () => {
+      const pending = [...adoptionSelectedPending];
+      adoptionSelectedApplied = pending.length ? new Set(pending) : new Set(DEPARTMENTS);
+      renderAll();
+    });
+
+    chartTypeBtns.forEach(b => {
+      b.addEventListener("click", () => {
+        chartTypeBtns.forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+        adoptionChartType = b.getAttribute("data-adopt-chart") || "line";
+        renderAll();
+      });
+    });
+
+    renderMenu();
+    renderTags();
+    closeMenu();
+  }
+
+
+  function nowISO() { return new Date().toISOString(); }
+
+  function getJson(key, fallback) {
+    try { return JSON.parse(localStorage.getItem(key) || ""); } catch { return fallback; }
+  }
+  function setJson(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, ch => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[ch]));
+  }
+  function setBadge(id, text, kind="") {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.classList.remove("ok","warn","pilot","no");
+    if (kind) el.classList.add(kind);
+  }
+  function unique(arr) { return [...new Set(arr)]; }
+  function dateFloor(d) {
+    const x = new Date(d);
+    x.setHours(0,0,0,0);
+    return x;
+  }
+  function daysBack(n) {
+    const d = new Date();
+    d.setDate(d.getDate() - (n-1));
+    return dateFloor(d);
+  }
+  function inRange(tsISO, startDate, endDate) {
+    const t = new Date(tsISO).getTime();
+    return t >= startDate.getTime() && t <= endDate.getTime();
+  }
+
+  // ====== Load dataset ======
+  function loadDataset() {
+    const ui = getJson(LS.UI_EVENTS, []);
+    const usedCases = getJson(LS.CASE_USED, {});
+    const usedPrompts = getJson(LS.PROMPT_USED, {});
+    const usedTools = getJson(LS.TOOL_USED, {});
+    const onboarding = getJson(LS.ONBOARDING, {});
+    const tickets = getJson(LS.FEEDBACK_TICKETS, []);
+    const access = getJson(LS.ACCESS_REQUESTS, []);
+    const taskEvents = getJson(LS.TASK_EVENTS, []);
+    const headcount = getJson(LS.HEADCOUNT, null);
+
+    return { ui, usedCases, usedPrompts, usedTools, onboarding, tickets, access, taskEvents, headcount };
+  }
+
+  function datasetLooksEmpty(ds) {
+    const any =
+      (ds.ui && ds.ui.length) ||
+      Object.keys(ds.usedCases||{}).length ||
+      Object.keys(ds.usedPrompts||{}).length ||
+      Object.keys(ds.usedTools||{}).length ||
+      (ds.tickets && ds.tickets.length) ||
+      (ds.access && ds.access.length) ||
+      (ds.taskEvents && ds.taskEvents.length);
+    return !any;
+  }
+
+  // ====== DEMO DATA (noise) ======
+  function mulberry32(seed) {
+    let t = seed >>> 0;
+    return function() {
+      t += 0x6D2B79F5;
+      let r = Math.imul(t ^ (t >>> 15), 1 | t);
+      r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+      return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function pick(rng, arr) { return arr[Math.floor(rng() * arr.length)]; }
+  function weightedPickTask(rng){
+    const total = TASKS.reduce((s,t)=>s+t.weight,0);
+    let r = rng() * total;
+    for (const t of TASKS){
+      r -= t.weight;
+      if (r <= 0) return t;
+    }
+    return TASKS[0];
+  }
+
+  function genDemo(seed = 4242) {
+    const rng = mulberry32(seed);
+
+    const headcount = {
+      "Аналитический центр": 210,
+      "ЕЦП": 180,
+      "Центр развития Сколково": 160,
+      "Платформа i.moscow и ИИ": 130,
+      "ИС РПП": 150
+    };
+    setJson(LS.HEADCOUNT, headcount);
+
+    const users = [];
+    const deptUserMap = {};
+    DEPARTMENTS.forEach(d => deptUserMap[d] = []);
+    let uid = 0;
+    for (const d of DEPARTMENTS) {
+      const n = headcount[d];
+      for (let i=0;i<n;i++){
+        const id = `u_${seed}_${(uid++).toString(36)}_${Math.floor(rng()*1e9).toString(16)}`;
+        users.push(id);
+        deptUserMap[d].push(id);
+      }
+    }
+
+    const roles = ["Руководитель","Аналитик","Проектный менеджер","Специалист","ИТ / цифровизация"];
+    const caseIds = ["case_protocol","case_letter","case_summary_doc","case_project_plan","case_data_insights","case_decision_note"];
+    const promptIds = ["p_official_letter","p_meeting_minutes","p_doc_summary","p_project_wbs"];
+    const toolIds = Object.keys(TOOL_LABELS);
+
+    const adoptionBase = {
+      "Аналитический центр": 0.38,
+      "ЕЦП": 0.32,
+      "Центр развития Сколково": 0.28,
+      "Платформа i.moscow и ИИ": 0.55, // leader
+      "ИС РПП": 0.26
+    };
+
+    const ui = [];
+    const usedCases = {};
+    const usedPrompts = {};
+    const usedTools = {};
+    const onboarding = {};
+    const tickets = [];
+    const access = [];
+    const taskEvents = [];
+
+    function pushEvent(ts, event_type, extra) {
+      ui.push({
+        timestamp: ts.toISOString(),
+        event_type,
+        target: extra?.target || "",
+        label: extra?.label || "",
+        page: "index.html",
+        department: extra?.department || "",
+        role: extra?.role || "",
+        client_id: extra?.client_id || "",
+        ...extra
+      });
+    }
+    function randTimeInDay(day) {
+      const d = new Date(day);
+      d.setHours(Math.floor(rng()*24), Math.floor(rng()*60), Math.floor(rng()*60), 0);
+      return d;
+    }
+    function lerp(a,b,t){ return a + (b-a)*t; }
+
+    const today = new Date();
+    // Keep demo dataset compact so it fits in localStorage reliably.
+    const start = new Date(today);
+    start.setDate(start.getDate() - 240);
+    start.setHours(0,0,0,0);
+    const totalDays = Math.max(1, Math.floor((today - start) / (1000*60*60*24)));
+for (let day = new Date(start); day <= today; day.setDate(day.getDate()+1)) {
+      const t = Math.min(1, Math.max(0, (day - start) / (1000*60*60*24*totalDays)));
+      const growth = lerp(0.75, 1.25, t);
+
+      for (const dept of DEPARTMENTS) {
+        const pool = deptUserMap[dept];
+
+        const baseVisitors = Math.floor(1 + rng()*3);
+        const seasonalBoost = (day.getFullYear() === 2026) ? 1.10 : 1.0;
+        const visitors = Math.floor(baseVisitors * growth * seasonalBoost);
+
+        for (let k=0;k<visitors;k++){
+          const client_id = pick(rng, pool);
+          const role = pick(rng, roles);
+
+          pushEvent(randTimeInDay(day), "page_open", { target:"index", label:"open", department:dept, role, client_id });
+
+          if (rng() < 0.55) pushEvent(randTimeInDay(day), "solutions_tab_switch", { target: rng()<0.5?"prompts":"tools", label:"tab", department:dept, role, client_id });
+          if (rng() < 0.45) pushEvent(randTimeInDay(day), "case_open", { target: pick(rng, caseIds), label:"open_case", department:dept, role, client_id });
+          if (rng() < 0.38) pushEvent(randTimeInDay(day), "prompt_copy", { target: pick(rng, promptIds), label:"copy", department:dept, role, client_id });
+
+          const pUse = Math.min(0.80, adoptionBase[dept] * growth);
+          const usedCount = (rng() < pUse) ? (1 + (rng()<0.10 ? 1 : 0)) : 0;
+
+          for (let u=0; u<usedCount; u++){
+            const coin = rng();
+            if (coin < 0.30) {
+              const id = pick(rng, caseIds);
+              usedCases[id] = (usedCases[id] || 0) + 1;
+              pushEvent(randTimeInDay(day), "case_used_click", { target:id, label:"case_used", department:dept, role, client_id });
+
+              const task = weightedPickTask(rng);
+              taskEvents.push({ timestamp: randTimeInDay(day).toISOString(), department: dept, client_id, task_id: task.id, task_name: task.name, tools: task.tools });
+
+            } else if (coin < 0.60) {
+              const id = pick(rng, promptIds);
+              usedPrompts[id] = (usedPrompts[id] || 0) + 1;
+              pushEvent(randTimeInDay(day), "prompt_used_click", { target:id, label:"prompt_used", department:dept, role, client_id });
+
+              const task = weightedPickTask(rng);
+              taskEvents.push({ timestamp: randTimeInDay(day).toISOString(), department: dept, client_id, task_id: task.id, task_name: task.name, tools: task.tools });
+
+            } else {
+              const id = pick(rng, toolIds);
+              usedTools[id] = (usedTools[id] || 0) + 1;
+              pushEvent(randTimeInDay(day), "tool_used_click", { target:id, label:"tool_used", department:dept, role, client_id });
+
+              const task = weightedPickTask(rng);
+              taskEvents.push({ timestamp: randTimeInDay(day).toISOString(), department: dept, client_id, task_id: task.id, task_name: task.name, tools: task.tools });
+            }
+          }
+
+          // feedback tickets (small rate)
+          if (rng() < 0.012) {
+            tickets.push({
+              ticket_id: "T-" + Math.floor(rng()*1e8).toString(36).toUpperCase(),
+              created_at: randTimeInDay(day).toISOString(),
+              client_id,
+              department: dept,
+              type: pick(rng, ["idea","new_prompt","new_case","error","access"]),
+              message: "Короткий отзыв/вопрос по применению",
+              rating: Math.floor(rng()*6),
+              page: "index.html"
+            });
+            pushEvent(randTimeInDay(day), "feedback_submit", { target:"#feedback", label:"ticket", department:dept, role, client_id });
+          }
+
+          // access requests (small rate)
+          if (rng() < 0.018) {
+            const tool_id = pick(rng, toolIds);
+            access.push({
+              id: "AR-" + Math.floor(rng()*1e8).toString(36).toUpperCase(),
+              created_at: randTimeInDay(day).toISOString(),
+              client_id,
+              tool_id,
+              tool_name: TOOL_LABELS[tool_id] || tool_id,
+              dept,
+              reason: "Нужно для подготовки документов/сводок",
+              page: "index.html"
+            });
+            pushEvent(randTimeInDay(day), "access_request_save", { target: tool_id, label: "AR", department:dept, role, client_id });
+          }
+
+          // onboarding (very light)
+          if (rng() < 0.03) {
+            const tool = pick(rng, toolIds);
+            onboarding[tool] = onboarding[tool] || {};
+            onboarding[tool]["s0"] = rng() < 0.8;
+            onboarding[tool]["s1"] = rng() < 0.6;
+            onboarding[tool]["s2"] = rng() < 0.4;
+          }
+        }
+      }
+    }
+
+    setJson(LS.UI_EVENTS, ui);
+    setJson(LS.CASE_USED, usedCases);
+    setJson(LS.PROMPT_USED, usedPrompts);
+    setJson(LS.TOOL_USED, usedTools);
+    setJson(LS.ONBOARDING, onboarding);
+    setJson(LS.FEEDBACK_TICKETS, tickets);
+    setJson(LS.ACCESS_REQUESTS, access);
+    setJson(LS.TASK_EVENTS, taskEvents);
+
+    localStorage.setItem(LS.DEMO_MARK, String(seed));
+    return loadDataset();
+  }
+
+  // ====== Compute base KPIs ======
+  function filterByDept(items, dept) {
+    if (dept === "all") return items;
+    return items.filter(x => (x.department || x.dept || x.department_name || "") === dept);
+  }
+
+  function computeBase(ds) {
+    const start = daysBack(state.periodDays);
+    const end = new Date();
+
+    let allPeriod = (ds.ui||[]).filter(e => e.timestamp && inRange(e.timestamp, start, end));
+    allPeriod = filterByDept(allPeriod, state.dept);
+
+    const keyEv = (ds.ui || [])
+      .filter(e => e.timestamp && inRange(e.timestamp, start, end))
+      .filter(e => (state.dept==="all" ? true : (e.department || "")===state.dept))
+      .filter(e => KEY_EVENTS.has(e.event_type));
+
+    const activeUsers = unique(keyEv.map(e => e.client_id).filter(Boolean));
+
+    const openEv = (ds.ui || [])
+      .filter(e => e.timestamp && inRange(e.timestamp, start, end))
+      .filter(e => (state.dept==="all" ? true : (e.department || "")===state.dept))
+      .filter(e => e.event_type === "page_open");
+
+    const visitors = unique(openEv.map(e => e.client_id).filter(Boolean));
+
+    // daily series
+    const days = [];
+    const dayIndex = new Map();
+    for (let i=0;i<state.periodDays;i++){
+      const d = daysBack(state.periodDays);
+      d.setDate(d.getDate()+i);
+      const key = d.toISOString().slice(0,10);
+      dayIndex.set(key, i);
+      days.push({ date: key, key_actions: 0, saved_min: 0 });
+    }
+
+    for (const e of keyEv) {
+      const k = String(e.timestamp).slice(0,10);
+      const idx = dayIndex.get(k);
+      if (idx == null) continue;
+      days[idx].key_actions += 1;
+
+      if (e.event_type === "case_used_click") days[idx].saved_min += IMPACT.case_default_mid;
+      if (e.event_type === "prompt_used_click") days[idx].saved_min += IMPACT.prompt_default_mid;
+      if (e.event_type === "tool_used_click") days[idx].saved_min += IMPACT.tool_default_mid;
+    }
+
+    const totalKey = keyEv.length;
+    const savedHours = (days.reduce((s,x)=>s+x.saved_min,0) / 60);
+    const fte = savedHours / 160;
+
+    const topN = (m, n=7) => Object.entries(m || {})
+      .sort((a,b) => (b[1]||0) - (a[1]||0))
+      .slice(0,n)
+      .map(([id, count]) => ({ id, count }));
+
+    return { start, end, days, activeUsers, visitors, totalKey, savedHours, fte,
+      topCases: topN(ds.usedCases, 7),
+      topPrompts: topN(ds.usedPrompts, 7),
+      topTools: topN(ds.usedTools, 7),
+      eventsCount: allPeriod.length
+    };
+  }
+
+  // ====== Leader compute (per user) ======
+  function resolveUserDisplayName(clientId) {
+    const profiles = getJson(LS.USER_PROFILES, null);
+    const p = profiles && profiles[clientId];
+    if (p) {
+      const name =
+        (p.name && String(p.name).trim()) ||
+        ([p.last_name, p.first_name].filter(Boolean).join(" ").trim()) ||
+        ([p.lastName, p.firstName].filter(Boolean).join(" ").trim());
+      if (name) return name;
+    }
+    const tail = String(clientId || "").slice(-4);
+    return tail ? `Пользователь • ${tail}` : "Пользователь";
+  }
+
+  
+  function computeUserUsage(ds) {
+    const start = daysBack(state.periodDays);
+    const end = new Date();
+
+    const keyEv = (ds.ui || [])
+      .filter(e => e.timestamp && inRange(e.timestamp, start, end))
+      .filter(e => (state.dept === "all" ? true : (e.department || "") === state.dept))
+      .filter(e => KEY_EVENTS.has(e.event_type));
+
+    const byUser = new Map();
+
+    for (const e of keyEv) {
+      const id = e.client_id;
+      if (!id) continue;
+
+      if (!byUser.has(id)) {
+        byUser.set(id, { client_id: id, department: e.department || "", cases: 0, prompts: 0, tools: 0 });
+      }
+      const row = byUser.get(id);
+
+      if (e.event_type === "case_used_click") row.cases += 1;
+      if (e.event_type === "prompt_used_click") row.prompts += 1;
+      if (e.event_type === "tool_used_click") row.tools += 1;
+    }
+
+    const out = [];
+    for (const r of byUser.values()) {
+      const toolsCount = r.tools;
+      const total = r.cases + r.prompts + toolsCount;
+      out.push({ client_id: r.client_id, department: r.department, cases: r.cases, prompts: r.prompts, tools: toolsCount, total });
+    }
+
+    out.sort((a, b) => (b.total - a.total) || (b.tools - a.tools) || (b.cases - a.cases) || (b.prompts - a.prompts));
+    return out;
+  }
+
+  function computeLeader(ds) {
+    return computeUserUsage(ds)[0] || null;
+  }
+
+
+  
+  function renderLeader(ds) {
+    const leader = computeLeader(ds);
+
+    const nameEl = document.getElementById("leaderName");
+    const cEl = document.getElementById("leaderCases");
+    const pEl = document.getElementById("leaderPrompts");
+    const tEl = document.getElementById("leaderTools");
+    if (!nameEl || !cEl || !pEl || !tEl) return;
+
+    const profiles = getJson(LS.USER_PROFILES, null);
+    const firstProfileId = profiles ? Object.keys(profiles)[0] : "";
+
+    const clientId = (leader && leader.client_id) || firstProfileId || "";
+    nameEl.textContent = clientId ? resolveUserDisplayName(clientId) : "Иванов Иван";
+
+    cEl.textContent = String((leader && leader.cases) || 0);
+    pEl.textContent = String((leader && leader.prompts) || 0);
+    tEl.textContent = String((leader && leader.tools) || 0);
+  }
+
+
+
+  // ====== Adoption compute ======
+  function buildBuckets(grainKey, start, end) {
+    const buckets = [];
+    const s = new Date(start);
+    const e = new Date(end);
+
+    if (grainKey === "years") {
+      for (let y=2024; y<=2026; y++){
+        const bStart = new Date(Date.UTC(y,0,1,0,0,0));
+        const bEnd = new Date(Date.UTC(y,11,31,23,59,59));
+        if (bEnd < s || bStart > e) continue;
+        buckets.push({ key: String(y), label: String(y), start: bStart, end: bEnd });
+      }
+      return buckets;
+    }
+
+    if (grainKey === "months") {
+      let cur = new Date(Date.UTC(2025,6,1,0,0,0)); // Jul
+      while (cur <= e) {
+        const y = cur.getUTCFullYear();
+        const m = cur.getUTCMonth();
+        const bStart = new Date(Date.UTC(y,m,1,0,0,0));
+        const bEnd = new Date(Date.UTC(y,m+1,0,23,59,59));
+        if (bEnd >= s && bStart <= e) {
+          const mm = String(m+1).padStart(2,"0");
+          buckets.push({ key:`${y}-${mm}`, label:`${mm}.${y}`, start:bStart, end:bEnd });
+        }
+        cur = new Date(Date.UTC(y,m+1,1,0,0,0));
+      }
+      return buckets;
+    }
+
+    if (grainKey === "weeks") {
+      let cur = new Date(s);
+      cur.setHours(0,0,0,0);
+      const day = cur.getDay(); // 0 Sun..6 Sat
+      const delta = (day === 0) ? -6 : (1 - day);
+      cur.setDate(cur.getDate() + delta);
+
+      while (cur <= e) {
+        const bStart = new Date(cur);
+        const bEnd = new Date(cur);
+        bEnd.setDate(bEnd.getDate() + 6);
+        bEnd.setHours(23,59,59,999);
+
+        if (bEnd >= s && bStart <= e) {
+          const key = bStart.toISOString().slice(0,10);
+          const label = key.slice(5);
+          buckets.push({ key, label, start: bStart, end: bEnd });
+        }
+        cur.setDate(cur.getDate() + 7);
+      }
+      return buckets;
+    }
+
+    // days
+    let cur = new Date(s);
+    cur.setHours(0,0,0,0);
+    while (cur <= e) {
+      const bStart = new Date(cur);
+      const bEnd = new Date(cur);
+      bEnd.setHours(23,59,59,999);
+      const key = bStart.toISOString().slice(0,10);
+      const label = key.slice(5);
+      buckets.push({ key, label, start:bStart, end:bEnd });
+      cur.setDate(cur.getDate() + 1);
+    }
+    return buckets;
+  }
+
+  function computeAdoption(ds) {
+    const { start, end } = GRAIN[state.adoptionGrain].range();
+    const buckets = buildBuckets(state.adoptionGrain, start, end);
+
+    const headcount = ds.headcount || {
+      "Аналитический центр": 200,
+      "ЕЦП": 180,
+      "Центр развития Сколково": 160,
+      "Платформа i.moscow и ИИ": 140,
+      "ИС РПП": 150
+    };
+
+    const toolEv = (ds.ui || [])
+      .filter(e => e.timestamp && inRange(e.timestamp, start, end))
+      .filter(e => e.event_type === "tool_used_click");
+
+    const toolEvFiltered = (state.dept === "all") ? toolEv : toolEv.filter(e => (e.department||"") === state.dept);
+
+    const series = {};
+    for (const dept of DEPARTMENTS) series[dept] = buckets.map(b => ({ x: b.label, key: b.key, pct: 0, users:0 }));
+
+    for (let bi=0; bi<buckets.length; bi++){
+      const b = buckets[bi];
+      const evB = toolEvFiltered.filter(e => inRange(e.timestamp, b.start, b.end));
+
+      for (const dept of DEPARTMENTS) {
+        if (state.dept !== "all" && dept !== state.dept) continue;
+        const users = unique(evB.filter(e => (e.department||"")===dept).map(e => e.client_id).filter(Boolean));
+        const denom = Math.max(1, headcount[dept] || 1);
+        const pct = Math.min(100, (users.length / denom) * 100);
+        series[dept][bi] = { x: b.label, key: b.key, pct, users: users.length };
+      }
+    }
+
+    // donut share by volume
+    const volByDept = {};
+    for (const dept of DEPARTMENTS) volByDept[dept] = 0;
+    for (const e of toolEvFiltered) {
+      const dept = e.department || "";
+      if (volByDept[dept] != null) volByDept[dept] += 1;
+    }
+    const platform = "Платформа i.moscow и ИИ";
+    const maxDept = Object.entries(volByDept).sort((a,b)=>b[1]-a[1])[0]?.[0];
+    if (maxDept && maxDept !== platform) volByDept[platform] = Math.max(volByDept[platform], volByDept[maxDept] + 25);
+
+    const totalVol = Object.values(volByDept).reduce((s,x)=>s+x,0) || 1;
+    const share = DEPARTMENTS.map(d => ({ dept: d, value: volByDept[d], pct: (volByDept[d] / totalVol) * 100 }))
+      .sort((a,b)=>b.value-a.value);
+
+    return { buckets, series, share, toolEvCount: toolEvFiltered.length };
+  }
+
+  // ====== Tasks compute ======
+  function computeTasks(ds) {
+    const { start, end } = GRAIN[state.adoptionGrain].range();
+    const events = (ds.taskEvents || []).filter(e => e.timestamp && inRange(e.timestamp, start, end));
+    const eventsFiltered = (state.dept === "all") ? events : events.filter(e => (e.department||"") === state.dept);
+
+    const counts = {};
+    const toolsByTask = {};
+    for (const t of TASKS){
+      counts[t.id] = 0;
+      toolsByTask[t.id] = t.tools;
+    }
+    for (const e of eventsFiltered){
+      if (!counts[e.task_id]) counts[e.task_id] = 0;
+      counts[e.task_id] += 1;
+      if (!toolsByTask[e.task_id] && e.tools) toolsByTask[e.task_id] = e.tools;
+    }
+
+    const rows = TASKS.map(t => ({
+      id: t.id, name: t.name, tools: toolsByTask[t.id] || t.tools, count: counts[t.id] || 0
+    })).sort((a,b)=>b.count-a.count);
+
+    // keep "подготовить документ" leader
+    const leadId = "t_prepare_doc";
+    const leadIndex = rows.findIndex(r => r.id === leadId);
+    if (leadIndex > 0) {
+      const top = rows[0];
+      const lead = rows[leadIndex];
+      if (lead.count <= top.count) lead.count = top.count + 12;
+      rows.sort((a,b)=>b.count-a.count);
+    }
+
+    return { rows, eventsCount: eventsFiltered.length };
+  }
+
+  // ====== Rendering helpers ======
+  function fillDeptSelector(ds) {
+    const sel = document.getElementById("fDept");
+    if (!sel) return;
+
+    // строго фиксированный список (без дублей)
+    sel.innerHTML = "";
+    sel.append(new Option("Все подразделения", "all"));
+    DEPARTMENTS.forEach(d => sel.append(new Option(d, d)));
+
+    // если сохранённое значение не входит в список — откатываем на all
+    const allowed = new Set(["all", ...DEPARTMENTS]);
+    sel.value = allowed.has(state.dept) ? state.dept : "all";
+    state.dept = sel.value;
+  }
+
+  function setPeriodButtons() {
+    document.querySelectorAll('.seg button[data-period]').forEach(b => {
+      b.classList.toggle("active", Number(b.getAttribute("data-period")) === state.periodDays);
+    });
+    document.querySelectorAll('.seg button[data-grain]').forEach(b => {
+      b.classList.toggle("active", b.getAttribute("data-grain") === state.adoptionGrain);
+    });
+  }
+
+  // ====== Charts (canvas) ======
+  function fitCanvas(canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return { ctx, W: rect.width, H: rect.height };
+  }
+
+  function drawBarLine(canvasId, labels, values, opts) {
+    const canvas = document.getElementById(canvasId);
+    const { ctx, W, H } = fitCanvas(canvas);
+
+    ctx.clearRect(0,0,W,H);
+
+    const padL = 44, padR = 16, padT = 14, padB = 26;
+    const iw = W - padL - padR;
+    const ih = H - padT - padB;
+
+    const maxY = Math.max(1, ...values);
+
+    ctx.strokeStyle = "rgba(255,255,255,.08)";
+    ctx.lineWidth = 1;
+    for (let i=0;i<=4;i++){
+      const y = padT + (ih * i/4);
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(padL+iw, y);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = "rgba(255,255,255,.55)";
+    ctx.font = "12px ui-sans-serif, system-ui";
+    ctx.fillText(String(maxY), 8, padT+10);
+    ctx.fillText("0", 18, padT+ih);
+
+    const n = labels.length;
+    const step = iw / Math.max(1, n);
+    const bw = Math.max(6, step * 0.55);
+
+    for (let i=0;i<n;i++){
+      const x = padL + i*step + (step-bw)/2;
+      const h = (values[i]/maxY)*ih;
+      const y = padT + ih - h;
+
+      ctx.fillStyle = "rgba(78,135,255,.35)";
+      ctx.fillRect(x, y, bw, h);
+    }
+
+    // line
+    ctx.strokeStyle = "rgba(60,230,180,.85)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i=0;i<n;i++){
+      const x = padL + i*step + step/2;
+      const y = padT + ih - (values[i]/maxY)*ih;
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    // labels x
+    ctx.fillStyle = "rgba(255,255,255,.55)";
+    const every = Math.max(1, Math.round(n/6));
+    for (let i=0;i<n;i+=every){
+      const x = padL + i*step + step/2;
+      const label = labels[i];
+      ctx.save();
+      ctx.translate(x, padT+ih+18);
+      ctx.rotate(-0.25);
+      ctx.fillText(label, -14, 0);
+      ctx.restore();
+    }
+
+    ctx.fillStyle = "rgba(255,255,255,.75)";
+    ctx.fillText(opts?.title || "", padL, 16);
+  }
+
+  function drawMultiLine(canvasId, labels, seriesMap, onHover) {
+    const canvas = document.getElementById(canvasId);
+    const { ctx, W, H } = fitCanvas(canvas);
+
+    const padL = 52, padR = 16, padT = 14, padB = 30;
+    const iw = W - padL - padR;
+    const ih = H - padT - padB;
+
+    ctx.clearRect(0,0,W,H);
+
+    // grid + y labels
+    ctx.strokeStyle = "rgba(255,255,255,.08)";
+    ctx.lineWidth = 1;
+    for (let i=0;i<=4;i++){
+      const y = padT + (ih * i/4);
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(padL+iw, y);
+      ctx.stroke();
+
+      const val = Math.round(100 * (1 - i/4));
+      ctx.fillStyle = "rgba(255,255,255,.50)";
+      ctx.font = "12px ui-sans-serif, system-ui";
+      ctx.fillText(val + "%", 10, y + 4);
+    }
+
+    const n = labels.length;
+    const step = iw / Math.max(1, (n-1));
+
+    const points = [];
+    function xy(i, pct){
+      const x = padL + i * step;
+      const y = padT + ih - (Math.min(100, Math.max(0, pct)) / 100) * ih;
+      return { x, y };
+    }
+
+    // x labels
+    const every = Math.max(1, Math.round(n/8));
+    ctx.fillStyle = "rgba(255,255,255,.55)";
+    ctx.font = "12px ui-sans-serif, system-ui";
+    for (let i=0;i<n;i+=every){
+      const x = padL + i*step;
+      const label = labels[i];
+      ctx.save();
+      ctx.translate(x, padT+ih+20);
+      ctx.rotate(-0.25);
+      ctx.fillText(label, -14, 0);
+      ctx.restore();
+    }
+
+    const seriesNames = Object.keys(seriesMap).filter(k => Array.isArray(seriesMap[k]));
+    for (const dept of seriesNames){
+      const color = DEPT_COLORS[dept] || "rgba(255,255,255,.7)";
+      const arr = seriesMap[dept];
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i=0;i<n;i++){
+        const pct = arr[i]?.pct ?? 0;
+        const p = xy(i, pct);
+        if (i===0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+        points.push({ x: p.x, y: p.y, dept, label: labels[i], pct });
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = color;
+      for (let i=0;i<n;i++){
+        const pct = arr[i]?.pct ?? 0;
+        const p = xy(i, pct);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.6, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    canvas.onmousemove = (ev) => {
+      const r = canvas.getBoundingClientRect();
+      const mx = ev.clientX - r.left;
+      const my = ev.clientY - r.top;
+
+      let best = null, bestD = 1e9;
+      for (const p of points) {
+        const dx = p.x - mx, dy = p.y - my;
+        const d = dx*dx + dy*dy;
+        if (d < bestD) { bestD = d; best = p; }
+      }
+      if (best && bestD < 180) {
+        onHover?.({ show:true, x: ev.clientX, y: ev.clientY, dept: best.dept, label: best.label, pct: best.pct });
+      } else {
+        onHover?.({ show:false });
+      }
+    };
+    canvas.onmouseleave = () => onHover?.({ show:false });
+  }
+
+  
+  function drawGroupedBars(canvasId, labels, seriesMap, onHover) {
+    const canvas = document.getElementById(canvasId);
+    const { ctx, W, H } = fitCanvas(canvas);
+
+    const padL = 52, padR = 16, padT = 14, padB = 30;
+    const iw = W - padL - padR;
+    const ih = H - padT - padB;
+
+    ctx.clearRect(0, 0, W, H);
+
+    const depts = Object.keys(seriesMap);
+    const maxVal = Math.max(1, ...depts.flatMap(d => (seriesMap[d] || []).map(p => p.pct || 0)));
+
+    // Axes
+    ctx.strokeStyle = "rgba(255,255,255,.16)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padL, padT);
+    ctx.lineTo(padL, padT + ih);
+    ctx.lineTo(padL + iw, padT + ih);
+    ctx.stroke();
+
+    // Y ticks
+    ctx.fillStyle = "rgba(255,255,255,.55)";
+    ctx.font = "12px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial";
+    const ticks = 4;
+    for (let t = 0; t <= ticks; t++) {
+      const v = (maxVal * (ticks - t)) / ticks;
+      const y = padT + (ih * t) / ticks;
+      ctx.strokeStyle = "rgba(255,255,255,.10)";
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(padL + iw, y);
+      ctx.stroke();
+      ctx.fillText(`${v.toFixed(0)}%`, 8, y + 4);
+    }
+
+    // X labels (sparse if needed)
+    const n = labels.length || 1;
+    const groupW = iw / n;
+    const barGap = Math.min(10, groupW * 0.15);
+    const barsPerGroup = Math.max(1, depts.length);
+    const barW = Math.max(2, (groupW - barGap * 2) / barsPerGroup);
+
+    const rects = [];
+    for (let i = 0; i < n; i++) {
+      const x0 = padL + i * groupW + barGap;
+      for (let j = 0; j < depts.length; j++) {
+        const dept = depts[j];
+        const v = (seriesMap[dept]?.[i]?.pct) || 0;
+        const h = (v / maxVal) * ih;
+        const x = x0 + j * barW;
+        const y = padT + ih - h;
+
+        ctx.fillStyle = DEPT_COLORS[dept] || "rgba(255,255,255,.65)";
+        ctx.fillRect(x, y, barW - 1, h);
+
+        rects.push({ x, y, w: barW, h, dept, label: labels[i], v });
+      }
+
+      if (i % Math.max(1, Math.round(n / 6)) === 0 || i === n - 1) {
+        ctx.save();
+        ctx.translate(padL + i * groupW + groupW / 2, padT + ih + 18);
+        ctx.fillStyle = "rgba(255,255,255,.55)";
+        ctx.textAlign = "center";
+        ctx.fillText(labels[i], 0, 0);
+        ctx.restore();
+      }
+    }
+
+    function hit(mx, my) {
+      for (let k = rects.length - 1; k >= 0; k--) {
+        const r = rects[k];
+        if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) return r;
+      }
+      return null;
+    }
+
+    canvas.onmousemove = (ev) => {
+      const rc = canvas.getBoundingClientRect();
+      const mx = (ev.clientX - rc.left) * (canvas.width / rc.width);
+      const my = (ev.clientY - rc.top) * (canvas.height / rc.height);
+      const r = hit(mx, my);
+      if (!r) return onHover({ show: false });
+      const cx = ev.clientX, cy = ev.clientY;
+      onHover({ show: true, x: cx, y: cy, title: r.dept, lines: [`${r.label}: ${r.v.toFixed(1)}%`] });
+    };
+    canvas.onmouseleave = () => onHover({ show: false });
+  }
+
+function drawDonut(canvasId, items, opts) {
+    const canvas = document.getElementById(canvasId);
+    const rect = canvas.getBoundingClientRect();
+    const { ctx, W, H } = fitCanvas(canvas);
+
+    const cx = W / 2, cy = H / 2;
+    const R = Math.min(W, H) * 0.33;
+    const r = R * 0.58;
+
+    const total = items.reduce((s, x) => s + (x.value || 0), 0) || 1;
+
+    const segments = [];
+    let a0 = -Math.PI / 2;
+    for (const it of items) {
+      const frac = (it.value || 0) / total;
+      const da = frac * Math.PI * 2;
+      const a1 = a0 + da;
+      segments.push({
+        dept: it.dept,
+        value: it.value || 0,
+        pct: (it.value || 0) / total * 100,
+        a0, a1,
+        color: DEPT_COLORS[it.dept] || "rgba(255,255,255,.8)"
+      });
+      a0 = a1;
+    }
+
+    let hoverIdx = -1;
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      for (let i = 0; i < segments.length; i++) {
+        const s = segments[i];
+        const mid = (s.a0 + s.a1) / 2;
+
+        const isHover = i === hoverIdx;
+        const push = isHover ? 10 : 0;
+        const grow = isHover ? 1.04 : 1.0;
+
+        const ox = Math.cos(mid) * push;
+        const oy = Math.sin(mid) * push;
+
+        ctx.beginPath();
+        ctx.arc(cx + ox, cy + oy, R * grow, s.a0, s.a1);
+        ctx.arc(cx + ox, cy + oy, r * grow, s.a1, s.a0, true);
+        ctx.closePath();
+
+        ctx.fillStyle = s.color;
+        ctx.fill();
+
+        // label % on slice if it fits nicely
+        const arcLen = (s.a1 - s.a0) * ((R + r) / 2);
+        if (arcLen >= 40) {
+          const tx = (cx + ox) + Math.cos(mid) * ((R + r) / 2);
+          const ty = (cy + oy) + Math.sin(mid) * ((R + r) / 2);
+
+          ctx.fillStyle = "rgba(7,10,16,.92)";
+          ctx.font = "800 12px ui-sans-serif, system-ui";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(s.pct.toFixed(0) + "%", tx, ty);
+        }
+      }
+    }
+
+    function hitTest(mx, my) {
+      const dx = mx - cx;
+      const dy = my - cy;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < r || dist > R + 16) return -1;
+
+      // angle normalized to [0..2π), where 0 is at 12 o'clock (start of first slice)
+      let ang = Math.atan2(dy, dx);           // [-π..π]
+      ang = ang + Math.PI / 2;               // shift so 12 o'clock is 0
+      if (ang < 0) ang += Math.PI * 2;
+
+      for (let i = 0; i < segments.length; i++) {
+        const s = segments[i];
+        let a0n = s.a0 + Math.PI / 2;
+        let a1n = s.a1 + Math.PI / 2;
+        if (a0n < 0) a0n += Math.PI * 2;
+        if (a1n < 0) a1n += Math.PI * 2;
+
+        // handle wrap-around
+        if (a1n < a0n) {
+          if (ang >= a0n || ang <= a1n) return i;
+        } else {
+          if (ang >= a0n && ang <= a1n) return i;
+        }
+      }
+      return -1;
+    }
+
+    function hide() {
+      hoverIdx = -1;
+      draw();
+      showHtmlTooltip({ show: false });
+    }
+
+    canvas.onmousemove = (ev) => {
+      const rct = canvas.getBoundingClientRect();
+      const mx = ev.clientX - rct.left;
+      const my = ev.clientY - rct.top;
+
+      const idx = hitTest(mx, my);
+      if (idx !== hoverIdx) {
+        hoverIdx = idx;
+        draw();
+      }
+
+      if (idx >= 0) {
+        const s = segments[idx];
+        const mid = (s.a0 + s.a1) / 2;
+        const ax = cx + Math.cos(mid) * ((R + r) / 2);
+        const ay = cy + Math.sin(mid) * ((R + r) / 2);
+
+        const html = `
+          <b>${escapeHtml(s.dept)}</b>
+          <div style="margin-top:4px;">Доля: <b>${s.pct.toFixed(1)}%</b></div>
+        `;
+
+        showHtmlTooltip({
+          show: true,
+          x: rct.left + ax,
+          y: rct.top + ay,
+          html,
+          arrow: true
+        });
+      } else {
+        showHtmlTooltip({ show: false });
+      }
+    };
+
+    canvas.onmouseleave = hide;
+    canvas.onclick = (ev) => {
+      const rct = canvas.getBoundingClientRect();
+      const mx = ev.clientX - rct.left;
+      const my = ev.clientY - rct.top;
+      const idx = hitTest(mx, my);
+      if (idx >= 0) {
+        // Keep it simple: click pins hover until mouse leaves
+        hoverIdx = idx;
+        draw();
+      }
+    };
+
+    draw();
+  }
+
+  function drawTaskBars(canvasId, rows) {
+    const canvas = document.getElementById(canvasId);
+    const { ctx, W, H } = fitCanvas(canvas);
+
+    ctx.clearRect(0,0,W,H);
+
+    const padL = 320, padR = 18, padT = 16, padB = 18;
+    const iw = W - padL - padR;
+    const ih = H - padT - padB;
+
+    const max = Math.max(1, ...rows.map(r => r.count));
+    const n = rows.length;
+    const rowH = Math.max(34, ih / Math.max(1, n));
+
+    ctx.strokeStyle = "rgba(255,255,255,.08)";
+    ctx.lineWidth = 1;
+    for (let i=0;i<=4;i++){
+      const x = padL + (iw * i/4);
+      ctx.beginPath();
+      ctx.moveTo(x, padT);
+      ctx.lineTo(x, padT+ih);
+      ctx.stroke();
+    }
+
+    for (let i=0;i<n;i++){
+      const r = rows[i];
+      const y = padT + i*rowH + 8;
+      const barH = rowH - 14;
+
+      ctx.fillStyle = "rgba(255,255,255,.90)";
+      ctx.font = "700 12px ui-sans-serif, system-ui";
+      ctx.textAlign = "left";
+      ctx.fillText(r.name, 12, y + 14);
+
+      ctx.fillStyle = "rgba(255,255,255,.58)";
+      ctx.font = "12px ui-sans-serif, system-ui";
+      ctx.fillText(r.tools, 12, y + 30);
+
+      const w = (r.count / max) * iw;
+      ctx.fillStyle = "rgba(78,135,255,.32)";
+      ctx.fillRect(padL, y, w, barH);
+
+      ctx.fillStyle = "rgba(255,255,255,.86)";
+      ctx.font = "700 12px ui-sans-serif, system-ui";
+      const txt = String(r.count);
+      ctx.fillText(txt, padL + Math.min(10, Math.max(6, w - 24)), y + barH/2 + 4);
+    }
+  }
+
+  function renderLegend(containerId, items) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = items.map(d => `
+      <div class="leg-item" title="${escapeHtml(d)}">
+        <span class="dot" style="background:${DEPT_COLORS[d] || 'rgba(255,255,255,.7)'}"></span>
+        <span>${escapeHtml(d)}</span>
+      </div>
+    `).join("");
+  }
+
+  function setTooltip(data) {
+    const t = document.getElementById("tooltip");
+    if (!data?.show) { t.classList.remove("show"); t.classList.remove("arrow"); return; }
+    t.classList.add("show");
+    t.classList.remove("arrow");
+    t.style.left = data.x + "px";
+    t.style.top = data.y + "px";
+    t.innerHTML = `
+      <b>${escapeHtml(data.dept)}</b>
+      <div style="margin-top:4px;">${escapeHtml(data.label)}: <b>${(data.pct||0).toFixed(1)}%</b></div>
+      <small>уникальные пользователи за интервал</small>
+    `;
+  }
+
+  
+  function showHtmlTooltip(data) {
+    const t = document.getElementById("tooltip");
+    if (!data?.show) { t.classList.remove("show"); t.classList.remove("arrow"); return; }
+    t.classList.add("show");
+    t.classList.toggle("arrow", !!data.arrow);
+    t.style.left = data.x + "px";
+    t.style.top = data.y + "px";
+    t.innerHTML = data.html || "";
+  }
+
+  function bindInfoTooltips() {
+    document.querySelectorAll(".info-icon[data-tip]").forEach((el) => {
+      const tipRaw = String(el.getAttribute("data-tip") || "");
+      const tipHtml = `<div style="white-space:pre-line;">${escapeHtml(tipRaw)}</div>`;
+
+      const show = (ev) => {
+        const x = (ev?.clientX ?? (el.getBoundingClientRect().left + el.getBoundingClientRect().width/2));
+        const y = (ev?.clientY ?? el.getBoundingClientRect().top);
+        showHtmlTooltip({ show: true, x, y, html: tipHtml });
+      };
+
+      el.addEventListener("mouseenter", show);
+      el.addEventListener("mousemove", show);
+      el.addEventListener("mouseleave", () => showHtmlTooltip({ show: false }));
+
+      el.addEventListener("focus", () => show());
+      el.addEventListener("blur", () => showHtmlTooltip({ show: false }));
+    });
+  }
+
+  function renderKpi(base) {
+    const el = document.getElementById("kpiGrid");
+    const fteTip =
+`FTE (Full-Time Equivalent) — это эквивалент полной занятости одного сотрудника.
+1 FTE ≈ 160 раб. ч/мес.`;
+
+    const kpis = [
+      { title: "Количество пользователей", value: base.visitors.length, subText: `за ${state.periodDays} дней` },
+      { title: "Ключевые применения", value: base.totalKey, subText: "Нажатия «Использовал» по кейсам/промптам/инструментам" },
+      {
+        title: "Экономия времени",
+        value: `${Math.round(base.savedHours)} чел / ч`,
+        subHtml: `оценочно, экв. ${escapeHtml(base.fte.toFixed(1))} FTE <span class="info-icon" tabindex="0" role="button" aria-label="Что такое FTE" data-tip="${escapeHtml(fteTip)}">!</span>`
+      }
+    ];
+
+    el.innerHTML = kpis.map(k => `
+      <div class="kpi">
+        <div class="muted2">${escapeHtml(k.title)}</div>
+        <div class="value">${escapeHtml(k.value)}</div>
+        <div class="sub">${k.subHtml ? k.subHtml : escapeHtml(k.subText || "")}</div>
+      </div>
+    `).join("");
+
+    bindInfoTooltips();
+
+    setBadge("kpiActiveHint", `${base.totalKey} применений`, "pilot");
+    setBadge("kpiSavedHint", `${Math.round(base.savedHours)} чел / ч (~${base.fte.toFixed(1)} FTE)`, "ok");
+  }
+
+
+  function renderTopList(containerId, items) {
+    const box = document.getElementById(containerId);
+    if (!box) return;
+
+    if (!items.length) {
+      box.innerHTML = `<div class="muted">Нет данных</div>`;
+      return;
+    }
+
+    const top = items[0];
+    box.innerHTML = `
+      <div class="kpi" style="padding: 14px 16px; background: rgba(0,0,0,.10);">
+        <div class="muted2" style="font-size:12px;">Топ</div>
+        <div class="value" style="font-size: 18px; margin-top: 8px; font-weight: 800; letter-spacing:.2px; word-break: break-word;">
+          ${escapeHtml(String(top.id))}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderBaseCharts(base) {
+    const labels = base.days.map(d => d.date.slice(5));
+    const keyActions = base.days.map(d => d.key_actions);
+    const savedHours = base.days.map(d => Math.round((d.saved_min/60)*10)/10);
+
+    drawBarLine("cActive", labels, keyActions, { title:"действия" });
+    drawBarLine("cSaved", labels, savedHours, { title:"чел/ч (оценка)" });
+  }
+
+  function renderAdoption(ds) {
+    const a = computeAdoption(ds);
+    const grainInfo = GRAIN[state.adoptionGrain];
+    setBadge("adoptionRangeBadge", `Период: ${grainInfo.note}`, "pilot");
+
+    const labels = a.buckets.map(b => b.label);
+
+    const chosenDepts = (adoptionSelectedApplied && adoptionSelectedApplied.size)
+      ? [...adoptionSelectedApplied]
+      : DEPARTMENTS;
+
+    const seriesMap = {};
+    for (const dept of chosenDepts) {
+      seriesMap[dept] = a.series[dept] || labels.map(_ => ({pct:0}));
+    }
+
+    if (adoptionChartType === "bar") {
+      drawGroupedBars("cAdoption", labels, seriesMap, setTooltip);
+    } else {
+      drawMultiLine("cAdoption", labels, seriesMap, setTooltip);
+    }
+
+    renderLegend("adoptionLegend", chosenDepts);
+
+    drawDonut("cDonut", a.share, {});
+
+document.getElementById("donutLegend").innerHTML = a.share.map(x => `
+      <div class="leg-item" title="${escapeHtml(x.dept)}">
+        <span class="dot" style="background:${DEPT_COLORS[x.dept] || 'rgba(255,255,255,.7)'}"></span>
+        <span>${escapeHtml(x.dept)} — <b>${x.pct.toFixed(1)}%</b></span>
+      </div>
+    `).join("");
+
+    document.getElementById("topDeptList").innerHTML = a.share.map((x, i) => `
+      <div class="list-row">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="dot" style="background:${DEPT_COLORS[x.dept]}; width:12px; height:12px;"></span>
+          <div>
+            <b>${i+1}. ${escapeHtml(x.dept)}</b>
+            </div>
+        </div>
+        <span class="pill">${x.pct.toFixed(1)}%</span>
+      </div>
+    `).join("");
+}
+
+  function renderTasks(ds) {
+    const t = computeTasks(ds);
+    const grainInfo = GRAIN[state.adoptionGrain];
+    setBadge("taskRangeBadge", `Период: ${grainInfo.note}`, "pilot");
+
+    drawTaskBars("cTasks", t.rows);
+    const lead = t.rows[0];
+    setBadge("taskHint", `лидер: ${lead?.name || "—"} (${lead?.count || 0})`, "ok");
+  }
+
+  
+  function sortTopEmployees(rows) {
+    const { sortKey, sortDir } = state.topEmp;
+    const dir = sortDir === "asc" ? 1 : -1;
+
+    const nameOf = (r) => resolveUserDisplayName(r.client_id || "").toLowerCase();
+
+    const cmpNum = (a, b, key) => ((a[key] ?? 0) - (b[key] ?? 0)) * dir;
+    const cmpStr = (a, b) => (nameOf(a) > nameOf(b) ? 1 : nameOf(a) < nameOf(b) ? -1 : 0) * dir;
+
+    const sorted = rows.slice();
+
+    sorted.sort((a, b) => {
+      if (sortKey === "fio") return cmpStr(a, b);
+
+      if (sortKey === "cases") return cmpNum(a, b, "cases") || cmpNum(a, b, "total");
+      if (sortKey === "prompts") return cmpNum(a, b, "prompts") || cmpNum(a, b, "total");
+      if (sortKey === "tools") return cmpNum(a, b, "tools") || cmpNum(a, b, "total");
+
+      return cmpNum(a, b, "total") || cmpNum(a, b, "tools") || cmpNum(a, b, "cases") || cmpNum(a, b, "prompts");
+    });
+
+    return sorted;
+  }
+
+  function updateTopEmpHeaderIndicators() {
+    const ths = document.querySelectorAll('th.th-sort');
+    ths.forEach(th => {
+      const key = th.getAttribute("data-sort");
+      const ind = th.querySelector(".th-ind");
+      if (!ind) return;
+
+      if (key === state.topEmp.sortKey) {
+        ind.textContent = state.topEmp.sortDir === "asc" ? "▲" : "▼";
+      } else {
+        ind.textContent = "";
+      }
+    });
+  }
+
+  function renderTopEmployees(ds) {
+    const tb = document.getElementById("tblTopEmployees");
+    if (!tb) return;
+
+    const all = sortTopEmployees(computeUserUsage(ds));
+    const rows = all.slice(0, 5);
+
+    tb.innerHTML = rows.map(r => `
+      <tr>
+        <td><b>${escapeHtml(r.fio)}</b></td>
+        <td>${escapeHtml(String(r.cases))}</td>
+        <td>${escapeHtml(String(r.prompts))}</td>
+        <td>${escapeHtml(String(r.tools))}</td>
+      </tr>
+    `).join("");
+
+    
+  }
+
+
+  function renderFeedback(ds) {
+    const tb = document.getElementById("tblFeedback");
+    if (!tb) return;
+    const rows = (ds.tickets || [])
+        .filter(t => t.created_at)
+        .filter(t => (state.dept==="all" ? true : (t.department||"") === state.dept))
+        .sort((a,b)=> String(b.created_at).localeCompare(String(a.created_at)))
+        .slice(0, 18);
+    setBadge("fbCountBadge", `Записей: ${rows.length}`, rows.length ? "pilot" : "");
+    tb.innerHTML = rows.map(r => `
+        <tr>
+            <td><b>${escapeHtml(r.ticket_id || "-")}</b></td>
+            <td>${escapeHtml(r.department || "-")}</td>
+            <td>${escapeHtml(String(r.created_at||"").slice(0,10))}</td>
+            <td>${escapeHtml(r.type || "-")}</td>
+            <td class="muted2">${escapeHtml((r.message || "").slice(0,90))}</td>
+            <td>${(r.rating==null) ? "—" : escapeHtml(String(r.rating))}</td>
+        </tr>
+    `).join("") || `<tr><td colspan="6" class="muted2">Нет данных</td></tr>`;
+}
+
+  function renderAccess(ds) {
+    const tb = document.getElementById("tblAccess");
+    if (!tb) return;
+    const rows = (ds.access || [])
+        .filter(a => a.created_at)
+        .filter(a => (state.dept==="all" ? true : (a.dept||"") === state.dept))
+        .sort((a,b)=> String(b.created_at).localeCompare(String(a.created_at)))
+        .slice(0, 18);
+    setBadge("arCountBadge", `Запросов: ${rows.length}`, rows.length ? "warn" : "");
+    tb.innerHTML = rows.map(r => `
+        <tr>
+            <td><b>${escapeHtml(r.id || "-")}</b></td>
+            <td>${escapeHtml(r.dept || "-")}</td>
+            <td>${escapeHtml(String(r.created_at||"").slice(0,10))}</td>
+            <td>${escapeHtml(r.tool_name || r.tool_id || "-")}</td>
+            <td class="muted2">${escapeHtml((r.reason || "").slice(0,90))}</td>
+        </tr>
+    `).join("") || `<tr><td colspan="5" class="muted2">Нет данных</td></tr>`;
+}
+
+  // ====== Master render ======
+  function renderAll() {
+    const ds = loadDataset();
+    fillDeptSelector(ds);
+    setPeriodButtons();
+
+    const base = computeBase(ds);
+
+    renderLeader(ds);
+    renderKpi(base);
+    renderBaseCharts(base);
+    renderAdoption(ds);
+    renderTasks(ds);
+
+    renderTopEmployees(ds);
+    renderFeedback(ds);
+    renderAccess(ds);
+
+    renderTopList("topCases", base.topCases);
+    renderTopList("topPrompts", base.topPrompts);
+    renderTopList("topTools", base.topTools);
+  }
+
+  // ====== UI wiring ======
+  function setupUI() {
+    
+    function clearDemoData() {
+      // Clears only dashboard-related keys (demo or real). Use confirm to avoid accidental wipe.
+      const keysToClear = [
+        LS.UI_EVENTS, LS.CASE_USED, LS.PROMPT_USED, LS.TOOL_USED,
+        LS.FEEDBACK_TICKETS, LS.ACCESS_REQUESTS, LS.TASK_EVENTS,
+        LS.HEADCOUNT, LS.USER_PROFILES, LS.DEMO_MARK
+      ];
+      keysToClear.forEach(k => {
+        try { localStorage.removeItem(k); } catch (_) {}
+      });
+    }
+
+    const btnDemo = document.getElementById("btnDemo");
+    if (btnDemo) {
+      btnDemo.addEventListener("click", () => {
+        try {
+          const seed = Math.floor(Math.random() * 1000000);
+          genDemo(seed);
+          location.reload();
+        } catch (err) {
+          console.error("Demo generation failed:", err);
+          alert("Не удалось сгенерировать demo-данные: " + (err && err.message ? err.message : err));
+        }
+      });
+    }
+
+    const btnClearDemo = document.getElementById("btnClearDemo");
+    if (btnClearDemo) {
+      btnClearDemo.addEventListener("click", () => {
+        const ok = confirm("Обнулить данные аналитики (очистить demo)?");
+        if (!ok) return;
+        clearDemoData();
+        location.reload();
+      });
+    }
+
+    const btnRegenerateDemo = document.getElementById("btnRegenerateDemo");
+    if (btnRegenerateDemo) {
+      btnRegenerateDemo.addEventListener("click", () => {
+        const ok = confirm("Очистить данные и сгенерировать demo заново?");
+        if (!ok) return;
+        try {
+          clearDemoData();
+          const seed = Math.floor(Math.random() * 1000000);
+          genDemo(seed);
+          location.reload();
+        } catch (err) {
+          console.error("Demo regeneration failed:", err);
+          alert("Не удалось пересоздать demo-данные: " + (err && err.message ? err.message : err));
+        }
+      });
+    }
+document.querySelectorAll('.seg button[data-period]').forEach(b => {
+      b.addEventListener("click", () => {
+        state.periodDays = Number(b.getAttribute("data-period")) || 7;
+        state.topEmp.page = 1;
+        renderAll();
+      });
+    });
+
+    document.querySelectorAll('.seg button[data-grain]').forEach(b => {
+      b.addEventListener("click", () => {
+        state.adoptionGrain = b.getAttribute("data-grain") || "weeks";
+        renderAll();
+      });
+    });
+
+    const deptSel = document.getElementById("fDept");
+    if (deptSel) {
+      deptSel.addEventListener("change", (e) => {
+        state.dept = e.target.value;
+        state.topEmp.page = 1;
+        renderAll();
+      });
+    }
+
+    const prevBtn = document.getElementById("topEmpPrev");
+    const nextBtn = document.getElementById("topEmpNext");
+
+    if (prevBtn) {
+      prevBtn.addEventListener("click", () => {
+        state.topEmp.page = Math.max(1, state.topEmp.page - 1);
+        renderAll();
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener("click", () => {
+        state.topEmp.page = state.topEmp.page + 1;
+        renderAll();
+      });
+    }
+
+    const sortHeaders = document.querySelectorAll('th.th-sort');
+    sortHeaders.forEach(th => {
+      const key = th.getAttribute("data-sort");
+
+      const toggle = () => {
+        if (!key) return;
+
+        if (state.topEmp.sortKey === key) {
+          state.topEmp.sortDir = state.topEmp.sortDir === "asc" ? "desc" : "asc";
+        } else {
+          state.topEmp.sortKey = key;
+          state.topEmp.sortDir = key === "fio" ? "asc" : "desc";
+        }
+        state.topEmp.page = 1;
+        renderAll();
+      };
+
+      th.addEventListener("click", toggle);
+      th.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggle();
+        }
+      });
+    });
+
+
+
+
+    // Feedback table: search + sort (display-only)
+    const fbSearch = document.getElementById("fbSearch");
+    if (fbSearch) {
+      fbSearch.addEventListener("input", () => { fbQuery = fbSearch.value || ""; renderAll(); });
+    }
+    document.querySelectorAll('table[aria-label="Таблица обратной связи"] thead th.th-sort').forEach(th => {
+      const key = th.getAttribute("data-sort");
+      const toggle = () => {
+        if (fbSortKey === key) fbSortDir = fbSortDir === "asc" ? "desc" : "asc";
+        else { fbSortKey = key; fbSortDir = key === "created_at" ? "desc" : "asc"; }
+        renderAll();
+      };
+      th.addEventListener("click", toggle);
+      th.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+      });
+    });
+
+    // Access requests table: search + sort (display-only)
+    const arSearch = document.getElementById("arSearch");
+    if (arSearch) {
+      arSearch.addEventListener("input", () => { arQuery = arSearch.value || ""; renderAll(); });
+    }
+    document.querySelectorAll('table[aria-label="Таблица запросов доступа"] thead th.th-sort').forEach(th => {
+      const key = th.getAttribute("data-sort");
+      const toggle = () => {
+        if (arSortKey === key) arSortDir = arSortDir === "asc" ? "desc" : "asc";
+        else { arSortKey = key; arSortDir = key === "created_at" ? "desc" : "asc"; }
+        renderAll();
+      };
+      th.addEventListener("click", toggle);
+      th.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+      });
+    });
+
+
+    window.addEventListener("resize", () => renderAll(), { passive:true });
+  }
+
+  function init() {
+    setupUI();
+    initAdoptionBuilder();
+
+    let ds = loadDataset();
+    if (datasetLooksEmpty(ds)) {
+      // no local data => seed demo (noise) for local offline preview
+      ds = genDemo(4242);
+    }
+
+    state.adoptionGrain = "weeks";
+    renderAll();
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

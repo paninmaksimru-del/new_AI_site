@@ -18,6 +18,11 @@ app.use((req, res, next) => {
 
 // ----- Static files -----
 app.use(express.static(publicDir, { index: false }));
+// Явная раздача логотипа (на случай кэша)
+app.get('/logo.png', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(join(publicDir, 'logo.png'));
+});
 
 // Auth setup
 setupAuth(app, getDb);
@@ -30,6 +35,7 @@ app.get('/admin', (req, res) => res.sendFile(join(publicDir, 'admin.html')));
 app.get('/profile', (req, res) => res.sendFile(join(publicDir, 'profile.html')));
 app.get('/training', (req, res) => res.sendFile(join(publicDir, 'Обучение.html')));
 app.get('/cases', (req, res) => res.sendFile(join(publicDir, 'Кейсы.html')));
+app.get('/chat', (req, res) => res.sendFile(join(publicDir, 'chat.html')));
 
 // ----- API -----
 const db = () => getDb();

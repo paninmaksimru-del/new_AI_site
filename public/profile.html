@@ -75,8 +75,9 @@ button, input, select, textarea{ font: inherit; color: inherit; }
 header{ position: sticky; top:0; z-index: 900; height: var(--header-h); backdrop-filter: var(--blur); background: rgba(7,10,16,.55); border-bottom: 1px solid rgba(255,255,255,.08); }
 .topbar{ max-width: var(--max); margin:0 auto; height: 100%; display:flex; align-items:center; justify-content: space-between; padding: 0 var(--pad); gap: 12px; }
 .brand{ display:flex; align-items:center; gap: 10px; min-width: 220px; }
-.brand .logo{ width: 34px; height:34px; border-radius: 10px; background: radial-gradient(circle at 30% 30%, rgba(120,140,255,.95), rgba(38,210,152,.75)); box-shadow: 0 10px 25px rgba(0,0,0,.35); position: relative; overflow: hidden; flex: 0 0 auto; }
-.brand .logo:before{ content:""; position:absolute; inset:-20px; background: radial-gradient(circle at 40% 40%, rgba(255,255,255,.25), transparent 55%); transform: rotate(15deg); }
+.brand .logo{ width: 120px; height: 60px; background: transparent !important; box-shadow: none !important; border-radius: 0 !important; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden !important; }
+.brand .logo::before{ display: none !important; }
+.brand .logo img{ width: 100%; height: 100%; object-fit: contain; mix-blend-mode: screen; display: block; }
 .brand .name{ font-weight: 700; letter-spacing: .2px; font-size: 14px; line-height: 1.25; color: rgba(255,255,255,.9); }
 
 nav{ display:flex; align-items:center; gap: 6px; }
@@ -199,14 +200,12 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 
 <header>
   <div class="topbar">
-    <a class="brand" href="index.html" aria-label="Перейти на главную страницу витрины">
-      <span class="logo" aria-hidden="true"></span>
-      <span class="name">Витрина ИИ‑сервисов</span>
+    <a class="brand" href="/" aria-label="На главную">
+      <span class="logo"><img src="/logo.png?v=2" alt="МИК" /></span>
     </a>
     <nav id="mainNav">
       <a class="navlink" href="training.html">Обучение</a>
       <a class="navlink" href="cases.html">Кейсы</a>
-      <a class="navlink" href="chat.html">Чат с ИИ</a>
       <a class="navlink" href="stats.html">Статистика</a>
       <a class="navlink" href="feedback.html">Обратная связь</a>
       <button class="btn ghost small" id="logoutBtn" type="button">Выйти</button>
@@ -216,7 +215,6 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   <div class="mobile-menu" id="mobileMenu">
     <a class="navlink" href="training.html">Обучение</a>
     <a class="navlink" href="cases.html">Кейсы</a>
-    <a class="navlink" href="chat.html">Чат с ИИ</a>
     <a class="navlink" href="stats.html">Статистика</a>
     <a class="navlink" href="feedback.html">Обратная связь</a>
     <button class="btn ghost small" id="logoutBtnMobile" type="button" style="width:100%;margin-top:4px;">Выйти</button>
@@ -475,23 +473,32 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     }
   }
 
+  function clearAuth() {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_role');
+    localStorage.removeItem('auth_login');
+    localStorage.removeItem('auth_full_name');
+    localStorage.removeItem(AUTH_KEY);
+  }
+
   var isFileProtocol = window.location.protocol === 'file:';
   var AUTH = getAuthState();
-  if (!isFileProtocol && (!AUTH || AUTH.isAuthorized !== true)) {
-    // [AUTH] Неавторизованных пользователей в боевом контуре перенаправляем на главную страницу с формой входа
+  var token = localStorage.getItem('auth_token');
+  if (!isFileProtocol && (!token || !AUTH || AUTH.isAuthorized !== true)) {
+    clearAuth();
     window.location.replace('/login');
     return;
   }
 
   var PROFILE = {
-    name: "Алексей Петров",
-    initials: "АП",
-    position: "Менеджер проектов",
-    department: "Отдел цифровых инноваций",
-    center: "Центр трансформации бизнеса",
-    phone: "+7 (999) 123-45-67",
-    email: "a.petrov@mik.ru",
-    telegram: "@a_petrov",
+    name: "Пользователь",
+    initials: "?",
+    position: "",
+    department: "",
+    center: "",
+    phone: "",
+    email: "",
+    telegram: "",
     level: 3,
     levelProgress: 68,
     levelUsed: 34,
@@ -521,29 +528,79 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 
   var LEVELS = ["Новичок","Исследователь","Практик","Эксперт","Лидер"];
 
-  // При наличии данных из авторизации подставляем их в профиль
-  if (AUTH.name) {
-    PROFILE.name = AUTH.name;
-    PROFILE.initials = (AUTH.initials || AUTH.name.split(' ').map(function(p){ return p && p[0] ? p[0] : ''; }).join('').slice(0,2).toUpperCase());
-  }
-
-  var greetingEl = document.getElementById('greetingTitle');
-  if (greetingEl && PROFILE.name) {
-    var firstName = PROFILE.name.split(' ')[0] || PROFILE.name;
-    greetingEl.textContent = 'Добро пожаловать, ' + firstName + '!';
-  }
-
-  var profileNameEl = document.querySelector('.profile-name');
-  if (profileNameEl && PROFILE.name) {
-    profileNameEl.textContent = PROFILE.name;
-  }
-
-  var avatarEl = document.getElementById('avatar');
-  if (avatarEl && PROFILE.initials) {
-    if (avatarEl.firstChild) {
-      avatarEl.firstChild.nodeValue = PROFILE.initials;
+  // Проверка сессии и загрузка данных пользователя из БД
+  (async function loadMe() {
+    try {
+      var res = await fetch('/api/me', { headers: { 'x-auth-token': token || '' } });
+      if (!res.ok) {
+        clearAuth();
+        window.location.replace('/login');
+        return;
+      }
+      var me = await res.json();
+      if (me.full_name) {
+        PROFILE.name = me.full_name;
+        PROFILE.initials = me.full_name.split(/\s+/).map(function(p){ return p && p[0] ? p[0] : ''; }).join('').slice(0, 2).toUpperCase();
+        try { localStorage.setItem('auth_full_name', me.full_name); var m = getAuthState(); m.full_name = me.full_name; if (me.department) m.department = me.department; if (me.contacts) m.contacts = me.contacts; localStorage.setItem(AUTH_KEY, JSON.stringify(m)); } catch(_) {}
+      } else if (me.login) {
+        PROFILE.name = me.login;
+        PROFILE.initials = (me.login[0] || '?').toUpperCase();
+      }
+      if (me.department) PROFILE.department = me.department;
+      if (me.contacts) {
+        PROFILE.phone = PROFILE.email = PROFILE.telegram = '';
+        PROFILE.contactsDisplay = me.contacts;
+      }
+    } catch (e) {
+      clearAuth();
+      window.location.replace('/login');
+      return;
     }
-  }
+
+    // При наличии данных из авторизации подставляем их в профиль
+    if (AUTH.full_name) PROFILE.name = AUTH.full_name;
+
+    var greetingEl = document.getElementById('greetingTitle');
+    if (greetingEl && PROFILE.name) {
+      var firstName = PROFILE.name.split(/\s+/)[0] || PROFILE.name;
+      greetingEl.textContent = 'Добро пожаловать, ' + firstName + '!';
+    }
+
+    var profileNameEl = document.querySelector('.profile-name');
+    if (profileNameEl && PROFILE.name) {
+      profileNameEl.textContent = PROFILE.name;
+    }
+
+    var profileRoleEl = document.querySelector('.profile-role');
+    if (profileRoleEl && PROFILE.department) {
+      profileRoleEl.textContent = PROFILE.department;
+    }
+
+    var profileCenterEl = document.querySelector('.profile-center');
+    if (profileCenterEl) {
+      profileCenterEl.textContent = PROFILE.center || '';
+      profileCenterEl.style.display = PROFILE.center ? '' : 'none';
+    }
+
+    var profileContactsEl = document.querySelector('.profile-contacts');
+    if (profileContactsEl) {
+      function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+      if (PROFILE.contactsDisplay) {
+        profileContactsEl.innerHTML = '<span>' + esc(PROFILE.contactsDisplay).replace(/\n/g, '</span><span>') + '</span>';
+      } else if (PROFILE.phone || PROFILE.email || PROFILE.telegram) {
+        profileContactsEl.innerHTML = [PROFILE.phone && 'Tel: ' + PROFILE.phone, PROFILE.email && 'e-mail: ' + PROFILE.email, PROFILE.telegram && 'TG: ' + PROFILE.telegram].filter(Boolean).map(function(s){ return '<span>' + s + '</span>'; }).join('');
+      } else {
+        profileContactsEl.style.display = 'none';
+      }
+    }
+
+    var avatarEl = document.getElementById('avatar');
+    if (avatarEl && PROFILE.initials) {
+      if (avatarEl.firstChild) {
+        avatarEl.firstChild.nodeValue = PROFILE.initials;
+      }
+    }
+  })();
 
   var progBar = document.getElementById('progBar');
   window.addEventListener('scroll', function() {

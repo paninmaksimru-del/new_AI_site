@@ -100,19 +100,15 @@
       min-width: 220px;
     }
     .brand .logo{
-      width: 34px; height:34px;
-      border-radius: 10px;
-      background: radial-gradient(circle at 30% 30%, rgba(0,170,100,.95), rgba(0,220,130,.75));
-      box-shadow: 0 10px 25px rgba(0,0,0,.35);
-      position: relative;
-      overflow: hidden;
+      width: 120px; height: 60px;
+      background: transparent !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0; overflow: hidden !important;
     }
-    .brand .logo:before{
-      content:"";
-      position:absolute; inset:-20px;
-      background: radial-gradient(circle at 40% 40%, rgba(255,255,255,.25), transparent 55%);
-      transform: rotate(15deg);
-    }
+    .brand .logo::before{ display: none !important; }
+    .brand .logo img{ width: 100%; height: 100%; object-fit: contain; mix-blend-mode: screen; display: block; }
     .brand .name{
       font-weight: 700;
       letter-spacing: .2px;
@@ -855,13 +851,11 @@
   <header>
     <div class="topbar">
       <a class="brand" href="/">
-        <span class="logo" aria-hidden="true"></span>
-        <span class="name">Витрина ИИ‑сервисов</span>
+        <span class="logo"><img src="/logo.png?v=2" alt="МИК" /></span>
       </a>
       <nav aria-label="Основная навигация">
         <a class="navlink" href="/training" data-section="training">Обучение</a>
         <a class="navlink active" href="/cases" data-section="cases">Кейсы</a>
-        <a class="navlink" href="/chat.html" data-section="chat">Чат с ИИ</a>
         <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
         <a class="navlink" href="#feedback" data-section="feedback">Обратная связь</a>
         <a class="profile-btn" href="/profile" id="profileBtn">
@@ -875,7 +869,6 @@
     <div class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню" role="dialog">
       <a class="navlink" href="/training" data-section="training">Обучение</a>
       <a class="navlink active" href="/cases" data-section="cases">Кейсы</a>
-      <a class="navlink" href="/chat.html" data-section="chat">Чат с ИИ</a>
       <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
       <a class="navlink" href="#feedback" data-section="feedback">Обратная связь</a>
       <a class="profile-btn" href="/profile">
@@ -1471,11 +1464,30 @@
         });
       }
 
+      // Личный кабинет: редирект на /login если не авторизован; показ ФИО если авторизован
+      (function initProfileBtn() {
+        const token = localStorage.getItem("auth_token");
+        const auth = (() => { try { return JSON.parse(localStorage.getItem("mikAuth")); } catch(_) { return null; } })();
+        const isAuthed = token && auth && auth.isAuthorized;
+        const fullName = localStorage.getItem("auth_full_name") || (auth && auth.full_name);
+        document.querySelectorAll('a[href="/profile"], .profile-btn[href="/profile"], #profileBtn').forEach(btn => {
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (!token || !auth || !auth.isAuthorized) { window.location = "/login"; return; }
+            window.location = "/profile";
+          });
+          const span = btn.querySelector(".nowrap");
+          if (isAuthed && fullName && span) span.textContent = fullName;
+        });
+      })();
+
       // Загружаем кейсы из API, потом инициализируем
       loadCasesFromApi().then(() => {
         initFilters();
         renderCases();
       });
+      // Библиотека промптов — загрузка из БД
+      renderPrompts();
       initFeedbackForm();
 
       // события фильтров
@@ -1536,7 +1548,7 @@
     async function loadFromApi(path) {
       try {
         const res = await fetch(path);
-        if (res.ok) { const d = await res.json(); if (Array.isArray(d) && d.length) return d; }
+        if (res.ok) { const d = await res.json(); if (Array.isArray(d)) return d; }
       } catch(_) {}
       return null;
     }
@@ -1583,7 +1595,7 @@
       const container = document.getElementById('promptsAccordion');
       if (!container) return;
       const prompts = await loadFromApi('/api/prompts');
-      if (!prompts) {
+      if (!prompts || !Array.isArray(prompts)) {
         container.innerHTML = `
           <div class="acc-item open">
             <div class="acc-head"><div class="acc-title"><b>Коммуникации (письма, записки, ответы)</b><span>Официальный стиль, лимит объёма, варианты формулировок.</span></div><span class="muted2">▾</span></div>
@@ -1661,6 +1673,11 @@
         }
         sectionMap[key].items.push(p);
       });
+
+      if (sections.length === 0) {
+        container.innerHTML = '<p class="muted" style="padding:12px 0;">Промптов пока нет. Добавьте их в <a href="/admin">админ-панели</a>.</p>';
+        return;
+      }
 
       container.innerHTML = sections.map((sec, si) => `
         <div class="acc-item${si === 0 ? ' open' : ''}">

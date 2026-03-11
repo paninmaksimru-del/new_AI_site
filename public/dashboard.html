@@ -74,16 +74,19 @@
       min-width: 340px;
     }
     .brand .logo{
-      width:34px; height:34px; border-radius: 10px;
-      background: radial-gradient(circle at 30% 30%, rgba(78,135,255,.95), rgba(60,230,180,.75));
-      box-shadow: 0 10px 25px rgba(0,0,0,.35);
-      position: relative; overflow:hidden;
-      flex: 0 0 auto;
+      width: 120px; height: 60px;
+      background: transparent !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0; overflow: hidden !important;
     }
-    .brand .logo:before{
-      content:""; position:absolute; inset:-20px;
-      background: radial-gradient(circle at 40% 40%, rgba(255,255,255,.25), transparent 55%);
-      transform: rotate(15deg);
+    .brand .logo::before{ display: none !important; }
+    .brand .logo img{
+      width: 100%; height: 100%;
+      object-fit: contain;
+      mix-blend-mode: screen;
+      display: block;
     }
     .brand .name{
       font-weight: 700;
@@ -612,7 +615,7 @@
       return;
     }
     var el = document.getElementById('userName');
-    if (el) el.textContent = auth.login || '';
+    if (el) el.textContent = auth.full_name || auth.login || '';
   } catch(e) {
     window.location.replace('/login');
   }
@@ -633,15 +636,13 @@ function logout() {
 </script>
 <header>
   <div class="topbar">
-    <a class="brand" href="index.html" aria-label="Перейти на платформу">
-      <span class="logo" aria-hidden="true"></span>
-      <span class="name">Витрина ИИ-сервисов</span>
+    <a class="brand" href="/" aria-label="На главную">
+      <span class="logo"><img src="/logo.png?v=2" alt="МИК" /></span>
     </a>
 
     <nav class="nav" aria-label="Основная навигация">
       <a class="navlink" href="training">Обучение</a>
       <a class="navlink" href="cases">Кейсы</a>
-      <a class="navlink" href="chat">Чат с ИИ</a>
       <a class="navlink active" href="dashboard">Статистика</a>
       <a class="navlink" href="feedback">Обратная связь</a>
       <a class="navlink" href="profile">Личный кабинет</a>

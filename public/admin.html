@@ -72,7 +72,10 @@
 <header>
   <div class="wrap">
     <div class="topbar">
-      <div class="brand">🛠 Админ-панель</div>
+      <a href="/" class="brand" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+        <img src="/logo.png?v=2" alt="МИК" style="width:44px;height:44px;object-fit:contain;" />
+        <span>Админ-панель</span>
+      </a>
       <div class="nav-right">
         <span class="user-badge" id="userName"></span>
         <a href="/dashboard" class="btn small">Дашборд</a>
@@ -98,7 +101,7 @@
   <div id="tab_users" class="tabpane active">
     <div class="panel">
       <h2>Пользователи</h2>
-      <p class="muted">Управление доступом к платформе. Пароли хранятся в зашифрованном виде (SHA-256).</p>
+      <p class="muted">Управление доступом. ФИО, подразделение и контакты отображаются на сайте и в личном кабинете.</p>
       <div class="panel" style="margin-top:12px;">
         <h3>Создать пользователя</h3>
         <div class="field-row">
@@ -110,6 +113,11 @@
               <option value="admin">admin — администратор</option>
             </select>
           </div>
+        </div>
+        <div class="field-row">
+          <div class="field" style="flex:1;"><label>ФИО</label><input type="text" id="newUserFullName" placeholder="Иванов Иван Иванович" /></div>
+          <div class="field" style="flex:1;"><label>Подразделение</label><input type="text" id="newUserDepartment" placeholder="Отдел цифровых инноваций" /></div>
+          <div class="field" style="flex:1;"><label>Контакты</label><input type="text" id="newUserContacts" placeholder="тел., e-mail, Telegram" /></div>
         </div>
         <button class="btn ok" id="btnCreateUser">Создать пользователя</button>
       </div>
@@ -343,7 +351,7 @@
     if (!auth || auth.isAuthorized !== true) { window.location.replace('/login'); return; }
     if (auth.role !== 'admin') { window.location.replace('/profile'); return; }
     var el = document.getElementById('userName');
-    if (el) el.textContent = '👤 ' + (auth.login || 'admin');
+    if (el) el.textContent = '👤 ' + (auth.full_name || auth.login || 'admin');
   } catch(e) { window.location.replace('/login'); }
 })();
 
@@ -389,9 +397,15 @@ async function loadUsers() {
     const users = await api('/api/users');
     ul.innerHTML = users.length ? users.map(u => `
       <li class="list-item">
-        <span><b>${esc(u.login)}</b><span class="badge ${u.role==='admin'?'accent':'ok'}">${esc(u.role)}</span></span>
+        <span>
+          <b>${esc(u.full_name || u.login)}</b>
+          <span class="badge ${u.role==='admin'?'accent':'ok'}">${esc(u.role)}</span>
+          <span class="hint" style="margin-left:6px;">${esc(u.login)}</span>
+          ${u.department ? `<span class="hint" style="margin-left:6px;"> · ${esc(u.department)}</span>` : ''}
+          ${u.contacts ? `<span class="hint" style="margin-left:6px;"> · ${esc(u.contacts)}</span>` : ''}
+        </span>
         <div class="list-actions">
-          ${u.login!=='admin' ? `<button class="btn small danger" onclick="delUser(${u.id},'${esc(u.login)}')">Удалить</button>` : '<span class="hint">системный</span>'}
+          ${u.login!=='admin' ? `<button class="btn small" onclick="editUser(${u.id})">Изменить</button><button class="btn small danger" onclick="delUser(${u.id},'${esc(u.login)}')">Удалить</button>` : '<span class="hint">системный</span>'}
         </div>
       </li>`).join('') : '<li class="loading">Пользователей нет</li>';
   } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
@@ -405,16 +419,39 @@ document.getElementById('btnCreateUser').addEventListener('click', async () => {
   const login = document.getElementById('newUserLogin').value.trim();
   const password = document.getElementById('newUserPassword').value;
   const role = document.getElementById('newUserRole').value;
+  const full_name = document.getElementById('newUserFullName').value.trim() || null;
+  const department = document.getElementById('newUserDepartment').value.trim() || null;
+  const contacts = document.getElementById('newUserContacts').value.trim() || null;
   if (!login||!password) { toast('Заполните логин и пароль','err'); return; }
   if (password.length<6) { toast('Пароль минимум 6 символов','err'); return; }
   try {
-    await api('/api/users', {method:'POST', body:JSON.stringify({login,password,role})});
-    toast(`Пользователь ${login} создан`);
+    await api('/api/users', {method:'POST', body:JSON.stringify({login,password,role,full_name,department,contacts})});
+    toast('Пользователь создан');
     document.getElementById('newUserLogin').value='';
     document.getElementById('newUserPassword').value='';
+    document.getElementById('newUserFullName').value='';
+    document.getElementById('newUserDepartment').value='';
+    document.getElementById('newUserContacts').value='';
     loadUsers();
   } catch(e) { toast(e.message,'err'); }
 });
+
+async function editUser(id) {
+  const users = await api('/api/users');
+  const u = users.find(x => x.id === id);
+  if (!u) return;
+  const full_name = prompt('ФИО', u.full_name || '');
+  if (full_name === null) return;
+  const department = prompt('Подразделение', u.department || '');
+  if (department === null) return;
+  const contacts = prompt('Контакты', u.contacts || '');
+  if (contacts === null) return;
+  try {
+    await api(`/api/users/${id}`, {method:'PUT', body:JSON.stringify({full_name: full_name || null, department: department || null, contacts: contacts || null})});
+    toast('Сохранено');
+    loadUsers();
+  } catch(e) { toast(e.message,'err'); }
+}
 
 // ── DEPARTMENTS ───────────────────────────────────────────────────────────────
 async function loadDepts() {

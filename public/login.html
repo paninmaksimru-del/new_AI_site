@@ -160,11 +160,15 @@
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem('auth_role', data.role);
         localStorage.setItem('auth_login', data.login);
+        if (data.full_name) localStorage.setItem('auth_full_name', data.full_name);
         localStorage.setItem('mikAuth', JSON.stringify({
           isAuthorized: true,
           token: data.token,
           role: data.role,
-          login: data.login
+          login: data.login,
+          full_name: data.full_name || null,
+          department: data.department || null,
+          contacts: data.contacts || null
         }));
 
         window.location = data.role === 'admin' ? '/admin' : '/profile';

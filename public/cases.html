@@ -657,7 +657,7 @@
       nav{ display:none; }
       .burger{ display:flex; }
       .mobile-menu.show{ display:block; }
-      #hero{ padding-top: 76px; }
+      #hero{ padding-top: 48px; }
 
       /* Слайдер промптов внутри аккордеона */
       .prompt-grid {
@@ -833,16 +833,6 @@
       font-size: 12.5px;
       color: rgba(255,255,255,.66);
       margin: 0;
-    }
-    .codebox{
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(0,0,0,.30);
-      padding: 8px 10px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 12.8px;
-      color: rgba(255,255,255,.90);
-      margin-top: 8px;
     }
     .codebox textarea.prompt-input{
       width: 100%;
@@ -1226,6 +1216,9 @@
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
     }
+    function safeId(str) {
+      return String(str || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
 
     function showToast(message) {
       const toast = document.getElementById("toast");
@@ -1261,7 +1254,7 @@
     }
 
     function getJson(key, fallback) {
-      try { return JSON.parse(localStorage.getItem(key) || ""); } catch { return fallback; }
+      try { return JSON.parse(localStorage.getItem(key) || "null") ?? fallback; } catch { return fallback; }
     }
     function setJson(key, value) {
       localStorage.setItem(key, JSON.stringify(value));
@@ -1666,43 +1659,6 @@
       return null;
     }
 
-    function escHtml(s) {
-      return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-    }
-
-    // ── Init MIK tools (статика уже в HTML, просто инициализируем кнопку) ──────
-    function renderMikTools() {
-      const grid = document.getElementById('mikServicesGrid');
-      if (!grid) return;
-      initShowMore('showMoreMik', '.mik-card.is-stub', grid);
-    }
-
-    // ── Generic showMore initializer ──────────────────────────────────────────
-    function initShowMore(btnId, selector, container) {
-      const btn = document.getElementById(btnId);
-      if (!btn) return;
-      const newBtn = btn.cloneNode(true);
-      btn.parentNode.replaceChild(newBtn, btn);
-      const cards = Array.from((container || document).querySelectorAll(selector));
-      if (!cards.length) { newBtn.style.display = 'none'; return; }
-      // Карточки уже скрыты через CSS — просто вешаем обработчик
-      newBtn.style.display = '';
-      newBtn.textContent = 'Показать ещё';
-      newBtn.addEventListener('click', () => {
-        const isShown = cards[0].classList.contains('shown');
-        cards.forEach(c => c.classList.toggle('shown', !isShown));
-        newBtn.textContent = isShown ? 'Показать ещё' : 'Скрыть';
-      });
-    }
-
-    // ── Init public tools (статика уже в HTML, просто инициализируем кнопку) ───
-    function renderPublicTools() {
-      const grid = document.getElementById('publicServicesGrid');
-      if (!grid) return;
-      initShowMore('showMorePub', '.pub-extra', grid);
-    }
-
-    // ── Render prompts accordion ───────────────────────────────────────────────
     // ── Render prompts accordion ───────────────────────────────────────────────
     async function renderPrompts() {
       const container = document.getElementById('promptsAccordion');
@@ -1794,8 +1750,8 @@
         <div class="acc-item${si === 0 ? ' open' : ''}">
           <div class="acc-head">
             <div class="acc-title">
-              <b>${escHtml(sec.title)}</b>
-              <span>${escHtml(sec.subtitle)}</span>
+              <b>${escapeHtml(sec.title)}</b>
+              <span>${escapeHtml(sec.subtitle)}</span>
             </div>
             <span class="muted2">▾</span>
           </div>
@@ -1805,15 +1761,15 @@
                 <div class="prompt-card">
                   <div class="prompt-card-head">
                     <div>
-                      <div class="prompt-card-title">${escHtml(p.title)}</div>
-                      <div class="prompt-card-meta">${escHtml(p.meta||'')}</div>
+                      <div class="prompt-card-title">${escapeHtml(p.title)}</div>
+                      <div class="prompt-card-meta">${escapeHtml(p.meta||'')}</div>
                     </div>
                   </div>
                   <div class="codebox" style="margin-top:10px;">
-                    <textarea class="prompt-input" id="prompt_${escHtml(p.id)}" readonly>${escHtml(p.text||'')}</textarea>
+                    <textarea class="prompt-input" id="prompt_${safeId(p.id)}" readonly>${escapeHtml(p.text||'')}</textarea>
                   </div>
                   <div class="prompt-card-actions">
-                    <button class="btn small" type="button" data-copy="#prompt_${escHtml(p.id)}">Копировать</button>
+                    <button class="btn small" type="button" data-copy="#prompt_${safeId(p.id)}">Копировать</button>
                   </div>
                 </div>
               `).join('')}
@@ -1922,6 +1878,7 @@
             !animated.has(entry.target)
           ) {
             animated.add(entry.target);
+            io.unobserve(entry.target);
             animatePromptsInItem(entry.target);
           }
         });
@@ -1934,6 +1891,7 @@
         const mo = new MutationObserver(() => {
           if (item.classList.contains('open') && !animated.has(item)) {
             animated.add(item);
+            mo.disconnect();
             animatePromptsInItem(item);
           }
         });

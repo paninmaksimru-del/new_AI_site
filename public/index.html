@@ -563,18 +563,20 @@
       display: none;
     }
     .mik-card.is-stub.shown { display: block; }
-    .pub-extra { display: none; }
-    .pub-extra.shown { display: block; }
+    .pub-extra-grid { display: none; }
+    .pub-extra-grid.shown { display: grid; }
     .mik-card.is-future{
       display:none;
     }
 
-    .public-services-grid{
-      margin-top: 14px;
-      display:grid;
+    .public-services-grid,
+    .pub-extra-grid{
+      display: grid;
       grid-template-columns: repeat(3, minmax(0,1fr));
       gap: var(--gap);
     }
+    .public-services-grid{ margin-top: 14px; }
+    .pub-extra-grid{ margin-top: var(--gap); }
     .public-card{
       padding: 16px 16px 18px;
       border-radius: 18px;
@@ -582,6 +584,9 @@
       background: rgba(255,255,255,.04);
       cursor: pointer;
       transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
     .public-card:hover{
       transform: translateY(-3px);
@@ -589,12 +594,29 @@
       border-color: rgba(120,140,255,.5);
       background: rgba(255,255,255,.055);
     }
+    .public-card-icon{
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .public-card-icon svg,
+    .public-card-icon img{
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: block;
+    }
     .public-card h5{
-      margin: 0 0 6px;
+      margin: 0;
       font-size: 15px;
     }
-    .public-card p{
-      margin: 0;
+    .public-card p.public-desc{
+      margin: 6px 0 0;
       font-size: 13px;
     }
     .public-desc{ color: rgba(255,255,255,.78); }
@@ -715,7 +737,8 @@
 
     @media (max-width: 980px){
       .mik-services-grid,
-      .public-services-grid{
+      .public-services-grid,
+      .pub-extra-grid{
         grid-template-columns: repeat(2, minmax(0,1fr));
       }
       .prompt-grid{
@@ -727,7 +750,8 @@
       .burger{ display:flex; }
       .mobile-menu.show{ display:block; }
       .mik-services-grid,
-      .public-services-grid{
+      .public-services-grid,
+      .pub-extra-grid{
         grid-template-columns: 1fr;
       }
     }
@@ -894,34 +918,60 @@
 
           <div class="public-services-grid" id="publicServicesGrid" style="margin-top: 18px;">
             <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/chatgpt-icon.png" alt="ChatGPT" width="44" height="44" />
+              </div>
               <h5>ChatGPT</h5>
               <p class="public-desc">Флагманская модель OpenAI для работы с текстами, кодом и анализом.</p>
             </article>
             <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/claude-ai-icon.png" alt="Claude" width="44" height="44" />
+              </div>
               <h5>Claude</h5>
               <p class="public-desc">Языковая модель Anthropic. Отлично справляется с длинными документами и аналитикой.</p>
             </article>
             <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/deepseek-logo-icon.png" alt="DeepSeek" width="44" height="44" />
+              </div>
               <h5>DeepSeek</h5>
               <p class="public-desc">Мощная открытая модель для аналитики, длинных ответов и проработки гипотез.</p>
             </article>
             <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/perplexity-ai-icon.png" alt="Perplexity" width="44" height="44" />
+              </div>
               <h5>Perplexity</h5>
               <p class="public-desc">ИИ-поисковик с источниками. Лучше для исследований и поиска актуальной информации.</p>
             </article>
             <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/manus-ai-icon.png" alt="Manus" width="44" height="44" />
+              </div>
               <h5>Manus</h5>
               <p class="public-desc">Автономный ИИ-агент для выполнения сложных многошаговых задач.</p>
             </article>
             <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/openclaw-icon.png" alt="OpenClaw" width="44" height="44" />
+              </div>
               <h5>OpenClaw</h5>
               <p class="public-desc">Открытый ИИ-инструмент для работы с данными и автоматизации задач.</p>
             </article>
-            <article class="public-card pub-extra">
+          </div>
+          <div class="pub-extra-grid" id="pubExtraGrid">
+            <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/yandexgpt-icon.png" alt="YandexGPT" width="44" height="44" />
+              </div>
               <h5>YandexGPT</h5>
               <p class="public-desc">Нейросеть от Яндекса. Лучше для документов, писем и черновиков на русском языке.</p>
             </article>
-            <article class="public-card pub-extra">
+            <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/gigachat-icon.jpg" alt="GigaChat" width="44" height="44" />
+              </div>
               <h5>GigaChat</h5>
               <p class="public-desc">Чат‑модель от Сбера. Лучше для деловой переписки, сводок и уточнения формулировок.</p>
             </article>
@@ -1016,11 +1066,15 @@
       });
     }
 
-    // ── Init public tools (статика уже в HTML, просто инициализируем кнопку) ───
+    // ── Init public tools (6 карточек по умолчанию, по кнопке — YandexGPT, GigaChat) ─
     function renderPublicTools() {
-      const grid = document.getElementById('publicServicesGrid');
-      if (!grid) return;
-      initShowMore('showMorePub', '.pub-extra', grid);
+      const extraGrid = document.getElementById('pubExtraGrid');
+      const btn = document.getElementById('showMorePub');
+      if (!extraGrid || !btn) return;
+      btn.addEventListener('click', () => {
+        const isShown = extraGrid.classList.toggle('shown');
+        btn.textContent = isShown ? 'Скрыть' : 'Показать ещё';
+      });
     }
 
     // ── Render prompts accordion ───────────────────────────────────────────────

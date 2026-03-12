@@ -696,30 +696,19 @@
         grid-template-columns: 1fr;
       }
 
-      /* Слайдеры для треков, видео и спикеров */
+      /* Одна колонка для треков, видео и спикеров */
       .tracks-grid,
       .video-grid,
       .speaker-grid {
-        display: flex !important;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
+        display: grid !important;
+        grid-template-columns: 1fr !important;
         gap: 12px;
-        padding-bottom: 8px;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        -webkit-overflow-scrolling: touch;
       }
-      .tracks-grid::-webkit-scrollbar,
-      .video-grid::-webkit-scrollbar,
-      .speaker-grid::-webkit-scrollbar { display: none; }
       .tracks-grid > *,
       .video-grid > *,
       .speaker-grid > * {
-        flex: 0 0 78vw;
-        max-width: 300px;
-        scroll-snap-align: start;
-        /* сбрасываем grid span */
         grid-column: unset !important;
+        max-width: 100%;
       }
     }
 

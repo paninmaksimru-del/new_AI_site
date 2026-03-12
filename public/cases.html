@@ -902,6 +902,29 @@
       transition: box-shadow .2s;
     }
     .prompt-input.tw-typing::selection { background: transparent; }
+
+    /* ── PROMPT SLIDER DOTS ─────────────────────────────────────────────────── */
+    .prompt-dots { display: none; }
+    @media (max-width: 760px) {
+      .prompt-dots {
+        display: flex;
+        justify-content: center;
+        gap: 7px;
+        margin-top: 10px;
+      }
+      .prompt-dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: rgba(255,255,255,.2);
+        border: none; padding: 0;
+        cursor: pointer;
+        transition: background .2s, transform .2s;
+      }
+      .prompt-dot.active {
+        background: rgba(0,200,110,.85);
+        transform: scale(1.25);
+      }
+    }
   </style>
 </head>
 <body>
@@ -1577,7 +1600,7 @@
         renderCases();
       });
       // Библиотека промптов — загрузка из БД
-      renderPrompts().then(() => initTypingAnimations());
+      renderPrompts().then(() => { initTypingAnimations(); initPromptSliders(); });
       initFeedbackForm();
 
       // события фильтров
@@ -1746,6 +1769,7 @@
             if (!wasOpen) item.classList.add('open');
           });
         });
+        initPromptSliders();
         return;
       }
 
@@ -1810,6 +1834,7 @@
 
       // Re-attach typing observers after DOM rebuild
       initTypingAnimations();
+      initPromptSliders();
     }
 
     // ─── Typewriter animation ───────────────────────────────────────────────
@@ -1840,23 +1865,79 @@
       setTimeout(tick, 80);
     }
 
+    function initPromptSliders() {
+      document.querySelectorAll('.acc-body .prompt-grid').forEach(grid => {
+        // Убираем старые точки при повторной инициализации
+        const old = grid.nextElementSibling;
+        if (old && old.classList.contains('prompt-dots')) old.remove();
+
+        const cards = Array.from(grid.children);
+        if (cards.length <= 1) return;
+
+        // Создаём контейнер с точками
+        const dotsEl = document.createElement('div');
+        dotsEl.className = 'prompt-dots';
+
+        cards.forEach((_, i) => {
+          const dot = document.createElement('button');
+          dot.className = 'prompt-dot' + (i === 0 ? ' active' : '');
+          dot.setAttribute('aria-label', 'Слайд ' + (i + 1));
+          dot.addEventListener('click', () => {
+            const cardWidth = cards[0] ? cards[0].offsetWidth + 12 : 0;
+            grid.scrollTo({ left: cardWidth * i, behavior: 'smooth' });
+          });
+          dotsEl.appendChild(dot);
+        });
+
+        grid.insertAdjacentElement('afterend', dotsEl);
+
+        // Синхронизация активной точки при скролле
+        grid.addEventListener('scroll', () => {
+          const cardWidth = cards[0] ? cards[0].offsetWidth + 12 : 1;
+          const idx = Math.round(grid.scrollLeft / cardWidth);
+          Array.from(dotsEl.children).forEach((d, i) => d.classList.toggle('active', i === idx));
+        }, { passive: true });
+      });
+    }
+
+    function animatePromptsInItem(item) {
+      const inputs = Array.from(item.querySelectorAll('.prompt-input'));
+      inputs.forEach((textarea, i) => {
+        setTimeout(() => typewriterEffect(textarea), i * 500);
+      });
+    }
+
     function initTypingAnimations() {
       const container = document.getElementById('promptsAccordion');
       if (!container) return;
 
-      // Animate textareas inside already-open items
-      container.querySelectorAll('.acc-item.open .prompt-input').forEach(typewriterEffect);
+      const animated = new Set(); // какие acc-item уже получили анимацию
 
-      // Watch for new items being opened
-      container.querySelectorAll('.acc-item').forEach(item => {
-        const observer = new MutationObserver(mutations => {
-          mutations.forEach(m => {
-            if (m.attributeName === 'class' && item.classList.contains('open')) {
-              item.querySelectorAll('.prompt-input').forEach(typewriterEffect);
-            }
-          });
+      // Запускаем для открытых секций, когда они въезжают в viewport
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (
+            entry.isIntersecting &&
+            entry.target.classList.contains('open') &&
+            !animated.has(entry.target)
+          ) {
+            animated.add(entry.target);
+            animatePromptsInItem(entry.target);
+          }
         });
-        observer.observe(item, { attributes: true });
+      }, { threshold: 0.15 });
+
+      container.querySelectorAll('.acc-item').forEach(item => {
+        io.observe(item);
+
+        // Запускаем сразу при открытии аккордеона (пользователь уже у этого блока)
+        const mo = new MutationObserver(() => {
+          if (item.classList.contains('open') && !animated.has(item)) {
+            animated.add(item);
+            animatePromptsInItem(item);
+          }
+        });
+        mo.observe(item, { attributes: true, attributeFilter: ['class'] });
       });
     }
 

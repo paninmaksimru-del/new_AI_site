@@ -659,22 +659,24 @@
       .mobile-menu.show{ display:block; }
       #hero{ padding-top: 48px; }
 
-      /* Слайдер промптов внутри аккордеона */
+      /* Слайдер промптов — ширина как у acc-title */
       .prompt-grid {
         display: flex;
         overflow-x: auto;
         scroll-snap-type: x mandatory;
-        gap: 12px;
-        padding-bottom: 8px;
+        scroll-snap-stop: always;
+        gap: 0;
+        padding: 0 0 8px;
         scrollbar-width: none;
         -ms-overflow-style: none;
         -webkit-overflow-scrolling: touch;
       }
       .prompt-grid::-webkit-scrollbar { display: none; }
       .prompt-grid > .prompt-card {
-        flex: 0 0 82vw;
-        max-width: 320px;
+        flex: 0 0 100%;
+        min-width: 0;
         scroll-snap-align: start;
+        scroll-snap-stop: always;
       }
     }
     .accordion{
@@ -811,11 +813,13 @@
       color: rgba(255,255,255,.9);
     }
 
-    /* Промпты внутри каталога */
-    .prompt-grid{
-      display:grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
+    /* Промпты внутри каталога — сетка только на десктопе */
+    @media (min-width: 761px) {
+      .prompt-grid{
+        display:grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
     }
     .prompt-card{
       border-radius: 16px;
@@ -1096,9 +1100,8 @@
               <label for="fb_link">Ссылка/источник (опционально)</label>
               <input id="fb_link" type="text" placeholder="URL или внутренний источник" />
 
-              <label for="fb_rating">Оценка раздела (0–5, опционально)</label>
+              <label for="fb_rating">Оценка раздела (опционально)</label>
               <select id="fb_rating">
-                <option value="0">0</option>
                 <option value="1">1</option>
                 <option value="2">2</option>
                 <option value="3">3</option>
@@ -1186,7 +1189,7 @@
         role: Array.isArray(c.role) ? c.role.join(' / ') : (c.role || 'Специалист'),
         tools: Array.isArray(c.tools) ? c.tools : (c.tools ? c.tools.split(',').map(s=>s.trim()) : []),
         goal: c.whenToUse || c.goal || '',
-        steps: c.steps || (c.promptTemplate ? [{
+        steps: Array.isArray(c.steps) ? c.steps : (c.promptTemplate ? [{
           title: 'Промпт',
           bullets: c.result ? [c.result] : [],
           prompt: c.promptTemplate
@@ -1265,10 +1268,10 @@
       const statusEl = document.getElementById("caseStatus");
       if (!container) return;
 
-      const search = (document.getElementById("caseSearch").value || "").toLowerCase();
-      const task = document.getElementById("caseTask").value;
-      const context = document.getElementById("caseContext").value;
-      const role = document.getElementById("caseRole").value;
+      const search = (document.getElementById("caseSearch")?.value || "").toLowerCase();
+      const task = document.getElementById("caseTask")?.value || "all";
+      const context = document.getElementById("caseContext")?.value || "all";
+      const role = document.getElementById("caseRole")?.value || "all";
 
       const usedMap = getJson(LS_CASE_USED, {});
 
@@ -1327,7 +1330,9 @@
       });
 
       if (statusEl) {
-        statusEl.textContent = `Найдено: ${filtered.length} из ${casesData.length}`;
+        statusEl.textContent = filtered.length === 0 && casesData.length > 0
+          ? `Ничего не найдено (${casesData.length} кейсов). Попробуйте изменить критерии поиска.`
+          : `Найдено: ${filtered.length} из ${casesData.length}`;
       }
     }
 
@@ -1335,6 +1340,7 @@
       const taskSelect = document.getElementById("caseTask");
       const contextSelect = document.getElementById("caseContext");
       const roleSelect = document.getElementById("caseRole");
+      if (!taskSelect || !contextSelect || !roleSelect) return;
 
       const tasks = Array.from(new Set(casesData.map(c => c.task)));
       const contexts = Array.from(new Set(casesData.map(c => c.context)));
@@ -1387,7 +1393,7 @@
       `;
 
       const stepsHtml = data.steps.map((step, idx) => {
-        const promptId = `${data.id}_step_${idx}`;
+        const promptId = `prompt_${safeId(data.id)}_step_${idx}`;
         const bullets = step.bullets && step.bullets.length
           ? `<ul>${step.bullets.map(li => `<li>${escapeHtml(li)}</li>`).join("")}</ul>`
           : "";
@@ -1588,9 +1594,13 @@
       })();
 
       // Загружаем кейсы из API, потом инициализируем
-      loadCasesFromApi().then(() => {
+      loadCasesFromApi().then((ok) => {
         initFilters();
         renderCases();
+        if (!ok && casesData.length === 0) {
+          const statusEl = document.getElementById("caseStatus");
+          if (statusEl) statusEl.textContent = "Не удалось загрузить кейсы. Проверьте подключение.";
+        }
       });
       // Библиотека промптов — загрузка из БД
       renderPrompts().then(() => { initTypingAnimations(); initPromptSliders(); });
@@ -1602,10 +1612,14 @@
       document.getElementById("caseContext")?.addEventListener("change", () => renderCases());
       document.getElementById("caseRole")?.addEventListener("change", () => renderCases());
       document.getElementById("caseReset")?.addEventListener("click", () => {
-        document.getElementById("caseSearch").value = "";
-        document.getElementById("caseTask").value = "all";
-        document.getElementById("caseContext").value = "all";
-        document.getElementById("caseRole").value = "all";
+        const searchEl = document.getElementById("caseSearch");
+        const taskEl = document.getElementById("caseTask");
+        const contextEl = document.getElementById("caseContext");
+        const roleEl = document.getElementById("caseRole");
+        if (searchEl) searchEl.value = "";
+        if (taskEl) taskEl.value = "all";
+        if (contextEl) contextEl.value = "all";
+        if (roleEl) roleEl.value = "all";
         renderCases();
       });
 
@@ -1834,13 +1848,14 @@
         const dotsEl = document.createElement('div');
         dotsEl.className = 'prompt-dots';
 
+        const getCardScrollWidth = () => (cards[0] ? cards[0].offsetWidth : 0);
         cards.forEach((_, i) => {
           const dot = document.createElement('button');
           dot.className = 'prompt-dot' + (i === 0 ? ' active' : '');
           dot.setAttribute('aria-label', 'Слайд ' + (i + 1));
           dot.addEventListener('click', () => {
-            const cardWidth = cards[0] ? cards[0].offsetWidth + 12 : 0;
-            grid.scrollTo({ left: cardWidth * i, behavior: 'smooth' });
+            const w = getCardScrollWidth();
+            grid.scrollTo({ left: w * i, behavior: 'smooth' });
           });
           dotsEl.appendChild(dot);
         });
@@ -1849,8 +1864,8 @@
 
         // Синхронизация активной точки при скролле
         grid.addEventListener('scroll', () => {
-          const cardWidth = cards[0] ? cards[0].offsetWidth + 12 : 1;
-          const idx = Math.round(grid.scrollLeft / cardWidth);
+          const w = getCardScrollWidth() || 1;
+          const idx = Math.round(grid.scrollLeft / w);
           Array.from(dotsEl.children).forEach((d, i) => d.classList.toggle('active', i === idx));
         }, { passive: true });
       });

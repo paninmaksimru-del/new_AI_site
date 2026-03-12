@@ -832,6 +832,53 @@
     @media(max-width: 480px){
       .footer-inner{ grid-template-columns: 1fr; }
     }
+
+    /* ── HOW-IT-WORKS SLIDER ─────────────────────────────────────────────── */
+    .hw-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: var(--gap);
+    }
+    .hw-dots {
+      display: none;
+    }
+    @media (max-width: 760px) {
+      .hw-grid {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 12px;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      .hw-grid::-webkit-scrollbar { display: none; }
+      .hw-grid > div {
+        flex: 0 0 72vw;
+        max-width: 260px;
+        scroll-snap-align: start;
+      }
+      .hw-dots {
+        display: flex;
+        justify-content: center;
+        gap: 7px;
+        margin-top: 14px;
+      }
+      .hw-dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: rgba(255,255,255,.2);
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        transition: background .2s, transform .2s;
+      }
+      .hw-dot.active {
+        background: rgba(0,200,110,.85);
+        transform: scale(1.25);
+      }
+    }
 </style>
 </head>
 <body>
@@ -889,7 +936,7 @@
         <div class="panel pad">
           <h2 class="h2">Как устроен ресурс</h2>
           <p class="lead" style="margin-bottom:22px;">Четыре раздела, которые помогут начать и углубиться в работу с ИИ</p>
-          <div style="display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:var(--gap);">
+          <div class="hw-grid" id="hwGrid">
             <div style="padding:18px; border-radius:16px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04);">
               <div style="font-size:15px; font-weight:700; margin-bottom:6px;">Нейросети</div>
               <div style="font-size:13px; color:var(--muted);">Все ИИ-сервисы контура и публичные инструменты в одном месте.</div>
@@ -906,6 +953,12 @@
               <div style="font-size:15px; font-weight:700; margin-bottom:6px;">Материалы</div>
               <div style="font-size:13px; color:var(--muted);">Треки по уровням, интерактивный календарь мероприятий и инструменты для старта работы с ИИ.</div>
             </div>
+          </div>
+          <div class="hw-dots" id="hwDots">
+            <button class="hw-dot active" data-idx="0" aria-label="Слайд 1"></button>
+            <button class="hw-dot" data-idx="1" aria-label="Слайд 2"></button>
+            <button class="hw-dot" data-idx="2" aria-label="Слайд 3"></button>
+            <button class="hw-dot" data-idx="3" aria-label="Слайд 4"></button>
           </div>
         </div>
       </div>
@@ -1291,6 +1344,30 @@
       });
     }
 
+    // ── HOW-IT-WORKS SLIDER DOTS ──────────────────────────────────────────────
+    function initHwSlider() {
+      const grid = document.getElementById('hwGrid');
+      const dots = Array.from(document.querySelectorAll('#hwDots .hw-dot'));
+      if (!grid || !dots.length) return;
+      const cards = Array.from(grid.children);
+
+      function updateDots() {
+        const scrollLeft = grid.scrollLeft;
+        const cardWidth = cards[0] ? cards[0].offsetWidth + 12 : 1;
+        const idx = Math.round(scrollLeft / cardWidth);
+        dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+      }
+
+      grid.addEventListener('scroll', updateDots, { passive: true });
+
+      dots.forEach((dot, i) => {
+        dot.addEventListener('click', () => {
+          const cardWidth = cards[0] ? cards[0].offsetWidth + 12 : 0;
+          grid.scrollTo({ left: cardWidth * i, behavior: 'smooth' });
+        });
+      });
+    }
+
     // ── SIDEBAR LOGIC ──────────────────────────────────────────────────────────
 
 
@@ -1302,6 +1379,7 @@
       renderPrompts();
       renderMikTools();
       renderPublicTools();
+      initHwSlider();
       // бургер + мобильное меню
       const burger = document.getElementById("burgerBtn");
       const mobileMenu = document.getElementById("mobileMenu");

@@ -33,8 +33,9 @@ app.get('/login', (req, res) => res.sendFile(join(publicDir, 'login.html')));
 app.get('/dashboard', (req, res) => res.sendFile(join(publicDir, 'dashboard.html')));
 app.get('/admin', (req, res) => res.sendFile(join(publicDir, 'admin.html')));
 app.get('/profile', (req, res) => res.sendFile(join(publicDir, 'profile.html')));
-app.get('/training', (req, res) => res.sendFile(join(publicDir, 'Обучение.html')));
-app.get('/cases', (req, res) => res.sendFile(join(publicDir, 'Кейсы.html')));
+app.get('/training', (req, res) => res.sendFile(join(publicDir, 'education.html')));
+app.get('/education', (req, res) => res.sendFile(join(publicDir, 'education.html')));
+app.get('/cases', (req, res) => res.sendFile(join(publicDir, 'cases.html')));
 app.get('/chat', (req, res) => res.sendFile(join(publicDir, 'chat.html')));
 
 // ----- API -----

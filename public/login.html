@@ -7,114 +7,157 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0f1117;
+      font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background:
+        radial-gradient(1200px 700px at 15% 85%, rgba(0,90,55,.9), transparent 58%),
+        radial-gradient(900px 600px at 85% 15%, rgba(0,70,45,.7), transparent 55%),
+        radial-gradient(700px 500px at 50% 50%, rgba(0,50,35,.4), transparent 65%),
+        linear-gradient(160deg, #021510 0%, #031a12 40%, #042018 70%, #021408 100%);
+      color: rgba(255,255,255,.92);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 24px;
+      line-height: 1.45;
     }
     .card {
-      background: #1a1d27;
-      border: 1px solid #2a2d3a;
-      border-radius: 16px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 20px;
       padding: 48px 40px;
       width: 100%;
       max-width: 420px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+      backdrop-filter: blur(14px);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      pointer-events: none;
+      position: absolute;
+      inset: -40px;
+      opacity: .14;
+      background-image:
+        linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(closest-side at 50% 25%, rgba(0,0,0,.9), transparent 70%);
     }
     .logo {
       text-align: center;
       margin-bottom: 32px;
+      position: relative;
     }
     .logo-icon {
       width: 56px; height: 56px;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      background: linear-gradient(135deg, rgba(0,160,90,.95), rgba(0,230,130,.85));
       border-radius: 14px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-size: 28px;
       margin-bottom: 12px;
+      box-shadow: 0 8px 24px rgba(0,180,100,.3);
     }
-    .logo h1 { color: #fff; font-size: 20px; font-weight: 600; }
-    .logo p  { color: #6b7280; font-size: 13px; margin-top: 4px; }
+    .logo h1 { color: rgba(255,255,255,.95); font-size: 20px; font-weight: 700; }
+    .logo p  { color: rgba(255,255,255,.55); font-size: 13px; margin-top: 4px; }
 
-    .field { margin-bottom: 14px; }
+    .field { margin-bottom: 14px; position: relative; }
     label {
       display: block;
-      color: #9ca3af;
+      color: rgba(255,255,255,.62);
       font-size: 13px;
       margin-bottom: 6px;
     }
-    label .req { color: #ef4444; }
+    label .req { color: rgba(255,80,80,.9); }
     input {
       width: 100%;
       padding: 11px 16px;
-      background: #0f1117;
-      border: 1px solid #2a2d3a;
-      border-radius: 8px;
-      color: #fff;
+      background: rgba(0,0,0,.28);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 10px;
+      color: rgba(255,255,255,.92);
       font-size: 15px;
+      font-family: inherit;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color .2s, box-shadow .2s;
     }
-    input:focus { border-color: #6366f1; }
-    input::placeholder { color: #4b5563; }
+    input:focus {
+      border-color: rgba(0,200,110,.5);
+      box-shadow: 0 0 0 3px rgba(0,200,110,.13);
+    }
+    input::placeholder { color: rgba(255,255,255,.25); }
 
     .btn {
       width: 100%;
       padding: 13px;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      border: none;
-      border-radius: 8px;
-      color: #fff;
+      background: linear-gradient(135deg, rgba(0,160,90,.95), rgba(0,230,130,.82));
+      border: 1px solid rgba(0,220,110,.28);
+      border-radius: 10px;
+      color: rgba(255,255,255,.97);
       font-size: 15px;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
       margin-top: 8px;
-      transition: opacity 0.2s;
+      transition: opacity .18s, transform .15s ease, box-shadow .15s ease;
+      box-shadow: 0 4px 20px rgba(0,180,100,.22);
     }
-    .btn:hover { opacity: 0.9; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn:hover {
+      opacity: .92;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 28px rgba(0,180,100,.32);
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 
     .btn-outline {
       width: 100%;
       padding: 13px;
-      background: rgba(99, 102, 241, 0.1);
-      border: 1px solid rgba(99, 102, 241, 0.35);
-      border-radius: 8px;
-      color: #a5b4fc;
+      background: rgba(0,180,100,.1);
+      border: 1px solid rgba(0,200,100,.3);
+      border-radius: 10px;
+      color: rgba(160,255,200,.85);
       font-size: 15px;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
       margin-top: 10px;
-      transition: background 0.2s, border-color 0.2s;
+      transition: background .18s, border-color .18s, transform .15s ease;
     }
     .btn-outline:hover {
-      background: rgba(99, 102, 241, 0.18);
-      border-color: rgba(99, 102, 241, 0.55);
+      background: rgba(0,180,100,.18);
+      border-color: rgba(0,220,110,.52);
+      transform: translateY(-1px);
     }
 
     .msg {
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 13px;
       padding: 10px 14px;
       margin-bottom: 16px;
       display: none;
     }
     .msg.show { display: block; }
-    .msg.error { background: #2d1b1b; border: 1px solid #7f1d1d; color: #fca5a5; }
-    .msg.success { background: #1a2d1a; border: 1px solid #166534; color: #86efac; }
+    .msg.error {
+      background: rgba(255,60,60,.08);
+      border: 1px solid rgba(255,60,60,.22);
+      color: rgba(255,160,160,.9);
+    }
+    .msg.success {
+      background: rgba(0,200,110,.08);
+      border: 1px solid rgba(0,200,110,.22);
+      color: rgba(100,230,160,.9);
+    }
 
     .back-link {
       text-align: center;
       margin-top: 18px;
-      color: #6b7280;
+      color: rgba(255,255,255,.48);
       font-size: 13px;
     }
-    .back-link a { color: #818cf8; text-decoration: none; cursor: pointer; }
+    .back-link a { color: rgba(100,220,160,.85); text-decoration: none; cursor: pointer; }
     .back-link a:hover { text-decoration: underline; }
 
     .section { display: none; }
@@ -124,7 +167,7 @@
 <body>
   <div class="card">
     <div class="logo">
-      <div class="logo-icon">🤖</div>
+      <div class="logo-icon"><img src="/logo_login.svg" alt="MIK" style="width:36px;height:36px;object-fit:contain;"></div>
       <h1>MIK AI Platform</h1>
       <p id="subtitle">Войдите в свой аккаунт</p>
     </div>

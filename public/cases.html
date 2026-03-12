@@ -658,6 +658,24 @@
       .burger{ display:flex; }
       .mobile-menu.show{ display:block; }
       #hero{ padding-top: 76px; }
+
+      /* Слайдер промптов внутри аккордеона */
+      .prompt-grid {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 12px;
+        padding-bottom: 8px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      .prompt-grid::-webkit-scrollbar { display: none; }
+      .prompt-grid > .prompt-card {
+        flex: 0 0 82vw;
+        max-width: 320px;
+        scroll-snap-align: start;
+      }
     }
     .accordion{
       margin-top: 16px;
@@ -884,7 +902,7 @@
         <span class="logo"><img src="/mik_logo_white.svg" alt="МИК" /></span>
       </a>
       <nav aria-label="Основная навигация">
-        <a class="navlink" href="/training" data-section="training">Обучение</a>
+        <a class="navlink" href="/education" data-section="training">Обучение</a>
         <a class="navlink active" href="/cases" data-section="cases">Кейсы</a>
         <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
         <a class="navlink" href="#feedback" data-section="feedback">Обратная связь</a>
@@ -897,7 +915,7 @@
       </button>
     </div>
     <div class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню" role="dialog">
-      <a class="navlink" href="/training" data-section="training">Обучение</a>
+      <a class="navlink" href="/education" data-section="training">Обучение</a>
       <a class="navlink active" href="/cases" data-section="cases">Кейсы</a>
       <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
       <a class="navlink" href="#feedback" data-section="feedback">Обратная связь</a>
@@ -1082,7 +1100,7 @@
       <div>
         <p class="footer-col-title">Платформа</p>
         <ul class="footer-links">
-          <li><a href="/training">Материалы</a></li>
+          <li><a href="/education">Материалы</a></li>
           <li><a href="/cases">Кейсы и промпты</a></li>
           <li><a href="/dashboard">Статистика</a></li>
         </ul>

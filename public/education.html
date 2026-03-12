@@ -689,14 +689,37 @@
       nav{ display:none; }
       .burger{ display:flex; }
       .mobile-menu.show{ display:block; }
-      .basics-grid,
-      .tracks-grid,
-      .video-grid,
-      .speaker-grid{
+      .basics-grid{
         grid-template-columns: 1fr;
       }
       .basics-columns{
         grid-template-columns: 1fr;
+      }
+
+      /* Слайдеры для треков, видео и спикеров */
+      .tracks-grid,
+      .video-grid,
+      .speaker-grid {
+        display: flex !important;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 12px;
+        padding-bottom: 8px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tracks-grid::-webkit-scrollbar,
+      .video-grid::-webkit-scrollbar,
+      .speaker-grid::-webkit-scrollbar { display: none; }
+      .tracks-grid > *,
+      .video-grid > *,
+      .speaker-grid > * {
+        flex: 0 0 78vw;
+        max-width: 300px;
+        scroll-snap-align: start;
+        /* сбрасываем grid span */
+        grid-column: unset !important;
       }
     }
 
@@ -892,7 +915,7 @@
       </a>
       <nav aria-label="Основная навигация">
         <a class="navlink" href="/">Витрина</a>
-      <a class="navlink active" href="/training" data-section="training">Обучение</a>
+      <a class="navlink active" href="/education" data-section="training">Обучение</a>
         <a class="navlink" href="/cases" data-section="cases">Кейсы</a>
         <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
         <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a>
@@ -906,7 +929,7 @@
     </div>
     <div class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню" role="dialog">
       <a class="navlink" href="/">Витрина</a>
-      <a class="navlink active" href="/training" data-section="training">Обучение</a>
+      <a class="navlink active" href="/education" data-section="training">Обучение</a>
       <a class="navlink" href="/cases" data-section="cases">Кейсы</a>
       <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
       <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a>
@@ -1467,7 +1490,7 @@
       <div>
         <p class="footer-col-title">Платформа</p>
         <ul class="footer-links">
-          <li><a href="/training">Материалы</a></li>
+          <li><a href="/education">Материалы</a></li>
           <li><a href="/cases">Кейсы и промпты</a></li>
           <li><a href="/dashboard">Статистика</a></li>
         </ul>

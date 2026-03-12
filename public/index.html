@@ -582,12 +582,32 @@
       background: rgba(255,255,255,.04);
       cursor: pointer;
       transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
     .public-card:hover{
       transform: translateY(-3px);
       box-shadow: 0 24px 70px rgba(0,0,0,.65);
       border-color: rgba(120,140,255,.5);
       background: rgba(255,255,255,.055);
+    }
+    .public-card-icon{
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .public-card-icon svg,
+    .public-card-icon img{
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: block;
     }
     .public-card h5{
       margin: 0 0 6px;
@@ -894,34 +914,58 @@
 
           <div class="public-services-grid" id="publicServicesGrid" style="margin-top: 18px;">
             <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/chatgpt-icon.png" alt="ChatGPT" width="44" height="44" />
+              </div>
               <h5>ChatGPT</h5>
               <p class="public-desc">Флагманская модель OpenAI для работы с текстами, кодом и анализом.</p>
             </article>
             <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/claude-ai-icon.png" alt="Claude" width="44" height="44" />
+              </div>
               <h5>Claude</h5>
               <p class="public-desc">Языковая модель Anthropic. Отлично справляется с длинными документами и аналитикой.</p>
             </article>
             <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/deepseek-logo-icon.png" alt="DeepSeek" width="44" height="44" />
+              </div>
               <h5>DeepSeek</h5>
               <p class="public-desc">Мощная открытая модель для аналитики, длинных ответов и проработки гипотез.</p>
             </article>
             <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/perplexity-ai-icon.png" alt="Perplexity" width="44" height="44" />
+              </div>
               <h5>Perplexity</h5>
               <p class="public-desc">ИИ-поисковик с источниками. Лучше для исследований и поиска актуальной информации.</p>
             </article>
             <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/manus-ai-icon.png" alt="Manus" width="44" height="44" />
+              </div>
               <h5>Manus</h5>
               <p class="public-desc">Автономный ИИ-агент для выполнения сложных многошаговых задач.</p>
             </article>
             <article class="public-card">
+              <div class="public-card-icon">
+                <img src="/AI_cons/openclaw-icon.png" alt="OpenClaw" width="44" height="44" />
+              </div>
               <h5>OpenClaw</h5>
               <p class="public-desc">Открытый ИИ-инструмент для работы с данными и автоматизации задач.</p>
             </article>
             <article class="public-card pub-extra">
+              <div class="public-card-icon">
+                <img src="/AI_cons/yandexgpt-icon.png" alt="YandexGPT" width="44" height="44" />
+              </div>
               <h5>YandexGPT</h5>
               <p class="public-desc">Нейросеть от Яндекса. Лучше для документов, писем и черновиков на русском языке.</p>
             </article>
             <article class="public-card pub-extra">
+              <div class="public-card-icon">
+                <img src="/AI_cons/gigachat-icon.jpg" alt="GigaChat" width="44" height="44" />
+              </div>
               <h5>GigaChat</h5>
               <p class="public-desc">Чат‑модель от Сбера. Лучше для деловой переписки, сводок и уточнения формулировок.</p>
             </article>

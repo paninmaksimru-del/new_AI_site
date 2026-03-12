@@ -563,20 +563,18 @@
       display: none;
     }
     .mik-card.is-stub.shown { display: block; }
-    .pub-extra-grid { display: none; }
-    .pub-extra-grid.shown { display: grid; }
     .mik-card.is-future{
       display:none;
     }
 
     .public-services-grid,
     .pub-extra-grid{
-      display: grid;
       grid-template-columns: repeat(3, minmax(0,1fr));
       gap: var(--gap);
     }
-    .public-services-grid{ margin-top: 14px; }
-    .pub-extra-grid{ margin-top: var(--gap); }
+    .public-services-grid{ display: grid; margin-top: 14px; }
+    .pub-extra-grid{ display: none; margin-top: var(--gap); }
+    .pub-extra-grid.shown { display: grid; }
     .public-card{
       padding: 16px 16px 18px;
       border-radius: 18px;
@@ -780,6 +778,59 @@
     .hero-btn-green:hover {
       box-shadow: 0 8px 28px rgba(0,200,100,.25);
       border-color: rgba(0,200,100,.6) !important;
+    }
+
+    .site-footer{
+      margin-top: auto;
+      border-top: 1px solid var(--stroke);
+      background: rgba(2,14,10,.92);
+      backdrop-filter: var(--blur);
+    }
+    .footer-inner{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 40px var(--pad) 28px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 32px;
+    }
+    .footer-col-title{
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .7px;
+      text-transform: uppercase;
+      color: rgba(0,210,110,.75);
+      margin: 0 0 12px;
+    }
+    .footer-links{
+      list-style: none;
+      margin: 0; padding: 0;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .footer-links a{
+      font-size: 13.5px;
+      color: var(--muted);
+      transition: color .13s;
+    }
+    .footer-links a:hover{ color: var(--text); }
+    .footer-bottom{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 18px var(--pad);
+      border-top: 1px solid rgba(255,255,255,.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .footer-copy{ font-size: 12.5px; color: var(--muted-2); }
+
+    @media(max-width: 760px){
+      .footer-inner{ grid-template-columns: 1fr 1fr; }
+    }
+    @media(max-width: 480px){
+      .footer-inner{ grid-template-columns: 1fr; }
     }
 </style>
 </head>
@@ -985,6 +1036,37 @@
       </div>
     </section>
   </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <p class="footer-col-title">Платформа</p>
+        <ul class="footer-links">
+          <li><a href="/training">Материалы</a></li>
+          <li><a href="/cases">Кейсы и промпты</a></li>
+          <li><a href="/dashboard">Статистика</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer-col-title">Аккаунт</p>
+        <ul class="footer-links">
+          <li><a href="/profile">Личный кабинет</a></li>
+          <li><a href="/login">Войти</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer-col-title">Контакты</p>
+        <ul class="footer-links">
+          <li><a href="#feedback">Написать нам</a></li>
+          <li><a href="/cases#feedback">Обратная связь</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy">© 2026 Фонд МИК — Альманах</span>
+      <span class="footer-copy">Внутренний ресурс для сотрудников</span>
+    </div>
+  </footer>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

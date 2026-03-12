@@ -358,7 +358,7 @@
 
     /* Tracks */
     .tracks-grid{
-      grid-template-columns: repeat(4, minmax(0,1fr));
+      grid-template-columns: repeat(2, minmax(0,1fr));
     }
     .tracks-grid .card{
       display:flex;
@@ -689,6 +689,10 @@
       nav{ display:none; }
       .burger{ display:flex; }
       .mobile-menu.show{ display:block; }
+
+      /* Hero — уменьшаем отступы */
+      #hero{ padding: 48px 0 32px; }
+
       .basics-grid{
         grid-template-columns: 1fr;
       }
@@ -709,6 +713,20 @@
       .speaker-grid > * {
         grid-column: unset !important;
         max-width: 100%;
+      }
+
+      /* Статьи — одна колонка вместо трёх */
+      #articles .grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      /* Шаги Dolphin — одна колонка */
+      #dolphinSteps {
+        grid-template-columns: 1fr !important;
+      }
+      /* Последний шаг (grid-column:1/-1) сбрасываем */
+      #dolphinSteps > div[style*="grid-column"] {
+        grid-column: unset !important;
       }
     }
 
@@ -936,7 +954,7 @@
           <div class="grid-anim" aria-hidden="true"></div>
           <h1 class="hero-title">Обучение по ИИ для сотрудников МИК</h1>
           <p class="hero-desc">
-            На этой странице — база по ИИ, обучающие треки, видеоматериалы и календарь мероприятий, чтобы быстро найти формат под свою задачу.
+            На этой странице — база по ИИ, обучающие треки, видеоматериалы и календарь мероприятий, чтобы быстро найти формат под свою задачу
           </p>
           <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:24px;">
             <a href="#tracks" class="hero-btn-primary">Программы обучения</a>
@@ -950,14 +968,14 @@
     <section id="basics">
       <div class="wrap">
         <h2 class="h2">ИИ в жизни и работе</h2>
-        <p class="lead">Как ИИ помогает в повседневной работе сотрудников: короткие объяснения и живые примеры.</p>
+        <p class="lead">Как ИИ помогает в повседневной работе сотрудников: короткие объяснения и живые примеры</p>
 
         <div class="grid basics-grid" style="margin-top:16px;">
 
           <article class="card span-2">
             <div style="display:flex; align-items:baseline; gap:24px; flex-wrap:wrap; margin-bottom:16px;">
               <h3 style="margin:0; white-space:nowrap;">Искусственный интеллект — это</h3>
-              <p style="margin:0; color:rgba(255,255,255,.7); font-size:14px;">Инструмент, который берёт на себя рутину с текстом — читает, анализирует, формулирует. Не заменяет вас, но экономит часы.</p>
+              <p style="margin:0; color:rgba(255,255,255,.7); font-size:14px;">Инструмент, который берёт на себя рутину с текстом — читает, анализирует, формулирует. Не заменяет вас, но экономит часы</p>
             </div>
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
               <button type="button" class="pill">Черновики записок и справок</button>
@@ -976,7 +994,7 @@
               <div class="basics-col">
                 <div class="basics-col-title">Без ИИ</div>
                 <div style="font-size:28px; font-weight:700; margin:6px 0; color:rgba(255,255,255,.85);">45–60 мин</div>
-                <p class="muted">Расшифровка записи вручную, структурирование, форматирование документа.</p>
+                <p class="muted">Расшифровка записи вручную, структурирование, форматирование документа</p>
               </div>
               <div class="basics-col">
                 <div class="basics-col-title" style="color:rgba(0,220,110,.9);">С ИИ</div>
@@ -1004,7 +1022,7 @@
           <article class="card" style="display:flex; flex-direction:column; gap:16px;">
             <div>
               <h3 style="margin-bottom:8px;">Начальный уровень</h3>
-              <p style="margin-bottom:10px;">Для тех, кто пока не использует ИИ в работе — или открывал ChatGPT пару раз и закрыл. Разбираемся с основами, пробуем простые задачи и перестаём бояться.</p>
+              <p style="margin-bottom:10px;">Для тех, кто пока не использует ИИ в работе — или открывал ChatGPT пару раз и закрыл. Разбираемся с основами, пробуем простые задачи и перестаём бояться</p>
               <div style="display:flex; gap:8px; flex-wrap:wrap;">
                 <span style="padding:4px 12px; border-radius:20px; font-size:12px; background:rgba(0,200,100,.1); border:1px solid rgba(0,200,100,.2); color:rgba(180,255,210,.8);">Word</span>
                 <span style="padding:4px 12px; border-radius:20px; font-size:12px; background:rgba(0,200,100,.1); border:1px solid rgba(0,200,100,.2); color:rgba(180,255,210,.8);">PowerPoint</span>
@@ -1016,7 +1034,7 @@
           <article class="card" style="display:flex; flex-direction:column; gap:16px;">
             <div>
               <h3 style="margin-bottom:8px;">Продвинутый уровень</h3>
-              <p style="margin-bottom:10px;">Для тех, кто уже использует ИИ и хочет выйти за рамки простых запросов. Учимся выстраивать рабочие процессы, создавать шаблоны и работать с несколькими моделями.</p>
+              <p style="margin-bottom:10px;">Для тех, кто уже использует ИИ и хочет выйти за рамки простых запросов. Учимся выстраивать рабочие процессы, создавать шаблоны и работать с несколькими моделями</p>
               <div style="display:flex; gap:8px; flex-wrap:wrap;">
                 <span style="padding:4px 12px; border-radius:20px; font-size:12px; background:rgba(0,200,100,.1); border:1px solid rgba(0,200,100,.2); color:rgba(180,255,210,.8);">Claude</span>
                 <span style="padding:4px 12px; border-radius:20px; font-size:12px; background:rgba(0,200,100,.1); border:1px solid rgba(0,200,100,.2); color:rgba(180,255,210,.8);">NotebookLM</span>
@@ -1031,7 +1049,7 @@
           <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:space-between; align-items:flex-start;">
             <div>
               <h3 style="margin:0 0 6px; font-size:16px;">Не знаете, с какого трека начать?</h3>
-              <p class="muted" style="margin:0;">Ответьте на несколько вопросов — мини‑квиз подскажет ваш текущий уровень зрелости по ИИ.</p>
+              <p class="muted" style="margin:0;">Ответьте на несколько вопросов — мини‑квиз подскажет ваш текущий уровень зрелости по ИИ</p>
             </div>
             <button class="btn small" type="button" id="toggleQuiz">Пройти мини‑квиз</button>
           </div>
@@ -1039,21 +1057,21 @@
           <form id="tracksQuiz" style="margin-top:14px; display:none;">
             <div class="quiz-q">
               <p>1. Как часто вы сейчас используете ИИ‑сервисы в работе?</p>
-              <label><input type="radio" name="q1" value="1">Практически не использую или пробовал(а) пару раз.</label>
-              <label><input type="radio" name="q1" value="2">Иногда использую для отдельных задач.</label>
-              <label><input type="radio" name="q1" value="3">Регулярно применяю ИИ для разных типов задач.</label>
+              <label><input type="radio" name="q1" value="1">Практически не использую или пробовал(а) пару раз</label>
+              <label><input type="radio" name="q1" value="2">Иногда использую для отдельных задач</label>
+              <label><input type="radio" name="q1" value="3">Регулярно применяю ИИ для разных типов задач</label>
             </div>
             <div class="quiz-q">
               <p>2. Насколько уверенно вы формулируете запросы (промпты) к ИИ?</p>
-              <label><input type="radio" name="q2" value="1">Часто не знаю, как правильно спросить.</label>
-              <label><input type="radio" name="q2" value="2">Могу сформулировать запрос, но результат не всегда предсказуем.</label>
-              <label><input type="radio" name="q2" value="3">Умею задавать точные запросы и дорабатывать ответы.</label>
+              <label><input type="radio" name="q2" value="1">Часто не знаю, как правильно спросить</label>
+              <label><input type="radio" name="q2" value="2">Могу сформулировать запрос, но результат не всегда предсказуем</label>
+              <label><input type="radio" name="q2" value="3">Умею задавать точные запросы и дорабатывать ответы</label>
             </div>
             <div class="quiz-q">
               <p>3. Используете ли вы ИИ для улучшения процессов (автоматизация, шаблоны, регламенты)?</p>
-              <label><input type="radio" name="q3" value="1">Пока только пробую базовые задачи.</label>
-              <label><input type="radio" name="q3" value="2">Иногда пробую оптимизировать отдельные процессы.</label>
-              <label><input type="radio" name="q3" value="3">Целенаправленно перестраиваю процессы с помощью ИИ.</label>
+              <label><input type="radio" name="q3" value="1">Пока только пробую базовые задачи</label>
+              <label><input type="radio" name="q3" value="2">Иногда пробую оптимизировать отдельные процессы</label>
+              <label><input type="radio" name="q3" value="3">Целенаправленно перестраиваю процессы с помощью ИИ</label>
             </div>
             <button class="btn small primary" type="submit">Узнать свой уровень</button>
             <p id="quizResult" class="hintline" style="margin-top:10px;"></p>
@@ -1066,7 +1084,7 @@
     <section id="videos">
       <div class="wrap">
         <h2 class="h2">Видеоматериалы</h2>
-        <p class="lead">Записи лекций, воркшопов и короткие обучающие ролики. В каждую карточку можно будет добавить видео или ссылку.</p>
+        <p class="lead">Записи лекций, воркшопов и короткие обучающие ролики. В каждую карточку можно будет добавить видео или ссылку</p>
 
         <div class="grid video-grid" style="margin-top:16px;">
           <article class="card">
@@ -1074,21 +1092,21 @@
               Плейсхолдер под обложку или встраиваемое видео
             </div>
             <h3>Введение в ИИ для сотрудников МИК</h3>
-            <p class="muted">Краткое объяснение ключевых понятий и примеров из работы Фонда.</p>
+            <p class="muted">Краткое объяснение ключевых понятий и примеров из работы Фонда</p>
           </article>
           <article class="card">
             <div class="video-thumb">
               Плейсхолдер под обложку или встраиваемое видео
             </div>
             <h3>Практика: как формулировать хороший запрос</h3>
-            <p class="muted">Живые демонстрации на примерах писем, записок, аналитики.</p>
+            <p class="muted">Живые демонстрации на примерах писем, записок, аналитики</p>
           </article>
           <article class="card">
             <div class="video-thumb">
               Плейсхолдер под обложку или встраиваемое видео
             </div>
             <h3>Безопасность и работа с данными</h3>
-            <p class="muted">Какие данные можно загружать в ИИ‑сервисы и как работать с ограничениями.</p>
+            <p class="muted">Какие данные можно загружать в ИИ‑сервисы и как работать с ограничениями</p>
           </article>
         </div>
       </div>
@@ -1098,7 +1116,7 @@
     <section id="speakers">
       <div class="wrap">
         <h2 class="h2">Спикеры и наставники</h2>
-        <p class="lead">Команда, которая ведёт лекции, воркшопы и индивидуальные консультации по ИИ.</p>
+        <p class="lead">Команда, которая ведёт лекции, воркшопы и индивидуальные консультации по ИИ</p>
 
         <div class="grid speaker-grid" style="margin-top:16px;">
           <article class="card speaker-card">
@@ -1111,7 +1129,7 @@
                 <div class="speaker-role">Ведущий методист · Отдел обучения</div>
               </div>
             </div>
-            <p>Сферы экспертизы: Документы, деловая переписка, регламенты, внутренняя коммуникация.</p>
+            <p>Сферы экспертизы: Документы, деловая переписка, регламенты, внутренняя коммуникация</p>
           </article>
           <article class="card speaker-card">
             <div class="speaker-top">
@@ -1123,7 +1141,7 @@
                 <div class="speaker-role">Аналитик данных · Департамент развития</div>
               </div>
             </div>
-            <p>Сферы экспертизы: Аналитика, отчётность, визуализация данных, работа с таблицами.</p>
+            <p>Сферы экспертизы: Аналитика, отчётность, визуализация данных, работа с таблицами</p>
           </article>
           <article class="card speaker-card">
             <div class="speaker-top">
@@ -1135,7 +1153,7 @@
                 <div class="speaker-role">Руководитель проектов · Управление ИТ</div>
               </div>
             </div>
-            <p>Сферы экспертизы: Управление командами, внедрение ИИ в процессы подразделений.</p>
+            <p>Сферы экспертизы: Управление командами, внедрение ИИ в процессы подразделений</p>
           </article>
         </div>
       </div>
@@ -1145,14 +1163,14 @@
     <section id="calendar">
       <div class="wrap">
         <h2 class="h2">Календарь обучения</h2>
-        <p class="lead">Выберите формат: воркшопы и интенсивы или общие мероприятия по ИИ.</p>
+        <p class="lead">Выберите формат: воркшопы и интенсивы или общие мероприятия по ИИ</p>
 
         <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
           <div class="seg" role="tablist" aria-label="Тип события">
             <button class="active" type="button" data-calendar-filter="workshops">Воркшопы и интенсивы</button>
             <button type="button" data-calendar-filter="events">Мероприятия</button>
           </div>
-          <div class="muted2" style="font-size:13px;">Данные примерные — можно будет подгружать расписание из таблицы или системы.</div>
+          <div class="muted2" style="font-size:13px;">Данные примерные — можно будет подгружать расписание из таблицы или системы</div>
         </div>
 
         <div class="events-list" id="eventsList">
@@ -1172,7 +1190,7 @@
               <span>Трек: Уверенный пользователь</span>
             </div>
             <div class="event-links">
-              <span class="muted2">Материалы после мероприятия: появятся здесь по итогам встречи.</span>
+              <span class="muted2">Материалы после мероприятия: появятся здесь по итогам встречи</span>
             </div>
           </article>
 
@@ -1192,7 +1210,7 @@
               <span>Трек: Продвинутый / для руководителей</span>
             </div>
             <div class="event-links">
-              <span class="muted2">Материалы после мероприятия: чек‑листы, шаблоны, записи.</span>
+              <span class="muted2">Материалы после мероприятия: чек‑листы, шаблоны, записи</span>
             </div>
           </article>
 
@@ -1212,7 +1230,7 @@
               <span>Формат: мероприятия</span>
             </div>
             <div class="event-links">
-              <span class="muted2">Материалы после мероприятия: ссылка на запись и презентацию.</span>
+              <span class="muted2">Материалы после мероприятия: ссылка на запись и презентацию</span>
             </div>
           </article>
         </div>
@@ -1238,7 +1256,7 @@
           </div>
 
           <!-- Шаги 2×2 + 1 -->
-          <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div id="dolphinSteps" style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
 
             <div style="display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:14px; background:rgba(0,180,90,.06); border:1px solid rgba(0,200,100,.12);">
               <span style="flex-shrink:0; width:26px; height:26px; border-radius:50%; background:rgba(0,200,100,.15); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:rgba(0,220,110,.9);">01</span>
@@ -1287,7 +1305,6 @@
           </div>
 
         </div>
-      </div>
       </div>
     </section>
 
@@ -1529,6 +1546,37 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
+      // ── Прогресс-бар скролла ──────────────────────────────────────────────
+      const progressEl = document.getElementById("progressBar");
+      if (progressEl) {
+        const onScroll = () => {
+          const h = document.documentElement;
+          const max = h.scrollHeight - h.clientHeight;
+          progressEl.style.width = (max > 0 ? (window.scrollY / max) * 100 : 0) + "%";
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+      }
+
+      // ── Активный пункт навигации по скроллу ──────────────────────────────
+      const sectionIds = ["hero","basics","tracks","videos","speakers","calendar","browser","neural-tools","articles","consult"];
+      const navLinks = Array.from(document.querySelectorAll("nav .navlink[href^='/'], .mobile-menu .navlink[href^='/']"));
+      const sectionEls = sectionIds.map(id => document.getElementById(id)).filter(Boolean);
+
+      if (sectionEls.length) {
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const id = entry.target.id;
+            navLinks.forEach(link => {
+              const isActive = link.getAttribute("href") === "/education" && ["hero","basics","tracks","videos","speakers","calendar","browser","neural-tools","articles","consult"].includes(id);
+              link.classList.toggle("active", isActive && link.getAttribute("href") === "/education");
+            });
+          });
+        }, { rootMargin: "-40% 0px -55% 0px" });
+        sectionEls.forEach(s => io.observe(s));
+      }
+
       const burger = document.getElementById("burgerBtn");
       const mobileMenu = document.getElementById("mobileMenu");
       if (burger && mobileMenu) {

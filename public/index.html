@@ -563,18 +563,20 @@
       display: none;
     }
     .mik-card.is-stub.shown { display: block; }
-    .pub-extra { display: none; }
-    .pub-extra.shown { display: block; }
+    .pub-extra-grid { display: none; }
+    .pub-extra-grid.shown { display: grid; }
     .mik-card.is-future{
       display:none;
     }
 
-    .public-services-grid{
-      margin-top: 14px;
-      display:grid;
+    .public-services-grid,
+    .pub-extra-grid{
+      display: grid;
       grid-template-columns: repeat(3, minmax(0,1fr));
       gap: var(--gap);
     }
+    .public-services-grid{ margin-top: 14px; }
+    .pub-extra-grid{ margin-top: var(--gap); }
     .public-card{
       padding: 16px 16px 18px;
       border-radius: 18px;
@@ -610,11 +612,11 @@
       display: block;
     }
     .public-card h5{
-      margin: 0 0 6px;
+      margin: 0;
       font-size: 15px;
     }
-    .public-card p{
-      margin: 0;
+    .public-card p.public-desc{
+      margin: 6px 0 0;
       font-size: 13px;
     }
     .public-desc{ color: rgba(255,255,255,.78); }
@@ -735,7 +737,8 @@
 
     @media (max-width: 980px){
       .mik-services-grid,
-      .public-services-grid{
+      .public-services-grid,
+      .pub-extra-grid{
         grid-template-columns: repeat(2, minmax(0,1fr));
       }
       .prompt-grid{
@@ -747,7 +750,8 @@
       .burger{ display:flex; }
       .mobile-menu.show{ display:block; }
       .mik-services-grid,
-      .public-services-grid{
+      .public-services-grid,
+      .pub-extra-grid{
         grid-template-columns: 1fr;
       }
     }
@@ -955,14 +959,16 @@
               <h5>OpenClaw</h5>
               <p class="public-desc">Открытый ИИ-инструмент для работы с данными и автоматизации задач.</p>
             </article>
-            <article class="public-card pub-extra">
+          </div>
+          <div class="pub-extra-grid" id="pubExtraGrid">
+            <article class="public-card">
               <div class="public-card-icon">
                 <img src="/AI_cons/yandexgpt-icon.png" alt="YandexGPT" width="44" height="44" />
               </div>
               <h5>YandexGPT</h5>
               <p class="public-desc">Нейросеть от Яндекса. Лучше для документов, писем и черновиков на русском языке.</p>
             </article>
-            <article class="public-card pub-extra">
+            <article class="public-card">
               <div class="public-card-icon">
                 <img src="/AI_cons/gigachat-icon.jpg" alt="GigaChat" width="44" height="44" />
               </div>
@@ -1060,11 +1066,15 @@
       });
     }
 
-    // ── Init public tools (статика уже в HTML, просто инициализируем кнопку) ───
+    // ── Init public tools (6 карточек по умолчанию, по кнопке — YandexGPT, GigaChat) ─
     function renderPublicTools() {
-      const grid = document.getElementById('publicServicesGrid');
-      if (!grid) return;
-      initShowMore('showMorePub', '.pub-extra', grid);
+      const extraGrid = document.getElementById('pubExtraGrid');
+      const btn = document.getElementById('showMorePub');
+      if (!extraGrid || !btn) return;
+      btn.addEventListener('click', () => {
+        const isShown = extraGrid.classList.toggle('shown');
+        btn.textContent = isShown ? 'Скрыть' : 'Показать ещё';
+      });
     }
 
     // ── Render prompts accordion ───────────────────────────────────────────────

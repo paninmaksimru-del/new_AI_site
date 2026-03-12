@@ -891,6 +891,17 @@
 
     @media (max-width: 980px){ .footer-inner{ grid-template-columns:1fr 1fr; } }
     @media (max-width: 760px){ .footer-inner{ grid-template-columns:1fr; } }
+
+    /* ── TYPEWRITER ──────────────────────────────────────────────────────────── */
+    @keyframes tw-cursor-blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+    .prompt-input.tw-typing {
+      box-shadow: 0 0 0 1px rgba(0,210,110,.25);
+      transition: box-shadow .2s;
+    }
+    .prompt-input.tw-typing::selection { background: transparent; }
   </style>
 </head>
 <body>
@@ -935,7 +946,7 @@
           <p class="hero-desc">
             Здесь собраны практические сценарии, где несколько ИИ‑инструментов работают вместе:
             от «презентации за 5 минут» до видеоролика и протокола встречи. Открывайте кейс —
-            получайте пошаговый маршрут и шаблоны запросов.
+            получайте пошаговый маршрут и шаблоны запросов
           </p>
           <div class="hero-meta">
             <span>Готовые цепочки из 2+ ИИ‑сервисов</span>
@@ -951,7 +962,7 @@
       <div class="wrap">
         <div class="panel pad">
           <h2 class="h2">Библиотека промптов</h2>
-          <p class="lead">Раздел структурирован по направлениям — раскройте нужный, скопируйте промпт и подставьте значения в [квадратные скобки].</p>
+          <p class="lead">Раздел структурирован по направлениям — раскройте нужный, скопируйте промпт и подставьте значения в [квадратные скобки]</p>
           <div class="accordion" id="promptsAccordion" style="margin-top:18px;">
             <p class="muted" style="padding:12px 0;">Загрузка промптов…</p>
           </div>
@@ -964,7 +975,7 @@
       <div class="wrap">
         <div class="panel pad">
           <h2 class="h2">Каталог кейсов</h2>
-          <p class="lead">Выберите задачу — получите готовый сценарий и шаблон запроса для каждого шага.</p>
+          <p class="lead">Выберите задачу — получите готовый сценарий и шаблон запроса для каждого шага</p>
 
           <div class="controls" style="margin-top:18px;">
             <div class="field" style="flex:1; min-width: 180px;">
@@ -1384,7 +1395,7 @@
       bodyEl.innerHTML = `
         <p class="muted">${escapeHtml(data.goal)}</p>
         <div class="hintline" style="margin:8px 0 10px;">
-          Каждый кейс строится как цепочка из нескольких ИИ‑сервисов. Используйте промпты как черновики и подставляйте свои данные.
+          Каждый кейс строится как цепочка из нескольких ИИ‑сервисов. Используйте промпты как черновики и подставляйте свои данные
         </div>
         <div class="case-steps">
           ${stepsHtml}
@@ -1566,7 +1577,7 @@
         renderCases();
       });
       // Библиотека промптов — загрузка из БД
-      renderPrompts();
+      renderPrompts().then(() => initTypingAnimations());
       initFeedbackForm();
 
       // события фильтров
@@ -1677,18 +1688,15 @@
       if (!prompts || !Array.isArray(prompts)) {
         container.innerHTML = `
           <div class="acc-item open">
-            <div class="acc-head"><div class="acc-title"><b>Коммуникации (письма, записки, ответы)</b><span>Официальный стиль, лимит объёма, варианты формулировок.</span></div><span class="muted2">▾</span></div>
+            <div class="acc-head"><div class="acc-title"><b>Коммуникации (письма, записки, ответы)</b><span>Официальный стиль, лимит объёма, варианты формулировок</span></div><span class="muted2">▾</span></div>
             <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Официальное письмо (универсальное)</div><div class="prompt-card-meta">Черновик официального письма по тезисам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_1" readonly>Роль: ты специалист Центра.
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Официальное письмо (универсальное)</div><div class="prompt-card-meta">Черновик официального письма по тезисам</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_1" readonly>Роль: ты специалист Центра.
 Цель: подготовить официальное письмо [кому] по теме: [тема].
-Контекст: 1–3 предложения — ситуация и что нужно сделать.
-Формат: 120–180 слов, деловой стиль без канцелярита.
-Ограничения: не добавляй факты, которых нет во вводных.
-Вывод: предложи 2 варианта письма + тему (subject).</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Письмо‑приглашение на встречу</div><div class="prompt-card-meta">Краткое приглашение с предложением слотов.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_2" readonly>Роль: организатор встречи.
+</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_1">Копировать</button></div></div>
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Письмо‑приглашение на встречу</div><div class="prompt-card-meta">Краткое приглашение с предложением слотов</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_2" readonly>Роль: организатор встречи.
 Цель: письмо‑приглашение на встречу по теме: [тема].
-Формат: до 150 слов, официальный но живой тон.
-Структура: 1) повод; 2) три варианта слотов; 3) просьба подтвердить время.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_2">Копировать</button></div></div>
+Формат: официальный но живой тон.
+Структура: 1) повод; 2) три варианта слотов; 3) просьба подтвердить время</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_2">Копировать</button></div></div>
             </div></div>
           </div>
           <div class="acc-item">
@@ -1705,7 +1713,7 @@
             </div></div>
           </div>
           <div class="acc-item">
-            <div class="acc-head"><div class="acc-title"><b>Проекты (протоколы, ТЗ, требования)</b><span>Протоколы, задачи, owner/срок, критерии приёмки.</span></div><span class="muted2">▾</span></div>
+            <div class="acc-head"><div class="acc-title"><b>Проекты (протоколы, ТЗ, требования)</b><span>Протоколы, задачи, срок, критерии приёмки.</span></div><span class="muted2">▾</span></div>
             <div class="acc-body"><div class="prompt-grid">
               <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Протокол встречи из заметок</div><div class="prompt-card-meta">Структурированный протокол по заметкам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_1" readonly>Роль: секретарь или PM встречи.
 Цель: оформить протокол по итогам встречи.
@@ -1714,7 +1722,7 @@
               <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Черновик ТЗ по задаче</div><div class="prompt-card-meta">Структурный черновик технического задания.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_2" readonly>Роль: постановщик задачи.
 Цель: черновик ТЗ по проекту.
 Контекст: кто заказчик, цель, ожидаемый результат.
-Формат: цель / scope / требования / ограничения / критерии приёмки.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_2">Копировать</button></div></div>
+Формат: цель / требования / ограничения / критерии приёмки.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_2">Копировать</button></div></div>
             </div></div>
           </div>
           <div class="acc-item">
@@ -1798,6 +1806,57 @@
           container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
           if (!wasOpen) item.classList.add('open');
         });
+      });
+
+      // Re-attach typing observers after DOM rebuild
+      initTypingAnimations();
+    }
+
+    // ─── Typewriter animation ───────────────────────────────────────────────
+    const _twAnimated = new WeakSet();
+
+    function typewriterEffect(textarea) {
+      if (_twAnimated.has(textarea)) return;
+      _twAnimated.add(textarea);
+
+      const fullText = textarea.value;
+      const delay    = Math.max(8, Math.min(18, Math.round(3200 / (fullText.length || 1))));
+      const cursor   = '▌';
+
+      textarea.value = '';
+      textarea.classList.add('tw-typing');
+
+      let i = 0;
+      function tick() {
+        if (i < fullText.length) {
+          textarea.value = fullText.slice(0, i + 1) + cursor;
+          i++;
+          setTimeout(tick, delay);
+        } else {
+          textarea.value = fullText;
+          textarea.classList.remove('tw-typing');
+        }
+      }
+      setTimeout(tick, 80);
+    }
+
+    function initTypingAnimations() {
+      const container = document.getElementById('promptsAccordion');
+      if (!container) return;
+
+      // Animate textareas inside already-open items
+      container.querySelectorAll('.acc-item.open .prompt-input').forEach(typewriterEffect);
+
+      // Watch for new items being opened
+      container.querySelectorAll('.acc-item').forEach(item => {
+        const observer = new MutationObserver(mutations => {
+          mutations.forEach(m => {
+            if (m.attributeName === 'class' && item.classList.contains('open')) {
+              item.querySelectorAll('.prompt-input').forEach(typewriterEffect);
+            }
+          });
+        });
+        observer.observe(item, { attributes: true });
       });
     }
 

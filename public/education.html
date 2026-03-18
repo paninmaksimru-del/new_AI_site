@@ -591,6 +591,67 @@
       font-size: 16px;
     }
 
+    /* Quiz modal */
+    .quiz-steps{
+      display:flex;
+      gap:6px;
+      margin-bottom:18px;
+    }
+    .quiz-step-dot{
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:rgba(255,255,255,.18);
+      transition:background .2s;
+    }
+    .quiz-step-dot.active{
+      background:var(--ok);
+    }
+    .quiz-modal-step h3{
+      margin:0 0 16px;
+      font-size:16px;
+      line-height:1.45;
+      padding-right:28px;
+    }
+    .quiz-options{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-bottom:20px;
+    }
+    .quiz-option{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.1);
+      transition:border-color .15s, background .15s;
+      font-size:14px;
+    }
+    .quiz-option:hover{
+      background:rgba(255,255,255,.04);
+      border-color:rgba(255,255,255,.2);
+    }
+    .quiz-option input[type="radio"]{
+      margin-top:2px;
+      flex-shrink:0;
+      accent-color:var(--ok);
+    }
+    .quiz-step-label{
+      margin:0 0 10px;
+      font-size:13px;
+    }
+    .quiz-result-text{
+      font-size:15px;
+      line-height:1.55;
+      margin:0 0 20px;
+    }
+    @media (min-width: 769px){
+      #toggleQuiz{ margin-top:28px; }
+    }
+
     /* Forms */
     .form-grid{
       display:grid;
@@ -1116,28 +1177,6 @@
             <button class="btn small" type="button" id="toggleQuiz">Пройти мини‑квиз</button>
           </div>
 
-          <form id="tracksQuiz" style="margin-top:14px; display:none;">
-            <div class="quiz-q">
-              <p>1. Как часто вы сейчас используете ИИ‑сервисы в работе?</p>
-              <label><input type="radio" name="q1" value="1">Практически не использую или пробовал(а) пару раз</label>
-              <label><input type="radio" name="q1" value="2">Иногда использую для отдельных задач</label>
-              <label><input type="radio" name="q1" value="3">Регулярно применяю ИИ для разных типов задач</label>
-            </div>
-            <div class="quiz-q">
-              <p>2. Насколько уверенно вы формулируете запросы (промпты) к ИИ?</p>
-              <label><input type="radio" name="q2" value="1">Часто не знаю, как правильно спросить</label>
-              <label><input type="radio" name="q2" value="2">Могу сформулировать запрос, но результат не всегда предсказуем</label>
-              <label><input type="radio" name="q2" value="3">Умею задавать точные запросы и дорабатывать ответы</label>
-            </div>
-            <div class="quiz-q">
-              <p>3. Используете ли вы ИИ для улучшения процессов (автоматизация, шаблоны, регламенты)?</p>
-              <label><input type="radio" name="q3" value="1">Пока только пробую базовые задачи</label>
-              <label><input type="radio" name="q3" value="2">Иногда пробую оптимизировать отдельные процессы</label>
-              <label><input type="radio" name="q3" value="3">Целенаправленно перестраиваю процессы с помощью ИИ</label>
-            </div>
-            <button class="btn small primary" type="submit" style="margin-top:20px;">Узнать свой уровень</button>
-            <p id="quizResult" class="hintline" style="margin-top:10px;"></p>
-          </form>
         </div>
       </div>
     </section>
@@ -1604,6 +1643,63 @@
     </div>
   </footer>
 
+  <!-- Quiz modal -->
+  <div class="track-modal" id="quizModal" aria-hidden="true" role="dialog" aria-label="Мини-квиз">
+    <div class="track-modal-backdrop" data-quiz-close="true"></div>
+    <div class="track-modal-content" style="max-width:500px; width:min(500px,92vw);">
+      <button type="button" class="track-modal-close" data-quiz-close="true" aria-label="Закрыть">✕</button>
+
+      <div class="quiz-steps">
+        <span class="quiz-step-dot active" id="qdot1"></span>
+        <span class="quiz-step-dot" id="qdot2"></span>
+        <span class="quiz-step-dot" id="qdot3"></span>
+      </div>
+
+      <!-- Step 1 -->
+      <div class="quiz-modal-step" id="qstep1">
+        <p class="quiz-step-label muted">Вопрос 1 из 3</p>
+        <h3>Как часто вы сейчас используете ИИ‑сервисы в работе?</h3>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="mq1" value="1"><span>Практически не использую или пробовал(а) пару раз</span></label>
+          <label class="quiz-option"><input type="radio" name="mq1" value="2"><span>Иногда использую для отдельных задач</span></label>
+          <label class="quiz-option"><input type="radio" name="mq1" value="3"><span>Регулярно применяю ИИ для разных типов задач</span></label>
+        </div>
+        <button type="button" class="btn small primary quiz-next" data-next="2">Далее →</button>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="quiz-modal-step" id="qstep2" style="display:none;">
+        <p class="quiz-step-label muted">Вопрос 2 из 3</p>
+        <h3>Насколько уверенно вы формулируете запросы (промпты) к ИИ?</h3>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="mq2" value="1"><span>Часто не знаю, как правильно спросить</span></label>
+          <label class="quiz-option"><input type="radio" name="mq2" value="2"><span>Могу сформулировать запрос, но результат не всегда предсказуем</span></label>
+          <label class="quiz-option"><input type="radio" name="mq2" value="3"><span>Умею задавать точные запросы и дорабатывать ответы</span></label>
+        </div>
+        <button type="button" class="btn small primary quiz-next" data-next="3">Далее →</button>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="quiz-modal-step" id="qstep3" style="display:none;">
+        <p class="quiz-step-label muted">Вопрос 3 из 3</p>
+        <h3>Используете ли вы ИИ для улучшения процессов (автоматизация, шаблоны, регламенты)?</h3>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="mq3" value="1"><span>Пока только пробую базовые задачи</span></label>
+          <label class="quiz-option"><input type="radio" name="mq3" value="2"><span>Иногда пробую оптимизировать отдельные процессы</span></label>
+          <label class="quiz-option"><input type="radio" name="mq3" value="3"><span>Целенаправленно перестраиваю процессы с помощью ИИ</span></label>
+        </div>
+        <button type="button" class="btn small primary" id="quizModalSubmit">Узнать свой уровень</button>
+      </div>
+
+      <!-- Result -->
+      <div class="quiz-modal-step" id="qstepResult" style="display:none;">
+        <h3 style="padding-right:28px;">Ваш уровень</h3>
+        <p id="quizModalResult" class="quiz-result-text muted"></p>
+        <button type="button" class="btn small" data-quiz-close="true">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
   <div class="track-modal" id="trackModal" aria-hidden="true" role="dialog" aria-label="Индивидуальный план обучения">
     <div class="track-modal-backdrop" data-track-close="true"></div>
     <div class="track-modal-content">
@@ -1793,45 +1889,159 @@
         });
       }
 
-      // Мини‑квиз для определения уровня зрелости по ИИ
-      const quizToggle = document.getElementById("toggleQuiz");
-      const quizForm = document.getElementById("tracksQuiz");
-      const quizResult = document.getElementById("quizResult");
+      // Конфетти для результата квиза
+      function launchConfetti(){
+        const canvas = document.createElement("canvas");
+        canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999;";
+        document.body.appendChild(canvas);
 
-      if (quizToggle && quizForm){
-        quizToggle.addEventListener("click", () => {
-          const isHidden = quizForm.style.display === "none" || quizForm.style.display === "";
-          quizForm.style.display = isHidden ? "block" : "none";
-          quizToggle.textContent = isHidden ? "Свернуть вопросы" : "Пройти мини‑квиз";
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const COLORS = ["#26D298","#00C878","#4AE8B0","#FFD166","#FF6B6B","#74B9FF","#A29BFE","#FD79A8"];
+        const COUNT = 120;
+        const particles = Array.from({length: COUNT}, () => {
+          const angle = (Math.random() * Math.PI) - Math.PI; // upward spread
+          const speed = 6 + Math.random() * 10;
+          return {
+            x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+            y: canvas.height * 0.45,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 4,
+            r: 4 + Math.random() * 5,
+            color: COLORS[Math.floor(Math.random() * COLORS.length)],
+            rot: Math.random() * Math.PI * 2,
+            rotV: (Math.random() - 0.5) * 0.2,
+            shape: Math.random() > 0.5 ? "rect" : "circle",
+            w: 6 + Math.random() * 8,
+            h: 3 + Math.random() * 5,
+            alpha: 1,
+          };
+        });
+
+        let frame;
+        const GRAVITY = 0.35;
+        const start = performance.now();
+
+        function draw(ts){
+          const elapsed = ts - start;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          let alive = 0;
+          for (const p of particles){
+            p.vy += GRAVITY;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rot += p.rotV;
+            if (elapsed > 1800) p.alpha = Math.max(0, p.alpha - 0.022);
+            if (p.alpha <= 0 || p.y > canvas.height + 20) continue;
+            alive++;
+
+            ctx.save();
+            ctx.globalAlpha = p.alpha;
+            ctx.fillStyle = p.color;
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            if (p.shape === "circle"){
+              ctx.beginPath();
+              ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            }
+            ctx.restore();
+          }
+
+          if (alive > 0 && elapsed < 4000){
+            frame = requestAnimationFrame(draw);
+          } else {
+            canvas.remove();
+          }
+        }
+
+        frame = requestAnimationFrame(draw);
+      }
+
+      // Мини‑квиз — модальное окно
+      const quizModal = document.getElementById("quizModal");
+      const quizToggle = document.getElementById("toggleQuiz");
+
+      function quizShowStep(step){
+        ["1","2","3","Result"].forEach(s => {
+          const el = document.getElementById("qstep" + s);
+          if (el) el.style.display = (s === String(step)) ? "block" : "none";
+        });
+        // Dots: activate dots for completed/current steps
+        [1,2,3].forEach(i => {
+          const dot = document.getElementById("qdot" + i);
+          if (dot) dot.classList.toggle("active", typeof step === "number" ? i <= step : i <= 3);
         });
       }
 
-      if (quizForm){
-        quizForm.addEventListener("submit", (e) => {
-          e.preventDefault();
-          const questions = ["q1","q2","q3"];
-          let score = 0;
+      function quizReset(){
+        if (!quizModal) return;
+        quizModal.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+        quizShowStep(1);
+      }
 
-          for (const q of questions){
-            const checked = quizForm.querySelector(`input[name="${q}"]:checked`);
-            if (!checked){
-              showToast("Пожалуйста, ответьте на все вопросы квиза.");
-              return;
-            }
-            score += Number(checked.value || 0);
-          }
+      function quizClose(){
+        if (!quizModal) return;
+        quizModal.classList.remove("show");
+        quizModal.setAttribute("aria-hidden", "true");
+        quizReset();
+      }
 
-          let text = "";
-          if (score <= 4){
-            text = "Ваш текущий уровень — ближе к треку «Новичок». Начните с базовых материалов и практики.";
-          } else if (score <= 7){
-            text = "Вам подойдёт трек «Уверенный пользователь». Вы уже знакомы с ИИ и можете углубляться в задачи.";
-          } else{
-            text = "Рекомендуем треки «Продвинутый» и «Для руководителей» — вы готовы к глубокому внедрению ИИ в процессы.";
-          }
-
-          if (quizResult) quizResult.textContent = text;
+      if (quizToggle && quizModal){
+        quizToggle.addEventListener("click", () => {
+          quizReset();
+          quizModal.classList.add("show");
+          quizModal.setAttribute("aria-hidden", "false");
         });
+
+        quizModal.addEventListener("click", (e) => {
+          if (e.target.closest("[data-quiz-close]")) quizClose();
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && quizModal.classList.contains("show")) quizClose();
+        });
+
+        quizModal.querySelectorAll(".quiz-next").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const currentStep = Number(btn.closest(".quiz-modal-step").id.replace("qstep",""));
+            const checked = quizModal.querySelector(`input[name="mq${currentStep}"]:checked`);
+            if (!checked){ showToast("Пожалуйста, выберите ответ"); return; }
+            quizShowStep(Number(btn.dataset.next));
+          });
+        });
+
+        const quizModalSubmit = document.getElementById("quizModalSubmit");
+        if (quizModalSubmit){
+          quizModalSubmit.addEventListener("click", () => {
+            const checked = quizModal.querySelector('input[name="mq3"]:checked');
+            if (!checked){ showToast("Пожалуйста, выберите ответ"); return; }
+
+            const score = ["mq1","mq2","mq3"].reduce((sum, name) => {
+              const el = quizModal.querySelector(`input[name="${name}"]:checked`);
+              return sum + (el ? Number(el.value) : 0);
+            }, 0);
+
+            let text = "";
+            if (score <= 4){
+              text = "Ваш текущий уровень — ближе к треку «Новичок». Начните с базовых материалов и практики.";
+            } else if (score <= 7){
+              text = "Вам подойдёт трек «Уверенный пользователь». Вы уже знакомы с ИИ и можете углубляться в задачи.";
+            } else {
+              text = "Рекомендуем треки «Продвинутый» и «Для руководителей» — вы готовы к глубокому внедрению ИИ в процессы.";
+            }
+
+            const resultEl = document.getElementById("quizModalResult");
+            if (resultEl) resultEl.textContent = text;
+            quizShowStep("Result");
+            launchConfetti();
+          });
+        }
       }
 
       // Отправка формы консультации

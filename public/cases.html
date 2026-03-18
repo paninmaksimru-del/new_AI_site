@@ -468,6 +468,32 @@
       border-style:dashed;
     }
 
+    /* Тултип для неавторизованных */
+    .btn-unauthed-wrap{
+      position: relative;
+      display: inline-flex;
+    }
+    .btn-unauthed-wrap .unauthed-hint{
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 0;
+      white-space: normal;
+      max-width: min(260px, 80vw);
+      background: rgba(10,12,18,.96);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 10px;
+      padding: 7px 12px;
+      font-size: 12.5px;
+      color: rgba(255,255,255,.82);
+      pointer-events: none;
+      z-index: 200;
+      box-shadow: 0 4px 16px rgba(0,0,0,.5);
+    }
+    .btn-unauthed-wrap:hover .unauthed-hint{
+      display: block;
+    }
+
     .hintline{
       font-size: 12px;
       color: var(--muted-2);
@@ -1226,6 +1252,12 @@
       return String(str || '').replace(/[^a-zA-Z0-9_-]/g, '_');
     }
 
+    function checkIsAuthed() {
+      const token = localStorage.getItem("auth_token");
+      const auth = (() => { try { return JSON.parse(localStorage.getItem("mikAuth")); } catch(_) { return null; } })();
+      return !!(token && auth && auth.isAuthorized);
+    }
+
     function showToast(message) {
       const toast = document.getElementById("toast");
       if (!toast) return;
@@ -1277,6 +1309,7 @@
       const role = document.getElementById("caseRole")?.value || "all";
 
       const usedMap = getJson(LS_CASE_USED, {});
+      const authed = checkIsAuthed();
 
       const filtered = casesData.filter(c => {
         if (task !== "all" && c.task !== task) return false;
@@ -1324,7 +1357,10 @@
             <div class="case-usage">Использован: ${totalUsed}</div>
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
               <button class="btn small primary" type="button" data-open-case="${c.id}">Открыть сценарий</button>
-              <button class="btn small btn-ghost ${usedMap[c.id] ? "used" : ""}" type="button" data-mark-used="${c.id}">Я использовал этот кейс</button>
+              ${authed
+                ? `<button class="btn small btn-ghost${usedMap[c.id] ? " used" : ""}" type="button" data-mark-used="${c.id}">${usedMap[c.id] ? "Отменить выбор" : "Я использовал этот кейс"}</button>`
+                : `<span class="btn-unauthed-wrap"><button class="btn small btn-ghost" type="button" data-mark-used-unauthed="true" style="cursor:default;">Я использовал этот кейс</button><span class="unauthed-hint">Доступно только зарегистрированным пользователям</span></span>`
+              }
             </div>
           </div>
         `;
@@ -1636,14 +1672,28 @@
         }
         const markBtn = e.target.closest("[data-mark-used]");
         if (markBtn) {
+          if (!checkIsAuthed()) {
+            showToast("Доступно только зарегистрированным пользователям");
+            return;
+          }
           const id = markBtn.getAttribute("data-mark-used");
           if (!id) return;
           const map = getJson(LS_CASE_USED, {});
-          map[id] = (map[id] || 0) + 1;
-          setJson(LS_CASE_USED, map);
-          markBtn.classList.add("used");
-          showToast("Отметили кейс как использованный");
+          if (map[id]) {
+            delete map[id];
+            setJson(LS_CASE_USED, map);
+            showToast("Отметка снята");
+          } else {
+            map[id] = 1;
+            setJson(LS_CASE_USED, map);
+            showToast("Отметили кейс как использованный");
+          }
           renderCases();
+          return;
+        }
+        const markUnauthedBtn = e.target.closest("[data-mark-used-unauthed]");
+        if (markUnauthedBtn) {
+          showToast("Доступно только зарегистрированным пользователям");
           return;
         }
         const copyBtn = e.target.closest("[data-copy]");

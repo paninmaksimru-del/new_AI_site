@@ -716,11 +716,6 @@
         max-width: 100%;
       }
 
-      /* Статьи — одна колонка вместо трёх */
-      #articles .grid {
-        grid-template-columns: 1fr !important;
-      }
-
       /* Шаги Dolphin — одна колонка */
       #dolphinSteps {
         grid-template-columns: 1fr !important;
@@ -911,6 +906,61 @@
     @media (max-width: 980px){ .footer-inner{ grid-template-columns:1fr 1fr; } }
     @media (max-width: 760px){ .footer-inner{ grid-template-columns:1fr; } }
 
+    /* ── ARTICLES SCROLL (как "Как устроен ресурс") ───────────────────────── */
+    .articles-grid {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      gap: 16px;
+      padding-bottom: 8px;
+      margin-top: 16px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      -webkit-overflow-scrolling: touch;
+      cursor: grab;
+      user-select: none;
+    }
+    .articles-grid:active {
+      cursor: grabbing;
+    }
+    .articles-grid::-webkit-scrollbar { display: none; }
+    .articles-grid > article {
+      flex: 0 0 calc((100% - 32px) / 3);
+      min-width: 280px;
+      scroll-snap-align: start;
+      flex-shrink: 0;
+      box-shadow: var(--shadow);
+      transition: box-shadow .2s, transform .2s, border-color .2s;
+    }
+    .articles-grid > article:hover {
+      box-shadow: 0 16px 40px rgba(0,0,0,.5);
+    }
+    .articles-dots {
+      display: flex;
+      justify-content: center;
+      gap: 7px;
+      margin-top: 14px;
+    }
+    .articles-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.2);
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      transition: background .2s, transform .2s;
+    }
+    .articles-dot.active {
+      background: rgba(0,200,110,.85);
+      transform: scale(1.25);
+    }
+    @media (max-width: 760px) {
+      .articles-grid > article {
+        flex: 0 0 calc(100% - 24px);
+        min-width: 0;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -1074,7 +1124,7 @@
               <label><input type="radio" name="q3" value="2">Иногда пробую оптимизировать отдельные процессы</label>
               <label><input type="radio" name="q3" value="3">Целенаправленно перестраиваю процессы с помощью ИИ</label>
             </div>
-            <button class="btn small primary" type="submit">Узнать свой уровень</button>
+            <button class="btn small primary" type="submit" style="margin-top:20px;">Узнать свой уровень</button>
             <p id="quizResult" class="hintline" style="margin-top:10px;"></p>
           </form>
         </div>
@@ -1394,9 +1444,9 @@
     <section id="articles">
       <div class="wrap">
         <h2 class="h2">Полезные материалы</h2>
-        <p class="lead">Статьи для самостоятельного изучения — от базовых понятий до практических советов.</p>
+        <p class="lead">Статьи для самостоятельного изучения — от базовых понятий до практических советов</p>
 
-        <div class="grid" style="margin-top:16px; grid-template-columns: repeat(3, 1fr); gap:16px;">
+        <div class="articles-grid" id="articlesGrid">
 
           <article class="card" style="display:flex; flex-direction:column; gap:12px;">
             <div style="display:flex; gap:8px;">
@@ -1404,7 +1454,7 @@
             </div>
             <div>
               <h3 style="font-size:15px; line-height:1.4; margin-bottom:6px;">Как нейросети обрабатывают текст: простое объяснение</h3>
-              <p class="muted" style="font-size:13px;">Разбираем принципы работы языковых моделей без технических терминов — на примерах из офисной практики.</p>
+              <p class="muted" style="font-size:13px;">Разбираем принципы работы языковых моделей без технических терминов — на примерах из офисной практики</p>
             </div>
             <div style="display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
               <span style="font-size:12px; color:rgba(255,255,255,.35);">⏱ 5 мин</span>
@@ -1418,7 +1468,7 @@
             </div>
             <div>
               <h3 style="font-size:15px; line-height:1.4; margin-bottom:6px;">10 промптов, которые экономят час в день</h3>
-              <p class="muted" style="font-size:13px;">Готовые шаблоны запросов для писем, справок, протоколов и аналитических сводок — с примерами и советами по адаптации.</p>
+              <p class="muted" style="font-size:13px;">Готовые шаблоны запросов для писем, справок, протоколов и аналитических сводок — с примерами и советами по адаптации</p>
             </div>
             <div style="display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
               <span style="font-size:12px; color:rgba(255,255,255,.35);">⏱ 7 мин</span>
@@ -1432,7 +1482,7 @@
             </div>
             <div>
               <h3 style="font-size:15px; line-height:1.4; margin-bottom:6px;">Что можно и нельзя передавать нейросети</h3>
-              <p class="muted" style="font-size:13px;">Разбираем, какие данные безопасно использовать в запросах и как не нарушить правила информационной безопасности.</p>
+              <p class="muted" style="font-size:13px;">Разбираем, какие данные безопасно использовать в запросах и как не нарушить правила информационной безопасности</p>
             </div>
             <div style="display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
               <span style="font-size:12px; color:rgba(255,255,255,.35);">⏱ 4 мин</span>
@@ -1440,6 +1490,25 @@
             </div>
           </article>
 
+          <article class="card" style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; gap:8px;">
+              <span style="padding:3px 10px; border-radius:999px; font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; background:rgba(0,180,90,.15); border:1px solid rgba(0,200,100,.25); color:rgba(120,255,180,.85);">Практика</span>            </div>
+            <div>
+              <h3 style="font-size:15px; line-height:1.4; margin-bottom:6px;">Секреты управляемоего результата при работе с ИИ</h3>
+              <p class="muted" style="font-size:13px;">Основы ролей и промптирования для настройки ИИ-агнета под конкретные задачи</p>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
+              <span style="font-size:12px; color:rgba(255,255,255,.35);">⏱ 4 мин</span>
+              <span style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:rgba(255,255,255,.3); font-size:13px; font-weight:500; cursor:default;">Скоро →</span>
+            </div>
+          </article>
+
+        </div>
+        <div class="articles-dots" id="articlesDots">
+          <button class="articles-dot active" data-idx="0" aria-label="Слайд 1"></button>
+          <button class="articles-dot" data-idx="1" aria-label="Слайд 2"></button>
+          <button class="articles-dot" data-idx="2" aria-label="Слайд 3"></button>
+          <button class="articles-dot" data-idx="3" aria-label="Слайд 4"></button>
         </div>
       </div>
     </section>
@@ -1546,7 +1615,50 @@
       showToast._timer = setTimeout(() => toast.classList.remove("show"), 2200);
     }
 
+    function initArticlesSlider() {
+      const grid = document.getElementById("articlesGrid");
+      const dotsEl = document.getElementById("articlesDots");
+      if (!grid || !dotsEl) return;
+      const cards = Array.from(grid.children);
+      const dots = Array.from(dotsEl.querySelectorAll(".articles-dot"));
+      if (!cards.length || !dots.length) return;
+
+      function updateDots() {
+        const scrollLeft = grid.scrollLeft;
+        const cardWidth = cards[0] ? cards[0].offsetWidth + 16 : 1;
+        const idx = Math.round(scrollLeft / cardWidth);
+        dots.forEach((d, i) => d.classList.toggle("active", i === idx));
+      }
+
+      grid.addEventListener("scroll", updateDots, { passive: true });
+
+      dots.forEach((dot, i) => {
+        dot.addEventListener("click", () => {
+          const cardWidth = cards[0] ? cards[0].offsetWidth + 16 : 0;
+          grid.scrollTo({ left: cardWidth * i, behavior: "smooth" });
+        });
+      });
+
+      // Скролл перетаскиванием мышкой
+      let isDown = false, startX, startScrollLeft;
+      grid.addEventListener("mousedown", (e) => {
+        isDown = true;
+        startX = e.pageX - grid.offsetLeft;
+        startScrollLeft = grid.scrollLeft;
+      });
+      grid.addEventListener("mouseleave", () => { isDown = false; });
+      grid.addEventListener("mouseup", () => { isDown = false; });
+      grid.addEventListener("mousemove", (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - grid.offsetLeft;
+        const walk = (x - startX) * 1.2;
+        grid.scrollLeft = startScrollLeft - walk;
+      });
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
+      initArticlesSlider();
       // ── Прогресс-бар скролла ──────────────────────────────────────────────
       const progressEl = document.getElementById("progressBar");
       if (progressEl) {

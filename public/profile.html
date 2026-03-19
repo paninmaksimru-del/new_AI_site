@@ -195,6 +195,18 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 </style>
 </head>
 <body data-user-id="__USER_ID__">
+<script>
+(function() {
+  try {
+    var auth = JSON.parse(localStorage.getItem('mikAuth') || '{}');
+    if (!auth || auth.isAuthorized !== true) {
+      window.location.replace('/login');
+    }
+  } catch(e) {
+    window.location.replace('/login');
+  }
+})();
+</script>
 
 <div class="progress"><i id="progBar"></i></div>
 

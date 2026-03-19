@@ -975,7 +975,8 @@
     .articles-grid {
       display: flex;
       overflow-x: auto;
-      scroll-snap-type: x mandatory;
+      scroll-snap-type: x proximity;
+      scroll-behavior: smooth;
       gap: 16px;
       padding: 22px 16px 48px;
       margin-top: -6px;
@@ -989,16 +990,20 @@
       cursor: grabbing;
     }
     .articles-grid::-webkit-scrollbar { display: none; }
-    .articles-grid > article {
+    .articles-grid > article,
+    .articles-grid .card {
       /* Desktop: smooth scaling with calc, cap at 340px for soft scroll */
       flex: 0 0 min(340px, calc((100% - 32px) / 3));
       min-width: 260px;
       scroll-snap-align: start;
       flex-shrink: 0;
-      box-shadow: var(--shadow);
-      transition: box-shadow .2s, transform .2s, border-color .2s;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      transition: border-color .2s, transform .2s, box-shadow .2s;
     }
-    .articles-grid > article:hover {
+    .articles-grid > article:hover,
+    .articles-grid .card:hover {
+      border-color: var(--stroke-2);
+      transform: translateY(-3px);
       box-shadow: 0 16px 40px rgba(0,0,0,.5);
     }
     .articles-dots {
@@ -1019,6 +1024,18 @@
     .articles-dot.active {
       background: rgba(0,200,110,.85);
       transform: scale(1.25);
+    }
+    /* Десктоп: 2 точки (2 страницы по 2 карточки) */
+    .articles-dot[data-idx="2"],
+    .articles-dot[data-idx="3"] {
+      display: none;
+    }
+    /* Мобильная: 4 точки (1 карточка = 1 слайд) */
+    @media (max-width: 760px) {
+      .articles-dot[data-idx="2"],
+      .articles-dot[data-idx="3"] {
+        display: block;
+      }
     }
     /* 760–980px: transition zone — карточки плавно увеличиваются к full-width, устраняя разрыв на 760px */
     @media (max-width: 980px) {
@@ -1558,8 +1575,8 @@
         <div class="articles-dots" id="articlesDots">
           <button class="articles-dot active" data-idx="0" aria-label="Слайд 1"></button>
           <button class="articles-dot" data-idx="1" aria-label="Слайд 2"></button>
-          <button class="articles-dot" data-idx="2" aria-label="Слайд 3"></button>
-          <button class="articles-dot" data-idx="3" aria-label="Слайд 4"></button>
+         <button class="articles-dot" data-idx="2" aria-label="Слайд 3"></button>
+         <button class="articles-dot" data-idx="3" aria-label="Слайд 4"></button>
         </div>
       </div>
     </section>
@@ -1731,38 +1748,77 @@
       const dots = Array.from(dotsEl.querySelectorAll(".articles-dot"));
       if (!cards.length || !dots.length) return;
 
+      const MOBILE_BP = 760;
+      function isMobile() { return window.innerWidth <= MOBILE_BP; }
+
       function updateDots() {
         const scrollLeft = grid.scrollLeft;
         const cardWidth = cards[0] ? cards[0].offsetWidth + 16 : 1;
-        const idx = Math.round(scrollLeft / cardWidth);
-        dots.forEach((d, i) => d.classList.toggle("active", i === idx));
+        let idx;
+        if (isMobile()) {
+          idx = Math.round(scrollLeft / cardWidth);
+          idx = Math.min(idx, 3);
+        } else {
+          const pageWidth = cardWidth * 2;
+          idx = Math.min(Math.round(scrollLeft / pageWidth), 1);
+        }
+        dots.forEach((d, i) => {
+          const visible = isMobile() ? true : i < 2;
+          d.classList.toggle("active", visible && i === idx);
+        });
       }
 
       grid.addEventListener("scroll", updateDots, { passive: true });
+      window.addEventListener("resize", updateDots);
 
       dots.forEach((dot, i) => {
         dot.addEventListener("click", () => {
           const cardWidth = cards[0] ? cards[0].offsetWidth + 16 : 0;
-          grid.scrollTo({ left: cardWidth * i, behavior: "smooth" });
+          const targetLeft = isMobile() ? cardWidth * i : cardWidth * 2 * Math.min(i, 1);
+          grid.scrollTo({ left: targetLeft, behavior: "smooth" });
         });
       });
 
-      // Скролл перетаскиванием мышкой
-      let isDown = false, startX, startScrollLeft;
+      // Скролл перетаскиванием мышкой и колесом (плавный свайп для десктопа)
+      let isDown = false, startX, startScrollLeft, lastX = 0, velX = 0;
       grid.addEventListener("mousedown", (e) => {
+        if (e.target.closest("a")) return;
         isDown = true;
         startX = e.pageX - grid.offsetLeft;
         startScrollLeft = grid.scrollLeft;
+        lastX = e.pageX;
+        velX = 0;
       });
       grid.addEventListener("mouseleave", () => { isDown = false; });
-      grid.addEventListener("mouseup", () => { isDown = false; });
+      grid.addEventListener("mouseup", () => {
+        if (!isDown) return;
+        isDown = false;
+        if (Math.abs(velX) > 2) {
+          const decay = 0.92;
+          const step = () => {
+            velX *= decay;
+            grid.scrollLeft -= velX * 1.5;
+            if (Math.abs(velX) > 0.5) requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+        }
+      });
       grid.addEventListener("mousemove", (e) => {
         if (!isDown) return;
         e.preventDefault();
         const x = e.pageX - grid.offsetLeft;
+        velX = e.pageX - lastX;
+        lastX = e.pageX;
         const walk = (x - startX) * 1.2;
         grid.scrollLeft = startScrollLeft - walk;
       });
+      grid.addEventListener("wheel", (e) => {
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+        const maxScroll = grid.scrollWidth - grid.clientWidth;
+        if (maxScroll <= 0) return;
+        e.preventDefault();
+        grid.scrollLeft = Math.max(0, Math.min(grid.scrollLeft + e.deltaY * 0.8, maxScroll));
+      }, { passive: false });
     }
 
     document.addEventListener("DOMContentLoaded", () => {

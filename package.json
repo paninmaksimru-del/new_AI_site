@@ -5,8 +5,8 @@
   "type": "module",
   "main": "server/index.js",
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "node --watch server/index.js",
+    "start": "node --env-file=.env server/index.js",
+    "dev": "node --env-file=.env --watch server/index.js",
     "init-db": "node server/init-db.js",
     "export-db": "node server/export-db.js"
   },
@@ -14,7 +14,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "pg": "^8.13.0",
-    "express": "^4.21.1"
+    "express": "^4.21.1",
+    "pg": "^8.20.0"
   }
 }

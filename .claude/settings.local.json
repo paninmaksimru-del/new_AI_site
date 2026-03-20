@@ -3,7 +3,12 @@
     "allow": [
       "mcp__Claude_Preview__preview_start",
       "Bash(npm install)",
-      "Bash(npm rebuild:*)"
+      "Bash(npm rebuild:*)",
+      "Bash(kill 9642)",
+      "Bash(timeout 10 node --env-file=.env server/index.js)",
+      "Bash(node --env-file=/Users/max/new_AI_site/new_AI_site/.env /Users/max/new_AI_site/new_AI_site/server/index.js)",
+      "Bash(curl -4 -s --connect-timeout 10 https://db.vpfyoahhzfaxzimttmhc.supabase.co)",
+      "Bash(node -e \":*)"
     ]
   }
 }

@@ -1,28 +1,36 @@
-import Database from 'better-sqlite3';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { mkdirSync, existsSync } from 'fs';
+import pg from 'pg';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const dbPath = process.env.DATABASE_PATH || join(__dirname, '..', 'data', 'platform.db');
+const { Pool } = pg;
 
-let db;
-
-export function getDb() {
-  if (!db) {
-    const dataDir = join(__dirname, '..', 'data');
-    if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
-    db = new Database(dbPath);
-    db.pragma('journal_mode = WAL');
-    initSchema(db);
-  }
-  return db;
+if (!process.env.DATABASE_URL) {
+  console.error('ERROR: DATABASE_URL environment variable is not set.');
+  console.error('Create a .env file with DATABASE_URL=postgresql://user:pass@host:5432/dbname');
+  process.exit(1);
 }
 
-function initSchema(database) {
-  database.exec(`
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false }
+});
+
+export function getDb() {
+  return pool;
+}
+
+export async function query(sql, params = []) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(sql, params);
+    return result;
+  } finally {
+    client.release();
+  }
+}
+
+export async function initSchema() {
+  await query(`
     CREATE TABLE IF NOT EXISTS departments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       name TEXT UNIQUE NOT NULL
     );
     CREATE TABLE IF NOT EXISTS cases (
@@ -42,7 +50,7 @@ function initSchema(database) {
       data TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS ui_events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       timestamp TEXT NOT NULL,
       event_type TEXT,
       payload TEXT
@@ -55,4 +63,3 @@ function initSchema(database) {
     CREATE INDEX IF NOT EXISTS idx_ui_events_type ON ui_events(event_type);
   `);
 }
-

@@ -4,14 +4,16 @@
     {
       "name": "dev",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["--watch", "server/index.js"],
-      "port": 19080
+      "runtimeArgs": ["--env-file=.env", "--watch", "server/index.js"],
+      "port": 19080,
+      "autoPort": false
     },
     {
       "name": "start",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["server/index.js"],
-      "port": 19080
+      "runtimeArgs": ["--env-file=.env", "server/index.js"],
+      "port": 19080,
+      "autoPort": false
     }
   ]
 }

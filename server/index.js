@@ -372,6 +372,26 @@ async function start() {
     }
   });
 
+  // Browser config
+  app.get('/api/browser-config', async (req, res) => {
+    try {
+      const { rows } = await query("SELECT value FROM kv WHERE key = 'browser_config'");
+      res.json(rows.length ? JSON.parse(rows[0].value) : {});
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
+  app.post('/api/browser-config', requireAdmin(), async (req, res) => {
+    try {
+      const data = JSON.stringify(req.body || {});
+      await query("INSERT INTO kv (key, value) VALUES ('browser_config', $1) ON CONFLICT (key) DO UPDATE SET value = $1", [data]);
+      res.json({ ok: true });
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
   // Health
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });

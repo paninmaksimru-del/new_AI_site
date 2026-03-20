@@ -344,7 +344,7 @@
 
       <div class="field-row" style="margin-top:20px;">
         <button class="btn ok" onclick="saveBrowserConfig()">Сохранить</button>
-        <a href="/training#browser" target="_blank" class="btn small" style="text-decoration:none;">↗ Открыть на странице</a>
+        <a href="/education#browser" target="_blank" class="btn small" style="text-decoration:none;">↗ Открыть на странице</a>
       </div>
     </div>
   </div>
@@ -789,9 +789,32 @@ document.getElementById('taskSave').addEventListener('click', async () => {
   catch(e) { toast(e.message,'err'); }
 });
 
+// ── BROWSER CONFIG LOAD ───────────────────────────────────────────────────────
+async function loadBrowserConfig() {
+  try {
+    const cfg = await api('/api/browser-config');
+    if (!cfg || !Object.keys(cfg).length) return;
+    if (cfg.visible !== undefined) document.getElementById('brwVisible').value = cfg.visible;
+    if (cfg.download) document.getElementById('brwDownload').value = cfg.download;
+    if (cfg.register) document.getElementById('brwRegister').value = cfg.register;
+    if (cfg.title) document.getElementById('brwTitle').value = cfg.title;
+    if (cfg.subtitle) document.getElementById('brwSubtitle').value = cfg.subtitle;
+    if (Array.isArray(cfg.steps)) {
+      const rows = document.querySelectorAll('#brwSteps .field-row');
+      cfg.steps.forEach((step, i) => {
+        if (!rows[i]) return;
+        const inputs = rows[i].querySelectorAll('input[type=text]');
+        if (inputs[0]) inputs[0].value = step.label || '';
+        if (inputs[1]) inputs[1].value = step.hint || '';
+      });
+    }
+  } catch(e) { /* молча игнорируем — покажем дефолтные значения */ }
+}
+
 // INIT
 document.addEventListener('DOMContentLoaded', () => {
   loadUsers(); loadDepts(); loadCases(); loadPrompts(); loadTools(); loadTasks();
+  loadBrowserConfig();
 });
 
 // ── BROWSER CONFIG ────────────────────────────────────────────────────────────

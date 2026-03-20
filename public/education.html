@@ -1365,10 +1365,10 @@
           <!-- Шапка блока -->
           <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
             <div>
-              <h2 class="h2" style="margin-bottom:6px;">Единый браузер для всех ИИ‑сервисов</h2>
-              <p class="lead" style="margin:0;">Dolphin Anty — изолированные профили для каждого сервиса. Без конфликта аккаунтов, без следов в корпоративном браузере.</p>
+              <h2 class="h2" style="margin-bottom:6px;" id="brwTitleEl">Единый браузер для всех ИИ‑сервисов</h2>
+              <p class="lead" style="margin:0;" id="brwSubtitleEl">Dolphin Anty — изолированные профили для каждого сервиса. Без конфликта аккаунтов, без следов в корпоративном браузере.</p>
             </div>
-            <a href="https://dolphin.ru.com/" target="_blank" rel="noopener"
+            <a id="brwDownloadEl" href="https://dolphin.ru.com/" target="_blank" rel="noopener"
                style="flex-shrink:0; display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:12px; background:rgba(0,200,100,.18); border:1px solid rgba(0,200,100,.35); color:rgba(180,255,210,.95); font-size:13.5px; font-weight:600; text-decoration:none; white-space:nowrap;">
               ↓ Скачать Dolphin Anty
             </a>
@@ -1420,7 +1420,7 @@
           </div>
 
           <div style="margin-top:12px; font-size:12px; color:rgba(255,255,255,.3);">
-            Или сразу перейти к регистрации: <a href="https://app.dolphin-anty.com" target="_blank" rel="noopener" style="color:rgba(0,210,100,.7); text-decoration:none;">app.dolphin‑anty.com →</a>
+            Или сразу перейти к регистрации: <a id="brwRegisterEl" href="https://app.dolphin-anty.com" target="_blank" rel="noopener" style="color:rgba(0,210,100,.7); text-decoration:none;">app.dolphin‑anty.com →</a>
           </div>
 
         </div>
@@ -2100,6 +2100,37 @@
           });
         }
       }
+
+      // ── Браузер-блок: подгрузка конфига из админки ───────────────────────────
+      fetch('/api/browser-config')
+        .then(r => r.ok ? r.json() : {})
+        .then(cfg => {
+          if (!cfg || !Object.keys(cfg).length) return;
+          const section = document.getElementById('browser');
+          if (cfg.visible === '0' || cfg.visible === 0) {
+            if (section) section.style.display = 'none';
+            return;
+          }
+          if (cfg.title) { const el = document.getElementById('brwTitleEl'); if (el) el.textContent = cfg.title; }
+          if (cfg.subtitle) { const el = document.getElementById('brwSubtitleEl'); if (el) el.textContent = cfg.subtitle; }
+          if (cfg.download) { const el = document.getElementById('brwDownloadEl'); if (el) el.href = cfg.download; }
+          if (cfg.register) { const el = document.getElementById('brwRegisterEl'); if (el) el.href = cfg.register; }
+          if (Array.isArray(cfg.steps) && cfg.steps.length) {
+            const container = document.getElementById('dolphinSteps');
+            if (container) {
+              const isLast = (i) => i === cfg.steps.length - 1;
+              container.innerHTML = cfg.steps.map((step, i) => `
+                <div style="${isLast(i) && cfg.steps.length > 1 ? 'grid-column:1/-1;' : ''}display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:14px; background:rgba(0,180,90,.06); border:1px solid rgba(0,200,100,.12);">
+                  <span style="flex-shrink:0; width:26px; height:26px; border-radius:50%; background:rgba(0,200,100,.15); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:rgba(0,220,110,.9);">${String(i+1).padStart(2,'0')}</span>
+                  <div>
+                    <div style="font-size:13.5px; font-weight:600; color:rgba(255,255,255,.9); margin-bottom:3px;">${step.label||''}</div>
+                    <div style="font-size:12.5px; color:rgba(255,255,255,.55);">${step.hint||''}</div>
+                  </div>
+                </div>`).join('');
+            }
+          }
+        })
+        .catch(() => {});
 
       // Отправка формы консультации
       const form = document.getElementById("consultForm");

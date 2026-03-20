@@ -71,7 +71,7 @@
     }
     .brand{
       display:flex; align-items:center; gap: 10px;
-      min-width: 340px;
+      min-width: 220px;
     }
     .brand .logo{
       width: 120px; height: 60px;
@@ -79,7 +79,9 @@
       box-shadow: none !important;
       border-radius: 0 !important;
       display: inline-flex; align-items: center; justify-content: center;
-      flex-shrink: 0; overflow: hidden !important;
+      flex-shrink: 0;
+      overflow: hidden !important;
+      max-width: 30vw;
     }
     .brand .logo::before{ display: none !important; }
     .brand .logo img{
@@ -644,7 +646,7 @@ function logout() {
       <a class="navlink" href="training">Обучение</a>
       <a class="navlink" href="cases">Кейсы</a>
       <a class="navlink active" href="dashboard">Статистика</a>
-      <a class="navlink" href="feedback">Обратная связь</a>
+      <a class="navlink" href="cases#feedback">Обратная связь</a>
       <a class="navlink" href="profile">Личный кабинет</a>
     </nav>
   </div>

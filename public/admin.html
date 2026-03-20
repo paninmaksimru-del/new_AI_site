@@ -68,6 +68,15 @@
   </style>
 </head>
 <body>
+<script>
+(function() {
+  try {
+    var auth = JSON.parse(localStorage.getItem('mikAuth') || '{}');
+    if (!auth || auth.isAuthorized !== true) { window.location.replace('/login'); return; }
+    if (auth.role !== 'admin') { window.location.replace('/profile'); return; }
+  } catch(e) { window.location.replace('/login'); }
+})();
+</script>
 
 <header>
   <div class="wrap">

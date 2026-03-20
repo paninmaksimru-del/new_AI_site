@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
   <title>Обучение по ИИ — Фонд МИК</title>
 
@@ -20,19 +20,14 @@
       --warn: rgba(255, 193, 7, .95);
       --pilot: rgba(0, 200, 120, .95);
       --danger: rgba(255, 96, 96, .95);
-
       --shadow: 0 10px 30px rgba(0,0,0,.35);
       --blur: blur(14px);
-
       --radius: 18px;
       --radius-sm: 12px;
-
       --max: 1100px;
       --gap: clamp(14px, 2vw, 22px);
       --pad: clamp(16px, 2.4vw, 26px);
-
       --header-h: 68px;
-
       --focus: 0 0 0 3px rgba(0,210,110,.35);
     }
 
@@ -40,7 +35,7 @@
     html{ scroll-behavior: smooth; }
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
       background:
         radial-gradient(1200px 700px at 15% 85%, rgba(0,90,55,.9), transparent 58%),
         radial-gradient(900px 600px at 85% 15%, rgba(0,70,45,.7), transparent 55%),
@@ -51,508 +46,261 @@
       overflow-x: hidden;
     }
     a{ color: inherit; text-decoration: none; }
-    button, input, select, textarea{
-      font: inherit;
-      color: inherit;
-    }
+    button, input, select, textarea{ font: inherit; color: inherit; }
     :focus-visible{ outline: none; box-shadow: var(--focus); border-radius: 10px; }
 
-    .progress{
-      position: fixed;
-      top:0;
-      left:0;
-      height: 3px;
-      width: 100%;
-      z-index: 1000;
-      background: rgba(255,255,255,.05);
-    }
-    .progress > i{
-      display:block;
-      height:100%;
-      width: 0%;
-      background: linear-gradient(90deg, rgba(0,180,100,.95), rgba(0,230,130,.95));
-      transition: width .08s linear;
-    }
+    .progress{ position:fixed; top:0; left:0; height:3px; width:100%; z-index:1000; background:rgba(255,255,255,.05); }
+    .progress > i{ display:block; height:100%; width:0%; background:linear-gradient(90deg,rgba(0,180,100,.95),rgba(0,230,130,.95)); transition:width .08s linear; }
 
-    header{
-      position: sticky;
-      top:0;
-      z-index: 900;
-      height: var(--header-h);
-      backdrop-filter: var(--blur);
-      background: rgba(2,18,12,.85);
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-    .topbar{
-      max-width: var(--max);
-      margin:0 auto;
-      height: 100%;
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      padding: 0 var(--pad);
-      gap: 12px;
-    }
-    .brand{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      min-width: 220px;
-    }
-    .brand .logo{
-      width: 120px; height: 60px;
-      background: transparent !important;
-      box-shadow: none !important;
-      border-radius: 0 !important;
-      display: inline-flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      overflow: hidden !important;
-      max-width: 30vw;
-    }
-    .brand .logo::before{ display: none !important; }
-    .brand .logo img{ width: 100%; height: 100%; object-fit: contain; mix-blend-mode: screen; display: block; }
-    .brand .name{
-      font-weight: 700;
-      letter-spacing: .2px;
-      font-size: 14px;
-      line-height: 1.25;
-      color: rgba(255,255,255,.9);
-    }
-
-    nav{
-      display:flex;
-      align-items:center;
-      gap: 6px;
-    }
-    .nowrap{ white-space: nowrap; }
-    .navlink{
-      padding: 10px 12px;
-      border-radius: 12px;
-      color: rgba(255,255,255,.78);
-      border: 1px solid transparent;
-      transition: background .15s ease, border-color .15s ease, color .15s ease;
-      font-size: 14px;
-      white-space: nowrap;
-    }
-    .navlink:hover{
-      background: rgba(255,255,255,.06);
-      border-color: rgba(255,255,255,.10);
-      color: rgba(255,255,255,.92);
-    }
-    .navlink.active{
-      background: rgba(0,180,100,.14);
-      border-color: rgba(0,200,110,.26);
-      color: rgba(255,255,255,.95);
-    }
-
-    .profile-btn{
-      margin-left: 8px;
-      padding-inline: 14px;
-      display:inline-flex;
-      align-items:center;
-      gap: 6px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.05);
-      cursor:pointer;
-      min-height: 40px;
-      font-size: 14px;
-    }
-
-    .burger{
-      display:none;
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-    }
-    .burger i{
-      width: 18px; height: 2px;
-      background: rgba(255,255,255,.86);
-      position: relative;
-      display:block;
-      border-radius: 10px;
-    }
-    .burger i:before,
-    .burger i:after{
-      content:"";
-      position:absolute;
-      left:0;
-      width: 18px; height:2px;
-      background: rgba(255,255,255,.86);
-      border-radius: 10px;
-    }
-    .burger i:before{ top:-6px; }
-    .burger i:after{ top: 6px; }
-
-    .mobile-menu{
-      display:none;
-      position: absolute;
-      left:0; right:0;
-      top: var(--header-h);
-      background: rgba(2,18,12,.96);
-      backdrop-filter: var(--blur);
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      padding: 12px var(--pad) 16px;
-    }
-    .mobile-menu .navlink{
-      display:block;
-      width: 100%;
-      margin: 6px 0;
-    }
+    header{ position:sticky; top:0; z-index:900; height:var(--header-h); backdrop-filter:var(--blur); background:rgba(2,18,12,.85); border-bottom:1px solid rgba(255,255,255,.08); }
+    .topbar{ max-width:var(--max); margin:0 auto; height:100%; display:flex; align-items:center; justify-content:space-between; padding:0 var(--pad); gap:12px; }
+    .brand{ display:flex; align-items:center; gap:10px; min-width:220px; }
+    .brand .logo{ width:34px; height:34px; border-radius:10px; background:radial-gradient(circle at 30% 30%,rgba(0,170,100,.95),rgba(0,220,130,.75)); box-shadow:0 10px 25px rgba(0,0,0,.35); position:relative; overflow:hidden; }
+    .brand .logo:before{ content:""; position:absolute; inset:-20px; background:radial-gradient(circle at 40% 40%,rgba(255,255,255,.25),transparent 55%); transform:rotate(15deg); }
+    .brand .name{ font-weight:700; letter-spacing:.2px; font-size:14px; line-height:1.25; color:rgba(255,255,255,.9); }
+    nav{ display:flex; align-items:center; gap:6px; }
+    .nowrap{ white-space:nowrap; }
+    .navlink{ padding:10px 12px; border-radius:12px; color:rgba(255,255,255,.78); border:1px solid transparent; transition:background .15s,border-color .15s,color .15s; font-size:14px; white-space:nowrap; }
+    .navlink:hover{ background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.10); color:rgba(255,255,255,.92); }
+    .navlink.active{ background:rgba(0,180,100,.14); border-color:rgba(0,200,110,.26); color:rgba(255,255,255,.95); }
+    .profile-btn{ margin-left:8px; padding-inline:14px; display:inline-flex; align-items:center; gap:6px; border-radius:14px; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.05); cursor:pointer; min-height:40px; font-size:14px; }
+    .burger{ display:none; width:44px; height:44px; border-radius:14px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); align-items:center; justify-content:center; cursor:pointer; }
+    .burger i{ width:18px; height:2px; background:rgba(255,255,255,.86); position:relative; display:block; border-radius:10px; }
+    .burger i:before,.burger i:after{ content:""; position:absolute; left:0; width:18px; height:2px; background:rgba(255,255,255,.86); border-radius:10px; }
+    .burger i:before{ top:-6px; } .burger i:after{ top:6px; }
+    .mobile-menu{ display:none; position:absolute; left:0; right:0; top:var(--header-h); background:rgba(2,18,12,.96); backdrop-filter:var(--blur); border-bottom:1px solid rgba(255,255,255,.08); padding:12px var(--pad) 16px; }
+    .mobile-menu .navlink{ display:block; width:100%; margin:6px 0; }
 
     main{ display:block; }
-    section{
-      scroll-margin-top: calc(var(--header-h) + 14px);
-      padding: 40px 0;
-    }
-    .wrap{
-      max-width: var(--max);
-      margin:0 auto;
-      padding: 0 var(--pad);
-    }
-
-    .panel{
-      background: var(--panel);
-      border: 1px solid var(--stroke);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      backdrop-filter: var(--blur);
-    }
-    .panel.pad{ padding: var(--pad); }
-    .muted{ color: var(--muted); }
-    .muted2{ color: var(--muted-2); }
-    .h2{
-      font-size: clamp(22px, 2.2vw, 30px);
-      line-height: 1.15;
-      margin: 0 0 10px 0;
-    }
-    .lead{
-      color: var(--muted);
-      margin: 0;
-      max-width: 78ch;
-    }
+    section{ scroll-margin-top:calc(var(--header-h) + 14px); padding:40px 0; }
+    .wrap{ max-width:var(--max); margin:0 auto; padding:0 var(--pad); }
+    .panel{ background:var(--panel); border:1px solid var(--stroke); border-radius:var(--radius); box-shadow:var(--shadow); backdrop-filter:var(--blur); }
+    .panel.pad{ padding:var(--pad); }
+    .muted{ color:var(--muted); } .muted2{ color:var(--muted-2); }
+    .h2{ font-size:clamp(22px,2.2vw,30px); line-height:1.15; margin:0 0 10px; }
+    .lead{ color:var(--muted); margin:0; max-width:78ch; }
+    .grid{ display:grid; gap:var(--gap); }
+    .card{ background:var(--panel); border:1px solid var(--stroke); border-radius:var(--radius); box-shadow:var(--shadow); backdrop-filter:var(--blur); padding:var(--pad); position:relative; overflow:hidden; }
+    .card h3{ margin:0 0 8px; font-size:18px; }
+    .card p{ margin:0 0 6px; color:var(--muted); }
 
     /* HERO */
-    #hero{
-      padding: 86px 0 60px;
-      position: relative;
-      overflow: hidden;
-    }
-    .hero-box{
-      position: relative;
-      overflow: hidden;
-      border-radius: clamp(18px, 3vw, 26px);
-      padding: clamp(18px, 3.4vw, 42px);
-      background:
-        radial-gradient(900px 400px at 15% 25%, rgba(0,190,110,.18), transparent 60%),
-        radial-gradient(900px 400px at 85% 10%, rgba(0,220,120,.14), transparent 60%),
-        rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.10);
-      box-shadow: 0 18px 60px rgba(0,0,0,.45);
-      backdrop-filter: var(--blur);
-    }
-    .grid-anim{
-      pointer-events:none;
-      position:absolute;
-      inset:-40px;
-      opacity:.28;
-      background-image:
-        linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
-      background-size: 44px 44px;
-      mask-image: radial-gradient(closest-side at 30% 30%, rgba(0,0,0,.9), transparent 70%);
-      transform: translateZ(0);
-      animation: drift 18s linear infinite;
-      filter: blur(.2px);
-    }
-    @keyframes drift{
-      from{ transform: translate3d(0,0,0); }
-      to{ transform: translate3d(-44px,-44px,0); }
-    }
-    .hero-title{
-      font-size: clamp(28px, 3.4vw, 46px);
-      line-height: 1.07;
-      margin: 0 0 14px;
-      max-width: 40ch;
-    }
-    .hero-desc{
-      color: rgba(255,255,255,.78);
-      margin: 0 0 18px;
-      max-width: 70ch;
-      font-size: clamp(15px, 1.35vw, 18px);
-    }
+    #hero{ padding:86px 0 60px; position:relative; overflow:hidden; }
+    .hero-box{ position:relative; overflow:hidden; border-radius:clamp(18px,3vw,26px); padding:clamp(18px,3.4vw,42px); background:radial-gradient(900px 400px at 15% 25%,rgba(0,190,110,.18),transparent 60%),radial-gradient(900px 400px at 85% 10%,rgba(0,220,120,.14),transparent 60%),rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.10); box-shadow:0 18px 60px rgba(0,0,0,.45); backdrop-filter:var(--blur); }
+    .grid-anim{ pointer-events:none; position:absolute; inset:-40px; opacity:.28; background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px); background-size:44px 44px; mask-image:radial-gradient(closest-side at 30% 30%,rgba(0,0,0,.9),transparent 70%); transform:translateZ(0); animation:drift 18s linear infinite; filter:blur(.2px); }
+    @keyframes drift{ from{transform:translate3d(0,0,0);} to{transform:translate3d(-44px,-44px,0);} }
+    .hero-title{ font-size:clamp(28px,3.4vw,46px); line-height:1.07; margin:0 0 14px; max-width:40ch; }
+    .hero-desc{ color:rgba(255,255,255,.78); margin:0 0 18px; max-width:70ch; font-size:clamp(15px,1.35vw,18px); }
+    .hero-meta{ display:flex; flex-wrap:wrap; gap:20px; margin-top:24px; }
+    .hero-meta-item{ display:flex; align-items:center; gap:8px; font-size:14px; color:var(--muted); }
+    .hero-meta-item strong{ color:var(--text); }
 
-    .grid{
-      display:grid;
-      gap: var(--gap);
-    }
-    .card{
-      background: var(--panel);
-      border: 1px solid var(--stroke);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      backdrop-filter: var(--blur);
-      padding: var(--pad);
-      position: relative;
-      overflow: hidden;
-    }
-    .card h3{
-      margin: 0 0 8px;
-      font-size: 18px;
-    }
-    .card p{
-      margin: 0 0 6px;
-      color: var(--muted);
-    }
+    /* BASICS */
+    .basics-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--gap); }
+    .basics-main{ grid-column:span 1; }
+    .basics-tasks{ grid-column:span 1; }
+    .span-2{ grid-column:span 2; }
+    .examples-list{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .pill{ border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); padding:6px 12px; font-size:13px; cursor:pointer; transition:background .12s,border-color .12s; }
+    .pill:hover{ background:rgba(0,180,100,.14); border-color:rgba(0,200,110,.3); }
+    .basics-columns{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); margin-top:14px; }
+    .basics-col{ padding:14px; border-radius:14px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); }
+    .basics-col-title{ font-weight:700; font-size:14px; margin-bottom:8px; color:var(--ok); }
+    .basics-col-title.no-ai{ color:var(--muted); }
 
-    /* Basics section */
-    .basics-grid{
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: var(--gap);
-    }
-    .span-2{
-      grid-column: 1 / -1;
-    }
-    .basics-main{
-      min-height: 220px;
-    }
-    .basics-tasks .examples-list{
-      margin-top: 10px;
-      display:flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .pill,
-    .examples-list .pill{
-      border-radius: 999px;
-      border: 1px solid rgba(0,200,100,.2);
-      background: rgba(0,180,90,.08);
-      padding: 6px 14px;
-      text-align: left;
-      font-size: 12.5px;
-      color: rgba(180,255,210,.75);
-      cursor: default;
-      transition: background .15s, border-color .15s, color .15s;
-      letter-spacing: .01em;
-    }
-    .pill:hover,
-    .examples-list .pill:hover{
-      background: rgba(0,200,100,.18);
-      border-color: rgba(0,200,100,.45);
-      color: rgba(200,255,220,.95);
-    }
-    .basics-columns{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: var(--gap);
-      margin-top: 12px;
-    }
-    .basics-col-title{
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
+    /* «Подробнее» expand */
+    #moreExamplesBlock{ max-height:0; overflow:hidden; transition:max-height .45s cubic-bezier(.4,0,.2,1); }
 
-    /* Tracks */
+    /* ===== ТРЕКИ — новый формат Практикум ===== */
+    #tracks{ padding:60px 0; }
+    .tracks-header{ display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:32px; }
+
+    /* Эталонная сетка треков (2 компактные карточки) */
     .tracks-grid{
-      grid-template-columns: repeat(2, minmax(0,1fr));
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--gap);
     }
-    .tracks-grid .card{
+
+    /* Две карточки треков рядом */
+    .tracks-two{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(420px, 1fr));
+      gap:var(--gap);
+      align-items:stretch; /* обе карточки одной высоты */
+      width: 100%;
+    }
+
+    .track-card{
+      border-radius:var(--radius);
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.04);
+      backdrop-filter:var(--blur);
+      overflow:hidden;
       display:flex;
-      flex-direction: column;
+      flex-direction:column;
+      min-width:0;
+      width:100%;
     }
-    .tracks-grid .card h3{
-      margin-bottom: 8px;
+    .track-card-head{
+      padding:24px var(--pad) 20px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      min-height: 190px; /* выравнивание начала следующих секций */
     }
-    .tracks-grid .card p{
-      margin-bottom: 6px;
-    }
-    .tracks-grid .card .muted{
-      margin-top: auto;
-    }
-    .track-label{
+    .track-badge{
       display:inline-flex;
       align-items:center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.05);
-      font-size: 12px;
-      color: rgba(255,255,255,.86);
-      margin-bottom: 8px;
+      gap:6px;
+      font-size:12px;
+      font-weight:600;
+      padding:4px 10px;
+      border-radius:999px;
+      margin-bottom:12px;
     }
+    .track-badge.beginner{ background:rgba(38,210,152,.12); border:1px solid rgba(38,210,152,.28); color:rgba(38,210,152,.95); }
+    .track-badge.advanced{ background:rgba(0,160,255,.12); border:1px solid rgba(0,160,255,.28); color:rgba(100,200,255,.95); }
+    .track-card-head h3{ font-size:clamp(20px,2vw,26px); font-weight:800; margin:0 0 8px; }
+    .track-card-head p{ color:var(--muted); font-size:14px; margin:0 0 16px; }
+    /* чтобы шапки карточек совпадали по высоте */
+    .track-card-head p{
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 4;
+      line-clamp: 4;
+      overflow: hidden;
+      min-height: 5.9em; /* ~4 строки при line-height 1.45 */
+    }
+    .track-meta{ display:flex; flex-wrap:wrap; gap:10px; }
+    .track-meta-pill{ font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:var(--muted); }
+
+    /* Для кого — переключатель */
+    .track-for-whom{ padding:20px var(--pad); border-bottom:1px solid rgba(255,255,255,.08); }
+    .for-whom-tabs{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+    .for-whom-tab{ font-size:12px; padding:5px 11px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:transparent; cursor:pointer; color:var(--muted); transition:all .15s; }
+    .for-whom-tab.active{ background:rgba(0,180,100,.14); border-color:rgba(0,200,110,.3); color:rgba(255,255,255,.92); }
+    .for-whom-content{ display:none; }
+    .for-whom-content.active{ display:block; }
+    .for-whom-content ul{ margin:0; padding-left:18px; }
+    .for-whom-content li{ font-size:13px; color:var(--muted); margin-bottom:4px; }
+
+    /* Что получите */
+    .track-outcomes{ padding:20px var(--pad); border-bottom:1px solid rgba(255,255,255,.08); }
+    .track-outcomes{ min-height: 160px; }
+    .track-outcomes h4{ font-size:13px; font-weight:600; color:var(--muted-2); text-transform:uppercase; letter-spacing:.5px; margin:0 0 12px; }
+    .outcomes-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .outcome-item{ display:flex; gap:8px; align-items:flex-start; font-size:13px; color:var(--muted); }
+    .outcome-check{ color:var(--ok); font-size:16px; flex-shrink:0; margin-top:-1px; }
+    .outcome-item span:last-child{
+      display:-webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      overflow:hidden;
+    }
+
+    /* Инструменты */
+    .track-tools{ padding:16px var(--pad); border-bottom:1px solid rgba(255,255,255,.08); }
+    .track-tools{ min-height: 108px; }
+    .track-tools h4{ font-size:12px; font-weight:600; color:var(--muted-2); text-transform:uppercase; letter-spacing:.5px; margin:0 0 10px; }
+    .tools-tags{ display:flex; flex-wrap:wrap; gap:6px; }
+    .tool-tag--ghost{ visibility:hidden; }
+    .tool-tag{ font-size:12px; padding:3px 9px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); color:var(--muted); }
+
+    /* Программа — спринты */
+    .track-program{ padding:20px var(--pad); flex:1; min-height: 260px; }
+    .track-program h4{ font-size:13px; font-weight:600; color:var(--muted-2); text-transform:uppercase; letter-spacing:.5px; margin:0 0 14px; }
+    .sprint-list{ display:flex; flex-direction:column; }
+    .sprint-item{ border-top:1px solid rgba(255,255,255,.07); }
+    .sprint-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 0; cursor:pointer; user-select:none; }
+    .sprint-header:hover .sprint-title{ color:rgba(255,255,255,.95); }
+    .sprint-left{ display:flex; align-items:center; gap:10px; }
+    .sprint-num{ font-size:11px; font-weight:700; color:var(--muted-2); background:rgba(255,255,255,.06); border-radius:6px; padding:2px 7px; flex-shrink:0; }
+    .sprint-title{ font-size:14px; font-weight:600; color:rgba(255,255,255,.82); transition:color .12s; }
+    .sprint-arrow{ font-size:12px; color:var(--muted-2); transition:transform .3s; flex-shrink:0; }
+    .sprint-item.open .sprint-arrow{ transform:rotate(180deg); }
+    .sprint-body{ max-height:0; overflow:hidden; transition:max-height .4s cubic-bezier(.4,0,.2,1); }
+    .sprint-item.open .sprint-body{ max-height:800px; }
+    .sprint-body-inner{ padding:0 0 16px; }
+    .sprint-practice{
+      display:flex; align-items:flex-start; gap:8px;
+      background:rgba(0,180,100,.07); border:1px solid rgba(0,180,100,.18);
+      border-radius:10px; padding:10px 12px; margin-bottom:10px;
+      font-size:13px; color:rgba(255,255,255,.82);
+    }
+    .sprint-practice-icon{ font-size:15px; flex-shrink:0; margin-top:1px; }
+    .sprint-topics{ margin:0; padding-left:18px; }
+    .sprint-topics li{ font-size:13px; color:var(--muted); margin-bottom:4px; line-height:1.4; }
+    .sprint-subtopic{ margin-top:6px; padding-left:14px; list-style:circle; }
+    .sprint-subtopic li{ font-size:12px; color:var(--muted-2); }
+
+    /* CTA внизу карточки */
+    .track-cta{ padding:16px var(--pad) 20px; margin-top:auto; }
+    .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 12px; border-radius:14px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); cursor:pointer; transition:transform .12s,background .12s,border-color .12s; user-select:none; min-height:40px; white-space:nowrap; font-size:14px; }
+    .btn:hover{ transform:translateY(-1px); background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.20); }
+    .btn.small{ padding:8px 11px; border-radius:12px; min-height:34px; font-size:13px; }
+    .btn.primary{ background:linear-gradient(135deg,rgba(0,170,100,.95),rgba(0,220,130,.78)); border-color:rgba(255,255,255,.18); color:rgba(255,255,255,.97); }
+    .btn.full{ width:100%; }
+
+    /* Квиз */
+    .quiz-panel{ margin-top:32px; }
+    .quiz-q{ margin-bottom:14px; }
+    .quiz-q p{ margin:0 0 8px; font-size:14px; font-weight:600; }
+    .quiz-q label{ display:flex; align-items:flex-start; gap:8px; font-size:13px; color:var(--muted); margin-bottom:6px; cursor:pointer; }
+    .quiz-q input{ margin-top:2px; flex-shrink:0; accent-color:var(--ok); }
+
+    /* Basics more examples */
+    .more-example-block{ margin-bottom:20px; }
+    .more-example-block h4{ font-weight:700; font-size:14px; margin:0 0 10px; color:rgba(255,255,255,.88); }
+    .more-example-divider{ border:none; border-top:1px solid rgba(255,255,255,.06); margin:16px 0; }
+    .savings-badge{ display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(0,180,100,.10); border:1px solid rgba(0,180,100,.25); color:rgba(0,210,120,.9); margin-top:8px; }
 
     /* Videos */
-    .video-grid{
-      grid-template-columns: repeat(3, minmax(0,1fr));
-    }
-    .video-thumb{
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: radial-gradient(circle at 20% 0%, rgba(0,190,110,.4), transparent 55%),
-                  radial-gradient(circle at 80% 120%, rgba(0,220,120,.35), transparent 60%),
-                  rgba(0,0,0,.4);
-      min-height: 140px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color: rgba(255,255,255,.82);
-      font-size: 13px;
-      margin-bottom: 10px;
-    }
+    .video-grid{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .video-thumb{ border-radius:14px; border:1px solid rgba(255,255,255,.16); background:radial-gradient(circle at 20% 0%,rgba(0,190,110,.4),transparent 55%),radial-gradient(circle at 80% 120%,rgba(0,220,120,.35),transparent 60%),rgba(0,0,0,.4); min-height:140px; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.82); font-size:13px; margin-bottom:10px; }
 
     /* Speakers */
-    .speaker-grid{
-      grid-template-columns: repeat(3, minmax(0,1fr));
-    }
-    .speaker-card{
-      display:flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .speaker-top{
-      display:flex;
-      gap: 10px;
-      align-items:center;
-    }
-    .speaker-photo{
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,.18);
-      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.4), transparent 55%),
-                  rgba(0,0,0,.7);
-      overflow:hidden;
-      flex-shrink: 0;
-    }
-    .speaker-name{
-      font-weight: 600;
-      margin-bottom: 2px;
-    }
-    .speaker-role{
-      font-size: 13px;
-      color: var(--muted-2);
-    }
+    .speaker-grid{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .speaker-card{ display:flex; flex-direction:column; gap:10px; }
+    .speaker-top{ display:flex; gap:10px; align-items:center; }
+    .speaker-photo{ width:52px; height:52px; border-radius:50%; border:1px solid rgba(255,255,255,.18); background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.4),transparent 55%),rgba(0,0,0,.7); overflow:hidden; flex-shrink:0; }
+    .speaker-name{ font-weight:600; margin-bottom:2px; }
+    .speaker-role{ font-size:13px; color:var(--muted-2); }
 
     /* Calendar */
-    .seg{
-      display:inline-flex;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      border-radius: 14px;
-      overflow: hidden;
-      min-height: 44px;
-    }
-    .seg button{
-      border:none;
-      background: transparent;
-      padding: 10px 12px;
-      cursor:pointer;
-      color: rgba(255,255,255,.74);
-      min-width: 150px;
-      transition: background .12s ease, color .12s ease;
-    }
-    .seg button.active{
-      background: rgba(0,170,100,.14);
-      color: rgba(255,255,255,.92);
-    }
+    .seg{ display:inline-flex; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); border-radius:14px; overflow:hidden; min-height:44px; }
+    .seg button{ border:none; background:transparent; padding:10px 12px; cursor:pointer; color:rgba(255,255,255,.74); min-width:150px; transition:background .12s,color .12s; }
+    .seg button.active{ background:rgba(0,170,100,.14); color:rgba(255,255,255,.92); }
+    .events-list{ margin-top:16px; display:flex; flex-direction:column; gap:12px; }
+    .event-card{ border-radius:16px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.04); padding:12px 14px; display:flex; flex-direction:column; gap:6px; }
+    .event-top{ display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:flex-start; }
+    .event-title{ font-weight:600; margin:0; }
+    .event-meta{ display:flex; flex-wrap:wrap; gap:8px; font-size:13px; color:var(--muted-2); }
+    .event-meta span{ display:inline-flex; align-items:center; gap:4px; }
+    .event-links{ margin-top:4px; display:flex; flex-wrap:wrap; gap:8px; font-size:13px; }
 
-    .events-list{
-      margin-top: 16px;
-      display:flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .event-card{
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.04);
-      padding: 12px 14px;
-      display:flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .event-top{
-      display:flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: space-between;
-      align-items:flex-start;
-    }
-    .event-title{
-      font-weight: 600;
-      margin: 0;
-    }
-    .event-meta{
-      display:flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      font-size: 13px;
-      color: var(--muted-2);
-    }
-    .event-meta span{
-      display:inline-flex;
-      align-items:center;
-      gap: 4px;
-    }
-    .event-links{
-      margin-top: 4px;
-      display:flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      font-size: 13px;
-    }
+    /* Forms */
+    .form-grid{ display:grid; grid-template-columns:1.2fr .9fr; gap:var(--gap); margin-top:16px; }
+    .form-card{ padding:var(--pad); border-radius:var(--radius); border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04); }
+    .form-card h3{ margin:0 0 10px; font-size:16px; color:rgba(255,255,255,.90); }
+    label{ display:block; margin:10px 0 6px; color:rgba(255,255,255,.76); font-size:13px; }
+    input[type="text"],input[type="email"],textarea,select{ width:100%; border-radius:14px; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.22); padding:11px 12px; color:rgba(255,255,255,.90); outline:none; min-height:44px; }
+    textarea{ min-height:120px; resize:vertical; }
+    .hintline{ margin-top:8px; color:rgba(255,255,255,.62); font-size:13px; }
+    .success{ padding:12px 14px; border-radius:16px; border:1px solid rgba(0,220,120,.35); background:rgba(0,220,120,.10); color:rgba(255,255,255,.9); display:none; margin-top:10px; font-size:13px; }
+    .success.show{ display:block; }
+    .toast{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%) translateY(30px); opacity:0; pointer-events:none; z-index:2000; background:rgba(10,12,18,.92); border:1px solid rgba(255,255,255,.12); border-radius:999px; padding:10px 12px; color:rgba(255,255,255,.88); box-shadow:0 20px 60px rgba(0,0,0,.45); transition:opacity .18s,transform .18s; display:flex; align-items:center; gap:10px; max-width:min(520px,92vw); font-size:13px; }
+    .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap: 8px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06);
-      cursor:pointer;
-      transition: transform .12s ease, background .12s ease, border-color .12s ease;
-      user-select:none;
-      min-height: 40px;
-      white-space: nowrap;
-      font-size: 14px;
-    }
-    .btn:hover{
-      transform: translateY(-1px);
-      background: rgba(255,255,255,.08);
-      border-color: rgba(255,255,255,.20);
-    }
-    .btn.small{
-      padding: 8px 11px;
-      border-radius: 12px;
-      min-height: 34px;
-      font-size: 13px;
-    }
-    .btn.primary{
-      background: linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
-      border-color: rgba(255,255,255,.18);
-      color: rgba(255,255,255,.97);
-    }
-
-    /* Track modal */
+    /* Track modal (детальный план) */
     .track-modal{
       position: fixed;
       inset: 0;
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 1500;
+      z-index: 2500;
     }
-    .track-modal.show{
-      display:flex;
-    }
+    .track-modal.show{ display:flex; }
     .track-modal-backdrop{
       position:absolute;
       inset:0;
@@ -562,17 +310,14 @@
     .track-modal-content{
       position: relative;
       z-index: 1;
-      max-width: 420px;
-      width: min(420px, 92vw);
+      width: min(860px, 94vw);
+      max-height: 84vh;
+      overflow: auto;
       background: rgba(10,12,18,.98);
       border-radius: 18px;
       border: 1px solid rgba(255,255,255,.16);
       padding: 18px 18px 16px;
       box-shadow: 0 22px 60px rgba(0,0,0,.7);
-    }
-    .track-modal-content h3{
-      margin: 0 0 8px;
-      font-size: 18px;
     }
     .track-modal-close{
       position:absolute;
@@ -587,470 +332,36 @@
       align-items:center;
       justify-content:center;
       cursor:pointer;
-      padding: 0;
-      line-height: 1;
-      font-size: 16px;
-    }
-
-    /* Quiz modal */
-    .quiz-steps{
-      display:flex;
-      gap:6px;
-      margin-bottom:18px;
-    }
-    .quiz-step-dot{
-      width:8px;
-      height:8px;
-      border-radius:50%;
-      background:rgba(255,255,255,.18);
-      transition:background .2s;
-    }
-    .quiz-step-dot.active{
-      background:var(--ok);
-    }
-    .quiz-modal-step h3{
-      margin:0 0 16px;
-      font-size:16px;
-      line-height:1.45;
-      padding-right:28px;
-    }
-    .quiz-options{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      margin-bottom:20px;
-    }
-    .quiz-option{
-      display:flex;
-      align-items:flex-start;
-      gap:10px;
-      cursor:pointer;
-      padding:10px 12px;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,.1);
-      transition:border-color .15s, background .15s;
-      font-size:14px;
-    }
-    .quiz-option:hover{
-      background:rgba(255,255,255,.04);
-      border-color:rgba(255,255,255,.2);
-    }
-    .quiz-option input[type="radio"]{
-      margin-top:2px;
-      flex-shrink:0;
-      accent-color:var(--ok);
-    }
-    .quiz-step-label{
-      margin:0 0 10px;
-      font-size:13px;
-    }
-    .quiz-result-text{
-      font-size:15px;
-      line-height:1.55;
-      margin:0 0 20px;
-    }
-    @media (min-width: 769px){
-      #toggleQuiz{ margin-top:28px; }
-    }
-
-    /* Forms */
-    .form-grid{
-      display:grid;
-      grid-template-columns: 1.2fr .9fr;
-      gap: var(--gap);
-      margin-top: 16px;
-    }
-    .form-card{
-      padding: var(--pad);
-      border-radius: var(--radius);
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-    }
-    .form-card h3{
-      margin: 0 0 10px;
-      font-size: 16px;
-      color: rgba(255,255,255,.90);
-    }
-    label{
-      display:block;
-      margin: 10px 0 6px;
-      color: rgba(255,255,255,.76);
-      font-size: 13px;
-    }
-    input[type="text"],
-    input[type="email"],
-    textarea,
-    select{
-      width: 100%;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(0,0,0,.22);
-      padding: 11px 12px;
-      color: rgba(255,255,255,.90);
-      outline: none;
-      min-height: 44px;
-    }
-    textarea{
-      min-height: 120px;
-      resize: vertical;
-    }
-
-    .hintline{
-      margin-top: 8px;
-      color: rgba(255,255,255,.62);
-      font-size: 13px;
-    }
-    .success{
-      padding: 12px 14px;
-      border-radius: 16px;
-      border: 1px solid rgba(0,220,120,.35);
-      background: rgba(0,220,120,.10);
-      color: rgba(255,255,255,.9);
-      display:none;
-      margin-top: 10px;
-      font-size: 13px;
-    }
-    .success.show{ display:block; }
-
-    .toast{
-      position: fixed;
-      left: 50%;
-      bottom: 18px;
-      transform: translateX(-50%) translateY(30px);
-      opacity: 0;
-      pointer-events: none;
-      z-index: 2000;
-      background: rgba(10,12,18,.92);
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 999px;
-      padding: 10px 12px;
       color: rgba(255,255,255,.88);
-      box-shadow: 0 20px 60px rgba(0,0,0,.45);
-      transition: opacity .18s ease, transform .18s ease;
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      max-width: min(520px, 92vw);
-      text-align: left;
-      font-size: 13px;
     }
-    .toast.show{
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
+    .track-modal-title{ margin: 0 0 10px; font-size: 20px; font-weight: 800; }
+    .track-modal-sub{ margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+    .modal-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+    .modal-section{ background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.10); border-radius: 16px; padding: 14px 14px; }
+    .modal-section h4{ margin:0 0 10px; font-size:12px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color: var(--muted-2); }
+    .modal-tools{ display:flex; flex-wrap:wrap; gap:6px; }
+    .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top: 14px; }
+    @media (max-width: 860px){
+      .modal-grid{ grid-template-columns: 1fr; }
     }
 
-    @media (max-width: 980px){
-      .basics-grid,
-      .tracks-grid,
-      .video-grid,
-      .speaker-grid{
-        grid-template-columns: repeat(2, minmax(0,1fr));
-      }
-      .form-grid{
-        grid-template-columns: 1fr;
-      }
+    @media (max-width:980px){
+      .basics-grid,.video-grid,.speaker-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .form-grid{ grid-template-columns:1fr; }
     }
-    @media (max-width: 760px){
-      nav{ display:none; }
-      .burger{ display:flex; }
-      .mobile-menu.show{ display:block; }
-      .wrap{ padding-left: 12px; padding-right: 12px; overflow-x: hidden; }
-
-      /* Hero — уменьшаем отступы */
-      #hero{ padding: 48px 0 32px; }
-
-      .basics-grid{
-        grid-template-columns: 1fr;
-      }
-      .basics-columns{
-        grid-template-columns: 1fr;
-      }
-
-      /* Одна колонка для треков, видео и спикеров */
-      .tracks-grid,
-      .video-grid,
-      .speaker-grid {
-        display: grid !important;
-        grid-template-columns: 1fr !important;
-        gap: 12px;
-      }
-      .tracks-grid > *,
-      .video-grid > *,
-      .speaker-grid > * {
-        grid-column: unset !important;
-        max-width: 100%;
-      }
-
-      /* Шаги Dolphin — одна колонка */
-      #dolphinSteps {
-        grid-template-columns: 1fr !important;
-      }
-      /* Последний шаг (grid-column:1/-1) сбрасываем */
-      #dolphinSteps > div[style*="grid-column"] {
-        grid-column: unset !important;
-      }
+    @media (max-width:480px){
+      .tracks-two{ grid-template-columns: repeat(2, minmax(320px, 1fr)); }
+    }
+    @media (max-width:760px){
+      nav{ display:none; } .burger{ display:flex; } .mobile-menu.show{ display:block; }
+      .tracks-two{ grid-template-columns:1fr 1fr !important; }
+      .basics-grid,.video-grid,.speaker-grid{ grid-template-columns:1fr; }
+      .basics-columns,.outcomes-grid{ grid-template-columns:1fr; }
+      .span-2{ grid-column:span 1; }
+      .tracks-grid{ grid-template-columns: 1fr; }
     }
 
-    /* Hero buttons */
-    .hero-btn-primary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 11px 24px;
-      border-radius: 12px;
-      background: rgba(0,200,100,.18);
-      border: 1px solid rgba(0,200,100,.35);
-      color: rgba(180,255,210,.95);
-      font-size: 14px;
-      font-weight: 600;
-      text-decoration: none;
-      position: relative;
-      overflow: hidden;
-      transition: background .2s, border-color .2s, transform .2s, box-shadow .2s;
-    }
-    .hero-btn-primary::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent 0%, rgba(0,255,120,.15) 50%, transparent 100%);
-      transform: translateX(-100%);
-      transition: transform .5s ease;
-    }
-    .hero-btn-primary:hover::before {
-      transform: translateX(100%);
-    }
-    .hero-btn-primary:hover {
-      background: rgba(0,200,100,.3);
-      border-color: rgba(0,220,110,.6);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,180,90,.25);
-    }
-    .hero-btn-primary:active { transform: translateY(0); }
-
-    .hero-btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 11px 24px;
-      border-radius: 12px;
-      background: rgba(255,255,255,.07);
-      border: 1px solid rgba(255,255,255,.14);
-      color: rgba(255,255,255,.85);
-      font-size: 14px;
-      font-weight: 600;
-      text-decoration: none;
-      position: relative;
-      overflow: hidden;
-      transition: background .2s, border-color .2s, transform .2s, box-shadow .2s;
-    }
-    .hero-btn-secondary::after {
-      content: '→';
-      display: inline-block;
-      transition: transform .2s ease;
-      margin-left: 2px;
-    }
-    .hero-btn-secondary:hover::after {
-      transform: translateX(4px);
-    }
-    .hero-btn-secondary:hover {
-      background: rgba(255,255,255,.12);
-      border-color: rgba(255,255,255,.28);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,.2);
-    }
-    .hero-btn-secondary:active { transform: translateY(0); }
-  
-    /* ── Популярные нейросети ─────────────────────────────── */
-    .neural-section { }
-    .neural-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: var(--gap);
-      margin-top: 22px;
-    }
-    .neural-card {
-      background: var(--panel);
-      border: 1px solid var(--stroke);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      backdrop-filter: var(--blur);
-      padding: var(--pad);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      text-decoration: none;
-      color: var(--text);
-      position: relative;
-      overflow: hidden;
-      transition: border-color .2s, transform .2s, box-shadow .2s;
-    }
-    .neural-card:hover {
-      border-color: var(--stroke-2);
-      transform: translateY(-3px);
-      box-shadow: 0 16px 40px rgba(0,0,0,.5);
-    }
-    .neural-card-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .neural-card-icon svg,
-    .neural-card-icon img {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
-      display: block;
-    }
-    .neural-card-name {
-      font-size: 17px;
-      font-weight: 700;
-      color: var(--text);
-      margin: 0;
-      line-height: 1.2;
-    }
-    .neural-card-vendor {
-      font-size: 12.5px;
-      color: var(--muted-2);
-      margin: 2px 0 0;
-    }
-    .neural-card-desc {
-      font-size: 13.5px;
-      color: var(--muted);
-      line-height: 1.55;
-      flex: 1;
-      margin: 0;
-    }
-    .neural-card-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 6px;
-    }
-    .neural-tag {
-      padding: 4px 11px;
-      border-radius: 999px;
-      font-size: 11.5px;
-      font-weight: 500;
-      background: rgba(255,255,255,.06);
-      border: 1px solid var(--stroke);
-      color: var(--muted);
-      white-space: nowrap;
-    }
-    @media (max-width: 860px) { .neural-grid { grid-template-columns: repeat(2,1fr); } }
-    @media (max-width: 500px) { .neural-grid { grid-template-columns: 1fr; } }
-
-    .site-footer{
-      margin-top:auto; border-top:1px solid var(--stroke);
-      background:rgba(2,14,10,.92); backdrop-filter:var(--blur);
-    }
-    .footer-inner{
-      max-width:var(--max); margin:0 auto;
-      padding:40px var(--pad) 28px;
-      display:grid; grid-template-columns:1fr 1fr 1fr; gap:32px;
-    }
-    .footer-col-title{
-      font-size:12px; font-weight:700; letter-spacing:.7px;
-      text-transform:uppercase; color:rgba(0,210,110,.75); margin:0 0 12px;
-    }
-    .footer-links{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
-    .footer-links a{ font-size:13.5px; color:var(--muted); transition:color .13s; }
-    .footer-links a:hover{ color:var(--text); }
-    .footer-bottom{
-      max-width:var(--max); margin:0 auto; padding:18px var(--pad);
-      border-top:1px solid rgba(255,255,255,.06);
-      display:flex; align-items:center; justify-content:space-between;
-      gap:12px; flex-wrap:wrap;
-    }
-    .footer-copy{ font-size:12.5px; color:var(--muted-2); }
-
-    @media (max-width: 980px){ .footer-inner{ grid-template-columns:1fr 1fr; } }
-    @media (max-width: 760px){ .footer-inner{ grid-template-columns:1fr; } }
-
-    /* ── ARTICLES SCROLL (как "Как устроен ресурс") ───────────────────────── */
-    .articles-grid {
-      display: flex;
-      overflow-x: auto;
-      scroll-snap-type: x proximity;
-      scroll-behavior: smooth;
-      gap: 16px;
-      padding: 22px 16px 48px;
-      margin-top: -6px;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-      -webkit-overflow-scrolling: touch;
-      cursor: grab;
-      user-select: none;
-    }
-    .articles-grid:active {
-      cursor: grabbing;
-    }
-    .articles-grid::-webkit-scrollbar { display: none; }
-    .articles-grid > article,
-    .articles-grid .card {
-      /* Desktop: smooth scaling with calc, cap at 340px for soft scroll */
-      flex: 0 0 min(340px, calc((100% - 32px) / 3));
-      min-width: 260px;
-      scroll-snap-align: start;
-      flex-shrink: 0;
-      box-shadow: 0 10px 30px rgba(0,0,0,.35);
-      transition: border-color .2s, transform .2s, box-shadow .2s;
-    }
-    .articles-grid > article:hover,
-    .articles-grid .card:hover {
-      border-color: var(--stroke-2);
-      transform: translateY(-3px);
-      box-shadow: 0 16px 40px rgba(0,0,0,.5);
-    }
-    .articles-dots {
-      display: flex;
-      justify-content: center;
-      gap: 7px;
-      margin-top: 14px;
-    }
-    .articles-dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: rgba(255,255,255,.2);
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      transition: background .2s, transform .2s;
-    }
-    .articles-dot.active {
-      background: rgba(0,200,110,.85);
-      transform: scale(1.25);
-    }
-    /* Десктоп: 2 точки (2 страницы по 2 карточки) */
-    .articles-dot[data-idx="2"],
-    .articles-dot[data-idx="3"] {
-      display: none;
-    }
-    /* Мобильная: 4 точки (1 карточка = 1 слайд) */
-    @media (max-width: 760px) {
-      .articles-dot[data-idx="2"],
-      .articles-dot[data-idx="3"] {
-        display: block;
-      }
-    }
-    /* 760–980px: transition zone — карточки плавно увеличиваются к full-width, устраняя разрыв на 760px */
-    @media (max-width: 980px) {
-      .articles-grid > article {
-        flex: 0 0 min(calc(100% - 24px), max(280px, 72vw));
-        min-width: 260px;
-      }
-    }
-    @media (max-width: 760px) {
-      .articles-grid > article {
-        flex: 0 0 calc(100% - 24px);
-        min-width: 0;
-      }
-    }
-
+    /* intentionally keep 2 columns for tracks-two on small screens */
   </style>
 </head>
 <body>
@@ -1059,95 +370,121 @@
   <header>
     <div class="topbar">
       <a class="brand" href="/">
-        <span class="logo"><img src="/mik_logo_white.svg" alt="МИК" /></span>
+        <span class="logo" aria-hidden="true"></span>
+        <span class="name">Витрина ИИ‑сервисов</span>
       </a>
       <nav aria-label="Основная навигация">
-       <!--<a class="navlink" href="/">Витрина</a>-->
-      <a class="navlink active" href="/education" data-section="training">Обучение</a>
-        <a class="navlink" href="/cases" data-section="cases">Кейсы</a>
-        <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
-        <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a>
-        <a class="profile-btn" href="/profile">
-          <span class="nowrap">Личный кабинет</span>
-        </a>
+        <a class="navlink active" href="/training">Обучение</a>
+        <a class="navlink" href="/cases">Кейсы</a>
+        <a class="navlink" href="/dashboard">Статистика</a>
+        <a class="navlink" href="/cases#feedback">Обратная связь</a>
+        <a class="profile-btn" href="/profile"><span class="nowrap">Личный кабинет</span></a>
       </nav>
-      <button class="burger" id="burgerBtn" aria-label="Открыть меню" aria-controls="mobileMenu" aria-expanded="false">
-        <i aria-hidden="true"></i>
-      </button>
+      <button class="burger" id="burgerBtn" aria-label="Открыть меню" aria-controls="mobileMenu" aria-expanded="false"><i aria-hidden="true"></i></button>
     </div>
     <div class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню" role="dialog">
-      <a class="navlink" href="/">Витрина</a>
-      <a class="navlink active" href="/education" data-section="training">Обучение</a>
-      <a class="navlink" href="/cases" data-section="cases">Кейсы</a>
-      <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
-      <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a>
-      <a class="profile-btn" href="/profile">
-        <span class="nowrap">Личный кабинет</span>
-      </a>
+      <a class="navlink active" href="/training">Обучение</a>
+      <a class="navlink" href="/cases">Кейсы</a>
+      <a class="navlink" href="/dashboard">Статистика</a>
+      <a class="navlink" href="/cases#feedback">Обратная связь</a>
+      <a class="profile-btn" href="/profile"><span class="nowrap">Личный кабинет</span></a>
     </div>
   </header>
 
   <main>
+
     <!-- HERO -->
     <section id="hero">
       <div class="wrap">
         <div class="hero-box">
           <div class="grid-anim" aria-hidden="true"></div>
           <h1 class="hero-title">Обучение по ИИ для сотрудников МИК</h1>
-          <p class="hero-desc">
-            На этой странице — база по ИИ, обучающие треки, видеоматериалы и календарь мероприятий, чтобы быстро найти формат под свою задачу
-          </p>
-          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:24px;">
-            <a href="#tracks" class="hero-btn-primary">Программы обучения</a>
-            <a href="#consult" class="hero-btn-secondary">Получить консультацию</a>
+          <p class="hero-desc">База по ИИ, обучающие треки, видеоматериалы и календарь мероприятий — найдите формат под свою задачу.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
+            <a class="btn primary" href="#tracks">Выбрать трек</a>
+            <a class="btn" href="#consult">Получить консультацию →</a>
+          </div>
+          <div class="hero-meta">
+            <div class="hero-meta-item">📅 <strong>4–5 недель</strong> · самостоятельно</div>
+            <div class="hero-meta-item">⏱ <strong>1–2 часа</strong> в неделю</div>
+            <div class="hero-meta-item">🛠 <strong>ChatGPT, Claude, DeepSeek, NotebookLM</strong></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ИИ в жизни -->
+    <!-- ИИ В ЖИЗНИ И РАБОТЕ -->
     <section id="basics">
       <div class="wrap">
         <h2 class="h2">ИИ в жизни и работе</h2>
-        <p class="lead">Как ИИ помогает в повседневной работе сотрудников: короткие объяснения и живые примеры</p>
-
+        <p class="lead">Как ИИ помогает в повседневной работе сотрудников: короткие объяснения и живые примеры.</p>
         <div class="grid basics-grid" style="margin-top:16px;">
-
-          <article class="card span-2">
-            <div style="display:flex; align-items:baseline; gap:24px; flex-wrap:wrap; margin-bottom:16px;">
-              <h3 style="margin:0; white-space:nowrap;">Искусственный интеллект — это</h3>
-              <p style="margin:0; color:rgba(255,255,255,.7); font-size:14px;">Инструмент, который берёт на себя рутину с текстом — читает, анализирует, формулирует. Не заменяет вас, но экономит часы</p>
-            </div>
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <button type="button" class="pill">Черновики записок и справок</button>
-              <button type="button" class="pill">Анализ обращений и протоколов</button>
-              <button type="button" class="pill">Структурирование информации</button>
-              <button type="button" class="pill">Варианты формулировок</button>
-              <button type="button" class="pill">Анализ документов</button>
-              <button type="button" class="pill">Презентации и тезисы</button>
-              <button type="button" class="pill">Проверка текста</button>
+          <article class="card basics-main">
+            <h3>Что такое ИИ</h3>
+            <p>Искусственный интеллект — это программа, которая помогает работать с информацией: читать, сравнивать, обобщать и формулировать ответы быстрее.</p>
+            <p class="muted">ИИ не принимает решения и не заменяет сотрудника — он помогает подготовить материал и снять рутину.</p>
+          </article>
+          <article class="card basics-tasks">
+            <h3>Примеры задач, которые можно делать с ИИ</h3>
+            <p class="muted">Выберите то, что ближе к вашей работе.</p>
+            <div class="examples-list">
+              <button type="button" class="pill">Черновики служебных записок и справок</button>
+              <button type="button" class="pill">Свод и анализ обращений и протоколов</button>
+              <button type="button" class="pill">Структурирование разрозненной информации</button>
+              <button type="button" class="pill">Подготовка вариантов формулировок</button>
+              <button type="button" class="pill">Анализ больших документов</button>
+              <button type="button" class="pill">Презентации и тезисы для руководства</button>
+              <button type="button" class="pill">Проверка текста на логичность и стиль</button>
             </div>
           </article>
-
           <article class="card span-2">
-            <h3 style="margin-bottom:14px;">Пример: протокол совещания</h3>
+            <h3>ИИ на пальцах</h3>
+            <p><strong>Ситуация.</strong> Нужно разобрать 50 обращений граждан: какие темы встречаются чаще всего, где системные проблемы, что вынести руководству.</p>
             <div class="basics-columns">
               <div class="basics-col">
-                <div class="basics-col-title">Без ИИ</div>
-                <div style="font-size:28px; font-weight:700; margin:6px 0; color:rgba(255,255,255,.85);">45–60 мин</div>
-                <p class="muted">Расшифровка записи вручную, структурирование, форматирование документа</p>
+                <div class="basics-col-title no-ai">Без ИИ</div>
+                <p class="muted">Сотрудник читает документы, выписывает тезисы, сводит в таблицу и готовит справку — это занимает часы или дни.</p>
               </div>
               <div class="basics-col">
-                <div class="basics-col-title" style="color:rgba(0,220,110,.9);">С ИИ</div>
-                <div style="font-size:28px; font-weight:700; margin:6px 0; color:rgba(0,220,110,.9);">5–10 мин</div>
-                <p class="muted">Аудиозапись + промпт → готовый структурированный черновик протокола.</p>
+                <div class="basics-col-title">С ИИ</div>
+                <p class="muted">Сотрудник загружает тексты и задаёт запрос. ИИ делает первичный анализ тем, сотрудник проверяет выводы и формулирует решение.</p>
               </div>
             </div>
-            <div style="margin-top:14px;">
-              <span style="display:inline-block; padding:5px 14px; border-radius:20px; font-size:12px; border:1px solid rgba(0,200,100,.3); color:rgba(0,210,100,.8);">Экономия: ~40–50 мин за каждое совещание</span>
+            <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+              <button type="button" class="btn small" id="btnMoreExamples">Подробнее</button>
+            </div>
+            <div id="moreExamplesBlock">
+              <div style="border-top:1px solid rgba(255,255,255,.08);margin-top:16px;padding-top:20px;">
+                <p class="muted" style="font-size:13px;margin:0 0 16px;">Ещё несколько типовых задач сотрудников МИК — до и после внедрения ИИ:</p>
+                <div class="more-example-block">
+                  <h4>Протокол совещания</h4>
+                  <div class="basics-columns">
+                    <div class="basics-col"><div class="basics-col-title no-ai">Без ИИ</div><div style="font-size:24px;font-weight:900;color:var(--muted);margin:6px 0;">45–60 мин</div><p class="muted">Расшифровка записей вручную, структурирование, форматирование документа.</p></div>
+                    <div class="basics-col"><div class="basics-col-title">С ИИ</div><div style="font-size:24px;font-weight:900;color:var(--ok);margin:6px 0;">5–10 мин</div><p class="muted">Аудиозапись + промпт → готовый структурированный черновик протокола.</p></div>
+                  </div>
+                  <span class="savings-badge">Экономия: ~40–50 мин за каждое совещание</span>
+                </div>
+                <hr class="more-example-divider">
+                <div class="more-example-block">
+                  <h4>Справка / Отчёт</h4>
+                  <div class="basics-columns">
+                    <div class="basics-col"><div class="basics-col-title no-ai">Без ИИ</div><div style="font-size:24px;font-weight:900;color:var(--muted);margin:6px 0;">2–3 часа</div><p class="muted">Сбор данных из источников, формулировка, согласование структуры документа.</p></div>
+                    <div class="basics-col"><div class="basics-col-title">С ИИ</div><div style="font-size:24px;font-weight:900;color:var(--ok);margin:6px 0;">30–40 мин</div><p class="muted">ИИ генерирует структуру и черновик, сотрудник проверяет и дополняет фактурой.</p></div>
+                  </div>
+                  <span class="savings-badge">Экономия: ~1.5–2 часа за документ</span>
+                </div>
+                <hr class="more-example-divider">
+                <div class="more-example-block" style="margin-bottom:8px;">
+                  <h4>Ответ на письмо / обращение</h4>
+                  <div class="basics-columns">
+                    <div class="basics-col"><div class="basics-col-title no-ai">Без ИИ</div><div style="font-size:24px;font-weight:900;color:var(--muted);margin:6px 0;">20–30 мин</div><p class="muted">Поиск нужной формулировки, проверка стиля, согласование тона ответа.</p></div>
+                    <div class="basics-col"><div class="basics-col-title">С ИИ</div><div style="font-size:24px;font-weight:900;color:var(--ok);margin:6px 0;">3–5 мин</div><p class="muted">Промпт с контекстом → готовый черновик ответа в нужном официальном стиле.</p></div>
+                  </div>
+                  <span class="savings-badge">Экономия: ~15–25 мин за письмо</span>
+                </div>
+              </div>
             </div>
           </article>
-
         </div>
       </div>
     </section>
@@ -1155,36 +492,301 @@
     <!-- Треки обучения -->
     <section id="tracks">
       <div class="wrap">
-        <h2 class="h2">Треки обучения</h2>
-        <p class="lead">Выберите трек под свой уровень: если ИИ — это пока что-то новое, или если уже пользуетесь и хотите большего.</p>
-
-        <div class="grid tracks-grid" style="margin-top:16px; grid-template-columns: 1fr 1fr;">
-
-          <article class="card" style="display:flex; flex-direction:column; gap:16px;">
-            <div>
-              <h3 style="margin-bottom:8px;">Начальный уровень</h3>
-              <p style="margin-bottom:10px;">Для тех, кто пока не использует ИИ в работе — или открывал ChatGPT пару раз и закрыл. Разбираемся с основами, пробуем простые задачи и перестаём бояться</p>
-              <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <span style="padding:4px 12px; border-radius:20px; font-size:12px; background:rgba(0,200,100,.1); border:1px solid rgba(0,200,100,.2); color:rgba(180,255,210,.8);">Word</span>
-                <span style="padding:4px 12px; border-radius:20px; font-size:12px; background:rgba(0,200,100,.1); border:1px solid rgba(0,200,100,.2); color:rgba(180,255,210,.8);">PowerPoint</span>
-              </div>
-            </div>
-            <button type="button" class="btn small track-btn" data-track-id="novice" data-track-title="Индивидуальный план: Начальный уровень" data-track-level="Начальный уровень" data-plan-url="#consult" style="margin-top:auto;">Подобрать план</button>
-          </article>
-
-          <article class="card" style="display:flex; flex-direction:column; gap:16px;">
-            <div>
-              <h3 style="margin-bottom:8px;">Продвинутый уровень</h3>
-              <p style="margin-bottom:10px;">Для тех, кто уже использует ИИ и хочет выйти за рамки простых запросов. Учимся выстраивать рабочие процессы, создавать шаблоны и работать с несколькими моделями</p>
-              <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <span style="padding:4px 12px; border-radius:20px; font-size:12px; background:rgba(0,200,100,.1); border:1px solid rgba(0,200,100,.2); color:rgba(180,255,210,.8);">Claude</span>
-                <span style="padding:4px 12px; border-radius:20px; font-size:12px; background:rgba(0,200,100,.1); border:1px solid rgba(0,200,100,.2); color:rgba(180,255,210,.8);">NotebookLM</span>
-              </div>
-            </div>
-            <button type="button" class="btn small track-btn" data-track-id="advanced" data-track-title="Индивидуальный план: Продвинутый уровень" data-track-level="Продвинутый уровень" data-plan-url="#consult" style="margin-top:auto;">Подобрать план</button>
-          </article>
-
+        <div class="tracks-header">
+          <div>
+            <h2 class="h2">Треки обучения</h2>
+            <p class="lead">Два пути — от первого знакомства с ИИ до системного применения в работе.</p>
+          </div>
         </div>
+
+        <div class="tracks-two">
+
+          <!-- ===== ТРЕК 1: НАЧАЛЬНЫЙ ===== -->
+          <div class="track-card">
+            <div class="track-card-head">
+              <div class="track-badge beginner">Начальный уровень</div>
+              <h3>Начальный уровень</h3>
+              <p>Разберитесь с нейросетями и начните применять их в повседневных задачах.</p>
+              <div class="track-meta">
+                <span class="track-meta-pill">📅 4 недели</span>
+                <span class="track-meta-pill">⏱ 1.5–2 ч/нед</span>
+                <span class="track-meta-pill">Самостоятельно онлайн</span>
+              </div>
+            </div>
+
+            <div class="track-outcomes">
+              <h4>Что вы получите</h4>
+              <div class="outcomes-grid">
+                <div class="outcome-item"><span class="outcome-check">✓</span><span>Начнете применять ИИ в работе — системно и без страха</span></div>
+                <div class="outcome-item"><span class="outcome-check">✓</span><span>Научитесь писать запросы, которые дают нужный результат</span></div>
+                <div class="outcome-item"><span class="outcome-check">✓</span><span>Сэкономите 1–2 часа в день на рутинных задачах</span></div>
+              </div>
+            </div>
+
+            <div class="track-tools">
+              <h4>Инструменты</h4>
+              <div class="tools-tags">
+                <span class="tool-tag">ChatGPT</span>
+                <span class="tool-tag">Claude</span>
+                <span class="tool-tag">YandexGPT</span>
+                <span class="tool-tag">GigaChat</span>
+                <span class="tool-tag">QwenAI</span>
+                <span class="tool-tag">DeepSeek</span>
+                <span class="tool-tag">Gemini</span>
+                <span class="tool-tag tool-tag--ghost">placeholder</span>
+                <span class="tool-tag tool-tag--ghost">placeholder</span>
+                <span class="tool-tag tool-tag--ghost">placeholder</span>
+                <span class="tool-tag tool-tag--ghost">placeholder</span>
+              </div>
+            </div>
+
+            <div class="track-program">
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+                <span class="track-meta-pill">📚 4 модуля</span>
+                <span class="track-meta-pill">⏱ 8 ак. часов</span>
+                <span class="track-meta-pill">4 практические работы</span>
+              </div>
+              <h4>Программа · 4 модуля</h4>
+              <div class="sprint-list">
+
+                <div class="sprint-item open">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 1 · 3 ч</span>
+                      <span class="sprint-title">Введение в искусственный интеллект</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Что такое искусственный интеллект?</li>
+                      <li>Этапы развития искусственного интеллекта</li>
+                      <li>Типы ИИ: узкий ИИ, общий ИИ, суперинтеллект</li>
+                      <li>Обзор современных направлений ИИ: машинное обучение, нейросети, генеративные модели</li>
+                      <li>Почему ИИ ошибается — галлюцинации и как с ними работать</li>
+                      <li>ИИ не заменяет сотрудника: правильное понимание роли</li>
+                    </ul>
+                    <div class="sprint-practice"><span class="sprint-practice-icon">📝</span><span>Практика: закрепление пройденного теоретического материала</span></div>
+                  </div></div>
+                </div>
+
+                <div class="sprint-item">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 2 · 3 ч</span>
+                      <span class="sprint-title">Правила составления промптов и работа с языковыми моделями</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Что такое промпт (prompt)? Основные принципы эффективного взаимодействия с ИИ</li>
+                      <li>Формула хорошего промпта: Роль + Задача + Контекст + Формат</li>
+                      <li>Примеры успешных и неудачных промптов</li>
+                    </ul>
+                    <div class="sprint-practice"><span class="sprint-practice-icon">📝</span><span>Практика: работа с популярными языковыми моделями — ChatGPT, Claude, YandexGPT, GigaChat, QwenAI, DeepSeek и др.</span></div>
+                  </div></div>
+                </div>
+
+                <div class="sprint-item">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 3 · 3 ч</span>
+                      <span class="sprint-title">Инструменты. Какой ИИ для каких задач?</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Обзор областей применения ИИ-инструментов: анализ данных, автоматизация процессов, перевод текстов, обработка изображений</li>
+                      <li>Сильные стороны каждой ИИ-модели: ChatGPT, Claude, YandexGPT, GigaChat, QwenAI, DeepSeek и др.</li>
+                    </ul>
+                    <div class="sprint-practice"><span class="sprint-practice-icon">📝</span><span>Практика: работа с различными инструментами ИИ — ChatGPT, Perplexity, Claude, YandexGPT и др.</span></div>
+                  </div></div>
+                </div>
+
+                <div class="sprint-item">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 4 · 2 ч</span>
+                      <span class="sprint-title">Практические сценарии использования ИИ: преимущества и недостатки</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Когда ИИ действительно помогает: анализ трудоемких процессов</li>
+                      <li>Ограничения ИИ: что он не может сделать (креативность, эмпатия, этические решения)</li>
+                      <li>Примеры успешного внедрения ИИ в бизнес-процессы</li>
+                    </ul>
+                    <div class="sprint-practice"><span class="sprint-practice-icon">📝</span><span>Практика: проанализируйте одну задачу из своей работы — определите где ИИ даст максимум эффекта и где его использовать не стоит</span></div>
+                  </div></div>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="track-cta">
+              <a class="btn primary full" href="#consult">Начать обучение →</a>
+            </div>
+          </div>
+
+          <!-- ===== ТРЕК 2: ПРОДВИНУТЫЙ ===== -->
+          <div class="track-card">
+            <div class="track-card-head">
+              <div class="track-badge advanced">Продвинутый уровень</div>
+              <h3>Продвинутый уровень</h3>
+              <p>Курс для тех, кто уже умеет пользоваться AI, но хочет выйти на следующий уровень: понимать, как устроены современные модели, как комбинировать несколько инструментов, подключать документы и данные, собирать AI-пайплайны.</p>
+              <div class="track-meta">
+                <span class="track-meta-pill">📅 3 недели</span>
+                <span class="track-meta-pill">⏱ 1.5–2 ч/нед</span>
+                <span class="track-meta-pill">Самостоятельно онлайн</span>
+              </div>
+            </div>
+
+            <div class="track-outcomes">
+              <h4>Что вы получите</h4>
+              <div class="outcomes-grid">
+                <div class="outcome-item"><span class="outcome-check">✓</span><span>Понимание на прикладном уровне, как работают ИИ</span></div>
+                <div class="outcome-item"><span class="outcome-check">✓</span><span>Анализ процесса отдела — найдете где применить ИИ</span></div>
+                <div class="outcome-item"><span class="outcome-check">✓</span><span>Научитесь проектировать AI-решение</span></div>
+              </div>
+            </div>
+
+            <div class="track-tools">
+              <h4>Инструменты</h4>
+              <div class="tools-tags">
+                <span class="tool-tag">ChatGPT</span>
+                <span class="tool-tag">Claude</span>
+                <span class="tool-tag">DeepSeek</span>
+                <span class="tool-tag">Perplexity</span>
+                <span class="tool-tag">YandexGPT</span>
+                <span class="tool-tag">GigaChat</span>
+                <span class="tool-tag">QwenAI</span>
+                <span class="tool-tag">Manus</span>
+                <span class="tool-tag">OpenClaw</span>
+                <span class="tool-tag">Gemini</span>
+              </div>
+            </div>
+
+            <div class="track-program">
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+                <span class="track-meta-pill">📚 3 модуля</span>
+                <span class="track-meta-pill">⏱ 9 ак. часов</span>
+                <span class="track-meta-pill">3 практические работы</span>
+              </div>
+              <h4>Программа · 3 модуля</h4>
+              <div class="sprint-list">
+
+                <div class="sprint-item open">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 1 · 3 ч</span>
+                      <span class="sprint-title">Как на самом деле работают современные нейросети</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Что такое нейросеть, а что такое LLM</li>
+                      <li>Почему LLM — это не "вся нейросеть", а отдельный класс моделей</li>
+                      <li>Токены, контекстное окно, embeddings</li>
+                      <li>Transformer и attention — простым языком</li>
+                      <li>Почему модель "знает", но не всегда "помнит"</li>
+                      <li>Почему возникают галлюцинации</li>
+                      <li>Чем отличаются модели друг от друга: архитектура, обучение, специализация</li>
+                      <li>Когда нужен один тип модели, а когда другой</li>
+                      <li>Мультимодальность: модели которые работают с несколькими типами данных одновременно</li>
+                    </ul>
+                    <div class="sprint-practice"><span class="sprint-practice-icon">📝</span><span>Практика: сравните один и тот же запрос в трех разных моделях — зафиксируйте различия в качестве, стиле и точности</span></div>
+                  </div></div>
+                </div>
+
+                <div class="sprint-item">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 2 · 3 ч</span>
+                      <span class="sprint-title">От промпта к системе: как проектировать AI-решение</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Почему хороший результат зависит не только от запроса?</li>
+                      <li>Декомпозиция задачи:
+                        <ul class="sprint-subtopic">
+                          <li>что должна сделать модель</li>
+                          <li>что должен сделать человек</li>
+                          <li>что лучше отдать другому инструменту</li>
+                        </ul>
+                      </li>
+                      <li>System prompt: задать модели роль, стиль и ограничения раз и навсегда</li>
+                      <li>Chain of thought: пошаговое рассуждение для сложных аналитических задач</li>
+                      <li>Few-shot prompting: обучаем модель на примерах прямо в запросе</li>
+                      <li>Цепочки шагов:
+                        <ul class="sprint-subtopic">
+                          <li>сначала собрать данные</li>
+                          <li>потом извлечь факты</li>
+                          <li>потом проверить</li>
+                          <li>потом сформировать ответ</li>
+                        </ul>
+                      </li>
+                      <li>Когда лучше делать один длинный запрос, а когда цепочку из нескольких шагов</li>
+                    </ul>
+                    <div class="sprint-practice"><span class="sprint-practice-icon">📝</span><span>Практика: создайте цепочку из 3 связанных промптов для реальной задачи вашего отдела — каждый следующий использует результат предыдущего</span></div>
+                  </div></div>
+                </div>
+
+                <div class="sprint-item">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 3 · 3 ч</span>
+                      <span class="sprint-title">Комбинация нескольких инструментов под одну задачу</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Почему одна модель редко идеально решает всю задачу</li>
+                      <li>Типовые связки:
+                        <ul class="sprint-subtopic">
+                          <li>поиск → анализ → оформление</li>
+                          <li>документы → извлечение фактов → сводка</li>
+                          <li>таблица → расчёт → объяснение</li>
+                          <li>LLM → генерация → вторая модель → проверка</li>
+                        </ul>
+                      </li>
+                      <li>Роли инструментов:
+                        <ul class="sprint-subtopic">
+                          <li>одна модель лучше пишет</li>
+                          <li>другая лучше рассуждает</li>
+                          <li>третья лучше ищет</li>
+                          <li>четвёртая лучше работает с файлами</li>
+                        </ul>
+                      </li>
+                      <li>AI как workflow, а не как один чат</li>
+                      <li>Человек в контуре: где он должен подтверждать результат</li>
+                      <li>Примеры кейсов:
+                        <ul class="sprint-subtopic">
+                          <li>Аналитическая записка: Perplexity/поиск → Claude/GPT для анализа → таблица → финальная записка</li>
+                          <li>Связка DeepSeek + Gemini: глубокий анализ данных с визуализацией</li>
+                          <li>Подготовка встречи: сбор информации → саммари → вопросы → письмо по итогам</li>
+                        </ul>
+                      </li>
+                    </ul>
+                    <div class="sprint-practice"><span class="sprint-practice-icon">📝</span><span>Практика: решите одну реальную рабочую задачу используя минимум два разных инструмента последовательно — опишите какой вклад внес каждый</span></div>
+                  </div></div>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="track-cta">
+              <a class="btn primary full" href="#consult">Начать обучение →</a>
+            </div>
+          </div>
+
+        </div><!-- /tracks-two -->
 
         <div class="panel pad" style="margin-top:20px;">
           <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:space-between; align-items:flex-start;">
@@ -1195,922 +797,299 @@
             <button class="btn small" type="button" id="toggleQuiz">Пройти мини‑квиз</button>
           </div>
 
+          <form id="tracksQuiz" style="margin-top:14px; display:none;">
+            <div class="quiz-q">
+              <p>1. Как часто вы сейчас используете ИИ‑сервисы в работе?</p>
+              <label><input type="radio" name="q1" value="1">Практически не использую или пробовал(а) пару раз</label>
+              <label><input type="radio" name="q1" value="2">Иногда использую для отдельных задач</label>
+              <label><input type="radio" name="q1" value="3">Регулярно применяю ИИ для разных типов задач</label>
+            </div>
+            <div class="quiz-q">
+              <p>2. Насколько уверенно вы формулируете запросы (промпты) к ИИ?</p>
+              <label><input type="radio" name="q2" value="1">Часто не знаю, как правильно спросить</label>
+              <label><input type="radio" name="q2" value="2">Могу сформулировать запрос, но результат не всегда предсказуем</label>
+              <label><input type="radio" name="q2" value="3">Умею задавать точные запросы и дорабатывать ответы</label>
+            </div>
+            <div class="quiz-q">
+              <p>3. Используете ли вы ИИ для улучшения процессов (автоматизация, шаблоны, регламенты)?</p>
+              <label><input type="radio" name="q3" value="1">Пока только пробую базовые задачи</label>
+              <label><input type="radio" name="q3" value="2">Иногда пробую оптимизировать отдельные процессы</label>
+              <label><input type="radio" name="q3" value="3">Целенаправленно перестраиваю процессы с помощью ИИ</label>
+            </div>
+            <button class="btn small primary" type="submit">Узнать свой уровень</button>
+            <p id="quizResult" class="hintline" style="margin-top:10px;"></p>
+          </form>
         </div>
       </div>
     </section>
 
-    <!-- Видеоматериалы -->
+    <!-- ВИДЕОМАТЕРИАЛЫ -->
     <section id="videos">
       <div class="wrap">
         <h2 class="h2">Видеоматериалы</h2>
-        <p class="lead">Записи лекций, воркшопов и короткие обучающие ролики. В каждую карточку можно будет добавить видео или ссылку</p>
-
+        <p class="lead">Записи лекций, воркшопов и короткие обучающие ролики. В каждую карточку можно будет добавить видео или ссылку.</p>
         <div class="grid video-grid" style="margin-top:16px;">
           <article class="card">
-            <div class="video-thumb">
-              Плейсхолдер под обложку или встраиваемое видео
-            </div>
+            <div class="video-thumb">Плейсхолдер под обложку или встраиваемое видео</div>
             <h3>Введение в ИИ для сотрудников МИК</h3>
-            <p class="muted">Краткое объяснение ключевых понятий и примеров из работы Фонда</p>
+            <p class="muted">Краткое объяснение ключевых понятий и примеров из работы Фонда.</p>
           </article>
           <article class="card">
-            <div class="video-thumb">
-              Плейсхолдер под обложку или встраиваемое видео
-            </div>
+            <div class="video-thumb">Плейсхолдер под обложку или встраиваемое видео</div>
             <h3>Практика: как формулировать хороший запрос</h3>
-            <p class="muted">Живые демонстрации на примерах писем, записок, аналитики</p>
+            <p class="muted">Живые демонстрации на примерах писем, записок, аналитики.</p>
           </article>
           <article class="card">
-            <div class="video-thumb">
-              Плейсхолдер под обложку или встраиваемое видео
-            </div>
+            <div class="video-thumb">Плейсхолдер под обложку или встраиваемое видео</div>
             <h3>Безопасность и работа с данными</h3>
-            <p class="muted">Какие данные можно загружать в ИИ‑сервисы и как работать с ограничениями</p>
+            <p class="muted">Какие данные можно загружать в ИИ‑сервисы и как работать с ограничениями.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <!-- Спикеры -->
+    <!-- СПИКЕРЫ -->
     <section id="speakers">
       <div class="wrap">
         <h2 class="h2">Спикеры и наставники</h2>
-        <p class="lead">Команда, которая ведёт лекции, воркшопы и индивидуальные консультации по ИИ</p>
-
+        <p class="lead">Команда, которая ведёт лекции, воркшопы и индивидуальные консультации по ИИ.</p>
         <div class="grid speaker-grid" style="margin-top:16px;">
           <article class="card speaker-card">
             <div class="speaker-top">
-              <div class="speaker-photo" style="background:none; overflow:hidden;">
-                <img src="/speakers/alexei-voronov.jpg" alt="Алексей Воронов" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
-              </div>
-              <div>
-                <div class="speaker-name">Алексей Воронов</div>
-                <div class="speaker-role">Ведущий методист · Отдел обучения</div>
-              </div>
+              <div class="speaker-photo"></div>
+              <div><div class="speaker-name">Имя Фамилия</div><div class="speaker-role">Роль / подразделение</div></div>
             </div>
-            <p>Сферы экспертизы: Документы, деловая переписка, регламенты, внутренняя коммуникация</p>
+            <p>Сферы экспертизы: документы, переписка, регламенты, внутренняя коммуникация.</p>
           </article>
           <article class="card speaker-card">
             <div class="speaker-top">
-              <div class="speaker-photo" style="background:none; overflow:hidden;">
-                <img src="/speakers/marina-sokolova.jpg" alt="Марина Соколова" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
-              </div>
-              <div>
-                <div class="speaker-name">Марина Соколова</div>
-                <div class="speaker-role">Аналитик данных · Департамент развития</div>
-              </div>
+              <div class="speaker-photo"></div>
+              <div><div class="speaker-name">Имя Фамилия</div><div class="speaker-role">Роль / подразделение</div></div>
             </div>
-            <p>Сферы экспертизы: Аналитика, отчётность, визуализация данных, работа с таблицами</p>
+            <p>Сферы экспертизы: аналитика, отчётность, визуализация данных.</p>
           </article>
           <article class="card speaker-card">
             <div class="speaker-top">
-              <div class="speaker-photo" style="background:none; overflow:hidden;">
-                <img src="/speakers/dmitry-lebedev.jpg" alt="Дмитрий Лебедев" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
-              </div>
-              <div>
-                <div class="speaker-name">Дмитрий Лебедев</div>
-                <div class="speaker-role">Руководитель проектов · Управление ИТ</div>
-              </div>
+              <div class="speaker-photo"></div>
+              <div><div class="speaker-name">Имя Фамилия</div><div class="speaker-role">Роль / подразделение</div></div>
             </div>
-            <p>Сферы экспертизы: Управление командами, внедрение ИИ в процессы подразделений</p>
+            <p>Сферы экспертизы: управление командами, внедрение ИИ в процессы подразделений.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <!-- Календарь -->
+    <!-- КАЛЕНДАРЬ -->
     <section id="calendar">
       <div class="wrap">
         <h2 class="h2">Календарь обучения</h2>
-        <p class="lead">Выберите формат: воркшопы и интенсивы или общие мероприятия по ИИ</p>
-
-        <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
+        <p class="lead">Выберите формат: воркшопы и интенсивы или общие мероприятия по ИИ.</p>
+        <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;">
           <div class="seg" role="tablist" aria-label="Тип события">
             <button class="active" type="button" data-calendar-filter="workshops">Воркшопы и интенсивы</button>
             <button type="button" data-calendar-filter="events">Мероприятия</button>
           </div>
-          <div class="muted2" style="font-size:13px;">Данные примерные — можно будет подгружать расписание из таблицы или системы</div>
+          <div class="muted2" style="font-size:13px;">Данные примерные — можно будет подгружать расписание из таблицы или системы.</div>
         </div>
-
         <div class="events-list" id="eventsList">
           <article class="event-card" data-type="workshops">
             <div class="event-top">
-              <div>
-                <p class="event-title">Практический воркшоп: ИИ для документов</p>
-                <div class="event-meta">
-                  <span>12 апреля · 10:00–12:00</span>
-                  <span>Формат: офлайн</span>
-                </div>
-              </div>
+              <div><p class="event-title">Практический воркшоп: ИИ для документов</p><div class="event-meta"><span>12 апреля · 10:00–12:00</span><span>Формат: офлайн</span></div></div>
               <a class="btn small primary" href="#" target="_blank" rel="noopener">Записаться</a>
             </div>
-            <div class="event-meta">
-              <span>Ведёт: Имя Фамилия</span>
-              <span>Трек: Уверенный пользователь</span>
-            </div>
-            <div class="event-links">
-              <span class="muted2">Материалы после мероприятия: появятся здесь по итогам встречи</span>
-            </div>
+            <div class="event-meta"><span>Ведёт: Имя Фамилия</span><span>Трек: Начальный уровень</span></div>
+            <div class="event-links"><span class="muted2">Материалы после мероприятия: появятся здесь по итогам встречи.</span></div>
           </article>
-
           <article class="event-card" data-type="workshops">
             <div class="event-top">
-              <div>
-                <p class="event-title">Интенсив 5–8 часов: ИИ в процессах подразделения</p>
-                <div class="event-meta">
-                  <span>20 апреля · 11:00–18:00</span>
-                  <span>Формат: онлайн</span>
-                </div>
-              </div>
+              <div><p class="event-title">Интенсив 5–8 часов: ИИ в процессах подразделения</p><div class="event-meta"><span>20 апреля · 11:00–18:00</span><span>Формат: онлайн</span></div></div>
               <a class="btn small primary" href="#" target="_blank" rel="noopener">Записаться</a>
             </div>
-            <div class="event-meta">
-              <span>Ведёт: Имя Фамилия</span>
-              <span>Трек: Продвинутый / для руководителей</span>
-            </div>
-            <div class="event-links">
-              <span class="muted2">Материалы после мероприятия: чек‑листы, шаблоны, записи</span>
-            </div>
+            <div class="event-meta"><span>Ведёт: Имя Фамилия</span><span>Трек: Продвинутый уровень</span></div>
+            <div class="event-links"><span class="muted2">Материалы после мероприятия: чек‑листы, шаблоны, записи.</span></div>
           </article>
-
           <article class="event-card" data-type="events">
             <div class="event-top">
-              <div>
-                <p class="event-title">Открытая встреча: новости и кейсы по ИИ</p>
-                <div class="event-meta">
-                  <span>5 мая · 16:00–17:30</span>
-                  <span>Формат: онлайн</span>
-                </div>
-              </div>
+              <div><p class="event-title">Открытая встреча: новости и кейсы по ИИ</p><div class="event-meta"><span>5 мая · 16:00–17:30</span><span>Формат: онлайн</span></div></div>
               <a class="btn small primary" href="#" target="_blank" rel="noopener">Записаться</a>
             </div>
-            <div class="event-meta">
-              <span>Ведёт: Имя Фамилия</span>
-              <span>Формат: мероприятия</span>
-            </div>
-            <div class="event-links">
-              <span class="muted2">Материалы после мероприятия: ссылка на запись и презентацию</span>
-            </div>
+            <div class="event-meta"><span>Ведёт: Имя Фамилия</span><span>Формат: мероприятия</span></div>
+            <div class="event-links"><span class="muted2">Материалы после мероприятия: ссылка на запись и презентацию.</span></div>
           </article>
         </div>
       </div>
     </section>
 
-
-    <!-- ЕДИНЫЙ БРАУЗЕР -->
-    <section id="browser">
-      <div class="wrap">
-        <div class="panel pad" id="dolphin-section">
-
-          <!-- Шапка блока -->
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-            <div>
-              <h2 class="h2" style="margin-bottom:6px;">Единый браузер для всех ИИ‑сервисов</h2>
-              <p class="lead" style="margin:0;">Dolphin Anty — изолированные профили для каждого сервиса. Без конфликта аккаунтов, без следов в корпоративном браузере.</p>
-            </div>
-            <a href="https://dolphin.ru.com/" target="_blank" rel="noopener"
-               style="flex-shrink:0; display:inline-flex; align-items:center; gap:8px; padding:10px 20px; border-radius:12px; background:rgba(0,200,100,.18); border:1px solid rgba(0,200,100,.35); color:rgba(180,255,210,.95); font-size:13.5px; font-weight:600; text-decoration:none; white-space:nowrap;">
-              ↓ Скачать Dolphin Anty
-            </a>
-          </div>
-
-          <!-- Шаги 2×2 + 1 -->
-          <div id="dolphinSteps" style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-
-            <div style="display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:14px; background:rgba(0,180,90,.06); border:1px solid rgba(0,200,100,.12);">
-              <span style="flex-shrink:0; width:26px; height:26px; border-radius:50%; background:rgba(0,200,100,.15); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:rgba(0,220,110,.9);">01</span>
-              <div>
-                <div style="font-size:13.5px; font-weight:600; color:rgba(255,255,255,.9); margin-bottom:3px;">Скачайте и установите</div>
-                <div style="font-size:12.5px; color:rgba(255,255,255,.55);">Windows 10/11 · macOS 12+ · ~180 МБ</div>
-              </div>
-            </div>
-
-            <div style="display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:14px; background:rgba(0,180,90,.06); border:1px solid rgba(0,200,100,.12);">
-              <span style="flex-shrink:0; width:26px; height:26px; border-radius:50%; background:rgba(0,200,100,.15); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:rgba(0,220,110,.9);">02</span>
-              <div>
-                <div style="font-size:13.5px; font-weight:600; color:rgba(255,255,255,.9); margin-bottom:3px;">Создайте аккаунт</div>
-                <div style="font-size:12.5px; color:rgba(255,255,255,.55);">Рабочая почта · бесплатно · 10 профилей</div>
-              </div>
-            </div>
-
-            <div style="display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:14px; background:rgba(0,180,90,.06); border:1px solid rgba(0,200,100,.12);">
-              <span style="flex-shrink:0; width:26px; height:26px; border-radius:50%; background:rgba(0,200,100,.15); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:rgba(0,220,110,.9);">03</span>
-              <div>
-                <div style="font-size:13.5px; font-weight:600; color:rgba(255,255,255,.9); margin-bottom:3px;">Создайте профили</div>
-                <div style="font-size:12.5px; color:rgba(255,255,255,.55);">По одному на каждый сервис: ChatGPT, Claude, DeepSeek…</div>
-              </div>
-            </div>
-
-            <div style="display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:14px; background:rgba(0,180,90,.06); border:1px solid rgba(0,200,100,.12);">
-              <span style="flex-shrink:0; width:26px; height:26px; border-radius:50%; background:rgba(0,200,100,.15); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:rgba(0,220,110,.9);">04</span>
-              <div>
-                <div style="font-size:13.5px; font-weight:600; color:rgba(255,255,255,.9); margin-bottom:3px;">Войдите в сервисы</div>
-                <div style="font-size:12.5px; color:rgba(255,255,255,.55);">Сессия сохранится — повторный ввод пароля не нужен</div>
-              </div>
-            </div>
-
-            <div style="grid-column:1/-1; display:flex; gap:12px; align-items:center; padding:14px 16px; border-radius:14px; background:rgba(0,180,90,.06); border:1px solid rgba(0,200,100,.12);">
-              <span style="flex-shrink:0; width:26px; height:26px; border-radius:50%; background:rgba(0,200,100,.15); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:rgba(0,220,110,.9);">05</span>
-              <div>
-                <div style="font-size:13.5px; font-weight:600; color:rgba(255,255,255,.9); margin-bottom:3px;">Запускайте несколько профилей одновременно</div>
-                <div style="font-size:12.5px; color:rgba(255,255,255,.55);">Каждый профиль — отдельное окно. Переключайтесь между сервисами как между вкладками.</div>
-              </div>
-            </div>
-
-          </div>
-
-          <div style="margin-top:12px; font-size:12px; color:rgba(255,255,255,.3);">
-            Или сразу перейти к регистрации: <a href="https://app.dolphin-anty.com" target="_blank" rel="noopener" style="color:rgba(0,210,100,.7); text-decoration:none;">app.dolphin‑anty.com →</a>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-
-    <!-- Популярные нейросети -->
-    <section id="neural-tools" class="neural-section">
-      <div class="wrap">
-        <h2 class="h2">Популярные нейросети</h2>
-        <p class="lead">Кликайте на карточку — откроется сервис. Каждый инструмент заточен под свои задачи.</p>
-
-        <div class="neural-grid">
-
-          <!-- ChatGPT -->
-          <a class="neural-card" href="https://chatgpt.com" target="_blank" rel="noopener">
-            <div class="neural-card-icon">
-              <img src="/AI_cons/chatgpt-icon.png" alt="ChatGPT" width="48" height="48" />
-            </div>
-            <div>
-              <p class="neural-card-name">ChatGPT</p>
-              <p class="neural-card-vendor">OpenAI</p>
-            </div>
-            <p class="neural-card-desc">Универсальный ассистент для работы с текстом и анализом данных, написания кода и генерации идей. Наиболее популярная модель в мире</p>
-            <div class="neural-card-tags">
-              <span class="neural-tag">Тексты</span>
-              <span class="neural-tag">Анализ</span>
-              <span class="neural-tag">Код</span>
-            </div>
-          </a>
-
-          <!-- Claude -->
-          <a class="neural-card" href="https://claude.ai" target="_blank" rel="noopener">
-            <div class="neural-card-icon">
-              <img src="/AI_cons/claude-ai-icon.png" alt="Claude" width="48" height="48" />
-            </div>
-            <div>
-              <p class="neural-card-name">Claude</p>
-              <p class="neural-card-vendor">Anthropic</p>
-            </div>
-            <p class="neural-card-desc">Отлично читает и анализирует длинные документы, пишет развёрнутые тексты. Подходит для работы с регламентами и отчётами</p>
-            <div class="neural-card-tags">
-              <span class="neural-tag">Документы</span>
-              <span class="neural-tag">Данные</span>
-              <span class="neural-tag">Аналитика</span>
-            </div>
-          </a>
-
-          <!-- Gemini -->
-          <a class="neural-card" href="https://gemini.google.com" target="_blank" rel="noopener">
-            <div class="neural-card-icon">
-              <img src="/AI_cons/google-gemini-icon.png" alt="Gemini" width="48" height="48" />
-            </div>
-            <div>
-              <p class="neural-card-name">Gemini</p>
-              <p class="neural-card-vendor">Google</p>
-            </div>
-            <p class="neural-card-desc">Интегрирован с экосистемой Google: Docs, Sheets, Gmail. Удобен для анализа данных и поиска актуальной информации</p>
-            <div class="neural-card-tags">
-              <span class="neural-tag">Поиск</span>
-              <span class="neural-tag">Таблицы</span>
-              <span class="neural-tag">Документы</span>
-            </div>
-          </a>
-
-          <!-- DeepSeek -->
-          <a class="neural-card" href="https://chat.deepseek.com" target="_blank" rel="noopener">
-            <div class="neural-card-icon">
-              <img src="/AI_cons/deepseek-logo-icon.png" alt="DeepSeek" width="48" height="48" />
-            </div>
-            <div>
-              <p class="neural-card-name">DeepSeek</p>
-              <p class="neural-card-vendor">DeepSeek AI</p>
-            </div>
-            <p class="neural-card-desc">Сильная модель, хорошо справляется с аналитикой, рассуждениями. Умеет структурировать задачи</p>
-            <div class="neural-card-tags">
-              <span class="neural-tag">Аналитика</span>
-              <span class="neural-tag">Рассуждения</span>
-              <span class="neural-tag">Без VPN</span>
-            </div>
-          </a>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- Полезные материалы -->
-    <section id="articles">
-      <div class="wrap">
-        <h2 class="h2">Полезные материалы</h2>
-        <p class="lead">Статьи для самостоятельного изучения — от базовых понятий до практических советов</p>
-
-        <div class="articles-grid" id="articlesGrid">
-
-          <article class="card" style="display:flex; flex-direction:column; gap:12px;">
-            <div style="display:flex; gap:8px;">
-              <span style="padding:3px 10px; border-radius:999px; font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; background:rgba(0,180,90,.15); border:1px solid rgba(0,200,100,.25); color:rgba(120,255,180,.85);">Основы</span>
-            </div>
-            <div>
-              <h3 style="font-size:15px; line-height:1.4; margin-bottom:6px;">Как нейросети обрабатывают текст: простое объяснение</h3>
-              <p class="muted" style="font-size:13px;">Разбираем принципы работы языковых моделей без технических терминов — на примерах из офисной практики</p>
-            </div>
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
-              <span style="font-size:12px; color:rgba(255,255,255,.35);">⏱ 5 мин</span>
-              <a href="https://habr.com/ru/articles/942414/" target="_blank" rel="noopener" style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.85); font-size:13px; font-weight:500; text-decoration:none; transition:background .15s;">Перейти →</a>
-            </div>
-          </article>
-
-          <article class="card" style="display:flex; flex-direction:column; gap:12px;">
-            <div style="display:flex; gap:8px;">
-              <span style="padding:3px 10px; border-radius:999px; font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; background:rgba(0,180,90,.15); border:1px solid rgba(0,200,100,.25); color:rgba(120,255,180,.85);">Практика</span>
-            </div>
-            <div>
-              <h3 style="font-size:15px; line-height:1.4; margin-bottom:6px;">10 промптов, которые экономят час в день</h3>
-              <p class="muted" style="font-size:13px;">Готовые шаблоны запросов для писем, справок, протоколов и аналитических сводок — с примерами и советами по адаптации</p>
-            </div>
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
-              <span style="font-size:12px; color:rgba(255,255,255,.35);">⏱ 7 мин</span>
-              <span style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:rgba(255,255,255,.3); font-size:13px; font-weight:500; cursor:default;">Скоро →</span>
-            </div>
-          </article>
-
-          <article class="card" style="display:flex; flex-direction:column; gap:12px;">
-            <div style="display:flex; gap:8px;">
-              <span style="padding:3px 10px; border-radius:999px; font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; background:rgba(255,140,0,.12); border:1px solid rgba(255,160,0,.2); color:rgba(255,200,100,.8);">Безопасность</span>
-            </div>
-            <div>
-              <h3 style="font-size:15px; line-height:1.4; margin-bottom:6px;">Что можно и нельзя передавать нейросети</h3>
-              <p class="muted" style="font-size:13px;">Разбираем, какие данные безопасно использовать в запросах и как не нарушить правила информационной безопасности</p>
-            </div>
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
-              <span style="font-size:12px; color:rgba(255,255,255,.35);">⏱ 4 мин</span>
-              <span style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:rgba(255,255,255,.3); font-size:13px; font-weight:500; cursor:default;">Скоро →</span>
-            </div>
-          </article>
-
-          <article class="card" style="display:flex; flex-direction:column; gap:12px;">
-            <div style="display:flex; gap:8px;">
-              <span style="padding:3px 10px; border-radius:999px; font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; background:rgba(0,180,90,.15); border:1px solid rgba(0,200,100,.25); color:rgba(120,255,180,.85);">Практика</span>            </div>
-            <div>
-              <h3 style="font-size:15px; line-height:1.4; margin-bottom:6px;">Секреты управляемоего результата при работе с ИИ</h3>
-              <p class="muted" style="font-size:13px;">Основы ролей и промптирования для настройки ИИ-агнета под конкретные задачи</p>
-            </div>
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
-              <span style="font-size:12px; color:rgba(255,255,255,.35);">⏱ 4 мин</span>
-              <span style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:rgba(255,255,255,.3); font-size:13px; font-weight:500; cursor:default;">Скоро →</span>
-            </div>
-          </article>
-
-        </div>
-        <div class="articles-dots" id="articlesDots">
-          <button class="articles-dot active" data-idx="0" aria-label="Слайд 1"></button>
-          <button class="articles-dot" data-idx="1" aria-label="Слайд 2"></button>
-         <button class="articles-dot" data-idx="2" aria-label="Слайд 3"></button>
-         <button class="articles-dot" data-idx="3" aria-label="Слайд 4"></button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Записаться на консультацию -->
+    <!-- КОНСУЛЬТАЦИЯ -->
     <section id="consult">
       <div class="wrap">
         <h2 class="h2">Записаться на консультацию</h2>
         <p class="lead">Поможем подобрать подходящий инструмент, трек обучения или провести разбор задач команды.</p>
-
         <div class="form-grid">
           <form class="form-card" id="consultForm">
             <h3>Форма заявки</h3>
-
             <label for="consultType">Формат консультации</label>
             <select id="consultType" name="consultType" required>
               <option value="individual">Индивидуально</option>
               <option value="group">Групповой воркшоп</option>
               <option value="intensive">Интенсив (5–8 часов)</option>
             </select>
-
             <label for="fio">ФИО</label>
             <input type="text" id="fio" name="fio" placeholder="Имя Фамилия" required />
-
             <label for="dept">Подразделение</label>
-            <input type="text" id="dept" name="dept" placeholder="Например: Департамент ... " />
-
+            <input type="text" id="dept" name="dept" placeholder="Например: Департамент ..." />
             <label for="contact">Контакт (почта или телефон)</label>
             <input type="text" id="contact" name="contact" placeholder="example@fond.ru, +7 ..." required />
-
             <label for="comment">Комментарий</label>
             <textarea id="comment" name="comment" placeholder="Кратко опишите задачу или ожидания от консультации."></textarea>
-
-            <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+            <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
               <button type="submit" class="btn primary">Отправить заявку</button>
-              <span class="hintline">После отправки с вами свяжется команда Фонда МИК для уточнения деталей.</span>
+              <span class="hintline">После отправки с вами свяжется команда Фонда МИК.</span>
             </div>
-
-            <div class="success" id="consultSuccess">Заявка отправлена (демо‑режим). Вы можете скорректировать текст и интеграцию с формой позже.</div>
+            <div class="success" id="consultSuccess">Заявка отправлена (демо‑режим).</div>
           </form>
-
           <div class="form-card">
             <h3>Как используются заявки</h3>
             <p>По заявкам мы подбираем формат и время, формируем группы и планируем нагрузку спикеров.</p>
-            <p>На основе запросов сотрудников обновляем треки обучения, добавляем новые воркшопы и материалы.</p>
+            <p>На основе запросов сотрудников обновляем треки, добавляем воркшопы и материалы.</p>
             <p class="hintline">При внедрении в проде форму можно связать с корпоративной почтой, Service Desk или внутренней CRM.</p>
           </div>
         </div>
       </div>
     </section>
+
   </main>
-
-  <footer class="site-footer">
-    <div class="footer-inner">
-      <div>
-        <p class="footer-col-title">Платформа</p>
-        <ul class="footer-links">
-          <li><a href="/education">Материалы</a></li>
-          <li><a href="/cases">Кейсы и промпты</a></li>
-          <li><a href="/dashboard">Статистика</a></li>
-        </ul>
-      </div>
-      <div>
-        <p class="footer-col-title">Аккаунт</p>
-        <ul class="footer-links">
-          <li><a href="/profile">Личный кабинет</a></li>
-          <li><a href="/login">Войти</a></li>
-        </ul>
-      </div>
-      <div>
-        <p class="footer-col-title">Обучение</p>
-        <ul class="footer-links">
-          <li><a href="#tracks">Треки</a></li>
-          <li><a href="#calendar">Календарь</a></li>
-          <li><a href="#consult">Записаться</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <span class="footer-copy">2026 Фонд МИК</span>
-      <span class="footer-copy">Внутренний ресурс для сотрудников</span>
-    </div>
-  </footer>
-
-  <!-- Quiz modal -->
-  <div class="track-modal" id="quizModal" aria-hidden="true" role="dialog" aria-label="Мини-квиз">
-    <div class="track-modal-backdrop" data-quiz-close="true"></div>
-    <div class="track-modal-content" style="max-width:500px; width:min(500px,92vw);">
-      <button type="button" class="track-modal-close" data-quiz-close="true" aria-label="Закрыть">✕</button>
-
-      <div class="quiz-steps">
-        <span class="quiz-step-dot active" id="qdot1"></span>
-        <span class="quiz-step-dot" id="qdot2"></span>
-        <span class="quiz-step-dot" id="qdot3"></span>
-      </div>
-
-      <!-- Step 1 -->
-      <div class="quiz-modal-step" id="qstep1">
-        <p class="quiz-step-label muted">Вопрос 1 из 3</p>
-        <h3>Как часто вы сейчас используете ИИ‑сервисы в работе?</h3>
-        <div class="quiz-options">
-          <label class="quiz-option"><input type="radio" name="mq1" value="1"><span>Практически не использую или пробовал(а) пару раз</span></label>
-          <label class="quiz-option"><input type="radio" name="mq1" value="2"><span>Иногда использую для отдельных задач</span></label>
-          <label class="quiz-option"><input type="radio" name="mq1" value="3"><span>Регулярно применяю ИИ для разных типов задач</span></label>
-        </div>
-        <button type="button" class="btn small primary quiz-next" data-next="2">Далее →</button>
-      </div>
-
-      <!-- Step 2 -->
-      <div class="quiz-modal-step" id="qstep2" style="display:none;">
-        <p class="quiz-step-label muted">Вопрос 2 из 3</p>
-        <h3>Насколько уверенно вы формулируете запросы (промпты) к ИИ?</h3>
-        <div class="quiz-options">
-          <label class="quiz-option"><input type="radio" name="mq2" value="1"><span>Часто не знаю, как правильно спросить</span></label>
-          <label class="quiz-option"><input type="radio" name="mq2" value="2"><span>Могу сформулировать запрос, но результат не всегда предсказуем</span></label>
-          <label class="quiz-option"><input type="radio" name="mq2" value="3"><span>Умею задавать точные запросы и дорабатывать ответы</span></label>
-        </div>
-        <button type="button" class="btn small primary quiz-next" data-next="3">Далее →</button>
-      </div>
-
-      <!-- Step 3 -->
-      <div class="quiz-modal-step" id="qstep3" style="display:none;">
-        <p class="quiz-step-label muted">Вопрос 3 из 3</p>
-        <h3>Используете ли вы ИИ для улучшения процессов (автоматизация, шаблоны, регламенты)?</h3>
-        <div class="quiz-options">
-          <label class="quiz-option"><input type="radio" name="mq3" value="1"><span>Пока только пробую базовые задачи</span></label>
-          <label class="quiz-option"><input type="radio" name="mq3" value="2"><span>Иногда пробую оптимизировать отдельные процессы</span></label>
-          <label class="quiz-option"><input type="radio" name="mq3" value="3"><span>Целенаправленно перестраиваю процессы с помощью ИИ</span></label>
-        </div>
-        <button type="button" class="btn small primary" id="quizModalSubmit">Узнать свой уровень</button>
-      </div>
-
-      <!-- Result -->
-      <div class="quiz-modal-step" id="qstepResult" style="display:none;">
-        <h3 style="padding-right:28px;">Ваш уровень</h3>
-        <p id="quizModalResult" class="quiz-result-text muted"></p>
-        <button type="button" class="btn small" data-quiz-close="true">Закрыть</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="track-modal" id="trackModal" aria-hidden="true" role="dialog" aria-label="Индивидуальный план обучения">
-    <div class="track-modal-backdrop" data-track-close="true"></div>
-    <div class="track-modal-content">
-      <button type="button" class="track-modal-close" data-track-close="true" aria-label="Закрыть">✕</button>
-      <h3 id="trackModalTitle">Индивидуальный план обучения</h3>
-      <p id="trackModalText" class="muted">Здесь будет краткое описание индивидуального плана в зависимости от уровня. Текст можно будет заменить на реальные материалы.</p>
-      <a id="trackModalLink" href="#consult" class="btn primary" style="margin-top:12px;">Перейти к плану обучения</a>
-    </div>
-  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
-    function showToast(message) {
-      const toast = document.getElementById("toast");
-      if (!toast) return;
-      toast.textContent = message;
-      toast.classList.add("show");
-      clearTimeout(showToast._timer);
-      showToast._timer = setTimeout(() => toast.classList.remove("show"), 2200);
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => t.classList.remove('show'), 2200);
     }
 
-    function initArticlesSlider() {
-      const grid = document.getElementById("articlesGrid");
-      const dotsEl = document.getElementById("articlesDots");
-      if (!grid || !dotsEl) return;
-      const cards = Array.from(grid.children);
-      const dots = Array.from(dotsEl.querySelectorAll(".articles-dot"));
-      if (!cards.length || !dots.length) return;
+    document.addEventListener('DOMContentLoaded', () => {
 
-      const MOBILE_BP = 760;
-      function isMobile() { return window.innerWidth <= MOBILE_BP; }
-
-      function updateDots() {
-        const scrollLeft = grid.scrollLeft;
-        const cardWidth = cards[0] ? cards[0].offsetWidth + 16 : 1;
-        let idx;
-        if (isMobile()) {
-          idx = Math.round(scrollLeft / cardWidth);
-          idx = Math.min(idx, 3);
-        } else {
-          const pageWidth = cardWidth * 2;
-          idx = Math.min(Math.round(scrollLeft / pageWidth), 1);
-        }
-        dots.forEach((d, i) => {
-          const visible = isMobile() ? true : i < 2;
-          d.classList.toggle("active", visible && i === idx);
-        });
-      }
-
-      grid.addEventListener("scroll", updateDots, { passive: true });
-      window.addEventListener("resize", updateDots);
-
-      dots.forEach((dot, i) => {
-        dot.addEventListener("click", () => {
-          const cardWidth = cards[0] ? cards[0].offsetWidth + 16 : 0;
-          const targetLeft = isMobile() ? cardWidth * i : cardWidth * 2 * Math.min(i, 1);
-          grid.scrollTo({ left: targetLeft, behavior: "smooth" });
-        });
+      // Scroll progress
+      const bar = document.getElementById('progressBar');
+      window.addEventListener('scroll', () => {
+        const h = document.documentElement.scrollHeight - window.innerHeight;
+        if (bar) bar.style.width = h > 0 ? (window.scrollY / h * 100) + '%' : '0%';
       });
 
-      // Скролл перетаскиванием мышкой и колесом (плавный свайп для десктопа)
-      let isDown = false, startX, startScrollLeft, lastX = 0, velX = 0;
-      grid.addEventListener("mousedown", (e) => {
-        if (e.target.closest("a")) return;
-        isDown = true;
-        startX = e.pageX - grid.offsetLeft;
-        startScrollLeft = grid.scrollLeft;
-        lastX = e.pageX;
-        velX = 0;
-      });
-      grid.addEventListener("mouseleave", () => { isDown = false; });
-      grid.addEventListener("mouseup", () => {
-        if (!isDown) return;
-        isDown = false;
-        if (Math.abs(velX) > 2) {
-          const decay = 0.92;
-          const step = () => {
-            velX *= decay;
-            grid.scrollLeft -= velX * 1.5;
-            if (Math.abs(velX) > 0.5) requestAnimationFrame(step);
-          };
-          requestAnimationFrame(step);
-        }
-      });
-      grid.addEventListener("mousemove", (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.pageX - grid.offsetLeft;
-        velX = e.pageX - lastX;
-        lastX = e.pageX;
-        const walk = (x - startX) * 1.2;
-        grid.scrollLeft = startScrollLeft - walk;
-      });
-      grid.addEventListener("wheel", (e) => {
-        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-        const maxScroll = grid.scrollWidth - grid.clientWidth;
-        if (maxScroll <= 0) return;
-        e.preventDefault();
-        grid.scrollLeft = Math.max(0, Math.min(grid.scrollLeft + e.deltaY * 0.8, maxScroll));
-      }, { passive: false });
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      initArticlesSlider();
-      // ── Прогресс-бар скролла ──────────────────────────────────────────────
-      const progressEl = document.getElementById("progressBar");
-      if (progressEl) {
-        const onScroll = () => {
-          const h = document.documentElement;
-          const max = h.scrollHeight - h.clientHeight;
-          progressEl.style.width = (max > 0 ? (window.scrollY / max) * 100 : 0) + "%";
-        };
-        window.addEventListener("scroll", onScroll, { passive: true });
-        onScroll();
-      }
-
-      // ── Активный пункт навигации по скроллу ──────────────────────────────
-      const sectionIds = ["hero","basics","tracks","videos","speakers","calendar","browser","neural-tools","articles","consult"];
-      const navLinks = Array.from(document.querySelectorAll("nav .navlink[href^='/'], .mobile-menu .navlink[href^='/']"));
-      const sectionEls = sectionIds.map(id => document.getElementById(id)).filter(Boolean);
-
-      if (sectionEls.length) {
-        const io = new IntersectionObserver((entries) => {
-          entries.forEach(entry => {
-            if (!entry.isIntersecting) return;
-            const id = entry.target.id;
-            navLinks.forEach(link => {
-              const isActive = link.getAttribute("href") === "/education" && ["hero","basics","tracks","videos","speakers","calendar","browser","neural-tools","articles","consult"].includes(id);
-              link.classList.toggle("active", isActive && link.getAttribute("href") === "/education");
-            });
-          });
-        }, { rootMargin: "-40% 0px -55% 0px" });
-        sectionEls.forEach(s => io.observe(s));
-      }
-
-      const burger = document.getElementById("burgerBtn");
-      const mobileMenu = document.getElementById("mobileMenu");
+      // Burger
+      const burger = document.getElementById('burgerBtn');
+      const mobileMenu = document.getElementById('mobileMenu');
       if (burger && mobileMenu) {
-        burger.addEventListener("click", () => {
-          const isOpen = mobileMenu.classList.toggle("show");
-          burger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        burger.addEventListener('click', () => {
+          const open = mobileMenu.classList.toggle('show');
+          burger.setAttribute('aria-expanded', open ? 'true' : 'false');
         });
-        mobileMenu.addEventListener("click", (e) => {
-          const link = e.target.closest("a.navlink");
-          if (link) {
-            mobileMenu.classList.remove("show");
-            burger.setAttribute("aria-expanded", "false");
+        mobileMenu.addEventListener('click', e => {
+          if (e.target.closest('a.navlink')) {
+            mobileMenu.classList.remove('show');
+            burger.setAttribute('aria-expanded', 'false');
           }
         });
       }
 
-      // Личный кабинет: редирект на /login если не авторизован; показ ФИО если авторизован
-      (function initProfileBtn() {
-        const token = localStorage.getItem("auth_token");
-        const auth = (() => { try { return JSON.parse(localStorage.getItem("mikAuth")); } catch(_) { return null; } })();
-        const isAuthed = token && auth && auth.isAuthorized;
-        const fullName = localStorage.getItem("auth_full_name") || (auth && auth.full_name);
-        document.querySelectorAll('a[href="/profile"], .profile-btn[href="/profile"]').forEach(btn => {
-          btn.addEventListener("click", (e) => {
-            e.preventDefault();
-            if (!token || !auth || !auth.isAuthorized) { window.location = "/login"; return; }
-            window.location = "/profile";
-          });
-          const span = btn.querySelector(".nowrap");
-          if (isAuthed && fullName && span) span.textContent = fullName;
+      // «Подробнее» в примерах
+      const btnMore = document.getElementById('btnMoreExamples');
+      const moreBlock = document.getElementById('moreExamplesBlock');
+      if (btnMore && moreBlock) {
+        let open = false;
+        btnMore.addEventListener('click', () => {
+          open = !open;
+          moreBlock.style.maxHeight = open ? moreBlock.scrollHeight + 'px' : '0';
+          btnMore.textContent = open ? 'Скрыть' : 'Подробнее';
         });
-      })();
+      }
+
+      // Спринты accordion (обе карточки)
+      document.querySelectorAll('.sprint-header').forEach(header => {
+        header.addEventListener('click', () => {
+          const item = header.parentElement;
+          const list = item.closest('.sprint-list');
+          const isOpen = item.classList.contains('open');
+          list.querySelectorAll('.sprint-item').forEach(i => i.classList.remove('open'));
+          if (!isOpen) item.classList.add('open');
+        });
+      });
+
+      // Для кого — переключатели (для каждой карточки трека независимо)
+      document.querySelectorAll('.for-whom-tabs').forEach(tabsEl => {
+        tabsEl.querySelectorAll('.for-whom-tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            const targetId = tab.dataset.tab;
+            const parent = tab.closest('.track-for-whom');
+            parent.querySelectorAll('.for-whom-tab').forEach(t => t.classList.remove('active'));
+            parent.querySelectorAll('.for-whom-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            const target = parent.querySelector('#' + targetId);
+            if (target) target.classList.add('active');
+          });
+        });
+      });
 
       // Фильтр календаря
-      const filterButtons = Array.from(document.querySelectorAll("[data-calendar-filter]"));
-      const events = Array.from(document.querySelectorAll(".event-card"));
-      filterButtons.forEach(btn => {
-        btn.addEventListener("click", () => {
-          const type = btn.getAttribute("data-calendar-filter");
-          filterButtons.forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
+      const filterBtns = Array.from(document.querySelectorAll('[data-calendar-filter]'));
+      const events = Array.from(document.querySelectorAll('.event-card'));
+      filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const type = btn.dataset.calendarFilter;
+          filterBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
           events.forEach(ev => {
-            const evType = ev.getAttribute("data-type");
-            ev.style.display = (type === "all" || evType === type) ? "" : "none";
+            ev.style.display = (type === 'all' || ev.dataset.type === type) ? '' : 'none';
           });
         });
       });
 
-      // Попап с индивидуальными планами по трекам
-      const trackModal = document.getElementById("trackModal");
-      const trackModalTitle = document.getElementById("trackModalTitle");
-      const trackModalText = document.getElementById("trackModalText");
-      const trackModalLink = document.getElementById("trackModalLink");
-      const trackButtons = Array.from(document.querySelectorAll(".track-btn"));
-
-      function openTrackModal(btn){
-        if (!trackModal) return;
-        const title = btn.getAttribute("data-track-title") || "Индивидуальный план обучения";
-        const level = btn.getAttribute("data-track-level") || "";
-        const url = btn.getAttribute("data-plan-url") || "#consult";
-        if (trackModalTitle) trackModalTitle.textContent = title;
-        if (trackModalText){
-          trackModalText.textContent = level
-            ? `Индивидуальный маршрут обучения для уровня «${level}». Можно будет связать его с корпоративной системой обучения или таблицей.`
-            : "Индивидуальный маршрут обучения. Текст можно заменить на реальные материалы.";
-        }
-        if (trackModalLink) trackModalLink.setAttribute("href", url);
-        trackModal.classList.add("show");
-        trackModal.setAttribute("aria-hidden", "false");
-      }
-
-      if (trackModal){
-        trackModal.addEventListener("click", (e) => {
-          const target = e.target;
-          if (target instanceof HTMLElement && target.dataset.trackClose === "true"){
-            trackModal.classList.remove("show");
-            trackModal.setAttribute("aria-hidden", "true");
-          }
+      // Квиз
+      const quizToggle = document.getElementById('toggleQuiz');
+      const quizForm = document.getElementById('tracksQuiz');
+      const quizResult = document.getElementById('quizResult');
+      if (quizToggle && quizForm) {
+        quizToggle.addEventListener('click', () => {
+          const hidden = quizForm.style.display === 'none' || !quizForm.style.display;
+          quizForm.style.display = hidden ? 'block' : 'none';
+          quizToggle.textContent = hidden ? 'Свернуть вопросы' : 'Пройти мини‑квиз';
         });
       }
-
-      trackButtons.forEach(btn => {
-        btn.addEventListener("click", () => openTrackModal(btn));
-      });
-
-      if (trackModalLink) {
-        trackModalLink.addEventListener("click", () => {
-          trackModal.classList.remove("show");
-          trackModal.setAttribute("aria-hidden", "true");
-        });
-      }
-
-      // Конфетти для результата квиза
-      function launchConfetti(){
-        const canvas = document.createElement("canvas");
-        canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999;";
-        document.body.appendChild(canvas);
-
-        const ctx = canvas.getContext("2d");
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        const COLORS = ["#26D298","#00C878","#4AE8B0","#FFD166","#FF6B6B","#74B9FF","#A29BFE","#FD79A8"];
-        const COUNT = 120;
-        const particles = Array.from({length: COUNT}, () => {
-          const angle = (Math.random() * Math.PI) - Math.PI; // upward spread
-          const speed = 6 + Math.random() * 10;
-          return {
-            x: canvas.width / 2 + (Math.random() - 0.5) * 200,
-            y: canvas.height * 0.45,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - 4,
-            r: 4 + Math.random() * 5,
-            color: COLORS[Math.floor(Math.random() * COLORS.length)],
-            rot: Math.random() * Math.PI * 2,
-            rotV: (Math.random() - 0.5) * 0.2,
-            shape: Math.random() > 0.5 ? "rect" : "circle",
-            w: 6 + Math.random() * 8,
-            h: 3 + Math.random() * 5,
-            alpha: 1,
-          };
-        });
-
-        let frame;
-        const GRAVITY = 0.35;
-        const start = performance.now();
-
-        function draw(ts){
-          const elapsed = ts - start;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-          let alive = 0;
-          for (const p of particles){
-            p.vy += GRAVITY;
-            p.x += p.vx;
-            p.y += p.vy;
-            p.rot += p.rotV;
-            if (elapsed > 1800) p.alpha = Math.max(0, p.alpha - 0.022);
-            if (p.alpha <= 0 || p.y > canvas.height + 20) continue;
-            alive++;
-
-            ctx.save();
-            ctx.globalAlpha = p.alpha;
-            ctx.fillStyle = p.color;
-            ctx.translate(p.x, p.y);
-            ctx.rotate(p.rot);
-            if (p.shape === "circle"){
-              ctx.beginPath();
-              ctx.arc(0, 0, p.r, 0, Math.PI * 2);
-              ctx.fill();
-            } else {
-              ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-            }
-            ctx.restore();
-          }
-
-          if (alive > 0 && elapsed < 4000){
-            frame = requestAnimationFrame(draw);
-          } else {
-            canvas.remove();
-          }
-        }
-
-        frame = requestAnimationFrame(draw);
-      }
-
-      // Мини‑квиз — модальное окно
-      const quizModal = document.getElementById("quizModal");
-      const quizToggle = document.getElementById("toggleQuiz");
-
-      function quizShowStep(step){
-        ["1","2","3","Result"].forEach(s => {
-          const el = document.getElementById("qstep" + s);
-          if (el) el.style.display = (s === String(step)) ? "block" : "none";
-        });
-        // Dots: activate dots for completed/current steps
-        [1,2,3].forEach(i => {
-          const dot = document.getElementById("qdot" + i);
-          if (dot) dot.classList.toggle("active", typeof step === "number" ? i <= step : i <= 3);
-        });
-      }
-
-      function quizReset(){
-        if (!quizModal) return;
-        quizModal.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
-        quizShowStep(1);
-      }
-
-      function quizClose(){
-        if (!quizModal) return;
-        quizModal.classList.remove("show");
-        quizModal.setAttribute("aria-hidden", "true");
-        quizReset();
-      }
-
-      if (quizToggle && quizModal){
-        quizToggle.addEventListener("click", () => {
-          quizReset();
-          quizModal.classList.add("show");
-          quizModal.setAttribute("aria-hidden", "false");
-        });
-
-        quizModal.addEventListener("click", (e) => {
-          if (e.target.closest("[data-quiz-close]")) quizClose();
-        });
-
-        document.addEventListener("keydown", (e) => {
-          if (e.key === "Escape" && quizModal.classList.contains("show")) quizClose();
-        });
-
-        quizModal.querySelectorAll(".quiz-next").forEach(btn => {
-          btn.addEventListener("click", () => {
-            const currentStep = Number(btn.closest(".quiz-modal-step").id.replace("qstep",""));
-            const checked = quizModal.querySelector(`input[name="mq${currentStep}"]:checked`);
-            if (!checked){ showToast("Пожалуйста, выберите ответ"); return; }
-            quizShowStep(Number(btn.dataset.next));
-          });
-        });
-
-        const quizModalSubmit = document.getElementById("quizModalSubmit");
-        if (quizModalSubmit){
-          quizModalSubmit.addEventListener("click", () => {
-            const checked = quizModal.querySelector('input[name="mq3"]:checked');
-            if (!checked){ showToast("Пожалуйста, выберите ответ"); return; }
-
-            const score = ["mq1","mq2","mq3"].reduce((sum, name) => {
-              const el = quizModal.querySelector(`input[name="${name}"]:checked`);
-              return sum + (el ? Number(el.value) : 0);
-            }, 0);
-
-            let text = "";
-            if (score <= 4){
-              text = "Ваш текущий уровень — ближе к треку «Новичок». Начните с базовых материалов и практики.";
-            } else if (score <= 7){
-              text = "Вам подойдёт трек «Уверенный пользователь». Вы уже знакомы с ИИ и можете углубляться в задачи.";
-            } else {
-              text = "Рекомендуем треки «Продвинутый» и «Для руководителей» — вы готовы к глубокому внедрению ИИ в процессы.";
-            }
-
-            const resultEl = document.getElementById("quizModalResult");
-            if (resultEl) resultEl.textContent = text;
-            quizShowStep("Result");
-            launchConfetti();
-          });
-        }
-      }
-
-      // Отправка формы консультации
-      const form = document.getElementById("consultForm");
-      const success = document.getElementById("consultSuccess");
-      if (form) {
-        form.addEventListener("submit", (e) => {
+      if (quizForm) {
+        quizForm.addEventListener('submit', e => {
           e.preventDefault();
-          if (success) success.classList.add("show");
-          showToast("Заявка отправлена (демо)");
+          let score = 0;
+          for (const q of ['q1','q2','q3']) {
+            const checked = quizForm.querySelector(`input[name="${q}"]:checked`);
+            if (!checked) { showToast('Пожалуйста, ответьте на все вопросы.'); return; }
+            score += Number(checked.value);
+          }
+          if (quizResult) {
+            quizResult.textContent = score <= 4
+              ? 'Ваш уровень — Начальный. Рекомендуем трек «ИИ для работы: старт».'
+              : score <= 7
+                ? 'Вы уже работаете с ИИ — вам подойдёт трек «ИИ для работы: система».'
+                : 'Отличная база! Сразу переходите на Продвинутый уровень.';
+          }
         });
       }
+
+      // Форма консультации
+      const form = document.getElementById('consultForm');
+      const success = document.getElementById('consultSuccess');
+      if (form) {
+        form.addEventListener('submit', e => {
+          e.preventDefault();
+          if (success) success.classList.add('show');
+          showToast('Заявка отправлена (демо)');
+        });
+      }
+
     });
   </script>
 </body>

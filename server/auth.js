@@ -26,7 +26,9 @@ export async function setupAuth(app) {
       last_name TEXT,
       first_name TEXT,
       patronymic TEXT,
-      email TEXT
+      email TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      last_login_at TIMESTAMPTZ
     );
     CREATE TABLE IF NOT EXISTS sessions (
       token TEXT PRIMARY KEY,
@@ -34,6 +36,10 @@ export async function setupAuth(app) {
       created_at TEXT NOT NULL
     );
   `);
+
+  // Добавить колонки в существующую таблицу (если БД уже была создана без них)
+  await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
+  await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`);
 
   // Создать дефолтных пользователей если таблица пустая
   const { rows } = await query('SELECT COUNT(*) as c FROM users');
@@ -65,6 +71,7 @@ export async function setupAuth(app) {
       await query('INSERT INTO sessions (token, user_id, created_at) VALUES ($1, $2, $3)', [
         token, user.id, new Date().toISOString()
       ]);
+      await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
       res.json({
         ok: true,
@@ -141,7 +148,7 @@ export async function setupAuth(app) {
       const { rows: sessions } = await query('SELECT * FROM sessions WHERE token = $1', [token]);
       if (!sessions[0]) return res.status(401).json({ error: 'Сессия не найдена' });
       const { rows: users } = await query(
-        'SELECT id, login, role, full_name, department, contacts FROM users WHERE id = $1',
+        'SELECT id, login, role, full_name, department, contacts, first_name, last_name, patronymic, email, created_at, last_login_at FROM users WHERE id = $1',
         [sessions[0].user_id]
       );
       res.json(users[0]);
@@ -153,7 +160,7 @@ export async function setupAuth(app) {
   // GET /api/users (только для admin)
   app.get('/api/users', requireAdmin(), async (req, res) => {
     try {
-      const { rows } = await query('SELECT id, login, role, full_name, department, contacts FROM users ORDER BY id');
+      const { rows } = await query('SELECT id, login, role, full_name, department, contacts, first_name, last_name, patronymic, email, created_at, last_login_at FROM users ORDER BY id');
       res.json(rows);
     } catch (e) {
       res.status(500).json({ error: String(e.message) });

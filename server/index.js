@@ -30,6 +30,7 @@ async function start() {
 
   // Pretty URLs
   app.get('/', (req, res) => res.sendFile(join(publicDir, 'index.html')));
+  app.get('/index_new', (req, res) => res.sendFile(join(publicDir, 'index_new.html')));
   app.get('/login', (req, res) => res.sendFile(join(publicDir, 'login.html')));
   app.get('/dashboard', (req, res) => res.sendFile(join(publicDir, 'dashboard.html')));
   app.get('/admin', (req, res) => res.sendFile(join(publicDir, 'admin.html')));

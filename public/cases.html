@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
@@ -588,97 +588,408 @@
       display:flex;
     }
     .modal{
-      width: min(780px, 100%);
-      max-height: min(560px, 90vh);
-      background: rgba(6,8,16,.98);
+      width: min(1040px, calc(100vw - 40px));
+      max-height: min(640px, 92vh);
+      background:
+        radial-gradient(720px 260px at 18% 0%, rgba(0,180,100,.12), transparent 58%),
+        linear-gradient(180deg, rgba(12,14,22,.98), rgba(7,9,15,.98));
       border-radius: 22px;
-      border: 1px solid rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.12);
       box-shadow: 0 24px 90px rgba(0,0,0,.75);
       padding: 18px 18px 16px;
       display:flex;
       flex-direction: column;
       gap: 12px;
+      overflow: hidden;
+      position: relative;
     }
-    .modal .head{
-      display:flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items:flex-start;
+    .modal::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:22px;
+      pointer-events:none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
     }
-    .modal .head h3{
-      margin:0 0 4px;
-      font-size: 18px;
-    }
-    .modal .body{
-      overflow:auto;
-      padding-right: 4px;
-      font-size: 13px;
-    }
-    .modal .close{
+    .case-modal-close{
+      position:absolute;
+      top:18px;
+      right:18px;
       border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.28);
-      background: rgba(255,255,255,.08);
-      width: 32px;
-      height: 32px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.04);
+      width: 42px;
+      height: 42px;
       display:inline-flex;
       align-items:center;
       justify-content:center;
       cursor:pointer;
       padding: 0;
       line-height: 1;
-      font-size: 16px;
+      color: rgba(255,255,255,.70);
+      font-size: 22px;
       flex-shrink: 0;
     }
-
-    .case-steps{
+    .case-modal-header{
+      padding-right: 56px;
+      display:flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .case-modal-title{
+      margin:0;
+      font-size: 26px;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+    }
+    .case-modal-badges{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .case-modal-badges .badge{
+      padding: 8px 12px;
+      font-size: 14px;
+      line-height: 1;
+      background: rgba(255,255,255,.03);
+      border-color: rgba(255,255,255,.14);
+    }
+    .case-modal-badges .badge.status-ready,
+    .case-modal-badges .badge.status-pilot{
+      background: rgba(8, 83, 54, .60);
+      border-color: rgba(28, 210, 139, .52);
+      color: #7af0bd;
+    }
+    .case-modal-badges .badge.status-draft{
+      background: rgba(255,193,7,.08);
+      border-color: rgba(255,193,7,.34);
+      color: rgba(255,222,115,.98);
+    }
+    .case-modal-intro{
+      margin:0;
+      width:100%;
+      color: rgba(255,255,255,.70);
+      font-size: 14px;
+      line-height: 1.4;
+      padding-right: 12px;
+    }
+    .case-modal-slider{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+      overflow: hidden;
+      flex: 1 1 auto;
+      min-height: 0;
+      display:flex;
+      flex-direction: column;
+    }
+    .case-modal-stage{
+      position:relative;
+      min-height: 0;
+      padding: 16px 16px 12px;
+      display:flex;
+      align-items:stretch;
+      overflow:auto;
+      flex: 1 1 auto;
+    }
+    .case-modal-step{
+      width:100%;
+      display:none;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      animation: caseStepFade .22s ease;
+      min-height: 0;
+      align-content:start;
+      justify-items:stretch;
+    }
+    .case-modal-step.active{
+      display:grid;
+    }
+    @keyframes caseStepFade{
+      from{ opacity:0; transform:translateY(8px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+    .case-modal-step-top{
+      display:flex;
+      justify-content:flex-start;
+      gap: 10px;
+      align-items:flex-start;
+      width:100%;
+    }
+    .case-modal-step-top > div{
+      width:100%;
+    }
+    .case-modal-step-index{
+      color:#8cf2c3;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+    .case-modal-step-title{
+      margin: 3px 0 0;
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.12;
+    }
+    .case-modal-content-grid{
       display:grid;
       grid-template-columns: 1fr;
-      gap: 14px;
-      margin-top: 10px;
+      gap: 10px;
+      align-items:start;
+      width:100%;
     }
-    .case-step{
+    .case-modal-prompt,
+    .case-modal-aside{
       border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: radial-gradient(120% 160% at 0% 0%, rgba(0,170,100,.35), transparent 60%), rgba(5,7,14,.98);
-      padding: 10px 11px 11px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(4, 9, 14, .74);
+      padding: 12px;
+      min-height: 0;
     }
-    .case-step h4{
-      margin:0 0 6px;
+    .case-modal-prompt{
+      display:flex;
+      flex-direction:column;
+      align-items:stretch;
+      width:100%;
+    }
+    .case-modal-prompt-label{
+      margin:0 0 2px;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+    .case-modal-prompt-subtitle{
+      margin:0 0 10px;
+      color: rgba(255,255,255,.70);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .case-modal-prompt-box{
+      position:relative;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(8, 34, 24, .58), rgba(6, 11, 18, .98));
+      border: 1px solid rgba(44, 214, 150, .32);
+      padding: 8px;
+      padding-top: 34px;
+      width:100%;
+    }
+    .case-modal-prompt-box textarea{
+      width:100%;
+      height:170px;
+      min-height:170px;
+      max-height:260px;
+      resize:none;
+      overflow:auto;
+      border:0;
+      outline:none;
+      background:transparent;
+      color: rgba(255,255,255,.94);
+      line-height:1.35;
+      font-size:13px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    .case-modal-copy{
+      position:absolute;
+      top:8px;
+      right:8px;
+      width:30px;
+      height:30px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.05);
+      color:rgba(255,255,255,.70);
+      display:grid;
+      place-items:center;
+      transition:background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+    }
+    .case-modal-copy:hover{
+      background:rgba(255,255,255,.08);
+      border-color:rgba(22,199,132,.30);
+      color:rgba(255,255,255,.94);
+      transform:translateY(-1px);
+    }
+    .case-modal-copy svg{
+      width:14px;
+      height:14px;
+      display:block;
+    }
+    .case-modal-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      justify-content:flex-start;
+      align-items:center;
+      margin-top:8px;
+      flex-shrink:0;
+      width:100%;
+    }
+    .case-modal-btn-row{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:8px;
+      width:100%;
+    }
+    .case-modal-btn{
+      min-height:36px;
+      padding:0 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.07);
+      color: rgba(255,255,255,.92);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      text-decoration:none;
+      transition:transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+      white-space:nowrap;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+      cursor:pointer;
+      font-size: 14px;
+      width:100%;
+    }
+    .case-modal-btn:hover{
+      transform:translateY(-1px);
+      background:rgba(255,255,255,.10);
+      border-color:rgba(255,255,255,.24);
+    }
+    .case-modal-btn.tool{
+      min-width:138px;
+      background:linear-gradient(180deg, rgba(22,199,132,.18), rgba(12,78,52,.28));
+      border-color:rgba(22,199,132,.42);
+      color:#eafff5;
+      font-weight:600;
+      cursor:default;
+    }
+    .case-modal-btn.tool[disabled]{
+      opacity: 1;
+      pointer-events:none;
+    }
+    .case-modal-aside{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .case-modal-aside h3{
+      margin:0;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    .case-modal-aside p{
+      margin:0;
+      color: rgba(255,255,255,.70);
+      line-height: 1.45;
       font-size: 14px;
     }
-    .case-step ul{
-      padding-left: 18px;
-      margin: 0;
+    .case-modal-instructions{
+      width:100%;
+      margin-top:8px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.02);
     }
-    .case-step li{
-      margin: 2px 0;
+    .case-modal-instructions[hidden]{
+      display:none !important;
     }
-    .codebox{
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(0,0,0,.30);
-      padding: 8px 10px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 12.8px;
-      color: rgba(255,255,255,.90);
-      margin-top: 8px;
+    .case-modal-instructions-body{
+      padding:12px;
+      color: rgba(255,255,255,.70);
+      font-size:14px;
     }
-    .codebox textarea{
-      width: 100%;
-      min-height: 90px;
-      border: none;
-      outline: none;
-      background: transparent;
-      resize: vertical;
-      color: inherit;
-      font: inherit;
+    .case-modal-instructions-body ol{
+      margin:0;
+      padding-left:18px;
+    }
+    .case-modal-instructions-body li + li{
+      margin-top:6px;
+    }
+    .case-modal-meta{
+      display:grid;
+      gap:8px;
+    }
+    .case-modal-meta-item{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.02);
+      color: rgba(255,255,255,.82);
+      font-size:14px;
+      line-height:1.4;
+    }
+    .case-modal-meta-item b{
+      display:block;
+      margin-bottom:4px;
+      color:#fff;
+      font-size:13px;
+    }
+    .case-modal-footer{
+      display:grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items:center;
+      gap:10px;
+      padding:12px;
+      border-top:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.02);
+      min-height:54px;
+    }
+    .case-modal-nav-btn{
+      min-width:108px;
+      min-height:40px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.07);
+      color: rgba(255,255,255,.92);
+      cursor:pointer;
+      padding:0 14px;
+      transition:transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+    .case-modal-nav-btn:hover:not(:disabled){
+      transform:translateY(-1px);
+      background:rgba(255,255,255,.10);
+      border-color:rgba(255,255,255,.24);
+    }
+    .case-modal-nav-btn.primary{
+      justify-self:end;
+      background:linear-gradient(180deg, rgba(22,199,132,.98), rgba(15,169,104,.98));
+      color:#05110c;
+      border-color:rgba(22,199,132,.55);
+      font-weight:700;
+    }
+    .case-modal-nav-btn:disabled{
+      opacity:.45;
+      cursor:default;
+    }
+    .case-modal-dots{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      flex:1 1 auto;
+    }
+    .case-modal-dot{
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      border:0;
+      padding:0;
+      background:rgba(255,255,255,.18);
+      cursor:pointer;
+      transition:transform .15s ease, background .15s ease;
+    }
+    .case-modal-dot.active{
+      background:#16c784;
+      transform:scale(1.15);
+    }
+    .case-modal-dot:hover{
+      background:rgba(255,255,255,.34);
     }
 
+    @media (min-width: 860px){
+      .case-modal-content-grid{
+        grid-template-columns: minmax(0, 1.6fr) minmax(240px, .9fr);
+      }
+    }
     @media (max-width: 980px){
       .case-grid{
-        grid-template-columns: 1fr;
-      }
-      .case-steps{
         grid-template-columns: 1fr;
       }
       .form-grid{
@@ -712,6 +1023,17 @@
         min-width: 0;
         scroll-snap-align: start;
         scroll-snap-stop: always;
+      }
+      .case-modal-footer{
+        grid-template-columns: 1fr;
+      }
+      .case-modal-dots{
+        order:-1;
+      }
+      .case-modal-nav-btn,
+      .case-modal-nav-btn.primary{
+        width:100%;
+        justify-self:stretch;
       }
     }
     .accordion{
@@ -1044,11 +1366,6 @@
                 <option value="all">Все контексты</option>
               </select>
             </div>
-            <div class="field">
-              <select id="caseRole">
-                <option value="all">Любая роль</option>
-              </select>
-            </div>
             <button class="btn small" id="caseReset">Сбросить</button>
           </div>
 
@@ -1194,23 +1511,31 @@
   <!-- Modal: Case detail -->
   <div class="overlay" id="caseOverlay" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Сценарий кейса">
-      <div class="head">
-        <div>
-          <h3 id="caseModalTitle">Кейс</h3>
-          <div id="caseModalBadges" style="margin-top:8px; display:flex; gap:8px; flex-wrap: wrap;"></div>
-        </div>
-        <button class="close" id="caseModalClose" aria-label="Закрыть">✕</button>
+      <button class="case-modal-close" id="caseModalClose" aria-label="Закрыть">✕</button>
+      <div class="case-modal-header">
+        <h3 class="case-modal-title" id="caseModalTitle">Кейс</h3>
+        <div class="case-modal-badges" id="caseModalBadges"></div>
+        <p class="case-modal-intro" id="caseModalIntro"></p>
       </div>
-      <div class="body" id="caseModalBody"></div>
+      <section class="case-modal-slider">
+        <div class="case-modal-stage" id="caseModalBody"></div>
+        <footer class="case-modal-footer">
+          <button class="case-modal-nav-btn" id="caseModalPrev" type="button">Назад</button>
+          <div class="case-modal-dots" id="caseModalDots" aria-label="Прогресс по шагам"></div>
+          <button class="case-modal-nav-btn primary" id="caseModalNext" type="button">Далее</button>
+        </footer>
+      </section>
     </div>
   </div>
-
   <script>
     const LS_FEEDBACK = "cases_feedback_tickets";
     const LS_CASE_USED = "cases_used_map";
 
     // Данные загружаются из API, при ошибке — встроенные
     let casesData = [];
+    let activeCaseId = null;
+    let activeCaseSteps = [];
+    let activeCaseStepIndex = 0;
 
     // Маппинг из формата БД в формат страницы
     function mapApiCase(c) {
@@ -1256,6 +1581,133 @@
     }
     function safeId(str) {
       return String(str || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+    function stripStepPrefix(title) {
+      return String(title || "")
+        .replace(/^Шаг\s*\d+\s*[—-]\s*/i, "")
+        .replace(/\s*\(([^)]+)\)\s*$/, "")
+        .trim() || "Шаг кейса";
+    }
+    function getStepToolLabel(step, data) {
+      if (step?.tool) return String(step.tool).trim();
+      const fromTitle = String(step?.title || "").match(/\(([^)]+)\)\s*$/);
+      if (fromTitle && fromTitle[1]) return fromTitle[1].trim();
+      if (Array.isArray(data?.tools) && data.tools.length) return String(data.tools[0]).trim();
+      return "Инструмент не указан";
+    }
+    function getPromptPlaceholders(prompt) {
+      const result = [];
+      const seen = new Set();
+      const regex = /<([^>]+)>|\[([^\]]+)\]/g;
+      const source = String(prompt || "");
+      let match;
+      while ((match = regex.exec(source)) !== null) {
+        const value = (match[1] || match[2] || "").trim();
+        if (!value || seen.has(value)) continue;
+        seen.add(value);
+        result.push(value);
+      }
+      return result;
+    }
+    function getStepInstructions(step) {
+      if (Array.isArray(step?.bullets) && step.bullets.length) return step.bullets;
+      return [
+        "Вставьте свои данные в промпт.",
+        "Проверьте результат и при необходимости уточните формулировки.",
+        "Скопируйте результат и переходите к следующему шагу."
+      ];
+    }
+    function renderCaseModalDots(total, activeIndex) {
+      const dotsEl = document.getElementById("caseModalDots");
+      if (!dotsEl) return;
+      dotsEl.innerHTML = Array.from({ length: total }, (_, idx) => `
+        <button
+          class="case-modal-dot${idx === activeIndex ? " active" : ""}"
+          type="button"
+          data-case-step="${idx}"
+          aria-label="Перейти к шагу ${idx + 1}"
+        ></button>
+      `).join("");
+    }
+    function renderCaseModalStepState() {
+      const stepCards = Array.from(document.querySelectorAll(".case-modal-step"));
+      stepCards.forEach((stepEl, idx) => stepEl.classList.toggle("active", idx === activeCaseStepIndex));
+
+      const prevBtn = document.getElementById("caseModalPrev");
+      const nextBtn = document.getElementById("caseModalNext");
+      if (prevBtn) prevBtn.disabled = activeCaseStepIndex === 0;
+      if (nextBtn) {
+        nextBtn.disabled = activeCaseSteps.length === 0;
+        nextBtn.textContent = activeCaseStepIndex === activeCaseSteps.length - 1 ? "Завершить кейс" : "Далее";
+      }
+      renderCaseModalDots(activeCaseSteps.length, activeCaseStepIndex);
+    }
+    function goToCaseStep(index) {
+      if (!activeCaseSteps.length) return;
+      if (index < 0 || index >= activeCaseSteps.length) return;
+      activeCaseStepIndex = index;
+      const stageEl = document.getElementById("caseModalBody");
+      if (stageEl) stageEl.scrollTop = 0;
+      renderCaseModalStepState();
+    }
+    function renderCaseModalSteps(data) {
+      const bodyEl = document.getElementById("caseModalBody");
+      if (!bodyEl) return;
+
+      bodyEl.innerHTML = activeCaseSteps.map((step, idx) => {
+        const promptId = `prompt_${safeId(data.id)}_step_${idx}`;
+        const instructionId = `instruction_${safeId(data.id)}_step_${idx}`;
+        const instructions = getStepInstructions(step);
+        const toolLabel = getStepToolLabel(step, data);
+        const promptText = String(step?.prompt || "").trim();
+        const promptSubtitle = String(step?.subtitle || data.promptSubtitle || "").trim();
+        const promptBox = promptText ? `
+          <div class="case-modal-prompt-box">
+            <button class="case-modal-copy" type="button" data-copy="#${promptId}" aria-label="Скопировать промпт">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="9" y="9" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.7"></rect>
+                <path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+              </svg>
+            </button>
+            <textarea readonly id="${promptId}">${escapeHtml(promptText)}</textarea>
+          </div>
+        ` : `
+          <div class="case-modal-prompt-box">
+            <textarea readonly id="${promptId}">Промпт для этого шага не указан.</textarea>
+          </div>
+        `;
+
+        return `
+          <article class="case-modal-step${idx === 0 ? " active" : ""}" data-step="${idx}">
+            <div class="case-modal-step-top">
+              <div>
+                <div class="case-modal-step-index">Шаг ${idx + 1} из ${activeCaseSteps.length}</div>
+                <h2 class="case-modal-step-title">${escapeHtml(stripStepPrefix(step?.title || ""))}</h2>
+              </div>
+            </div>
+            <div class="case-modal-content-grid">
+              <div class="case-modal-prompt">
+                <h3 class="case-modal-prompt-label">Промпт</h3>
+                ${promptSubtitle ? `<p class="case-modal-prompt-subtitle">${escapeHtml(promptSubtitle)}</p>` : ""}
+                ${promptBox}
+                <div class="case-modal-actions">
+                  <div class="case-modal-btn-row">
+                    <button class="case-modal-btn tool" type="button" disabled aria-disabled="true">Инструмент: ${escapeHtml(toolLabel)}</button>
+                    <button class="case-modal-btn" type="button" data-open-instruction="${instructionId}" aria-expanded="false">Как использовать</button>
+                  </div>
+                </div>
+                <div class="case-modal-instructions" id="${instructionId}" hidden>
+                  <div class="case-modal-instructions-body">
+                    <ol>
+                      ${instructions.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("");
     }
 
     function checkIsAuthed() {
@@ -1312,7 +1764,6 @@
       const search = (document.getElementById("caseSearch")?.value || "").toLowerCase();
       const task = document.getElementById("caseTask")?.value || "all";
       const context = document.getElementById("caseContext")?.value || "all";
-      const role = document.getElementById("caseRole")?.value || "all";
 
       const usedMap = getJson(LS_CASE_USED, {});
       const authed = checkIsAuthed();
@@ -1320,7 +1771,6 @@
       const filtered = casesData.filter(c => {
         if (task !== "all" && c.task !== task) return false;
         if (context !== "all" && c.context !== context) return false;
-        if (role !== "all" && c.role !== role) return false;
         if (search) {
           const haystack = (c.title + " " + c.goal + " " + c.tools.join(" ")).toLowerCase();
           if (!haystack.includes(search)) return false;
@@ -1352,7 +1802,6 @@
               <div class="badges">
                 <span class="badge ${statusBadgeClass}">${statusLabel}</span>
                 <span class="badge">${escapeHtml(c.task)}</span>
-                <span class="badge">${escapeHtml(c.role)}</span>
                 <span class="badge">${escapeHtml(c.context)}</span>
               </div>
               <div class="tools-tags">
@@ -1385,12 +1834,10 @@
     function initFilters() {
       const taskSelect = document.getElementById("caseTask");
       const contextSelect = document.getElementById("caseContext");
-      const roleSelect = document.getElementById("caseRole");
-      if (!taskSelect || !contextSelect || !roleSelect) return;
+      if (!taskSelect || !contextSelect) return;
 
       const tasks = Array.from(new Set(casesData.map(c => c.task)));
       const contexts = Array.from(new Set(casesData.map(c => c.context)));
-      const roles = Array.from(new Set(casesData.map(c => c.role)));
 
       tasks.forEach(v => {
         const o = document.createElement("option");
@@ -1404,12 +1851,6 @@
         o.textContent = v;
         contextSelect.appendChild(o);
       });
-      roles.forEach(v => {
-        const o = document.createElement("option");
-        o.value = v;
-        o.textContent = v;
-        roleSelect.appendChild(o);
-      });
     }
 
     function openCaseModal(id) {
@@ -1418,8 +1859,8 @@
       const overlay = document.getElementById("caseOverlay");
       const titleEl = document.getElementById("caseModalTitle");
       const badgesEl = document.getElementById("caseModalBadges");
-      const bodyEl = document.getElementById("caseModalBody");
-      if (!overlay || !titleEl || !badgesEl || !bodyEl) return;
+      const introEl = document.getElementById("caseModalIntro");
+      if (!overlay || !titleEl || !badgesEl || !introEl) return;
 
       const statusBadgeClass =
         data.status === "ready" ? "status-ready" :
@@ -1430,49 +1871,29 @@
         data.status === "pilot" ? "Пилот" :
         "Черновик";
 
+      activeCaseId = data.id;
+      activeCaseSteps = Array.isArray(data.steps) && data.steps.length
+        ? data.steps
+        : [{
+            title: "Промпт",
+            bullets: [],
+            prompt: data.promptTemplate || ""
+          }];
+      activeCaseStepIndex = 0;
+
       titleEl.textContent = data.title;
       badgesEl.innerHTML = `
         <span class="badge ${statusBadgeClass}">${statusLabel}</span>
         <span class="badge">${escapeHtml(data.task)}</span>
         <span class="badge">${escapeHtml(data.context)}</span>
-        <span class="badge">${escapeHtml(data.role)}</span>
-      `;
-
-      const stepsHtml = data.steps.map((step, idx) => {
-        const promptId = `prompt_${safeId(data.id)}_step_${idx}`;
-        const bullets = step.bullets && step.bullets.length
-          ? `<ul>${step.bullets.map(li => `<li>${escapeHtml(li)}</li>`).join("")}</ul>`
-          : "";
-        const promptBox = step.prompt ? `
-          <div class="codebox">
-            <textarea id="${promptId}" readonly>${escapeHtml(step.prompt)}</textarea>
-            <div style="margin-top:6px; display:flex; justify-content:flex-end;">
-              <button class="btn small" type="button" data-copy="#${promptId}">Копировать промпт</button>
-            </div>
-          </div>
-        ` : "";
-        return `
-          <div class="case-step">
-            <h4>${escapeHtml(step.title)}</h4>
-            ${bullets}
-            ${promptBox}
-          </div>
         `;
-      }).join("");
+      introEl.textContent = data.goal || "Подставьте свои данные в промпт и пройдите шаги кейса по порядку.";
 
-      bodyEl.innerHTML = `
-        <p class="muted">${escapeHtml(data.goal)}</p>
-        <div class="hintline" style="margin:8px 0 10px;">
-          Каждый кейс строится как цепочка из нескольких ИИ‑сервисов. Используйте промпты как черновики и подставляйте свои данные
-        </div>
-        <div class="case-steps">
-          ${stepsHtml}
-        </div>
-      `;
+      renderCaseModalSteps(data);
+      renderCaseModalStepState();
 
       overlay.classList.add("show");
       overlay.setAttribute("aria-hidden", "false");
-      // iOS-compatible scroll lock
       const sy = window.scrollY;
       document.body.dataset.scrollY = sy;
       document.body.style.position = "fixed";
@@ -1486,7 +1907,17 @@
       if (!overlay) return;
       overlay.classList.remove("show");
       overlay.setAttribute("aria-hidden", "true");
-      // restore scroll position
+      activeCaseId = null;
+      activeCaseSteps = [];
+      activeCaseStepIndex = 0;
+      const bodyEl = document.getElementById("caseModalBody");
+      const dotsEl = document.getElementById("caseModalDots");
+      const introEl = document.getElementById("caseModalIntro");
+      const badgesEl = document.getElementById("caseModalBadges");
+      if (bodyEl) bodyEl.innerHTML = "";
+      if (dotsEl) dotsEl.innerHTML = "";
+      if (introEl) introEl.textContent = "";
+      if (badgesEl) badgesEl.innerHTML = "";
       const sy = parseInt(document.body.dataset.scrollY || "0", 10);
       document.body.style.position = "";
       document.body.style.top = "";
@@ -1494,7 +1925,6 @@
       document.body.style.overflow = "";
       window.scrollTo(0, sy);
     }
-
     async function loadDepartments() {
       const depSelect = document.getElementById("fb_department");
       if (!depSelect) return;
@@ -1670,21 +2100,36 @@
       document.getElementById("caseSearch")?.addEventListener("input", () => renderCases());
       document.getElementById("caseTask")?.addEventListener("change", () => renderCases());
       document.getElementById("caseContext")?.addEventListener("change", () => renderCases());
-      document.getElementById("caseRole")?.addEventListener("change", () => renderCases());
       document.getElementById("caseReset")?.addEventListener("click", () => {
         const searchEl = document.getElementById("caseSearch");
         const taskEl = document.getElementById("caseTask");
         const contextEl = document.getElementById("caseContext");
-        const roleEl = document.getElementById("caseRole");
         if (searchEl) searchEl.value = "";
         if (taskEl) taskEl.value = "all";
         if (contextEl) contextEl.value = "all";
-        if (roleEl) roleEl.value = "all";
         renderCases();
       });
 
       // делегирование на карточках
       document.addEventListener("click", (e) => {
+        const stepBtn = e.target.closest("[data-case-step]");
+        if (stepBtn) {
+          const idx = Number(stepBtn.getAttribute("data-case-step"));
+          if (!Number.isNaN(idx)) goToCaseStep(idx);
+          return;
+        }
+        const instructionBtn = e.target.closest("[data-open-instruction]");
+        if (instructionBtn) {
+          const detailsId = instructionBtn.getAttribute("data-open-instruction");
+          const detailsEl = detailsId ? document.getElementById(detailsId) : null;
+          if (detailsEl) {
+            const willOpen = detailsEl.hasAttribute("hidden");
+            if (willOpen) detailsEl.removeAttribute("hidden");
+            else detailsEl.setAttribute("hidden", "");
+            instructionBtn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+          }
+          return;
+        }
         const openBtn = e.target.closest("[data-open-case]");
         if (openBtn) {
           const id = openBtn.getAttribute("data-open-case");
@@ -1731,6 +2176,17 @@
 
       // модальное окно
       document.getElementById("caseModalClose")?.addEventListener("click", () => closeCaseModal());
+      document.getElementById("caseModalPrev")?.addEventListener("click", () => {
+        goToCaseStep(activeCaseStepIndex - 1);
+      });
+      document.getElementById("caseModalNext")?.addEventListener("click", () => {
+        if (!activeCaseSteps.length) return;
+        if (activeCaseStepIndex >= activeCaseSteps.length - 1) {
+          closeCaseModal();
+          return;
+        }
+        goToCaseStep(activeCaseStepIndex + 1);
+      });
       document.getElementById("caseOverlay")?.addEventListener("click", (e) => {
         if (e.target.id === "caseOverlay") closeCaseModal();
       });
@@ -1991,4 +2447,5 @@
 </script>
 </body>
 </html>
+
 

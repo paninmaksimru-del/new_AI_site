@@ -783,7 +783,9 @@
       background: rgba(255,255,255,.03);
       border-color: rgba(255,255,255,.14);
     }
-    .case-modal-badges .badge.status-ready,
+    .case-modal-badges .badge.status-ready{
+      display: none !important;
+    }
     .case-modal-badges .badge.status-pilot{
       background: rgba(8, 83, 54, .60);
       border-color: rgba(28, 210, 139, .52);
@@ -856,13 +858,11 @@
       text-transform: uppercase;
     }
     .case-modal-step-title{
-      margin: 3px 0 0;
-      font-size: clamp(18px, 2vw, 22px);
-      line-height: 1.12;
+      display: none !important;
     }
     .case-modal-content-grid{
       display:grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
       gap: 10px;
       align-items:start;
       width:100%;
@@ -1112,11 +1112,6 @@
       background:rgba(255,255,255,.34);
     }
 
-    @media (min-width: 860px){
-      .case-modal-content-grid{
-        grid-template-columns: minmax(0, 1.6fr) minmax(240px, .9fr);
-      }
-    }
     .codebox{
       border-radius: 14px;
       border: 1px solid rgba(255,255,255,.16);
@@ -1516,7 +1511,8 @@
                 <option value="all">Все контексты</option>
               </select>
             </div>
-            <div class="field">
+            <!-- Селектор роли скрыт в UI; логика фильтра и CustomSelect сохранены -->
+            <div class="field" style="display:none" aria-hidden="true">
               <select id="caseRole">
                 <option value="all">Любая роль</option>
               </select>

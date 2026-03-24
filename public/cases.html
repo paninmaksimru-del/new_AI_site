@@ -1230,6 +1230,11 @@
       .case-modal-btn-row{
         max-width:100%;
       }
+      .case-modal-prompt-box textarea,
+      .case-modal-prompt-input{
+        height: 230px;
+        min-height: 230px;
+      }
     }
     .accordion{
       margin-top: 16px;
@@ -1866,6 +1871,7 @@
       if (nextBtn) {
         nextBtn.disabled = activeCaseSteps.length === 0;
         nextBtn.textContent = activeCaseStepIndex === activeCaseSteps.length - 1 ? "Завершить кейс" : "Далее";
+        nextBtn.classList.add('primary');
       }
       renderCaseModalDots(activeCaseSteps.length, activeCaseStepIndex);
     }

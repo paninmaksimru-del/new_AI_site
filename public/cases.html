@@ -773,8 +773,16 @@
     }
     .case-modal-badges{
       display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap: 10px;
+      width:100%;
+    }
+    .case-modal-badges-line{
+      display:flex;
       flex-wrap: wrap;
       gap: 10px;
+      width:100%;
     }
     .case-modal-badges .badge{
       padding: 8px 12px;
@@ -898,7 +906,6 @@
       background: linear-gradient(180deg, rgba(8, 34, 24, .58), rgba(6, 11, 18, .98));
       border: 1px solid rgba(44, 214, 150, .32);
       padding: 8px;
-      padding-top: 34px;
       width:100%;
     }
     .case-modal-prompt-box textarea{
@@ -956,6 +963,7 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap:8px;
       width:100%;
+      max-width:50%;
     }
     .case-modal-btn{
       min-height:36px;
@@ -975,6 +983,7 @@
       cursor:pointer;
       font-size: 14px;
       width:100%;
+      max-width:100%;
     }
     .case-modal-btn:hover{
       transform:translateY(-1px);
@@ -1179,6 +1188,9 @@
       .case-modal-nav-btn.primary{
         width:100%;
         justify-self:stretch;
+      }
+      .case-modal-btn-row{
+        max-width:100%;
       }
     }
     .accordion{
@@ -1689,8 +1701,35 @@
     let activeCaseSteps = [];
     let activeCaseStepIndex = 0;
 
+    /** Инструмент шага: aiTool / tool / суффикс в title / fallback на массив tools кейса (как в админке) */
+    function stepToolLabelFromStep(step, caseToolsArr) {
+      if (step?.tool) return String(step.tool).trim();
+      if (step?.aiTool) return String(step.aiTool).trim();
+      const fromTitle = String(step?.title || "").match(/\(([^)]+)\)\s*$/);
+      if (fromTitle && fromTitle[1]) return fromTitle[1].trim();
+      if (Array.isArray(caseToolsArr) && caseToolsArr.length) return String(caseToolsArr[0]).trim();
+      return "";
+    }
+    function uniqueStepToolTags(steps, caseToolsArr) {
+      const seen = new Set();
+      const out = [];
+      for (const step of steps || []) {
+        const t = stepToolLabelFromStep(step, caseToolsArr);
+        if (!t) continue;
+        if (!seen.has(t)) { seen.add(t); out.push(t); }
+      }
+      return out;
+    }
+
     // Маппинг из формата БД в формат страницы
     function mapApiCase(c) {
+      const tools = Array.isArray(c.tools) ? c.tools : (c.tools ? c.tools.split(',').map(s=>s.trim()) : []);
+      const steps = Array.isArray(c.steps) ? c.steps : (c.promptTemplate ? [{
+        title: 'Промпт',
+        bullets: c.result ? [c.result] : [],
+        prompt: c.promptTemplate,
+        aiTool: ''
+      }] : []);
       return {
         id: c.id,
         title: c.title || c.id,
@@ -1699,14 +1738,10 @@
         task: c.taskCategory || c.task || 'Общее',
         context: c.context || '',
         role: Array.isArray(c.role) ? c.role.join(' / ') : (c.role || ''),
-        tools: Array.isArray(c.tools) ? c.tools : (c.tools ? c.tools.split(',').map(s=>s.trim()) : []),
+        tools,
+        stepToolTags: uniqueStepToolTags(steps, tools),
         goal: c.whenToUse || c.goal || '',
-        steps: Array.isArray(c.steps) ? c.steps : (c.promptTemplate ? [{
-          title: 'Промпт',
-          bullets: c.result ? [c.result] : [],
-          prompt: c.promptTemplate,
-          aiTool: ''
-        }] : [])
+        steps
       };
     }
 
@@ -1742,12 +1777,9 @@
         .trim() || "Шаг кейса";
     }
     function getStepToolLabel(step, data) {
-      if (step?.tool) return String(step.tool).trim();
-      if (step?.aiTool) return String(step.aiTool).trim();
-      const fromTitle = String(step?.title || "").match(/\(([^)]+)\)\s*$/);
-      if (fromTitle && fromTitle[1]) return fromTitle[1].trim();
-      if (Array.isArray(data?.tools) && data.tools.length) return String(data.tools[0]).trim();
-      return "Инструмент не указан";
+      const arr = Array.isArray(data?.tools) ? data.tools : [];
+      const t = stepToolLabelFromStep(step, arr);
+      return t || "Инструмент не указан";
     }
     function getStepInstructions(step) {
       if (Array.isArray(step?.bullets) && step.bullets.length) return step.bullets;
@@ -1914,7 +1946,8 @@
         if (context !== "all" && c.context !== context) return false;
         if (role !== "all" && c.role !== role) return false;
         if (search) {
-          const haystack = (c.title + " " + c.goal + " " + c.tools.join(" ")).toLowerCase();
+          const toolsHay = ((c.stepToolTags && c.stepToolTags.length) ? c.stepToolTags : c.tools || []).join(" ");
+          const haystack = (c.title + " " + c.goal + " " + toolsHay + " " + (c.tools || []).join(" ")).toLowerCase();
           if (!haystack.includes(search)) return false;
         }
         return true;
@@ -1947,9 +1980,9 @@
                 ${c.role ? `<span class="badge">${escapeHtml(c.role)}</span>` : ''}
                 ${c.context ? `<span class="badge">${escapeHtml(c.context)}</span>` : ''}
               </div>
-              <div class="tools-tags">
-                ${c.tools.map(t => `<span>${escapeHtml(t)}</span>`).join("")}
-              </div>
+              ${(c.stepToolTags && c.stepToolTags.length) ? `<div class="tools-tags">
+                ${c.stepToolTags.map(t => `<span>${escapeHtml(t)}</span>`).join("")}
+              </div>` : ""}
             </div>
           </div>
           <div class="case-footer">
@@ -2150,12 +2183,19 @@
       activeCaseStepIndex = 0;
 
       titleEl.textContent = data.title;
-      badgesEl.innerHTML = `
-        <span class="badge ${statusBadgeClass}">${statusLabel}</span>
+      const metaBadges = `
         ${data.task ? `<span class="badge">${escapeHtml(data.task)}</span>` : ""}
         ${data.context ? `<span class="badge">${escapeHtml(data.context)}</span>` : ""}
-        ${data.role ? `<span class="badge">${escapeHtml(data.role)}</span>` : ""}
-      `;
+        ${data.role ? `<span class="badge">${escapeHtml(data.role)}</span>` : ""}`;
+      const toolBadges = (data.stepToolTags && data.stepToolTags.length)
+        ? data.stepToolTags.map(t => `<span class="badge">${escapeHtml(t)}</span>`).join("")
+        : "";
+      badgesEl.innerHTML = `
+        <div class="case-modal-badges-line">
+          <span class="badge ${statusBadgeClass}">${statusLabel}</span>
+          ${metaBadges}
+        </div>
+        ${toolBadges ? `<div class="case-modal-badges-line case-modal-badges-line--tools" aria-label="Инструменты по шагам">${toolBadges}</div>` : ""}`;
       introEl.textContent = data.goal || "Подставьте свои данные в промпт и пройдите шаги кейса по порядку.";
 
       renderCaseModalSteps(data);

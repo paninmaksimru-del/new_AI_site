@@ -98,7 +98,6 @@
 <main class="wrap">
   <div class="tabs" role="tablist" style="margin-top:24px;">
     <button class="tabbtn active" data-tab="users">👥 Пользователи</button>
-    <button class="tabbtn" data-tab="dept">🏢 Подразделения</button>
     <button class="tabbtn" data-tab="refs">📚 Справочники</button>
     <button class="tabbtn" data-tab="cases">📋 Кейсы</button>
     <button class="tabbtn" data-tab="prompts">💬 Промпты</button>
@@ -136,24 +135,19 @@
     </div>
   </div>
 
-  <!-- DEPARTMENTS -->
-  <div id="tab_dept" class="tabpane">
-    <div class="panel">
-      <h2>Подразделения</h2>
-      <p class="muted">Используются в фильтрах дашборда, кейсов и формы обратной связи.</p>
-      <div class="field-row" style="align-items:flex-end; margin-top:12px;">
-        <div class="field" style="flex:1;"><label>Название</label><input type="text" id="deptName" placeholder="Например: Платформа i.moscow и ИИ" /></div>
-        <div class="field" style="width:auto;flex:0;padding-top:0;"><label>&nbsp;</label><button class="btn ok" id="deptAdd">Добавить</button></div>
-      </div>
-      <ul class="plain" id="deptList"><li class="loading">Загрузка...</li></ul>
-    </div>
-  </div>
-
-  <!-- REFERENCE DATA -->
+  <!-- REFERENCE DATA (подразделения + категории задач) -->
   <div id="tab_refs" class="tabpane">
     <div class="panel">
       <h2>Справочники</h2>
-      <p class="muted">Значения для выбора в формах. «Категория задачи» используется в карточках кейсов.</p>
+      <p class="muted">Значения для выбора в формах: подразделения — в фильтрах дашборда, кейсов и обратной связи; категория задачи — в карточках кейсов.</p>
+      <div class="panel" style="margin-top:12px;">
+        <h3>Подразделения</h3>
+        <div class="field-row" style="align-items:flex-end; margin-top:12px;">
+          <div class="field" style="flex:1;"><label>Название</label><input type="text" id="deptName" placeholder="Например: Платформа i.moscow и ИИ" /></div>
+          <div class="field" style="width:auto;flex:0;padding-top:0;"><label>&nbsp;</label><button class="btn ok" id="deptAdd">Добавить</button></div>
+        </div>
+        <ul class="plain" id="deptList"><li class="loading">Загрузка...</li></ul>
+      </div>
       <div class="panel" style="margin-top:12px;">
         <h3>Категория задачи</h3>
         <div class="field-row" style="align-items:flex-end; margin-top:12px;">

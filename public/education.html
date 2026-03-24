@@ -969,10 +969,8 @@
     }
     .neural-card:hover {
       border-color: var(--stroke-2);
-      box-shadow: 0 16px 40px rgba(0,0,0,.5);
-    }
-    .neural-grid .neural-card:hover {
       transform: translateY(-3px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.5);
     }
     .neural-card-icon {
       width: 48px;
@@ -1802,12 +1800,10 @@
         <h2 class="h2">Популярные нейросети</h2>
         <p class="lead">Кликайте на карточку — откроется сервис. Каждый инструмент заточен под свои задачи.</p>
 
-        <div class="carousel-wrap" style="margin-top:16px;" data-carousel="neural">
-          <button class="carousel-btn prev" aria-label="Назад"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="10,2 4,8 10,14"/></svg></button>
-          <div class="carousel-stage">
+        <div class="neural-grid">
 
           <!-- ChatGPT -->
-          <a class="neural-card card" href="https://chatgpt.com" target="_blank" rel="noopener">
+          <a class="neural-card" href="https://chatgpt.com" target="_blank" rel="noopener">
             <div class="neural-card-icon">
               <img src="/AI_cons/chatgpt-icon.png" alt="ChatGPT" width="48" height="48" />
             </div>
@@ -1824,7 +1820,7 @@
           </a>
 
           <!-- Claude -->
-          <a class="neural-card card" href="https://claude.ai" target="_blank" rel="noopener">
+          <a class="neural-card" href="https://claude.ai" target="_blank" rel="noopener">
             <div class="neural-card-icon">
               <img src="/AI_cons/claude-ai-icon.png" alt="Claude" width="48" height="48" />
             </div>
@@ -1841,7 +1837,7 @@
           </a>
 
           <!-- Gemini -->
-          <a class="neural-card card" href="https://gemini.google.com" target="_blank" rel="noopener">
+          <a class="neural-card" href="https://gemini.google.com" target="_blank" rel="noopener">
             <div class="neural-card-icon">
               <img src="/AI_cons/google-gemini-icon.png" alt="Gemini" width="48" height="48" />
             </div>
@@ -1858,7 +1854,7 @@
           </a>
 
           <!-- DeepSeek -->
-          <a class="neural-card card" href="https://chat.deepseek.com" target="_blank" rel="noopener">
+          <a class="neural-card" href="https://chat.deepseek.com" target="_blank" rel="noopener">
             <div class="neural-card-icon">
               <img src="/AI_cons/deepseek-logo-icon.png" alt="DeepSeek" width="48" height="48" />
             </div>
@@ -1874,9 +1870,6 @@
             </div>
           </a>
 
-          </div>
-          <button class="carousel-btn next" aria-label="Вперед"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,2 12,8 6,14"/></svg></button>
-          <div class="carousel-dots"></div>
         </div>
       </div>
     </section>

@@ -1594,6 +1594,11 @@
                 <option value="all">Все контексты</option>
               </select>
             </div>
+            <div class="field">
+              <select id="caseTool">
+                <option value="all">Все инструменты</option>
+              </select>
+            </div>
             <!-- Селектор роли скрыт в UI; логика фильтра и CustomSelect сохранены -->
             <div class="field" style="display:none" aria-hidden="true">
               <select id="caseRole">
@@ -1615,10 +1620,10 @@
       <div class="wrap">
         <div class="panel pad">
           <h2 class="h2">Обратная связь</h2>
-          <p class="lead">Идеи, улучшения, новые промпты и кейсы для этого каталога.</p>
+          <p class="lead">Идеи, улучшения, новые промпты и кейсы для этого каталога</p>
           <p class="muted" style="margin:10px 0 0;">
             Напишите, каких сценариев вам не хватает, или поделитесь рабочим кейсом. Заявки сохраняются локально
-            на вашем устройстве, их можно выгрузить в JSON и отправить команде.
+            на вашем устройстве, их можно выгрузить в JSON и отправить команде
           </p>
 
           <div class="form-grid" style="margin-top:18px;">
@@ -1644,7 +1649,7 @@
               </div>
 
               <h3 style="margin-top:16px;">Как связаться</h3>
-              <div class="hintline" style="margin: 0 0 8px;">Достаточно одного канала связи.</div>
+              <div class="hintline" style="margin: 0 0 8px;">Достаточно одного канала связи</div>
 
               <label for="fb_phone">Телефон</label>
               <input id="fb_phone" type="text" placeholder="+7 …" />
@@ -1680,7 +1685,7 @@
               </select>
 
               <label for="fb_message">Сообщение</label>
-              <textarea id="fb_message" placeholder="Опишите, что нужно улучшить / добавить, и приведите пример кейса (если есть)."></textarea>
+              <textarea id="fb_message" placeholder="Опишите, что нужно улучшить / добавить, и приведите пример кейса (если есть)"></textarea>
               <div class="hintline">Чем конкретнее пример, тем быстрее мы сможем улучшить каталог.</div>
 
               <label for="fb_link">Ссылка/источник (опционально)</label>
@@ -2100,6 +2105,7 @@
       const task = document.getElementById("caseTask")?.value || "all";
       const context = document.getElementById("caseContext")?.value || "all";
       const role = document.getElementById("caseRole")?.value || "all";
+      const tool = document.getElementById("caseTool")?.value || "all";
 
       const usedMap = getJson(LS_CASE_USED, {});
       const authed = checkIsAuthed();
@@ -2108,6 +2114,10 @@
         if (task !== "all" && c.task !== task) return false;
         if (context !== "all" && c.context !== context) return false;
         if (role !== "all" && c.role !== role) return false;
+        if (tool !== "all") {
+          const caseTools = (c.stepToolTags && c.stepToolTags.length) ? c.stepToolTags : (c.tools || []);
+          if (!caseTools.includes(tool)) return false;
+        }
         if (search) {
           const toolsHay = ((c.stepToolTags && c.stepToolTags.length) ? c.stepToolTags : c.tools || []).join(" ");
           const haystack = (c.title + " " + c.goal + " " + toolsHay + " " + (c.tools || []).join(" ")).toLowerCase();
@@ -2290,17 +2300,21 @@
       }
     }
 
-    let csTask, csContext, csRole;
+    let csTask, csContext, csRole, csTool;
 
     function initFilters() {
-      const taskSelect = document.getElementById("caseTask");
+      const taskSelect    = document.getElementById("caseTask");
       const contextSelect = document.getElementById("caseContext");
-      const roleSelect = document.getElementById("caseRole");
+      const roleSelect    = document.getElementById("caseRole");
+      const toolSelect    = document.getElementById("caseTool");
       if (!taskSelect || !contextSelect || !roleSelect) return;
 
       const tasks    = Array.from(new Set(casesData.map(c => c.task)   .filter(Boolean)));
       const contexts = Array.from(new Set(casesData.map(c => c.context).filter(Boolean)));
       const roles    = Array.from(new Set(casesData.map(c => c.role)   .filter(Boolean)));
+      const tools    = Array.from(new Set(
+        casesData.flatMap(c => (c.stepToolTags && c.stepToolTags.length) ? c.stepToolTags : (c.tools || []))
+      )).filter(Boolean).sort();
 
       tasks.forEach(v => {
         const o = document.createElement("option"); o.value = v; o.textContent = v;
@@ -2314,11 +2328,18 @@
         const o = document.createElement("option"); o.value = v; o.textContent = v;
         roleSelect.appendChild(o);
       });
+      if (toolSelect) {
+        tools.forEach(v => {
+          const o = document.createElement("option"); o.value = v; o.textContent = v;
+          toolSelect.appendChild(o);
+        });
+      }
 
       // Refresh custom selects after options are added
       if (csTask)    csTask.refresh();
       if (csContext) csContext.refresh();
       if (csRole)    csRole.refresh();
+      if (csTool)    csTool.refresh();
     }
 
     function openCaseModal(id) {
@@ -2560,6 +2581,7 @@
       csTask    = new CustomSelect(document.getElementById("caseTask"),    "Задачи");
       csContext = new CustomSelect(document.getElementById("caseContext"), "Контекст");
       csRole    = new CustomSelect(document.getElementById("caseRole"),    "Роль");
+      csTool    = new CustomSelect(document.getElementById("caseTool"),    "Инструменты");
 
       // Загружаем кейсы, иконки инструментов и инструкции параллельно,
       // рендерим каталог только после того как ВСЕ запросы завершены —
@@ -2582,12 +2604,14 @@
       document.getElementById("caseTask")?.addEventListener("change", () => renderCases());
       document.getElementById("caseContext")?.addEventListener("change", () => renderCases());
       document.getElementById("caseRole")?.addEventListener("change", () => renderCases());
+      document.getElementById("caseTool")?.addEventListener("change", () => renderCases());
       document.getElementById("caseReset")?.addEventListener("click", () => {
         const searchEl = document.getElementById("caseSearch");
         if (searchEl) searchEl.value = "";
         if (csTask)    csTask.reset();
         if (csContext) csContext.reset();
         if (csRole)    csRole.reset();
+        if (csTool)    csTool.reset();
         renderCases();
       });
 

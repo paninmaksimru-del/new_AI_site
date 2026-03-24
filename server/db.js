@@ -63,6 +63,10 @@ export async function initSchema() {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+    CREATE TABLE IF NOT EXISTS instructions (
+      id TEXT PRIMARY KEY,
+      data TEXT NOT NULL
+    );
     CREATE INDEX IF NOT EXISTS idx_ui_events_ts ON ui_events(timestamp);
     CREATE INDEX IF NOT EXISTS idx_ui_events_type ON ui_events(event_type);
   `);

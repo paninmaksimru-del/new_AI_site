@@ -446,6 +446,42 @@ async function start() {
     }
   });
 
+  // Instructions
+  app.get('/api/instructions', async (req, res) => {
+    try {
+      const { rows } = await query('SELECT id, data FROM instructions ORDER BY id');
+      const all = rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') }));
+      res.json(all);
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
+  app.put('/api/instructions/:id', async (req, res) => {
+    try {
+      const id = decodeURIComponent(req.params.id || '');
+      if (!id) return res.status(400).json({ error: 'id required' });
+      const data = JSON.stringify(req.body || {});
+      await query(
+        'INSERT INTO instructions (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2',
+        [id, data]
+      );
+      res.json({ ok: true });
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
+  app.delete('/api/instructions/:id', async (req, res) => {
+    try {
+      const id = decodeURIComponent(req.params.id || '');
+      await query('DELETE FROM instructions WHERE id = $1', [id]);
+      res.json({ ok: true });
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
   // Health
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });

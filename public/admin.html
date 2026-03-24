@@ -104,6 +104,7 @@
     <button class="tabbtn" data-tab="tools">🔧 Инструменты</button>
     <button class="tabbtn" data-tab="tasks">✅ Задачи</button>
     <button class="tabbtn" data-tab="browser">🌐 Браузер</button>
+    <button class="tabbtn" data-tab="instructions">📖 Инструкции</button>
   </div>
 
   <!-- USERS -->
@@ -357,6 +358,55 @@
         <button class="btn ok" onclick="saveBrowserConfig()">Сохранить</button>
         <a href="/education#browser" target="_blank" class="btn small" style="text-decoration:none;">↗ Открыть на странице</a>
       </div>
+    </div>
+  </div>
+
+  <!-- INSTRUCTIONS -->
+  <div id="tab_instructions" class="tabpane">
+    <div class="panel">
+      <h2>Инструкции</h2>
+      <p class="muted">Пошаговые инструкции для сотрудников. Каждая инструкция имеет свою страницу по слагу.</p>
+      <div class="actions-bar">
+        <button class="btn accent" id="instrAdd">+ Новая инструкция</button>
+      </div>
+
+      <!-- Форма редактирования -->
+      <div id="instrForm" style="display:none;" class="panel">
+        <h3 id="instrFormTitle">Новая инструкция</h3>
+
+        <div class="field-row">
+          <div class="field" style="flex:0 0 220px;">
+            <label>Слаг (ID, латиница/дефис)</label>
+            <input type="text" id="instrSlug" placeholder="dolphin-anty" />
+          </div>
+          <div class="field" style="flex:1;">
+            <label>Ссылка для скачивания</label>
+            <input type="url" id="instrTitle" placeholder="https://dolphin.ru.com/" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Описание</label>
+          <textarea id="instrDesc" rows="2" placeholder="Краткое описание инструкции для сотрудников..."></textarea>
+        </div>
+
+        <!-- Редактор шагов -->
+        <div style="margin-top:18px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <label style="font-size:14px;color:var(--muted);margin:0;">Шаги инструкции</label>
+            <button class="btn small accent" type="button" id="instrAddStep">+ Добавить шаг</button>
+          </div>
+          <div id="instrStepsEditor"></div>
+        </div>
+
+        <div class="field-row" style="margin-top:18px;align-items:center;">
+          <button class="btn ok" id="instrSave">Сохранить</button>
+          <button class="btn small" id="instrCancel">Отмена</button>
+          <a id="instrOpenLink" href="#" target="_blank" class="btn small" style="text-decoration:none;display:none;">↗ Открыть на странице</a>
+        </div>
+      </div>
+
+      <ul class="plain" id="instrList"><li class="loading">Загрузка...</li></ul>
     </div>
   </div>
 </main>
@@ -984,10 +1034,136 @@ async function loadBrowserConfig() {
   } catch(e) { /* молча игнорируем — покажем дефолтные значения */ }
 }
 
+// ── INSTRUCTIONS ──────────────────────────────────────────────────────────────
+let instrSteps = [];
+
+async function loadInstructions() {
+  const ul = document.getElementById('instrList');
+  try {
+    const arr = await api('/api/instructions');
+    ul.innerHTML = arr.length ? arr.map(i => `
+      <li class="list-item">
+        <span>
+          <b>${esc(i.title || i.id)}</b>
+          <span class="badge">${esc(i.slug || i.id)}</span>
+          <small class="muted" style="margin-left:6px;">${(i.steps || []).length} шаг(ов)</small>
+        </span>
+        <div class="list-actions">
+          <a href="/instruction/${esc(i.slug || i.id)}" target="_blank" class="btn small" style="text-decoration:none;">↗ Открыть</a>
+          <button class="btn small" onclick="openInstr('${esc(i.id)}')">Изменить</button>
+          <button class="btn small danger" onclick="delInstr('${esc(i.id)}')">Удалить</button>
+        </div>
+      </li>`).join('') : '<li class="loading">Инструкций нет</li>';
+  } catch(e) {
+    ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`;
+  }
+}
+
+function renderInstrSteps() {
+  const container = document.getElementById('instrStepsEditor');
+  if (!instrSteps.length) {
+    container.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:8px 0 4px;">Шагов нет. Нажмите «+ Добавить шаг».</p>';
+    return;
+  }
+  container.innerHTML = instrSteps.map((step, si) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div style="min-width:32px;height:32px;border-radius:50%;background:var(--ok);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        ${String(si + 1).padStart(2, '0')}
+      </div>
+      <div class="field" style="flex:1;margin:0;">
+        <input type="text" placeholder="Краткое название шага"
+          value="${esc(step.title || '')}"
+          oninput="instrSteps[${si}].title=this.value" />
+      </div>
+      <div class="field" style="flex:2;margin:0;">
+        <input type="text" placeholder="Описание / детали шага"
+          value="${esc(step.description || '')}"
+          oninput="instrSteps[${si}].description=this.value" />
+      </div>
+      <button class="btn small danger" onclick="removeInstrStep(${si})" title="Удалить шаг">✕</button>
+    </div>`).join('');
+}
+
+function removeInstrStep(si) {
+  instrSteps.splice(si, 1);
+  renderInstrSteps();
+}
+
+async function openInstr(id) {
+  instrSteps = [];
+  document.getElementById('instrSlug').value = '';
+  document.getElementById('instrTitle').value = '';
+  document.getElementById('instrDesc').value = '';
+  document.getElementById('instrOpenLink').style.display = 'none';
+
+  if (id) {
+    document.getElementById('instrFormTitle').textContent = 'Редактировать инструкцию';
+    try {
+      const arr = await api('/api/instructions');
+      const item = arr.find(x => x.id === id);
+      if (item) {
+        document.getElementById('instrSlug').value = item.slug || item.id;
+        document.getElementById('instrTitle').value = item.title || '';
+        document.getElementById('instrDesc').value = item.description || '';
+        instrSteps = (item.steps || []).map(s => ({ ...s }));
+        const link = document.getElementById('instrOpenLink');
+        link.href = `/instruction/${encodeURIComponent(item.slug || item.id)}`;
+        link.style.display = '';
+      }
+    } catch(e) { toast('Ошибка загрузки', 'err'); }
+  } else {
+    document.getElementById('instrFormTitle').textContent = 'Новая инструкция';
+  }
+
+  renderInstrSteps();
+  document.getElementById('instrForm').style.display = 'block';
+  document.getElementById('instrForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function delInstr(id) {
+  if (!confirm(`Удалить инструкцию "${id}"?`)) return;
+  try {
+    await api(`/api/instructions/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    toast('Инструкция удалена');
+    loadInstructions();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+document.getElementById('instrAdd').addEventListener('click', () => openInstr(null));
+document.getElementById('instrCancel').addEventListener('click', () => {
+  document.getElementById('instrForm').style.display = 'none';
+  instrSteps = [];
+});
+document.getElementById('instrAddStep').addEventListener('click', () => {
+  instrSteps.push({ title: '', description: '' });
+  renderInstrSteps();
+});
+document.getElementById('instrSave').addEventListener('click', async () => {
+  const slug = document.getElementById('instrSlug').value.trim()
+    .toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-_]/g, '') || 'instr-new';
+  const item = {
+    id: slug,
+    slug,
+    title: document.getElementById('instrTitle').value.trim(),
+    description: document.getElementById('instrDesc').value.trim(),
+    steps: instrSteps.map(s => ({ title: s.title || '', description: s.description || '' }))
+  };
+  try {
+    await api(`/api/instructions/${encodeURIComponent(slug)}`, {
+      method: 'PUT',
+      body: JSON.stringify(item)
+    });
+    toast('Инструкция сохранена');
+    document.getElementById('instrForm').style.display = 'none';
+    instrSteps = [];
+    loadInstructions();
+  } catch(e) { toast(e.message, 'err'); }
+});
+
 // INIT
 document.addEventListener('DOMContentLoaded', () => {
   loadUsers(); loadDepts(); loadTaskCats(); loadCases(); loadPrompts(); loadTools(); loadTasks();
-  loadBrowserConfig();
+  loadBrowserConfig(); loadInstructions();
 });
 
 // ── BROWSER CONFIG ────────────────────────────────────────────────────────────

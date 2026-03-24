@@ -1895,11 +1895,12 @@
       return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
     }
     function toolChip(t) {
-      const bg = _toolColor(t);
-      const label = _toolLabel(t);
-      const [r,g,b] = _hexToRgb(bg);
       // ищем сначала точное совпадение, затем регистронезависимое
       const dbTool = _aiToolsMap[t] || _aiToolsMap[t.toLowerCase()];
+      // приоритет цвета: справочник → TOOL_CONFIG → хэш-fallback
+      const bg = (dbTool && dbTool.color) ? dbTool.color : _toolColor(t);
+      const label = _toolLabel(t);
+      const [r,g,b] = _hexToRgb(bg);
       const hasIcon = dbTool && dbTool.iconBase64;
       const iconHtml = hasIcon
         ? `<img src="data:${dbTool.iconMime||'image/png'};base64,${dbTool.iconBase64}" alt="${escapeHtml(t)}" />`

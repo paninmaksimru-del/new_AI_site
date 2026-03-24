@@ -463,17 +463,67 @@ async function editUser(id) {
 }
 
 // ── DEPARTMENTS ───────────────────────────────────────────────────────────────
+let _deptNames = [];
+
 async function loadDepts() {
   const ul = document.getElementById('deptList');
   try {
-    const arr = await api('/api/departments');
-    ul.innerHTML = arr.length ? arr.map((name,i) => `
-      <li class="list-item">
-        <span>${esc(name)}</span>
-        <div class="list-actions"><button class="btn small danger" onclick="delDept('${esc(name)}')">Удалить</button></div>
-      </li>`).join('') : '<li class="loading">Подразделений нет</li>';
+    _deptNames = await api('/api/departments');
+    renderDeptList();
   } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
 }
+
+function renderDeptList() {
+  const ul = document.getElementById('deptList');
+  ul.innerHTML = _deptNames.length ? _deptNames.map((name, i) => `
+    <li class="list-item" id="dept-item-${i}">
+      <span class="dept-name-label">${esc(name)}</span>
+      <div class="list-actions">
+        <button class="btn small" onclick="startEditDept(${i})">Редактировать</button>
+        <button class="btn small danger" onclick="delDept('${esc(name)}')">Удалить</button>
+      </div>
+    </li>`).join('') : '<li class="loading">Подразделений нет</li>';
+}
+
+function startEditDept(i) {
+  const li = document.getElementById(`dept-item-${i}`);
+  if (!li) return;
+  const name = _deptNames[i];
+  li.innerHTML = `
+    <div style="display:flex; gap:8px; align-items:center; flex:1;">
+      <input type="text" id="dept-edit-${i}" value="${esc(name)}"
+        style="flex:1; background:rgba(255,255,255,.07); border:1px solid var(--stroke-2);
+               border-radius:8px; padding:6px 10px; color:var(--text); font-size:14px;" />
+      <button class="btn small ok" onclick="saveDeptEdit(${i})">Сохранить</button>
+      <button class="btn small" onclick="renderDeptList()">Отмена</button>
+    </div>`;
+  const input = document.getElementById(`dept-edit-${i}`);
+  if (input) {
+    input.focus();
+    input.select();
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  saveDeptEdit(i);
+      if (e.key === 'Escape') renderDeptList();
+    });
+  }
+}
+
+async function saveDeptEdit(i) {
+  const input = document.getElementById(`dept-edit-${i}`);
+  if (!input) return;
+  const newName = input.value.trim();
+  const oldName = _deptNames[i];
+  if (!newName) { toast('Название не может быть пустым', 'err'); return; }
+  if (newName === oldName) { renderDeptList(); return; }
+  try {
+    const updated = [..._deptNames];
+    updated[i] = newName;
+    await api('/api/departments', { method: 'PUT', body: JSON.stringify(updated) });
+    toast('Сохранено');
+    loadDepts();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
 async function delDept(name) {
   try { await api(`/api/departments/${encodeURIComponent(name)}`, {method:'DELETE'}); toast('Удалено'); loadDepts(); }
   catch(e) { toast(e.message,'err'); }
@@ -492,7 +542,7 @@ async function loadCases() {
     const arr = await api('/api/cases?all=true');
     ul.innerHTML = arr.length ? arr.map(c => `
       <li class="list-item">
-        <span><b>${esc(c.title||c.id)}</b><span class="badge">${esc(c.id)}</span><span class="badge ${c.maturity==='ready'?'ok':c.maturity==='pilot'?'warn':''}">${esc(c.maturity||'')}</span></span>
+        <span><b>${esc(c.title||c.id)}</b><span class="badge">${esc(c.id)}</span><span class="badge ${c.maturity==='ready'?'ok':c.maturity==='pilot'?'warn':''}">${esc(c.maturity||'')}</span>${c.maturity==='draft'?'<span class="badge" style="border-color:rgba(255,96,96,.5);color:rgba(255,96,96,.9);background:rgba(255,96,96,.08)">🔒 скрыт от каталога</span>':''}</span>
         <div class="list-actions">
           <button class="btn small" onclick="openCase('${esc(c.id)}')">Изменить</button>
           <button class="btn small danger" onclick="delCase('${esc(c.id)}')">Удалить</button>

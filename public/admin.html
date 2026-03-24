@@ -99,6 +99,7 @@
   <div class="tabs" role="tablist" style="margin-top:24px;">
     <button class="tabbtn active" data-tab="users">👥 Пользователи</button>
     <button class="tabbtn" data-tab="dept">🏢 Подразделения</button>
+    <button class="tabbtn" data-tab="refs">📚 Справочники</button>
     <button class="tabbtn" data-tab="cases">📋 Кейсы</button>
     <button class="tabbtn" data-tab="prompts">💬 Промпты</button>
     <button class="tabbtn" data-tab="tools">🔧 Инструменты</button>
@@ -148,6 +149,22 @@
     </div>
   </div>
 
+  <!-- REFERENCE DATA -->
+  <div id="tab_refs" class="tabpane">
+    <div class="panel">
+      <h2>Справочники</h2>
+      <p class="muted">Значения для выбора в формах. «Категория задачи» используется в карточках кейсов.</p>
+      <div class="panel" style="margin-top:12px;">
+        <h3>Категория задачи</h3>
+        <div class="field-row" style="align-items:flex-end; margin-top:12px;">
+          <div class="field" style="flex:1;"><label>Название</label><input type="text" id="taskCatName" placeholder="Например: Презентация и визуал" /></div>
+          <div class="field" style="width:auto;flex:0;padding-top:0;"><label>&nbsp;</label><button class="btn ok" id="taskCatAdd">Добавить</button></div>
+        </div>
+        <ul class="plain" id="taskCatList"><li class="loading">Загрузка...</li></ul>
+      </div>
+    </div>
+  </div>
+
   <!-- CASES -->
   <div id="tab_cases" class="tabpane">
     <div class="panel">
@@ -161,8 +178,8 @@
           <div class="field"><label>Название</label><input type="text" id="caseTitle" placeholder="Протокол встречи за 15 минут" /></div>
         </div>
         <div class="field-row">
-          <div class="field"><label>Категория задачи</label><input type="text" id="caseTaskCategory" placeholder="Провести встречу / зафиксировать итоги" /></div>
-          <div class="field"><label>Контекст</label><select id="caseContext"><option value="">— Выбрать —</option></select></div>
+          <div class="field"><label>Категория задачи</label><select id="caseTaskCategory"><option value="">— Выбрать —</option></select></div>
+          <div class="field"><label>Подразделение</label><select id="caseContext"><option value="">— Выбрать —</option></select></div>
         </div>
         <div class="field-row">
           <div class="field"><label>Роли (через запятую)</label><input type="text" id="caseRole" placeholder="Руководитель, Проектный менеджер" /></div>
@@ -535,6 +552,97 @@ document.getElementById('deptAdd').addEventListener('click', async () => {
   catch(e) { toast(e.message,'err'); }
 });
 
+// ── CASE TASK CATEGORIES (справочник) ─────────────────────────────────────────
+let _taskCatNames = [];
+
+async function loadTaskCats() {
+  const ul = document.getElementById('taskCatList');
+  try {
+    _taskCatNames = await api('/api/case-task-categories');
+    renderTaskCatList();
+  } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
+}
+
+function renderTaskCatList() {
+  const ul = document.getElementById('taskCatList');
+  ul.innerHTML = _taskCatNames.length ? _taskCatNames.map((name, i) => `
+    <li class="list-item" id="taskcat-item-${i}">
+      <span class="taskcat-name-label">${esc(name)}</span>
+      <div class="list-actions">
+        <button class="btn small" onclick="startEditTaskCat(${i})">Редактировать</button>
+        <button class="btn small danger" onclick="delTaskCat('${esc(name)}')">Удалить</button>
+      </div>
+    </li>`).join('') : '<li class="loading">Категорий пока нет — добавьте первую</li>';
+}
+
+function startEditTaskCat(i) {
+  const li = document.getElementById(`taskcat-item-${i}`);
+  if (!li) return;
+  const name = _taskCatNames[i];
+  li.innerHTML = `
+    <div style="display:flex; gap:8px; align-items:center; flex:1;">
+      <input type="text" id="taskcat-edit-${i}" value="${esc(name)}"
+        style="flex:1; background:rgba(255,255,255,.07); border:1px solid var(--stroke);
+               border-radius:8px; padding:6px 10px; color:var(--text); font-size:14px;" />
+      <button class="btn small ok" onclick="saveTaskCatEdit(${i})">Сохранить</button>
+      <button class="btn small" onclick="renderTaskCatList()">Отмена</button>
+    </div>`;
+  const input = document.getElementById(`taskcat-edit-${i}`);
+  if (input) {
+    input.focus();
+    input.select();
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  saveTaskCatEdit(i);
+      if (e.key === 'Escape') renderTaskCatList();
+    });
+  }
+}
+
+async function saveTaskCatEdit(i) {
+  const input = document.getElementById(`taskcat-edit-${i}`);
+  if (!input) return;
+  const newName = input.value.trim();
+  const oldName = _taskCatNames[i];
+  if (!newName) { toast('Название не может быть пустым', 'err'); return; }
+  if (newName === oldName) { renderTaskCatList(); return; }
+  try {
+    const updated = [..._taskCatNames];
+    updated[i] = newName;
+    await api('/api/case-task-categories', { method: 'PUT', body: JSON.stringify(updated) });
+    toast('Сохранено');
+    loadTaskCats();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function delTaskCat(name) {
+  try { await api(`/api/case-task-categories/${encodeURIComponent(name)}`, {method:'DELETE'}); toast('Удалено'); loadTaskCats(); }
+  catch(e) { toast(e.message,'err'); }
+}
+document.getElementById('taskCatAdd').addEventListener('click', async () => {
+  const name = document.getElementById('taskCatName').value.trim();
+  if (!name) return;
+  try { await api('/api/case-task-categories', {method:'POST', body:JSON.stringify({name})}); document.getElementById('taskCatName').value=''; toast('Добавлено'); loadTaskCats(); }
+  catch(e) { toast(e.message,'err'); }
+});
+
+async function loadCaseTaskCategories(selectedValue) {
+  const sel = document.getElementById('caseTaskCategory');
+  if (!sel) return;
+  let names = [];
+  try {
+    names = await api('/api/case-task-categories');
+  } catch(e) {
+    sel.innerHTML = '<option value="">— Нет данных —</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">— Выбрать —</option>' +
+    names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  if (selectedValue && !names.includes(selectedValue)) {
+    sel.insertAdjacentHTML('beforeend', `<option value="${esc(selectedValue)}">${esc(selectedValue)} (не в справочнике)</option>`);
+  }
+  if (selectedValue) sel.value = selectedValue;
+}
+
 // ── CASES ─────────────────────────────────────────────────────────────────────
 async function loadCases() {
   const ul = document.getElementById('caseList');
@@ -579,7 +687,7 @@ function renderStepsEditor() {
         <textarea style="min-height:70px;" oninput="stepsData[${si}].bullets=this.value.split('\n').map(s=>s.trim()).filter(Boolean)" placeholder="Сформулировать цель&#10;Попросить ИИ предложить структуру&#10;Уточнить формулировки">${esc((step.bullets||[]).join('\n'))}</textarea>
       </div>
       <div class="field">
-        <label>ИИ-инструмент</label>
+        <label>Инструмент</label>
         <input type="text" value="${esc(step.aiTool||'')}" oninput="stepsData[${si}].aiTool=this.value" placeholder="Например: ChatGPT, Runway, Midjourney" />
       </div>
       <div class="field">
@@ -627,9 +735,10 @@ async function openCase(id) {
   stepsData = [];
   document.getElementById('caseForm').style.display='block';
   document.getElementById('caseFormTitle').textContent = id ? 'Изменить кейс' : 'Новый кейс';
-  ['caseId','caseTitle','caseTaskCategory','caseRole','caseWhenToUse','caseResult','caseTools'].forEach(f => document.getElementById(f).value='');
+  ['caseId','caseTitle','caseRole','caseWhenToUse','caseResult','caseTools'].forEach(f => document.getElementById(f).value='');
   document.getElementById('caseMaturity').value='ready';
   await loadCaseContextDepts('');
+  await loadCaseTaskCategories('');
   if (id) {
     try {
       const arr = await api('/api/cases?all=true');
@@ -637,8 +746,8 @@ async function openCase(id) {
       if (c) {
         document.getElementById('caseId').value=c.id;
         document.getElementById('caseTitle').value=c.title||'';
-        document.getElementById('caseTaskCategory').value=c.taskCategory||'';
         await loadCaseContextDepts(c.context||'');
+        await loadCaseTaskCategories(c.taskCategory||'');
         document.getElementById('caseRole').value=Array.isArray(c.role)?c.role.join(', '):(c.role||'');
         document.getElementById('caseMaturity').value=c.maturity||'ready';
         document.getElementById('caseWhenToUse').value=c.whenToUse||'';
@@ -883,7 +992,7 @@ async function loadBrowserConfig() {
 
 // INIT
 document.addEventListener('DOMContentLoaded', () => {
-  loadUsers(); loadDepts(); loadCases(); loadPrompts(); loadTools(); loadTasks();
+  loadUsers(); loadDepts(); loadTaskCats(); loadCases(); loadPrompts(); loadTools(); loadTasks();
   loadBrowserConfig();
 });
 

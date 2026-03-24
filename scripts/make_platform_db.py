@@ -21,6 +21,10 @@ conn.executescript("""
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT UNIQUE NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS case_task_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS cases (
       id TEXT PRIMARY KEY,
       data TEXT NOT NULL
@@ -72,11 +76,14 @@ depts = ['Аналитический центр', 'ЕЦП', 'Центр разв
 for name in depts:
     cur.execute("INSERT OR IGNORE INTO departments (name) VALUES (?)", (name,))
 
-# Cases
+# Cases (определение до категорий — ниже переиспользуется)
 default_cases = [
     {'id': 'case_protocol', 'title': 'Протокол встречи за 15 минут', 'taskCategory': 'Провести встречу / зафиксировать итоги', 'context': 'Управление', 'role': ['Руководитель', 'Проектный менеджер', 'Специалист'], 'maturity': 'ready', 'whenToUse': 'После встречи нужно быстро подготовить протокол и список поручений.', 'result': 'Протокол + поручения (таблица) + риск-вопросы.', 'tools': ['ChatGPT', 'Copilot'], 'promptTemplate': 'Роль: секретарь встречи\nЦель: подготовить протокол по заметкам\nКонтекст: [вставь заметки/расшифровку]'},
     {'id': 'case_letter', 'title': 'Черновик официального письма', 'taskCategory': 'Коммуникация и согласования', 'context': 'Переписка', 'role': ['Специалист', 'Руководитель'], 'maturity': 'pilot', 'whenToUse': 'Нужно быстро подготовить письмо в деловом стиле.', 'result': 'Черновик письма + варианты темы.', 'tools': ['ChatGPT', 'YandexGPT'], 'promptTemplate': 'Роль: делопроизводитель\nЦель: подготовить официальный черновик письма'},
 ]
+for tc in sorted({c['taskCategory'] for c in default_cases if c.get('taskCategory')}):
+    cur.execute("INSERT OR IGNORE INTO case_task_categories (name) VALUES (?)", (tc,))
+
 for c in default_cases:
     cur.execute("INSERT OR REPLACE INTO cases (id, data) VALUES (?, ?)", (c['id'], json.dumps(c, ensure_ascii=False)))
 

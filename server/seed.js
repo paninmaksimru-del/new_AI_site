@@ -30,6 +30,15 @@ if (parseInt(deptRows[0].c) === 0) {
   console.log('Seeded departments');
 }
 
+const { rows: tccRows } = await query('SELECT COUNT(*) as c FROM case_task_categories');
+if (parseInt(tccRows[0].c) === 0) {
+  const catNames = [...new Set(defaultCases.map(c => c.taskCategory).filter(Boolean))];
+  for (const name of catNames) {
+    await query('INSERT INTO case_task_categories (name) VALUES ($1) ON CONFLICT DO NOTHING', [name]);
+  }
+  console.log('Seeded case_task_categories');
+}
+
 const { rows: caseRows } = await query('SELECT COUNT(*) as c FROM cases');
 if (parseInt(caseRows[0].c) === 0) {
   for (const c of defaultCases) {

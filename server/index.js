@@ -89,6 +89,53 @@ async function start() {
     }
   });
 
+  // Справочник: категории задач (для кейсов)
+  app.get('/api/case-task-categories', async (req, res) => {
+    try {
+      const { rows } = await query('SELECT name FROM case_task_categories ORDER BY id');
+      res.json(rows.map(r => r.name));
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
+  app.post('/api/case-task-categories', async (req, res) => {
+    try {
+      const name = (req.body?.name || '').trim();
+      if (!name) return res.status(400).json({ error: 'name required' });
+      await query('INSERT INTO case_task_categories (name) VALUES ($1) ON CONFLICT DO NOTHING', [name]);
+      const { rows } = await query('SELECT name FROM case_task_categories ORDER BY id');
+      res.json(rows.map(r => r.name));
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
+  app.put('/api/case-task-categories', async (req, res) => {
+    try {
+      const names = Array.isArray(req.body) ? req.body : [];
+      await query('DELETE FROM case_task_categories');
+      for (const n of names) {
+        if (String(n).trim()) await query('INSERT INTO case_task_categories (name) VALUES ($1)', [String(n).trim()]);
+      }
+      const { rows } = await query('SELECT name FROM case_task_categories ORDER BY id');
+      res.json(rows.map(r => r.name));
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
+  app.delete('/api/case-task-categories/:name', async (req, res) => {
+    try {
+      const name = decodeURIComponent(req.params.name || '');
+      await query('DELETE FROM case_task_categories WHERE name = $1', [name]);
+      const { rows } = await query('SELECT name FROM case_task_categories ORDER BY id');
+      res.json(rows.map(r => r.name));
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
   // Cases
   app.get('/api/cases', async (req, res) => {
     try {

@@ -33,6 +33,10 @@ export async function initSchema() {
       id SERIAL PRIMARY KEY,
       name TEXT UNIQUE NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS case_task_categories (
+      id SERIAL PRIMARY KEY,
+      name TEXT UNIQUE NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS cases (
       id TEXT PRIMARY KEY,
       data TEXT NOT NULL

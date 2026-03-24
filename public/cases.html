@@ -1813,6 +1813,7 @@
         tools,
         stepToolTags: uniqueStepToolTags(steps, tools),
         goal: c.whenToUse || c.goal || '',
+        sortOrder: c.sortOrder ?? 9999,
         steps
       };
     }
@@ -1831,6 +1832,8 @@
           const arr = await res.json();
           if (arr && arr.length) {
             casesData = arr.map(mapApiCase);
+            // сортируем по полю sortOrder (задаётся в админке)
+            casesData.sort((a, b) => (a.sortOrder ?? 9999) - (b.sortOrder ?? 9999));
             return true;
           }
         }
@@ -2557,12 +2560,11 @@
       csContext = new CustomSelect(document.getElementById("caseContext"), "Контекст");
       csRole    = new CustomSelect(document.getElementById("caseRole"),    "Роль");
 
-      // Загружаем инструкции параллельно с кейсами
+      // Загружаем кейсы, иконки инструментов и инструкции параллельно,
+      // рендерим каталог только после того как ВСЕ запросы завершены —
+      // иначе _aiToolsMap пуст в момент renderCases() (race condition)
       loadInstructionsCache();
-      loadAiToolsCache();
-
-      // Загружаем кейсы из API, потом инициализируем
-      loadCasesFromApi().then((ok) => {
+      Promise.all([loadCasesFromApi(), loadAiToolsCache()]).then(([ok]) => {
         initFilters();   // добавляет <option> + вызывает refresh() на кастомных селектах
         renderCases();
         if (!ok && casesData.length === 0) {

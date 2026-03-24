@@ -857,14 +857,16 @@ function renderCaseList() {
     return;
   }
   ul.innerHTML = _casesListData.map((c, i) => `
-    <li class="list-item case-dnd-item" draggable="true" data-case-id="${esc(c.id)}" data-idx="${i}" style="cursor:grab;">
-      <span class="drag-handle" title="Перетащить для изменения порядка" style="font-size:16px;color:var(--muted);cursor:grab;padding:0 6px 0 0;user-select:none;flex-shrink:0;">⠿</span>
-      <span style="display:inline-flex;align-items:center;gap:6px;flex:1;min-width:0;flex-wrap:wrap;">
-        <span style="min-width:28px;text-align:center;font-size:11px;font-weight:700;background:rgba(255,255,255,.08);border-radius:6px;padding:2px 6px;color:var(--muted);flex-shrink:0;">${c.sortOrder ?? '—'}</span>
-        <b>${esc(c.title||c.id)}</b>
+    <li class="list-item case-dnd-item" draggable="true" data-case-id="${esc(c.id)}" data-idx="${i}" style="cursor:grab;flex-wrap:nowrap;">
+      <span class="drag-handle" title="Перетащить для изменения порядка" style="font-size:14px;color:var(--muted);cursor:grab;padding:0 4px;user-select:none;flex-shrink:0;">⠿</span>
+      <span style="font-size:11px;font-weight:700;background:rgba(255,255,255,.08);border-radius:6px;padding:2px 6px;color:var(--muted);flex-shrink:0;white-space:nowrap;">${c.sortOrder ?? '—'}</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;flex:1;min-width:0;overflow:hidden;">
+        <b style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">${esc(c.title||c.id)}</b>
+      </span>
+      <span style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">
         <span class="badge">${esc(c.id)}</span>
         <span class="badge ${c.maturity==='ready'?'ok':c.maturity==='pilot'?'warn':''}">${esc(c.maturity||'')}</span>
-        ${c.maturity==='draft'?'<span class="badge" style="border-color:rgba(255,96,96,.5);color:rgba(255,96,96,.9);background:rgba(255,96,96,.08)">🔒 скрыт</span>':''}
+        ${c.maturity==='draft'?'<span class="badge" style="border-color:rgba(255,96,96,.5);color:rgba(255,96,96,.9);background:rgba(255,96,96,.08)">🔒</span>':''}
       </span>
       <div class="list-actions">
         <button class="btn small" onclick="openCase('${esc(c.id)}')">Изменить</button>

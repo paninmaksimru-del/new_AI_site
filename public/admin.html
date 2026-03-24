@@ -739,7 +739,7 @@ function renderStepsEditor() {
         <label>Инструкция «Как использовать»</label>
         <select onchange="stepsData[${si}].instructionId=this.value">
           <option value="">— без инструкции —</option>
-          ${availableInstructions.map(i => `<option value="${esc(i.id)}" ${step.instructionId===i.id?'selected':''}>${esc(i.title||i.slug||i.id)}</option>`).join('')}
+          ${availableInstructions.map(i => `<option value="${esc(i.id)}" ${step.instructionId===i.id?'selected':''}>${esc(i.id)}</option>`).join('')}
         </select>
       </div>
       <div class="field">

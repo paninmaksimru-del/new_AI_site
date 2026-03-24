@@ -913,13 +913,15 @@
       padding: 8px;
       width:100%;
     }
-    .case-modal-prompt-box textarea{
+    .case-modal-prompt-box textarea,
+    .case-modal-prompt-input{
       width:100%;
       height:170px;
       min-height:170px;
       max-height:260px;
       resize:none;
       overflow:auto;
+      overflow-x: hidden;
       border:0;
       outline:none;
       background:transparent;
@@ -927,6 +929,36 @@
       line-height:1.35;
       font-size:13px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,.32) rgba(255,255,255,.06);
+    }
+    .case-modal-prompt-box textarea::-webkit-scrollbar,
+    .case-modal-prompt-input::-webkit-scrollbar{
+      width: 10px;
+      height: 10px;
+    }
+    .case-modal-prompt-box textarea::-webkit-scrollbar-track,
+    .case-modal-prompt-input::-webkit-scrollbar-track{
+      margin: 4px 0;
+      background: rgba(255,255,255,.05);
+      border-radius: 999px;
+    }
+    .case-modal-prompt-box textarea::-webkit-scrollbar-thumb,
+    .case-modal-prompt-input::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,.22);
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    .case-modal-prompt-box textarea::-webkit-scrollbar-thumb:hover,
+    .case-modal-prompt-input::-webkit-scrollbar-thumb:hover{
+      background: rgba(44, 214, 150, .42);
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    .case-modal-prompt-box textarea::-webkit-scrollbar-corner,
+    .case-modal-prompt-input::-webkit-scrollbar-corner{
+      background: transparent;
     }
     .case-modal-copy{
       position:absolute;
@@ -1706,6 +1738,7 @@
     let activeCaseId = null;
     let activeCaseSteps = [];
     let activeCaseStepIndex = 0;
+    let instructionsCache = []; // кэш инструкций из /api/instructions
 
     /** Инструмент шага: aiTool / tool / суффикс в title / fallback на массив tools кейса (как в админке) */
     function stepToolLabelFromStep(step, caseToolsArr) {
@@ -1751,6 +1784,13 @@
       };
     }
 
+    async function loadInstructionsCache() {
+      try {
+        const res = await fetch('/api/instructions');
+        if (res.ok) instructionsCache = await res.json();
+      } catch(_) {}
+    }
+
     async function loadCasesFromApi() {
       try {
         const res = await fetch('/api/cases');
@@ -1788,7 +1828,16 @@
       return t || "Инструмент не указан";
     }
     function getStepInstructions(step) {
+      // Приоритет 1: связанная инструкция из /api/instructions
+      if (step?.instructionId) {
+        const instr = instructionsCache.find(i => i.id === step.instructionId);
+        if (instr && Array.isArray(instr.steps) && instr.steps.length) {
+          return instr.steps.map(s => s.description).filter(Boolean);
+        }
+      }
+      // Приоритет 2: bullets шага
       if (Array.isArray(step?.bullets) && step.bullets.length) return step.bullets;
+      // Фолбэк
       return [
         "Вставьте свои данные в промпт.",
         "Проверьте результат и при необходимости уточните формулировки.",
@@ -1847,11 +1896,11 @@
                 <path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
               </svg>
             </button>
-            <textarea readonly id="${promptId}">${escapeHtml(promptText)}</textarea>
+            <textarea class="case-modal-prompt-input" readonly id="${promptId}">${escapeHtml(promptText)}</textarea>
           </div>
         ` : `
           <div class="case-modal-prompt-box">
-            <textarea readonly id="${promptId}">Промпт для этого шага не указан.</textarea>
+            <textarea class="case-modal-prompt-input" readonly id="${promptId}">Промпт для этого шага не указан.</textarea>
           </div>
         `;
 
@@ -2403,6 +2452,9 @@
       csTask    = new CustomSelect(document.getElementById("caseTask"),    "Задачи");
       csContext = new CustomSelect(document.getElementById("caseContext"), "Контекст");
       csRole    = new CustomSelect(document.getElementById("caseRole"),    "Роль");
+
+      // Загружаем инструкции параллельно с кейсами
+      loadInstructionsCache();
 
       // Загружаем кейсы из API, потом инициализируем
       loadCasesFromApi().then((ok) => {

@@ -703,7 +703,8 @@ async function loadCases() {
   } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
 }
 // ── STEPS EDITOR ─────────────────────────────────────────────────────────────
-let stepsData = []; // [{title, bullets:[], prompt}]
+let stepsData = []; // [{title, bullets:[], prompt, aiTool, instructionId}]
+let availableInstructions = []; // кэш инструкций для select в шагах
 
 function renderStepsEditor() {
   const container = document.getElementById('stepsEditor');
@@ -735,6 +736,13 @@ function renderStepsEditor() {
         <input type="text" value="${esc(step.aiTool||'')}" oninput="stepsData[${si}].aiTool=this.value" placeholder="Например: ChatGPT, Runway, Midjourney" />
       </div>
       <div class="field">
+        <label>Инструкция «Как использовать»</label>
+        <select onchange="stepsData[${si}].instructionId=this.value">
+          <option value="">— без инструкции —</option>
+          ${availableInstructions.map(i => `<option value="${esc(i.id)}" ${step.instructionId===i.id?'selected':''}>${esc(i.title||i.slug||i.id)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
         <label>Промпт для этого шага</label>
         <textarea style="min-height:90px;" oninput="stepsData[${si}].prompt=this.value" placeholder="Роль: ...&#10;Цель: ...&#10;Формат: ...">${esc(step.prompt||'')}</textarea>
       </div>
@@ -755,7 +763,7 @@ function removeStep(idx) {
 }
 
 document.getElementById('addStepBtn').addEventListener('click', () => {
-  stepsData.push({ title: '', bullets: [], prompt: '', aiTool: '' });
+  stepsData.push({ title: '', bullets: [], prompt: '', aiTool: '', instructionId: '' });
   renderStepsEditor();
   // Scroll to new step
   const blocks = document.querySelectorAll('.step-block');
@@ -777,6 +785,8 @@ async function loadCaseContextDepts(selectedValue) {
 
 async function openCase(id) {
   stepsData = [];
+  // Загружаем список инструкций для select в шагах
+  try { availableInstructions = await api('/api/instructions'); } catch(_) { availableInstructions = []; }
   document.getElementById('caseForm').style.display='block';
   document.getElementById('caseFormTitle').textContent = id ? 'Изменить кейс' : 'Новый кейс';
   ['caseId','caseTitle','caseRole','caseWhenToUse','caseResult','caseTools'].forEach(f => document.getElementById(f).value='');
@@ -802,7 +812,8 @@ async function openCase(id) {
           title: s.title||'',
           bullets: Array.isArray(s.bullets)?s.bullets:[],
           prompt: s.prompt||'',
-          aiTool: s.aiTool||''
+          aiTool: s.aiTool||'',
+          instructionId: s.instructionId||''
         }));
       }
     } catch(e) { toast('Ошибка загрузки','err'); }
@@ -824,7 +835,8 @@ document.getElementById('caseSave').addEventListener('click', async () => {
     title: s.title||'',
     bullets: s.bullets||[],
     prompt: s.prompt||'',
-    aiTool: s.aiTool||''
+    aiTool: s.aiTool||'',
+    instructionId: s.instructionId||''
   }));
   const item = {
     id,
@@ -1071,11 +1083,6 @@ function renderInstrSteps() {
         ${String(si + 1).padStart(2, '0')}
       </div>
       <div class="field" style="flex:1;margin:0;">
-        <input type="text" placeholder="Краткое название шага"
-          value="${esc(step.title || '')}"
-          oninput="instrSteps[${si}].title=this.value" />
-      </div>
-      <div class="field" style="flex:2;margin:0;">
         <input type="text" placeholder="Описание / детали шага"
           value="${esc(step.description || '')}"
           oninput="instrSteps[${si}].description=this.value" />
@@ -1105,7 +1112,7 @@ async function openInstr(id) {
         document.getElementById('instrSlug').value = item.slug || item.id;
         document.getElementById('instrTitle').value = item.title || '';
         document.getElementById('instrDesc').value = item.description || '';
-        instrSteps = (item.steps || []).map(s => ({ ...s }));
+        instrSteps = (item.steps || []).map(s => ({ description: s.description || '' }));
         const link = document.getElementById('instrOpenLink');
         link.href = `/instruction/${encodeURIComponent(item.slug || item.id)}`;
         link.style.display = '';
@@ -1135,7 +1142,7 @@ document.getElementById('instrCancel').addEventListener('click', () => {
   instrSteps = [];
 });
 document.getElementById('instrAddStep').addEventListener('click', () => {
-  instrSteps.push({ title: '', description: '' });
+  instrSteps.push({ description: '' });
   renderInstrSteps();
 });
 document.getElementById('instrSave').addEventListener('click', async () => {
@@ -1146,7 +1153,7 @@ document.getElementById('instrSave').addEventListener('click', async () => {
     slug,
     title: document.getElementById('instrTitle').value.trim(),
     description: document.getElementById('instrDesc').value.trim(),
-    steps: instrSteps.map(s => ({ title: s.title || '', description: s.description || '' }))
+    steps: instrSteps.map(s => ({ description: s.description || '' }))
   };
   try {
     await api(`/api/instructions/${encodeURIComponent(slug)}`, {

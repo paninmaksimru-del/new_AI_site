@@ -47,6 +47,10 @@
     .tabpane.active{ display:block; }
     .list-item{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.2); margin-bottom:8px; flex-wrap:wrap; }
     .list-item span{ flex:1; min-width:0; word-break:break-word; }
+    .case-dnd-item{ transition: opacity .15s, background .15s; }
+    .case-dnd-item.dnd-dragging{ opacity:.4; }
+    .case-dnd-item.dnd-over{ background:rgba(99,102,241,.18); border-color:rgba(99,102,241,.5); }
+    .drag-handle:hover{ color:#fff !important; }
     .list-actions{ display:flex; gap:8px; flex-shrink:0; }
     ul.plain{ list-style:none; padding:0; margin:0; }
     .badge{ display:inline-block; padding:3px 7px; border-radius:7px; font-size:12px; background:rgba(255,255,255,.1); margin-left:6px; }
@@ -184,6 +188,7 @@
         <div class="field-row">
           <div class="field"><label>ID (латиница, подчёркивания)</label><input type="text" id="caseId" placeholder="case_protocol" /></div>
           <div class="field"><label>Название</label><input type="text" id="caseTitle" placeholder="Протокол встречи за 15 минут" /></div>
+          <div class="field" style="max-width:130px;"><label>Порядок (сортировка)</label><input type="number" id="caseSortOrder" placeholder="0" min="0" style="width:100%;" /></div>
         </div>
         <div class="field-row">
           <div class="field"><label>Категория задачи</label><select id="caseTaskCategory"><option value="">— Выбрать —</option></select></div>
@@ -197,7 +202,6 @@
         </div>
         <div class="field"><label>Когда использовать / цель</label><input type="text" id="caseWhenToUse" /></div>
         <div class="field"><label>Результат</label><input type="text" id="caseResult" /></div>
-        <div class="field"><label>Инструменты (через запятую)</label><input type="text" id="caseTools" /></div>
         <div style="margin-top:16px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <label style="font-size:14px;color:var(--muted);margin:0;">Шаги кейса</label>
@@ -822,19 +826,84 @@ document.getElementById('aiToolAdd').addEventListener('click', async () => {
 });
 
 // ── CASES ─────────────────────────────────────────────────────────────────────
+let _casesListData = []; // полный кэш для DnD
+
 async function loadCases() {
   const ul = document.getElementById('caseList');
   try {
     const arr = await api('/api/cases?all=true');
-    ul.innerHTML = arr.length ? arr.map(c => `
-      <li class="list-item">
-        <span><b>${esc(c.title||c.id)}</b><span class="badge">${esc(c.id)}</span><span class="badge ${c.maturity==='ready'?'ok':c.maturity==='pilot'?'warn':''}">${esc(c.maturity||'')}</span>${c.maturity==='draft'?'<span class="badge" style="border-color:rgba(255,96,96,.5);color:rgba(255,96,96,.9);background:rgba(255,96,96,.08)">🔒 скрыт от каталога</span>':''}</span>
-        <div class="list-actions">
-          <button class="btn small" onclick="openCase('${esc(c.id)}')">Изменить</button>
-          <button class="btn small danger" onclick="delCase('${esc(c.id)}')">Удалить</button>
-        </div>
-      </li>`).join('') : '<li class="loading">Кейсов нет — добавьте первый</li>';
+    arr.sort((a, b) => (a.sortOrder ?? 9999) - (b.sortOrder ?? 9999));
+    _casesListData = arr;
+    renderCaseList();
   } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
+}
+
+function renderCaseList() {
+  const ul = document.getElementById('caseList');
+  if (!_casesListData.length) {
+    ul.innerHTML = '<li class="loading">Кейсов нет — добавьте первый</li>';
+    return;
+  }
+  ul.innerHTML = _casesListData.map((c, i) => `
+    <li class="list-item case-dnd-item" draggable="true" data-case-id="${esc(c.id)}" data-idx="${i}" style="cursor:grab;">
+      <span class="drag-handle" title="Перетащить для изменения порядка" style="font-size:16px;color:var(--muted);cursor:grab;padding:0 6px 0 0;user-select:none;flex-shrink:0;">⠿</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;flex:1;min-width:0;flex-wrap:wrap;">
+        <span style="min-width:28px;text-align:center;font-size:11px;font-weight:700;background:rgba(255,255,255,.08);border-radius:6px;padding:2px 6px;color:var(--muted);flex-shrink:0;">${c.sortOrder ?? '—'}</span>
+        <b>${esc(c.title||c.id)}</b>
+        <span class="badge">${esc(c.id)}</span>
+        <span class="badge ${c.maturity==='ready'?'ok':c.maturity==='pilot'?'warn':''}">${esc(c.maturity||'')}</span>
+        ${c.maturity==='draft'?'<span class="badge" style="border-color:rgba(255,96,96,.5);color:rgba(255,96,96,.9);background:rgba(255,96,96,.08)">🔒 скрыт</span>':''}
+      </span>
+      <div class="list-actions">
+        <button class="btn small" onclick="openCase('${esc(c.id)}')">Изменить</button>
+        <button class="btn small danger" onclick="delCase('${esc(c.id)}')">Удалить</button>
+      </div>
+    </li>`).join('');
+  initCaseDragDrop();
+}
+
+function initCaseDragDrop() {
+  const ul = document.getElementById('caseList');
+  const items = ul.querySelectorAll('.case-dnd-item');
+  let dragSrcIdx = null;
+
+  items.forEach((li, i) => {
+    li.addEventListener('dragstart', e => {
+      dragSrcIdx = i;
+      li.classList.add('dnd-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    li.addEventListener('dragend', () => {
+      li.classList.remove('dnd-dragging');
+      ul.querySelectorAll('.case-dnd-item').forEach(el => el.classList.remove('dnd-over'));
+    });
+    li.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      ul.querySelectorAll('.case-dnd-item').forEach(el => el.classList.remove('dnd-over'));
+      li.classList.add('dnd-over');
+    });
+    li.addEventListener('dragleave', () => li.classList.remove('dnd-over'));
+    li.addEventListener('drop', async e => {
+      e.preventDefault();
+      if (dragSrcIdx === null || dragSrcIdx === i) return;
+      const [moved] = _casesListData.splice(dragSrcIdx, 1);
+      _casesListData.splice(i, 0, moved);
+      // пересчитываем sortOrder начиная с 1
+      _casesListData.forEach((c, idx) => { c.sortOrder = idx + 1; });
+      renderCaseList();
+      await saveCaseSortOrders();
+    });
+  });
+}
+
+async function saveCaseSortOrders() {
+  try {
+    for (const c of _casesListData) {
+      await api(`/api/cases/${encodeURIComponent(c.id)}`, { method:'PUT', body:JSON.stringify(c) });
+    }
+    toast('Порядок сохранён');
+  } catch(e) { toast('Ошибка сохранения порядка','err'); }
 }
 // ── STEPS EDITOR ─────────────────────────────────────────────────────────────
 let stepsData = []; // [{title, bullets:[], prompt, aiTool, instructionId}]
@@ -929,7 +998,7 @@ async function openCase(id) {
   try { availableAiTools = await api('/api/tools'); } catch(_) { availableAiTools = []; }
   document.getElementById('caseForm').style.display='block';
   document.getElementById('caseFormTitle').textContent = id ? 'Изменить кейс' : 'Новый кейс';
-  ['caseId','caseTitle','caseRole','caseWhenToUse','caseResult','caseTools'].forEach(f => document.getElementById(f).value='');
+  ['caseId','caseTitle','caseRole','caseWhenToUse','caseResult','caseSortOrder'].forEach(f => document.getElementById(f).value='');
   document.getElementById('caseMaturity').value='ready';
   await loadCaseContextDepts('');
   await loadCaseTaskCategories('');
@@ -946,7 +1015,7 @@ async function openCase(id) {
         document.getElementById('caseMaturity').value=c.maturity||'ready';
         document.getElementById('caseWhenToUse').value=c.whenToUse||'';
         document.getElementById('caseResult').value=c.result||'';
-        document.getElementById('caseTools').value=Array.isArray(c.tools)?c.tools.join(', '):(c.tools||'');
+        document.getElementById('caseSortOrder').value=c.sortOrder??'';
         // Загружаем шаги
         stepsData = (c.steps||[]).map(s => ({
           title: s.title||'',
@@ -978,6 +1047,9 @@ document.getElementById('caseSave').addEventListener('click', async () => {
     aiTool: s.aiTool||'',
     instructionId: s.instructionId||''
   }));
+  // инструменты берём из шагов (поле aiTool), дубли убираем
+  const toolsFromSteps = [...new Set(steps.map(s => s.aiTool).filter(Boolean))];
+  const sortOrderVal = parseInt(document.getElementById('caseSortOrder').value);
   const item = {
     id,
     title: document.getElementById('caseTitle').value.trim(),
@@ -987,7 +1059,8 @@ document.getElementById('caseSave').addEventListener('click', async () => {
     maturity: document.getElementById('caseMaturity').value,
     whenToUse: document.getElementById('caseWhenToUse').value.trim(),
     result: document.getElementById('caseResult').value.trim(),
-    tools: document.getElementById('caseTools').value.trim().split(',').map(s=>s.trim()).filter(Boolean),
+    tools: toolsFromSteps,
+    sortOrder: isNaN(sortOrderVal) ? 9999 : sortOrderVal,
     steps
   };
   try {

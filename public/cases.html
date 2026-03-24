@@ -1220,14 +1220,15 @@
         status: c.maturity || 'draft',
         used: c.used || 0,
         task: c.taskCategory || c.task || 'Общее',
-        context: c.context || 'Общее',
-        role: Array.isArray(c.role) ? c.role.join(' / ') : (c.role || 'Специалист'),
+        context: c.context || '',
+        role: Array.isArray(c.role) ? c.role.join(' / ') : (c.role || ''),
         tools: Array.isArray(c.tools) ? c.tools : (c.tools ? c.tools.split(',').map(s=>s.trim()) : []),
         goal: c.whenToUse || c.goal || '',
         steps: Array.isArray(c.steps) ? c.steps : (c.promptTemplate ? [{
           title: 'Промпт',
           bullets: c.result ? [c.result] : [],
-          prompt: c.promptTemplate
+          prompt: c.promptTemplate,
+          aiTool: ''
         }] : [])
       };
     }
@@ -1348,12 +1349,12 @@
           <div class="case-top">
             <div>
               <h3 class="case-title">${escapeHtml(c.title)}</h3>
-              <p class="case-meta">${escapeHtml(c.goal)}</p>
+              ${c.goal ? `<p class="case-meta">${escapeHtml(c.goal)}</p>` : ''}
               <div class="badges">
                 <span class="badge ${statusBadgeClass}">${statusLabel}</span>
-                <span class="badge">${escapeHtml(c.task)}</span>
-                <span class="badge">${escapeHtml(c.role)}</span>
-                <span class="badge">${escapeHtml(c.context)}</span>
+                ${c.task ? `<span class="badge">${escapeHtml(c.task)}</span>` : ''}
+                ${c.role ? `<span class="badge">${escapeHtml(c.role)}</span>` : ''}
+                ${c.context ? `<span class="badge">${escapeHtml(c.context)}</span>` : ''}
               </div>
               <div class="tools-tags">
                 ${c.tools.map(t => `<span>${escapeHtml(t)}</span>`).join("")}
@@ -1433,20 +1434,25 @@
       titleEl.textContent = data.title;
       badgesEl.innerHTML = `
         <span class="badge ${statusBadgeClass}">${statusLabel}</span>
-        <span class="badge">${escapeHtml(data.task)}</span>
-        <span class="badge">${escapeHtml(data.context)}</span>
-        <span class="badge">${escapeHtml(data.role)}</span>
+        ${data.task ? `<span class="badge">${escapeHtml(data.task)}</span>` : ''}
+        ${data.context ? `<span class="badge">${escapeHtml(data.context)}</span>` : ''}
+        ${data.role ? `<span class="badge">${escapeHtml(data.role)}</span>` : ''}
       `;
 
       const stepsHtml = data.steps.map((step, idx) => {
         const promptId = `prompt_${safeId(data.id)}_step_${idx}`;
+        const toolLine = step.aiTool ? `
+          <div style="margin:4px 0 8px; font-size:13px; display:flex; align-items:center; gap:6px;">
+            <span style="color:rgba(255,255,255,.5);">Инструмент:</span>
+            <span style="color:rgba(0,212,255,.9); font-weight:600;">${escapeHtml(step.aiTool)}</span>
+          </div>` : "";
         const bullets = step.bullets && step.bullets.length
           ? `<ul>${step.bullets.map(li => `<li>${escapeHtml(li)}</li>`).join("")}</ul>`
           : "";
         const promptBox = step.prompt ? `
           <div class="codebox">
             <textarea id="${promptId}" readonly>${escapeHtml(step.prompt)}</textarea>
-            <div style="margin-top:6px; display:flex; justify-content:flex-end;">
+            <div style="margin-top:6px; display:flex; justify-content:flex-start; align-items:center; gap:8px; flex-wrap:wrap;">
               <button class="btn small" type="button" data-copy="#${promptId}">Копировать промпт</button>
             </div>
           </div>
@@ -1454,6 +1460,7 @@
         return `
           <div class="case-step">
             <h4>${escapeHtml(step.title)}</h4>
+            ${toolLine}
             ${bullets}
             ${promptBox}
           </div>
@@ -1461,7 +1468,7 @@
       }).join("");
 
       bodyEl.innerHTML = `
-        <p class="muted">${escapeHtml(data.goal)}</p>
+        ${data.goal ? `<p class="muted">${escapeHtml(data.goal)}</p>` : ''}
         <div class="hintline" style="margin:8px 0 10px;">
           Каждый кейс строится как цепочка из нескольких ИИ‑сервисов. Используйте промпты как черновики и подставляйте свои данные
         </div>

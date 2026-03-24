@@ -162,7 +162,7 @@
         </div>
         <div class="field-row">
           <div class="field"><label>Категория задачи</label><input type="text" id="caseTaskCategory" placeholder="Провести встречу / зафиксировать итоги" /></div>
-          <div class="field"><label>Контекст</label><input type="text" id="caseContext" placeholder="Управление" /></div>
+          <div class="field"><label>Контекст</label><select id="caseContext"><option value="">— Выбрать —</option></select></div>
         </div>
         <div class="field-row">
           <div class="field"><label>Роли (через запятую)</label><input type="text" id="caseRole" placeholder="Руководитель, Проектный менеджер" /></div>
@@ -579,6 +579,10 @@ function renderStepsEditor() {
         <textarea style="min-height:70px;" oninput="stepsData[${si}].bullets=this.value.split('\n').map(s=>s.trim()).filter(Boolean)" placeholder="Сформулировать цель&#10;Попросить ИИ предложить структуру&#10;Уточнить формулировки">${esc((step.bullets||[]).join('\n'))}</textarea>
       </div>
       <div class="field">
+        <label>ИИ-инструмент</label>
+        <input type="text" value="${esc(step.aiTool||'')}" oninput="stepsData[${si}].aiTool=this.value" placeholder="Например: ChatGPT, Runway, Midjourney" />
+      </div>
+      <div class="field">
         <label>Промпт для этого шага</label>
         <textarea style="min-height:90px;" oninput="stepsData[${si}].prompt=this.value" placeholder="Роль: ...&#10;Цель: ...&#10;Формат: ...">${esc(step.prompt||'')}</textarea>
       </div>
@@ -599,19 +603,33 @@ function removeStep(idx) {
 }
 
 document.getElementById('addStepBtn').addEventListener('click', () => {
-  stepsData.push({ title: '', bullets: [], prompt: '' });
+  stepsData.push({ title: '', bullets: [], prompt: '', aiTool: '' });
   renderStepsEditor();
   // Scroll to new step
   const blocks = document.querySelectorAll('.step-block');
   if (blocks.length) blocks[blocks.length-1].scrollIntoView({behavior:'smooth', block:'nearest'});
 });
 
+async function loadCaseContextDepts(selectedValue) {
+  const sel = document.getElementById('caseContext');
+  if (!sel) return;
+  try {
+    const depts = await api('/api/departments');
+    sel.innerHTML = '<option value="">— Выбрать —</option>' +
+      depts.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  } catch(e) {
+    sel.innerHTML = '<option value="">— Нет данных —</option>';
+  }
+  if (selectedValue) sel.value = selectedValue;
+}
+
 async function openCase(id) {
   stepsData = [];
   document.getElementById('caseForm').style.display='block';
   document.getElementById('caseFormTitle').textContent = id ? 'Изменить кейс' : 'Новый кейс';
-  ['caseId','caseTitle','caseTaskCategory','caseContext','caseRole','caseWhenToUse','caseResult','caseTools'].forEach(f => document.getElementById(f).value='');
+  ['caseId','caseTitle','caseTaskCategory','caseRole','caseWhenToUse','caseResult','caseTools'].forEach(f => document.getElementById(f).value='');
   document.getElementById('caseMaturity').value='ready';
+  await loadCaseContextDepts('');
   if (id) {
     try {
       const arr = await api('/api/cases?all=true');
@@ -620,7 +638,7 @@ async function openCase(id) {
         document.getElementById('caseId').value=c.id;
         document.getElementById('caseTitle').value=c.title||'';
         document.getElementById('caseTaskCategory').value=c.taskCategory||'';
-        document.getElementById('caseContext').value=c.context||'';
+        await loadCaseContextDepts(c.context||'');
         document.getElementById('caseRole').value=Array.isArray(c.role)?c.role.join(', '):(c.role||'');
         document.getElementById('caseMaturity').value=c.maturity||'ready';
         document.getElementById('caseWhenToUse').value=c.whenToUse||'';
@@ -630,7 +648,8 @@ async function openCase(id) {
         stepsData = (c.steps||[]).map(s => ({
           title: s.title||'',
           bullets: Array.isArray(s.bullets)?s.bullets:[],
-          prompt: s.prompt||''
+          prompt: s.prompt||'',
+          aiTool: s.aiTool||''
         }));
       }
     } catch(e) { toast('Ошибка загрузки','err'); }
@@ -651,7 +670,8 @@ document.getElementById('caseSave').addEventListener('click', async () => {
   const steps = stepsData.map(s => ({
     title: s.title||'',
     bullets: s.bullets||[],
-    prompt: s.prompt||''
+    prompt: s.prompt||'',
+    aiTool: s.aiTool||''
   }));
   const item = {
     id,

@@ -1838,7 +1838,7 @@
       return false;
     }
 
-    let _aiToolsMap = {}; // id/name -> {iconBase64, iconMime} загруженные из /api/tools
+    let _aiToolsMap = {}; // name/id (и lowercase) -> {iconBase64, iconMime, ...} из /api/tools
     async function loadAiToolsCache() {
       try {
         const res = await fetch('/api/tools');
@@ -1846,8 +1846,11 @@
           const arr = await res.json();
           _aiToolsMap = {};
           for (const t of arr) {
-            const key = (t.name || t.id || '').trim();
-            if (key) _aiToolsMap[key] = t;
+            const nameKey = (t.name || '').trim();
+            const idKey   = (t.id   || '').trim();
+            // индексируем по name, id и их lowercase вариантам для надёжного поиска
+            if (nameKey) { _aiToolsMap[nameKey] = t; _aiToolsMap[nameKey.toLowerCase()] = t; }
+            if (idKey)   { _aiToolsMap[idKey]   = t; _aiToolsMap[idKey.toLowerCase()]   = t; }
           }
         }
       } catch(_) {}
@@ -1892,13 +1895,17 @@
       const bg = _toolColor(t);
       const label = _toolLabel(t);
       const [r,g,b] = _hexToRgb(bg);
-      const dbTool = _aiToolsMap[t];
-      const iconHtml = (dbTool && dbTool.iconBase64)
-        ? `<img src="data:${dbTool.iconMime||'image/png'};base64,${dbTool.iconBase64}" alt="${t}" />`
+      // ищем сначала точное совпадение, затем регистронезависимое
+      const dbTool = _aiToolsMap[t] || _aiToolsMap[t.toLowerCase()];
+      const hasIcon = dbTool && dbTool.iconBase64;
+      const iconHtml = hasIcon
+        ? `<img src="data:${dbTool.iconMime||'image/png'};base64,${dbTool.iconBase64}" alt="${escapeHtml(t)}" />`
         : label;
+      // если иконка — не красим фон кружка (картинка сама несёт цвет)
+      const iconBg = hasIcon ? 'transparent' : bg;
       return `<span class="tool-chip" style="background:rgba(${r},${g},${b},0.15);border-color:rgba(${r},${g},${b},0.4);color:${bg}">`
-        + `<span class="tool-chip__icon" style="background:${bg}">${iconHtml}</span>`
-        + `${t}</span>`;
+        + `<span class="tool-chip__icon" style="background:${iconBg}">${iconHtml}</span>`
+        + `${escapeHtml(t)}</span>`;
     }
 
     function escapeHtml(str) {

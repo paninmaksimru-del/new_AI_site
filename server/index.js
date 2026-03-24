@@ -93,7 +93,13 @@ async function start() {
   app.get('/api/cases', async (req, res) => {
     try {
       const { rows } = await query('SELECT id, data FROM cases ORDER BY id');
-      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+      const all = rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') }));
+      // ?all=true is reserved for admin — without it drafts are hidden from public
+      if (req.query.all === 'true') {
+        res.json(all);
+      } else {
+        res.json(all.filter(c => c.maturity !== 'draft'));
+      }
     } catch (e) {
       res.status(500).json({ error: String(e.message) });
     }

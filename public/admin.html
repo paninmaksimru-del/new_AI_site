@@ -489,7 +489,7 @@ document.getElementById('deptAdd').addEventListener('click', async () => {
 async function loadCases() {
   const ul = document.getElementById('caseList');
   try {
-    const arr = await api('/api/cases');
+    const arr = await api('/api/cases?all=true');
     ul.innerHTML = arr.length ? arr.map(c => `
       <li class="list-item">
         <span><b>${esc(c.title||c.id)}</b><span class="badge">${esc(c.id)}</span><span class="badge ${c.maturity==='ready'?'ok':c.maturity==='pilot'?'warn':''}">${esc(c.maturity||'')}</span></span>
@@ -564,7 +564,7 @@ async function openCase(id) {
   document.getElementById('caseMaturity').value='ready';
   if (id) {
     try {
-      const arr = await api('/api/cases');
+      const arr = await api('/api/cases?all=true');
       const c = arr.find(x=>x.id===id);
       if (c) {
         document.getElementById('caseId').value=c.id;

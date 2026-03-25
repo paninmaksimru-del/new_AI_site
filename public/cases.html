@@ -2310,27 +2310,9 @@
       }
 
       container.innerHTML = '';
+      if (showMoreWrap) showMoreWrap.style.display = 'none';
 
-      const VISIBLE = 3;
-      const visibleSections = sections.slice(0, VISIBLE);
-      const hiddenSections  = sections.slice(VISIBLE);
-
-      // Рендерим первые 3
-      renderSections(container, visibleSections);
-
-      // Показываем / скрываем кнопку
-      if (showMoreWrap && showMoreBtn) {
-        if (hiddenSections.length > 0) {
-          showMoreWrap.style.display = 'flex';
-          showMoreBtn.addEventListener('click', () => {
-            renderSections(container, hiddenSections);
-            showMoreWrap.style.display = 'none';
-            initPromptSliders();
-          }, { once: true });
-        } else {
-          showMoreWrap.style.display = 'none';
-        }
-      }
+      renderSections(container, sections);
 
       initTypingAnimations();
       initPromptSliders();

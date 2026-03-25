@@ -357,54 +357,140 @@
       margin-bottom: 4px;
     }
 
-    /* Tracks */
-    .tracks-grid{
-      grid-template-columns: repeat(2, minmax(0,1fr));
-    }
-    .tracks-grid .card{
-      display:flex;
-      flex-direction: column;
-    }
-    .tracks-grid .card h3{
-      margin-bottom: 8px;
-    }
-    .tracks-grid .card p{
-      margin-bottom: 6px;
-    }
-    .tracks-grid .card .muted{
-      margin-top: auto;
-    }
-    .track-label{
-      display:inline-flex;
-      align-items:center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.05);
-      font-size: 12px;
-      color: rgba(255,255,255,.86);
-      margin-bottom: 8px;
-    }
+    /* Tracks — from Yuri version */
+    .tracks-two{ display:grid; grid-template-columns:repeat(2,minmax(420px,1fr)); gap:var(--gap); align-items:stretch; width:100%; }
+    .track-card{ border-radius:var(--radius); border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04); backdrop-filter:var(--blur); overflow:hidden; display:flex; flex-direction:column; min-width:0; width:100%; }
+    .track-card-head{ padding:24px var(--pad) 20px; border-bottom:1px solid rgba(255,255,255,.08); min-height:190px; }
+    .track-badge{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; margin-bottom:12px; }
+    .track-badge.beginner{ background:rgba(38,210,152,.12); border:1px solid rgba(38,210,152,.28); color:rgba(38,210,152,.95); }
+    .track-badge.advanced{ background:rgba(0,160,255,.12); border:1px solid rgba(0,160,255,.28); color:rgba(100,200,255,.95); }
+    .track-card-head h3{ font-size:clamp(20px,2vw,26px); font-weight:800; margin:0 0 8px; }
+    .track-card-head p{ color:var(--muted); font-size:14px; margin:0 0 16px; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; line-clamp:4; overflow:hidden; min-height:5.9em; }
+    .track-meta{ display:flex; flex-wrap:wrap; gap:10px; }
+    .track-meta-pill{ font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:var(--muted); }
+    .track-for-whom{ padding:20px var(--pad); border-bottom:1px solid rgba(255,255,255,.08); }
+    .for-whom-tabs{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+    .for-whom-tab{ font-size:12px; padding:5px 11px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:transparent; cursor:pointer; color:var(--muted); transition:all .15s; }
+    .for-whom-tab.active{ background:rgba(0,180,100,.14); border-color:rgba(0,200,110,.3); color:rgba(255,255,255,.92); }
+    .for-whom-content{ display:none; }
+    .for-whom-content.active{ display:block; }
+    .for-whom-content ul{ margin:0; padding-left:18px; }
+    .for-whom-content li{ font-size:13px; color:var(--muted); margin-bottom:4px; }
+    .track-outcomes{ padding:20px var(--pad); border-bottom:1px solid rgba(255,255,255,.08); min-height:160px; }
+    .track-outcomes h4{ font-size:13px; font-weight:600; color:var(--muted-2); text-transform:uppercase; letter-spacing:.5px; margin:0 0 12px; }
+    .outcomes-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .outcome-item{ display:flex; gap:8px; align-items:flex-start; font-size:13px; color:var(--muted); }
+    .outcome-check{ color:var(--ok); font-size:16px; flex-shrink:0; margin-top:-1px; }
+    .outcome-item span:last-child{ display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden; }
+    .track-tools{ padding:16px var(--pad); border-bottom:1px solid rgba(255,255,255,.08); min-height:108px; }
+    .track-tools h4{ font-size:12px; font-weight:600; color:var(--muted-2); text-transform:uppercase; letter-spacing:.5px; margin:0 0 10px; }
+    .tools-tags{ display:flex; flex-wrap:wrap; gap:6px; }
+    .tool-tag{ font-size:12px; padding:3px 9px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); color:var(--muted); }
+    .tool-tag--ghost{ visibility:hidden; }
+    .track-program{ padding:20px var(--pad); flex:1; min-height:260px; }
+    .track-program h4{ font-size:13px; font-weight:600; color:var(--muted-2); text-transform:uppercase; letter-spacing:.5px; margin:0 0 14px; }
+    .sprint-list{ display:flex; flex-direction:column; }
+    .sprint-item{ border-top:1px solid rgba(255,255,255,.07); }
+    .sprint-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 0; cursor:pointer; user-select:none; }
+    .sprint-header:hover .sprint-title{ color:rgba(255,255,255,.95); }
+    .sprint-left{ display:flex; align-items:center; gap:10px; }
+    .sprint-num{ font-size:11px; font-weight:700; color:var(--muted-2); background:rgba(255,255,255,.06); border-radius:6px; padding:2px 7px; flex-shrink:0; }
+    .sprint-title{ font-size:14px; font-weight:600; color:rgba(255,255,255,.82); transition:color .12s; }
+    .sprint-arrow{ font-size:12px; color:var(--muted-2); transition:transform .3s; flex-shrink:0; }
+    .sprint-item.open .sprint-arrow{ transform:rotate(180deg); }
+    .sprint-body{ max-height:0; overflow:hidden; transition:max-height .4s cubic-bezier(.4,0,.2,1); }
+    .sprint-item.open .sprint-body{ max-height:800px; }
+    .sprint-body-inner{ padding:0 0 16px; }
+    .sprint-practice{ display:flex; align-items:flex-start; gap:8px; background:rgba(0,180,100,.07); border:1px solid rgba(0,180,100,.18); border-radius:10px; padding:10px 12px; margin-bottom:10px; font-size:13px; color:rgba(255,255,255,.82); }
+    .sprint-practice-icon{ font-size:15px; flex-shrink:0; margin-top:1px; }
+    .sprint-topics{ margin:0; padding-left:18px; }
+    .sprint-topics li{ font-size:13px; color:var(--muted); margin-bottom:4px; line-height:1.4; }
+    .sprint-subtopic{ margin-top:6px; padding-left:14px; list-style:circle; }
+    .sprint-subtopic li{ font-size:12px; color:var(--muted-2); }
+    .track-cta{ padding:16px var(--pad) 20px; margin-top:auto; }
 
-    /* Videos */
-    .video-grid{
-      grid-template-columns: repeat(3, minmax(0,1fr));
+    /* Carousel — 3D drum effect */
+    .carousel-wrap{ position:relative; perspective:1200px; overflow:hidden; padding:20px 0 10px; }
+    .carousel-stage{
+      display:flex; align-items:center; justify-content:center;
+      position:relative; min-height:320px;
     }
+    .carousel-stage > .card{
+      position:absolute; width:340px; max-width:80vw;
+      transition: transform .5s cubic-bezier(.4,0,.2,1), opacity .5s ease, filter .5s ease;
+      transform-origin: center center;
+      cursor:pointer;
+    }
+    .carousel-stage > .card.c-center{
+      transform: translateX(0) scale(1) rotateY(0deg);
+      opacity:1; z-index:3; filter:brightness(1);
+    }
+    .carousel-stage > .card.c-left{
+      transform: translateX(-110%) scale(.82) rotateY(18deg);
+      opacity:.6; z-index:2; filter:brightness(.7);
+    }
+    .carousel-stage > .card.c-right{
+      transform: translateX(110%) scale(.82) rotateY(-18deg);
+      opacity:.6; z-index:2; filter:brightness(.7);
+    }
+    .carousel-stage > .card.c-far-left{
+      transform: translateX(-190%) scale(.65) rotateY(30deg);
+      opacity:0; z-index:1; pointer-events:none; filter:brightness(.5);
+    }
+    .carousel-stage > .card.c-far-right{
+      transform: translateX(190%) scale(.65) rotateY(-30deg);
+      opacity:0; z-index:1; pointer-events:none; filter:brightness(.5);
+    }
+    .carousel-stage > .card.c-hidden{
+      transform: translateX(0) scale(.5); opacity:0; z-index:0; pointer-events:none;
+    }
+    .carousel-btn{
+      position:absolute; top:50%; transform:translateY(-50%); z-index:5;
+      width:44px; height:44px; border-radius:50%;
+      border:1px solid rgba(255,255,255,.18); background:rgba(7,10,16,.75);
+      backdrop-filter:blur(8px); color:rgba(255,255,255,.85);
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; transition:background .15s, border-color .15s, opacity .2s;
+      font-size:18px; line-height:1;
+    }
+    .carousel-btn:hover{ background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.35); }
+    .carousel-btn.prev{ left:8px; }
+    .carousel-btn.next{ right:8px; }
+    .carousel-dots{
+      display:flex; justify-content:center; gap:8px; margin-top:16px;
+    }
+    .carousel-dot{
+      width:8px; height:8px; border-radius:50%;
+      background:rgba(255,255,255,.18); border:none; cursor:pointer;
+      transition:background .2s, transform .2s;
+    }
+    .carousel-dot.active{ background:rgba(0,180,100,.7); transform:scale(1.3); }
+
+    /* Videos — animated breathing */
+    .video-grid{ grid-template-columns:repeat(3,minmax(0,1fr)); }
     .video-thumb{
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: radial-gradient(circle at 20% 0%, rgba(0,190,110,.4), transparent 55%),
-                  radial-gradient(circle at 80% 120%, rgba(0,220,120,.35), transparent 60%),
-                  rgba(0,0,0,.4);
-      min-height: 140px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color: rgba(255,255,255,.82);
-      font-size: 13px;
-      margin-bottom: 10px;
+      border-radius:14px; border:1px solid rgba(255,255,255,.16);
+      min-height:140px; position:relative; overflow:hidden;
+      display:flex; align-items:center; justify-content:center;
+      margin-bottom:10px; cursor:pointer;
     }
+    .video-thumb .vt-bg{
+      position:absolute; inset:-20px;
+      background:linear-gradient(135deg, rgba(120,140,255,.35) 0%, rgba(38,210,152,.30) 50%, rgba(78,135,255,.35) 100%);
+      background-size:300% 300%;
+      animation:vt-breathe 6s ease-in-out infinite;
+    }
+    @keyframes vt-breathe{ 0%,100%{ background-position:0% 50%; } 50%{ background-position:100% 50%; } }
+    .video-thumb .vt-dots{ position:absolute; inset:0; z-index:1; opacity:.18; }
+    .video-thumb .vt-play{
+      position:relative; z-index:2; width:52px; height:52px; border-radius:50%;
+      background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center;
+      animation:vt-pulse 2.5s ease-out infinite;
+    }
+    @keyframes vt-pulse{ 0%{ box-shadow:0 0 0 0 rgba(120,140,255,.35); } 70%{ box-shadow:0 0 0 14px rgba(120,140,255,0); } 100%{ box-shadow:0 0 0 0 rgba(120,140,255,0); } }
+    .video-thumb .vt-play svg{ margin-left:3px; }
+    .video-thumb .vt-dur{ position:absolute; top:10px; right:12px; z-index:2; font-size:11px; font-weight:600; padding:3px 9px; border-radius:8px; background:rgba(255,255,255,.12); color:rgba(255,255,255,.78); }
+    .video-thumb:hover .vt-play{ background:rgba(255,255,255,.25); }
 
     /* Speakers */
     .speaker-grid{
@@ -844,10 +930,7 @@
       transition: background .2s, border-color .2s, transform .2s, box-shadow .2s;
     }
     .hero-btn-secondary::after {
-      content: '→';
-      display: inline-block;
-      transition: transform .2s ease;
-      margin-left: 2px;
+      content: '';
     }
     .hero-btn-secondary:hover::after {
       transform: translateX(4px);
@@ -1116,7 +1199,7 @@
           <article class="card span-2">
             <div style="display:flex; align-items:baseline; gap:24px; flex-wrap:wrap; margin-bottom:16px;">
               <h3 style="margin:0; white-space:nowrap;">Искусственный интеллект — это</h3>
-              <p style="margin:0; color:rgba(255,255,255,.7); font-size:14px;">Инструмент, который берёт на себя рутину с текстом — читает, анализирует, формулирует. Не заменяет вас, но экономит часы</p>
+              <p style="margin:0; color:rgba(255,255,255,.7); font-size:14px;">Инструмент, который берет на себя рутину с текстом — читает, анализирует, формулирует. Не заменяет вас, но экономит часы</p>
             </div>
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
               <button type="button" class="pill">Черновики записок и справок</button>
@@ -1155,36 +1238,301 @@
     <!-- Треки обучения -->
     <section id="tracks">
       <div class="wrap">
-        <h2 class="h2">Треки обучения</h2>
-        <p class="lead">Выберите трек под свой уровень: если ИИ — это пока что-то новое, или если уже пользуетесь и хотите большего.</p>
-
-        <div class="grid tracks-grid" style="margin-top:16px; grid-template-columns: 1fr 1fr;">
-
-          <article class="card" style="display:flex; flex-direction:column; gap:16px;">
-            <div>
-              <h3 style="margin-bottom:8px;">Начальный уровень</h3>
-              <p style="margin-bottom:10px;">Для тех, кто пока не использует ИИ в работе — или открывал ChatGPT пару раз и закрыл. Разбираемся с основами, пробуем простые задачи и перестаём бояться</p>
-              <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <span style="padding:4px 12px; border-radius:20px; font-size:12px; background:rgba(0,200,100,.1); border:1px solid rgba(0,200,100,.2); color:rgba(180,255,210,.8);">Word</span>
-                <span style="padding:4px 12px; border-radius:20px; font-size:12px; background:rgba(0,200,100,.1); border:1px solid rgba(0,200,100,.2); color:rgba(180,255,210,.8);">PowerPoint</span>
-              </div>
-            </div>
-            <button type="button" class="btn small track-btn" data-track-id="novice" data-track-title="Индивидуальный план: Начальный уровень" data-track-level="Начальный уровень" data-plan-url="#consult" style="margin-top:auto;">Подобрать план</button>
-          </article>
-
-          <article class="card" style="display:flex; flex-direction:column; gap:16px;">
-            <div>
-              <h3 style="margin-bottom:8px;">Продвинутый уровень</h3>
-              <p style="margin-bottom:10px;">Для тех, кто уже использует ИИ и хочет выйти за рамки простых запросов. Учимся выстраивать рабочие процессы, создавать шаблоны и работать с несколькими моделями</p>
-              <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <span style="padding:4px 12px; border-radius:20px; font-size:12px; background:rgba(0,200,100,.1); border:1px solid rgba(0,200,100,.2); color:rgba(180,255,210,.8);">Claude</span>
-                <span style="padding:4px 12px; border-radius:20px; font-size:12px; background:rgba(0,200,100,.1); border:1px solid rgba(0,200,100,.2); color:rgba(180,255,210,.8);">NotebookLM</span>
-              </div>
-            </div>
-            <button type="button" class="btn small track-btn" data-track-id="advanced" data-track-title="Индивидуальный план: Продвинутый уровень" data-track-level="Продвинутый уровень" data-plan-url="#consult" style="margin-top:auto;">Подобрать план</button>
-          </article>
-
+        <div class="tracks-header">
+          <div>
+            <h2 class="h2">Треки обучения</h2>
+            <p class="lead">Два пути — от первого знакомства с ИИ до системного применения в работе.</p>
+          </div>
         </div>
+
+        <div class="tracks-two">
+
+          <!-- ===== ТРЕК 1: НАЧАЛЬНЫЙ ===== -->
+          <div class="track-card">
+            <div class="track-card-head">
+              <div class="track-badge beginner">Начальный уровень</div>
+              <h3>Начальный уровень</h3>
+              <p>Разберитесь с нейросетями и начните применять их в повседневных задачах.</p>
+              <div class="track-meta">
+                <span class="track-meta-pill">4 недели</span>
+                <span class="track-meta-pill">1.5–2 ч/нед</span>
+                <span class="track-meta-pill">Самостоятельно онлайн</span>
+              </div>
+            </div>
+
+            <div class="track-outcomes">
+              <h4>Что вы получите</h4>
+              <div class="outcomes-grid">
+                <div class="outcome-item"><span class="outcome-check">✓</span><span>Начнете применять ИИ в работе — системно и без страха</span></div>
+                <div class="outcome-item"><span class="outcome-check">✓</span><span>Научитесь писать запросы, которые дают нужный результат</span></div>
+                <div class="outcome-item"><span class="outcome-check">✓</span><span>Сэкономите 1–2 часа в день на рутинных задачах</span></div>
+              </div>
+            </div>
+
+            <div class="track-tools">
+              <h4>Инструменты</h4>
+              <div class="tools-tags">
+                <span class="tool-tag">ChatGPT</span>
+                <span class="tool-tag">Claude</span>
+                <span class="tool-tag">YandexGPT</span>
+                <span class="tool-tag">GigaChat</span>
+                <span class="tool-tag">QwenAI</span>
+                <span class="tool-tag">DeepSeek</span>
+                <span class="tool-tag">Gemini</span>
+                <span class="tool-tag tool-tag--ghost">placeholder</span>
+                <span class="tool-tag tool-tag--ghost">placeholder</span>
+                <span class="tool-tag tool-tag--ghost">placeholder</span>
+                <span class="tool-tag tool-tag--ghost">placeholder</span>
+              </div>
+            </div>
+
+            <div class="track-program">
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+                <span class="track-meta-pill">4 модуля</span>
+                <span class="track-meta-pill">8 ак. часов</span>
+                <span class="track-meta-pill">4 практические работы</span>
+              </div>
+              <h4>Программа · 4 модуля</h4>
+              <div class="sprint-list">
+
+                <div class="sprint-item open">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 1 · 3 ч</span>
+                      <span class="sprint-title">Введение в искусственный интеллект</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Что такое искусственный интеллект?</li>
+                      <li>Этапы развития искусственного интеллекта</li>
+                      <li>Типы ИИ: узкий ИИ, общий ИИ, суперинтеллект</li>
+                      <li>Обзор современных направлений ИИ: машинное обучение, нейросети, генеративные модели</li>
+                      <li>Почему ИИ ошибается — галлюцинации и как с ними работать</li>
+                      <li>ИИ не заменяет сотрудника: правильное понимание роли</li>
+                    </ul>
+                    <div class="sprint-practice"><span>Практика: закрепление пройденного теоретического материала</span></div>
+                  </div></div>
+                </div>
+
+                <div class="sprint-item">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 2 · 3 ч</span>
+                      <span class="sprint-title">Правила составления промптов и работа с языковыми моделями</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Что такое промпт (prompt)? Основные принципы эффективного взаимодействия с ИИ</li>
+                      <li>Формула хорошего промпта: Роль + Задача + Контекст + Формат</li>
+                      <li>Примеры успешных и неудачных промптов</li>
+                    </ul>
+                    <div class="sprint-practice"><span>Практика: работа с популярными языковыми моделями — ChatGPT, Claude, YandexGPT, GigaChat, QwenAI, DeepSeek и др.</span></div>
+                  </div></div>
+                </div>
+
+                <div class="sprint-item">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 3 · 3 ч</span>
+                      <span class="sprint-title">Инструменты. Какой ИИ для каких задач?</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Обзор областей применения ИИ-инструментов: анализ данных, автоматизация процессов, перевод текстов, обработка изображений</li>
+                      <li>Сильные стороны каждой ИИ-модели: ChatGPT, Claude, YandexGPT, GigaChat, QwenAI, DeepSeek и др.</li>
+                    </ul>
+                    <div class="sprint-practice"><span>Практика: работа с различными инструментами ИИ — ChatGPT, Perplexity, Claude, YandexGPT и др.</span></div>
+                  </div></div>
+                </div>
+
+                <div class="sprint-item">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 4 · 2 ч</span>
+                      <span class="sprint-title">Практические сценарии использования ИИ: преимущества и недостатки</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Когда ИИ действительно помогает: анализ трудоемких процессов</li>
+                      <li>Ограничения ИИ: что он не может сделать (креативность, эмпатия, этические решения)</li>
+                      <li>Примеры успешного внедрения ИИ в бизнес-процессы</li>
+                    </ul>
+                    <div class="sprint-practice"><span>Практика: проанализируйте одну задачу из своей работы — определите где ИИ даст максимум эффекта и где его использовать не стоит</span></div>
+                  </div></div>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="track-cta">
+              <a class="btn primary full" href="#consult">Начать обучение</a>
+            </div>
+          </div>
+
+          <!-- ===== ТРЕК 2: ПРОДВИНУТЫЙ ===== -->
+          <div class="track-card">
+            <div class="track-card-head">
+              <div class="track-badge advanced">Продвинутый уровень</div>
+              <h3>Продвинутый уровень</h3>
+              <p>Курс для тех, кто уже умеет пользоваться AI, но хочет выйти на следующий уровень: понимать, как устроены современные модели, как комбинировать несколько инструментов, подключать документы и данные, собирать AI-пайплайны.</p>
+              <div class="track-meta">
+                <span class="track-meta-pill">3 недели</span>
+                <span class="track-meta-pill">1.5–2 ч/нед</span>
+                <span class="track-meta-pill">Самостоятельно онлайн</span>
+              </div>
+            </div>
+
+            <div class="track-outcomes">
+              <h4>Что вы получите</h4>
+              <div class="outcomes-grid">
+                <div class="outcome-item"><span class="outcome-check">✓</span><span>Понимание на прикладном уровне, как работают ИИ</span></div>
+                <div class="outcome-item"><span class="outcome-check">✓</span><span>Анализ процесса отдела — найдете где применить ИИ</span></div>
+                <div class="outcome-item"><span class="outcome-check">✓</span><span>Научитесь проектировать AI-решение</span></div>
+              </div>
+            </div>
+
+            <div class="track-tools">
+              <h4>Инструменты</h4>
+              <div class="tools-tags">
+                <span class="tool-tag">ChatGPT</span>
+                <span class="tool-tag">Claude</span>
+                <span class="tool-tag">DeepSeek</span>
+                <span class="tool-tag">Perplexity</span>
+                <span class="tool-tag">YandexGPT</span>
+                <span class="tool-tag">GigaChat</span>
+                <span class="tool-tag">QwenAI</span>
+                <span class="tool-tag">Manus</span>
+                <span class="tool-tag">OpenClaw</span>
+                <span class="tool-tag">Gemini</span>
+              </div>
+            </div>
+
+            <div class="track-program">
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+                <span class="track-meta-pill">3 модуля</span>
+                <span class="track-meta-pill">9 ак. часов</span>
+                <span class="track-meta-pill">3 практические работы</span>
+              </div>
+              <h4>Программа · 3 модуля</h4>
+              <div class="sprint-list">
+
+                <div class="sprint-item open">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 1 · 3 ч</span>
+                      <span class="sprint-title">Как на самом деле работают современные нейросети</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Что такое нейросеть, а что такое LLM</li>
+                      <li>Почему LLM — это не "вся нейросеть", а отдельный класс моделей</li>
+                      <li>Токены, контекстное окно, embeddings</li>
+                      <li>Transformer и attention — простым языком</li>
+                      <li>Почему модель "знает", но не всегда "помнит"</li>
+                      <li>Почему возникают галлюцинации</li>
+                      <li>Чем отличаются модели друг от друга: архитектура, обучение, специализация</li>
+                      <li>Когда нужен один тип модели, а когда другой</li>
+                      <li>Мультимодальность: модели которые работают с несколькими типами данных одновременно</li>
+                    </ul>
+                    <div class="sprint-practice"><span>Практика: сравните один и тот же запрос в трех разных моделях — зафиксируйте различия в качестве, стиле и точности</span></div>
+                  </div></div>
+                </div>
+
+                <div class="sprint-item">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 2 · 3 ч</span>
+                      <span class="sprint-title">От промпта к системе: как проектировать AI-решение</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Почему хороший результат зависит не только от запроса?</li>
+                      <li>Декомпозиция задачи:
+                        <ul class="sprint-subtopic">
+                          <li>что должна сделать модель</li>
+                          <li>что должен сделать человек</li>
+                          <li>что лучше отдать другому инструменту</li>
+                        </ul>
+                      </li>
+                      <li>System prompt: задать модели роль, стиль и ограничения раз и навсегда</li>
+                      <li>Chain of thought: пошаговое рассуждение для сложных аналитических задач</li>
+                      <li>Few-shot prompting: обучаем модель на примерах прямо в запросе</li>
+                      <li>Цепочки шагов:
+                        <ul class="sprint-subtopic">
+                          <li>сначала собрать данные</li>
+                          <li>потом извлечь факты</li>
+                          <li>потом проверить</li>
+                          <li>потом сформировать ответ</li>
+                        </ul>
+                      </li>
+                      <li>Когда лучше делать один длинный запрос, а когда цепочку из нескольких шагов</li>
+                    </ul>
+                    <div class="sprint-practice"><span>Практика: создайте цепочку из 3 связанных промптов для реальной задачи вашего отдела — каждый следующий использует результат предыдущего</span></div>
+                  </div></div>
+                </div>
+
+                <div class="sprint-item">
+                  <div class="sprint-header">
+                    <div class="sprint-left">
+                      <span class="sprint-num">Модуль 3 · 3 ч</span>
+                      <span class="sprint-title">Комбинация нескольких инструментов под одну задачу</span>
+                    </div>
+                    <span class="sprint-arrow">▾</span>
+                  </div>
+                  <div class="sprint-body"><div class="sprint-body-inner">
+                    <ul class="sprint-topics">
+                      <li>Почему одна модель редко идеально решает всю задачу</li>
+                      <li>Типовые связки:
+                        <ul class="sprint-subtopic">
+                          <li>поиск → анализ → оформление</li>
+                          <li>документы → извлечение фактов → сводка</li>
+                          <li>таблица → расчет → объяснение</li>
+                          <li>LLM → генерация → вторая модель → проверка</li>
+                        </ul>
+                      </li>
+                      <li>Роли инструментов:
+                        <ul class="sprint-subtopic">
+                          <li>одна модель лучше пишет</li>
+                          <li>другая лучше рассуждает</li>
+                          <li>третья лучше ищет</li>
+                          <li>четвертая лучше работает с файлами</li>
+                        </ul>
+                      </li>
+                      <li>AI как workflow, а не как один чат</li>
+                      <li>Человек в контуре: где он должен подтверждать результат</li>
+                      <li>Примеры кейсов:
+                        <ul class="sprint-subtopic">
+                          <li>Аналитическая записка: Perplexity/поиск → Claude/GPT для анализа → таблица → финальная записка</li>
+                          <li>Связка DeepSeek + Gemini: глубокий анализ данных с визуализацией</li>
+                          <li>Подготовка встречи: сбор информации → саммари → вопросы → письмо по итогам</li>
+                        </ul>
+                      </li>
+                    </ul>
+                    <div class="sprint-practice"><span>Практика: решите одну реальную рабочую задачу используя минимум два разных инструмента последовательно — опишите какой вклад внес каждый</span></div>
+                  </div></div>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="track-cta">
+              <a class="btn primary full" href="#consult">Начать обучение</a>
+            </div>
+          </div>
+
+        </div><!-- /tracks-two -->
 
         <div class="panel pad" style="margin-top:20px;">
           <div style="display:flex; flex-wrap:wrap; gap:16px; justify-content:space-between; align-items:flex-start;">
@@ -1199,34 +1547,47 @@
       </div>
     </section>
 
-    <!-- Видеоматериалы -->
+    <!-- Видеоматериалы — карусель -->
     <section id="videos">
       <div class="wrap">
         <h2 class="h2">Видеоматериалы</h2>
-        <p class="lead">Записи лекций, воркшопов и короткие обучающие ролики. В каждую карточку можно будет добавить видео или ссылку</p>
-
-        <div class="grid video-grid" style="margin-top:16px;">
+        <p class="lead">Записи лекций, воркшопов и короткие обучающие ролики. В каждую карточку можно будет добавить видео или ссылку.</p>
+        <div class="carousel-wrap" style="margin-top:16px;" data-carousel="videos">
+          <button class="carousel-btn prev hidden" aria-label="Назад"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="10,2 4,8 10,14"/></svg></button>
+          <div class="carousel-stage">
           <article class="card">
             <div class="video-thumb">
-              Плейсхолдер под обложку или встраиваемое видео
+              <div class="vt-bg"></div>
+              <svg class="vt-dots" width="100%" height="100%"><pattern id="vdot1" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="9" cy="9" r="1" fill="currentColor"/></pattern><rect width="100%" height="100%" fill="url(#vdot1)"/></svg>
+              <div class="vt-play"><svg width="20" height="20" viewBox="0 0 20 20"><polygon points="6,3 17,10 6,17" fill="rgba(255,255,255,.9)"/></svg></div>
+              <div class="vt-dur">12 мин</div>
             </div>
             <h3>Введение в ИИ для сотрудников МИК</h3>
-            <p class="muted">Краткое объяснение ключевых понятий и примеров из работы Фонда</p>
+            <p class="muted">Краткое объяснение ключевых понятий и примеров из работы Фонда.</p>
           </article>
           <article class="card">
             <div class="video-thumb">
-              Плейсхолдер под обложку или встраиваемое видео
+              <div class="vt-bg" style="animation-delay:-2s;"></div>
+              <svg class="vt-dots" width="100%" height="100%"><pattern id="vdot2" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="9" cy="9" r="1" fill="currentColor"/></pattern><rect width="100%" height="100%" fill="url(#vdot2)"/></svg>
+              <div class="vt-play" style="animation-delay:-0.8s;"><svg width="20" height="20" viewBox="0 0 20 20"><polygon points="6,3 17,10 6,17" fill="rgba(255,255,255,.9)"/></svg></div>
+              <div class="vt-dur">18 мин</div>
             </div>
             <h3>Практика: как формулировать хороший запрос</h3>
-            <p class="muted">Живые демонстрации на примерах писем, записок, аналитики</p>
+            <p class="muted">Живые демонстрации на примерах писем, записок, аналитики.</p>
           </article>
           <article class="card">
             <div class="video-thumb">
-              Плейсхолдер под обложку или встраиваемое видео
+              <div class="vt-bg" style="animation-delay:-4s;"></div>
+              <svg class="vt-dots" width="100%" height="100%"><pattern id="vdot3" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="9" cy="9" r="1" fill="currentColor"/></pattern><rect width="100%" height="100%" fill="url(#vdot3)"/></svg>
+              <div class="vt-play" style="animation-delay:-1.6s;"><svg width="20" height="20" viewBox="0 0 20 20"><polygon points="6,3 17,10 6,17" fill="rgba(255,255,255,.9)"/></svg></div>
+              <div class="vt-dur">10 мин</div>
             </div>
             <h3>Безопасность и работа с данными</h3>
-            <p class="muted">Какие данные можно загружать в ИИ‑сервисы и как работать с ограничениями</p>
+            <p class="muted">Какие данные можно загружать в ИИ‑сервисы и как работать с ограничениями.</p>
           </article>
+          </div>
+          <button class="carousel-btn next" aria-label="Вперед"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,2 12,8 6,14"/></svg></button>
+          <div class="carousel-dots"></div>
         </div>
       </div>
     </section>
@@ -1235,9 +1596,11 @@
     <section id="speakers">
       <div class="wrap">
         <h2 class="h2">Спикеры и наставники</h2>
-        <p class="lead">Команда, которая ведёт лекции, воркшопы и индивидуальные консультации по ИИ</p>
+        <p class="lead">Команда, которая ведет лекции, воркшопы и индивидуальные консультации по ИИ</p>
 
-        <div class="grid speaker-grid" style="margin-top:16px;">
+        <div class="carousel-wrap" style="margin-top:16px;" data-carousel="speakers">
+          <button class="carousel-btn prev hidden" aria-label="Назад"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="10,2 4,8 10,14"/></svg></button>
+          <div class="carousel-stage">
           <article class="card speaker-card">
             <div class="speaker-top">
               <div class="speaker-photo" style="background:none; overflow:hidden;">
@@ -1260,7 +1623,7 @@
                 <div class="speaker-role">Аналитик данных · Департамент развития</div>
               </div>
             </div>
-            <p>Сферы экспертизы: Аналитика, отчётность, визуализация данных, работа с таблицами</p>
+            <p>Сферы экспертизы: Аналитика, отчетность, визуализация данных, работа с таблицами</p>
           </article>
           <article class="card speaker-card">
             <div class="speaker-top">
@@ -1274,6 +1637,9 @@
             </div>
             <p>Сферы экспертизы: Управление командами, внедрение ИИ в процессы подразделений</p>
           </article>
+          </div>
+          <button class="carousel-btn next" aria-label="Вперед"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,2 12,8 6,14"/></svg></button>
+          <div class="carousel-dots"></div>
         </div>
       </div>
     </section>
@@ -1305,7 +1671,7 @@
               <a class="btn small primary" href="#" target="_blank" rel="noopener">Записаться</a>
             </div>
             <div class="event-meta">
-              <span>Ведёт: Имя Фамилия</span>
+              <span>Ведет: Имя Фамилия</span>
               <span>Трек: Уверенный пользователь</span>
             </div>
             <div class="event-links">
@@ -1325,7 +1691,7 @@
               <a class="btn small primary" href="#" target="_blank" rel="noopener">Записаться</a>
             </div>
             <div class="event-meta">
-              <span>Ведёт: Имя Фамилия</span>
+              <span>Ведет: Имя Фамилия</span>
               <span>Трек: Продвинутый / для руководителей</span>
             </div>
             <div class="event-links">
@@ -1345,7 +1711,7 @@
               <a class="btn small primary" href="#" target="_blank" rel="noopener">Записаться</a>
             </div>
             <div class="event-meta">
-              <span>Ведёт: Имя Фамилия</span>
+              <span>Ведет: Имя Фамилия</span>
               <span>Формат: мероприятия</span>
             </div>
             <div class="event-links">
@@ -1420,7 +1786,7 @@
           </div>
 
           <div style="margin-top:12px; font-size:12px; color:rgba(255,255,255,.3);">
-            Или сразу перейти к регистрации: <a id="brwRegisterEl" href="https://app.dolphin-anty.com" target="_blank" rel="noopener" style="color:rgba(0,210,100,.7); text-decoration:none;">app.dolphin‑anty.com →</a>
+            Или сразу перейти к регистрации: <a id="brwRegisterEl" href="https://app.dolphin-anty.com" target="_blank" rel="noopener" style="color:rgba(0,210,100,.7); text-decoration:none;">app.dolphin‑anty.com</a>
           </div>
 
         </div>
@@ -1462,7 +1828,7 @@
               <p class="neural-card-name">Claude</p>
               <p class="neural-card-vendor">Anthropic</p>
             </div>
-            <p class="neural-card-desc">Отлично читает и анализирует длинные документы, пишет развёрнутые тексты. Подходит для работы с регламентами и отчётами</p>
+            <p class="neural-card-desc">Отлично читает и анализирует длинные документы, пишет развернутые тексты. Подходит для работы с регламентами и отчетами</p>
             <div class="neural-card-tags">
               <span class="neural-tag">Документы</span>
               <span class="neural-tag">Данные</span>
@@ -1525,8 +1891,8 @@
               <p class="muted" style="font-size:13px;">Разбираем принципы работы языковых моделей без технических терминов — на примерах из офисной практики</p>
             </div>
             <div style="display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
-              <span style="font-size:12px; color:rgba(255,255,255,.35);">⏱ 5 мин</span>
-              <a href="https://habr.com/ru/articles/942414/" target="_blank" rel="noopener" style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.85); font-size:13px; font-weight:500; text-decoration:none; transition:background .15s;">Перейти →</a>
+              <span style="font-size:12px; color:rgba(255,255,255,.35);">5 мин</span>
+              <a href="https://habr.com/ru/articles/942414/" target="_blank" rel="noopener" style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.85); font-size:13px; font-weight:500; text-decoration:none; transition:background .15s;">Перейти</a>
             </div>
           </article>
 
@@ -1539,8 +1905,8 @@
               <p class="muted" style="font-size:13px;">Готовые шаблоны запросов для писем, справок, протоколов и аналитических сводок — с примерами и советами по адаптации</p>
             </div>
             <div style="display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
-              <span style="font-size:12px; color:rgba(255,255,255,.35);">⏱ 7 мин</span>
-              <span style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:rgba(255,255,255,.3); font-size:13px; font-weight:500; cursor:default;">Скоро →</span>
+              <span style="font-size:12px; color:rgba(255,255,255,.35);">7 мин</span>
+              <span style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:rgba(255,255,255,.3); font-size:13px; font-weight:500; cursor:default;">Скоро</span>
             </div>
           </article>
 
@@ -1553,8 +1919,8 @@
               <p class="muted" style="font-size:13px;">Разбираем, какие данные безопасно использовать в запросах и как не нарушить правила информационной безопасности</p>
             </div>
             <div style="display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
-              <span style="font-size:12px; color:rgba(255,255,255,.35);">⏱ 4 мин</span>
-              <span style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:rgba(255,255,255,.3); font-size:13px; font-weight:500; cursor:default;">Скоро →</span>
+              <span style="font-size:12px; color:rgba(255,255,255,.35);">4 мин</span>
+              <span style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:rgba(255,255,255,.3); font-size:13px; font-weight:500; cursor:default;">Скоро</span>
             </div>
           </article>
 
@@ -1566,8 +1932,8 @@
               <p class="muted" style="font-size:13px;">Основы ролей и промптирования для настройки ИИ-агнета под конкретные задачи</p>
             </div>
             <div style="display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
-              <span style="font-size:12px; color:rgba(255,255,255,.35);">⏱ 4 мин</span>
-              <span style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:rgba(255,255,255,.3); font-size:13px; font-weight:500; cursor:default;">Скоро →</span>
+              <span style="font-size:12px; color:rgba(255,255,255,.35);">4 мин</span>
+              <span style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:rgba(255,255,255,.3); font-size:13px; font-weight:500; cursor:default;">Скоро</span>
             </div>
           </article>
 
@@ -1682,7 +2048,7 @@
           <label class="quiz-option"><input type="radio" name="mq1" value="2"><span>Иногда использую для отдельных задач</span></label>
           <label class="quiz-option"><input type="radio" name="mq1" value="3"><span>Регулярно применяю ИИ для разных типов задач</span></label>
         </div>
-        <button type="button" class="btn small primary quiz-next" data-next="2">Далее →</button>
+        <button type="button" class="btn small primary quiz-next" data-next="2">Далее</button>
       </div>
 
       <!-- Step 2 -->
@@ -1694,7 +2060,7 @@
           <label class="quiz-option"><input type="radio" name="mq2" value="2"><span>Могу сформулировать запрос, но результат не всегда предсказуем</span></label>
           <label class="quiz-option"><input type="radio" name="mq2" value="3"><span>Умею задавать точные запросы и дорабатывать ответы</span></label>
         </div>
-        <button type="button" class="btn small primary quiz-next" data-next="3">Далее →</button>
+        <button type="button" class="btn small primary quiz-next" data-next="3">Далее</button>
       </div>
 
       <!-- Step 3 -->
@@ -1886,6 +2252,32 @@
           if (isAuthed && fullName && span) span.textContent = fullName;
         });
       })();
+
+      // Спринты accordion (обе карточки)
+      document.querySelectorAll('.sprint-header').forEach(header => {
+        header.addEventListener('click', () => {
+          const item = header.parentElement;
+          const list = item.closest('.sprint-list');
+          const isOpen = item.classList.contains('open');
+          list.querySelectorAll('.sprint-item').forEach(i => i.classList.remove('open'));
+          if (!isOpen) item.classList.add('open');
+        });
+      });
+
+      // Для кого — переключатели (для каждой карточки трека независимо)
+      document.querySelectorAll('.for-whom-tabs').forEach(tabsEl => {
+        tabsEl.querySelectorAll('.for-whom-tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            const targetId = tab.dataset.tab;
+            const parent = tab.closest('.track-for-whom');
+            parent.querySelectorAll('.for-whom-tab').forEach(t => t.classList.remove('active'));
+            parent.querySelectorAll('.for-whom-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            const target = parent.querySelector('#' + targetId);
+            if (target) target.classList.add('active');
+          });
+        });
+      });
 
       // Фильтр календаря
       const filterButtons = Array.from(document.querySelectorAll("[data-calendar-filter]"));
@@ -2088,7 +2480,7 @@
             if (score <= 4){
               text = "Ваш текущий уровень — ближе к треку «Новичок». Начните с базовых материалов и практики.";
             } else if (score <= 7){
-              text = "Вам подойдёт трек «Уверенный пользователь». Вы уже знакомы с ИИ и можете углубляться в задачи.";
+              text = "Вам подойдет трек «Уверенный пользователь». Вы уже знакомы с ИИ и можете углубляться в задачи.";
             } else {
               text = "Рекомендуем треки «Продвинутый» и «Для руководителей» — вы готовы к глубокому внедрению ИИ в процессы.";
             }
@@ -2142,6 +2534,77 @@
           showToast("Заявка отправлена (демо)");
         });
       }
+    });
+
+    // 3D Drum Carousels (videos + speakers)
+    document.querySelectorAll('[data-carousel]').forEach(wrap => {
+      const stage = wrap.querySelector('.carousel-stage');
+      const prevBtn = wrap.querySelector('.carousel-btn.prev');
+      const nextBtn = wrap.querySelector('.carousel-btn.next');
+      const dotsWrap = wrap.querySelector('.carousel-dots');
+      if (!stage) return;
+
+      const cards = Array.from(stage.children);
+      let current = Math.floor(cards.length / 2);
+
+      function layout() {
+        cards.forEach((card, i) => {
+          card.className = card.className.replace(/\bc-\S+/g, '').trim();
+          const diff = i - current;
+          if (diff === 0) card.classList.add('c-center');
+          else if (diff === -1) card.classList.add('c-left');
+          else if (diff === 1) card.classList.add('c-right');
+          else if (diff < -1) card.classList.add('c-far-left');
+          else if (diff > 1) card.classList.add('c-far-right');
+        });
+        if (dotsWrap) {
+          dotsWrap.querySelectorAll('.carousel-dot').forEach((d, i) =>
+            d.classList.toggle('active', i === current));
+        }
+      }
+
+      function go(dir) {
+        current = Math.max(0, Math.min(cards.length - 1, current + dir));
+        layout();
+      }
+
+      // Dots
+      if (dotsWrap) {
+        cards.forEach((_, i) => {
+          const dot = document.createElement('button');
+          dot.className = 'carousel-dot' + (i === Math.floor(cards.length / 2) ? ' active' : '');
+          dot.addEventListener('click', () => { current = i; layout(); });
+          dotsWrap.appendChild(dot);
+        });
+      }
+
+      if (prevBtn) prevBtn.addEventListener('click', () => go(-1));
+      if (nextBtn) nextBtn.addEventListener('click', () => go(1));
+
+      // Click side cards to navigate
+      cards.forEach((card, i) => {
+        card.addEventListener('click', () => {
+          if (i !== current) { current = i; layout(); }
+        });
+      });
+
+      // Mouse wheel
+      wrap.addEventListener('wheel', (e) => {
+        if (Math.abs(e.deltaY) > 10) {
+          e.preventDefault();
+          go(e.deltaY > 0 ? 1 : -1);
+        }
+      }, { passive: false });
+
+      // Touch swipe
+      let touchX = 0;
+      wrap.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+      wrap.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - touchX;
+        if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+      }, { passive: true });
+
+      layout();
     });
   </script>
 </body>

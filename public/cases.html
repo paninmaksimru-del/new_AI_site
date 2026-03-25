@@ -1363,7 +1363,7 @@
             <p class="muted" style="padding:12px 0;">Загрузка промптов…</p>
           </div>
           <div class="prompts-show-more" id="promptsShowMoreWrap" style="display:none;">
-            <button class="btn" id="promptsShowMore">Показать больше</button>
+            <button class="btn" id="promptsShowMore">Показать все</button>
           </div>
         </div>
       </div>
@@ -2309,10 +2309,35 @@
         return;
       }
 
+      const VISIBLE = 3;
       container.innerHTML = '';
-      if (showMoreWrap) showMoreWrap.style.display = 'none';
-
       renderSections(container, sections);
+
+      // Hide sections beyond first 3
+      const allItems = container.querySelectorAll('.acc-item');
+      allItems.forEach((el, i) => { if (i >= VISIBLE) el.style.display = 'none'; });
+
+      if (showMoreWrap && showMoreBtn) {
+        if (sections.length > VISIBLE) {
+          showMoreWrap.style.display = 'flex';
+          showMoreBtn.textContent = 'Показать все';
+          let expanded = false;
+          showMoreBtn.onclick = () => {
+            expanded = !expanded;
+            allItems.forEach((el, i) => {
+              if (i >= VISIBLE) el.style.display = expanded ? '' : 'none';
+            });
+            showMoreBtn.textContent = expanded ? 'Свернуть' : 'Показать все';
+            if (!expanded) {
+              const section = document.getElementById('promptsAccordion');
+              if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            if (expanded) initPromptSliders();
+          };
+        } else {
+          showMoreWrap.style.display = 'none';
+        }
+      }
 
       initTypingAnimations();
       initPromptSliders();

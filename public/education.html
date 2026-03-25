@@ -1547,44 +1547,15 @@
       </div>
     </section>
 
-    <!-- Видеоматериалы — карусель -->
+    <!-- Видеоматериалы — карусель, данные из /api/videos -->
     <section id="videos">
       <div class="wrap">
         <h2 class="h2">Видеоматериалы</h2>
-        <p class="lead">Записи лекций, воркшопов и короткие обучающие ролики. В каждую карточку можно будет добавить видео или ссылку.</p>
+        <p class="lead">Записи лекций, воркшопов и короткие обучающие ролики.</p>
         <div class="carousel-wrap" style="margin-top:16px;" data-carousel="videos">
           <button class="carousel-btn prev hidden" aria-label="Назад"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="10,2 4,8 10,14"/></svg></button>
-          <div class="carousel-stage">
-          <article class="card">
-            <div class="video-thumb">
-              <div class="vt-bg"></div>
-              <svg class="vt-dots" width="100%" height="100%"><pattern id="vdot1" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="9" cy="9" r="1" fill="currentColor"/></pattern><rect width="100%" height="100%" fill="url(#vdot1)"/></svg>
-              <div class="vt-play"><svg width="20" height="20" viewBox="0 0 20 20"><polygon points="6,3 17,10 6,17" fill="rgba(255,255,255,.9)"/></svg></div>
-              <div class="vt-dur">12 мин</div>
-            </div>
-            <h3>Введение в ИИ для сотрудников МИК</h3>
-            <p class="muted">Краткое объяснение ключевых понятий и примеров из работы Фонда.</p>
-          </article>
-          <article class="card">
-            <div class="video-thumb">
-              <div class="vt-bg" style="animation-delay:-2s;"></div>
-              <svg class="vt-dots" width="100%" height="100%"><pattern id="vdot2" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="9" cy="9" r="1" fill="currentColor"/></pattern><rect width="100%" height="100%" fill="url(#vdot2)"/></svg>
-              <div class="vt-play" style="animation-delay:-0.8s;"><svg width="20" height="20" viewBox="0 0 20 20"><polygon points="6,3 17,10 6,17" fill="rgba(255,255,255,.9)"/></svg></div>
-              <div class="vt-dur">18 мин</div>
-            </div>
-            <h3>Практика: как формулировать хороший запрос</h3>
-            <p class="muted">Живые демонстрации на примерах писем, записок, аналитики.</p>
-          </article>
-          <article class="card">
-            <div class="video-thumb">
-              <div class="vt-bg" style="animation-delay:-4s;"></div>
-              <svg class="vt-dots" width="100%" height="100%"><pattern id="vdot3" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="9" cy="9" r="1" fill="currentColor"/></pattern><rect width="100%" height="100%" fill="url(#vdot3)"/></svg>
-              <div class="vt-play" style="animation-delay:-1.6s;"><svg width="20" height="20" viewBox="0 0 20 20"><polygon points="6,3 17,10 6,17" fill="rgba(255,255,255,.9)"/></svg></div>
-              <div class="vt-dur">10 мин</div>
-            </div>
-            <h3>Безопасность и работа с данными</h3>
-            <p class="muted">Какие данные можно загружать в ИИ‑сервисы и как работать с ограничениями.</p>
-          </article>
+          <div class="carousel-stage" id="videosStage">
+            <div class="muted" style="text-align:center; padding:40px 0;">Загрузка видео...</div>
           </div>
           <button class="carousel-btn next" aria-label="Вперед"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,2 12,8 6,14"/></svg></button>
           <div class="carousel-dots"></div>
@@ -2536,21 +2507,66 @@
       }
     });
 
-    // 3D Drum Carousels (videos + speakers)
-    document.querySelectorAll('[data-carousel]').forEach(wrap => {
-      const stage = wrap.querySelector('.carousel-stage');
-      const prevBtn = wrap.querySelector('.carousel-btn.prev');
-      const nextBtn = wrap.querySelector('.carousel-btn.next');
-      const dotsWrap = wrap.querySelector('.carousel-dots');
+    // Load videos from API and render into carousel
+    (function loadEducationVideos() {
+      var stage = document.getElementById('videosStage');
       if (!stage) return;
 
-      const cards = Array.from(stage.children);
-      let current = Math.floor(cards.length / 2);
+      fetch('/api/videos').then(function(r){ return r.json(); }).then(function(videos) {
+        if (!videos || !videos.length) {
+          stage.innerHTML = '<div class="muted" style="text-align:center; padding:40px 0;">Видео пока не добавлены</div>';
+          return;
+        }
+        videos.sort(function(a,b){ return (a.order||0) - (b.order||0); });
+        stage.innerHTML = '';
+        videos.forEach(function(v, i) {
+          var card = document.createElement('article');
+          card.className = 'card';
+          var hasEmbed = v.embedUrl && v.embedUrl.trim();
+          if (hasEmbed) {
+            card.innerHTML =
+              '<div style="border-radius:14px; overflow:hidden; margin-bottom:10px; aspect-ratio:16/9;">' +
+                '<iframe src="' + v.embedUrl + '" style="width:100%; height:100%; border:none;" allowfullscreen></iframe>' +
+              '</div>' +
+              '<h3>' + (v.title || '') + '</h3>' +
+              '<p class="muted">' + (v.desc || '') + '</p>';
+          } else {
+            card.innerHTML =
+              '<div class="video-thumb">' +
+                '<div class="vt-bg" style="animation-delay:' + (i * -2) + 's;"></div>' +
+                '<svg class="vt-dots" width="100%" height="100%"><pattern id="vdot' + i + '" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="9" cy="9" r="1" fill="currentColor"/></pattern><rect width="100%" height="100%" fill="url(#vdot' + i + ')"/></svg>' +
+                '<div class="vt-play" style="animation-delay:' + (i * -0.8) + 's;"><svg width="20" height="20" viewBox="0 0 20 20"><polygon points="6,3 17,10 6,17" fill="rgba(255,255,255,.9)"/></svg></div>' +
+                (v.duration ? '<div class="vt-dur">' + v.duration + '</div>' : '') +
+              '</div>' +
+              '<h3>' + (v.title || '') + '</h3>' +
+              '<p class="muted">' + (v.desc || '') + '</p>';
+          }
+          stage.appendChild(card);
+        });
+        // Re-init carousel for videos after cards loaded
+        initCarousel(stage.closest('[data-carousel]'));
+      }).catch(function() {
+        stage.innerHTML = '<div class="muted" style="text-align:center; padding:40px 0;">Не удалось загрузить видео</div>';
+      });
+    })();
+
+    // 3D Drum Carousels
+    function initCarousel(wrap) {
+      if (!wrap) return;
+      var stage = wrap.querySelector('.carousel-stage');
+      var prevBtn = wrap.querySelector('.carousel-btn.prev');
+      var nextBtn = wrap.querySelector('.carousel-btn.next');
+      var dotsWrap = wrap.querySelector('.carousel-dots');
+      if (!stage) return;
+
+      var cards = Array.from(stage.querySelectorAll('.card'));
+      if (!cards.length) return;
+      var current = Math.floor(cards.length / 2);
 
       function layout() {
-        cards.forEach((card, i) => {
+        cards.forEach(function(card, i) {
           card.className = card.className.replace(/\bc-\S+/g, '').trim();
-          const diff = i - current;
+          var diff = i - current;
           if (diff === 0) card.classList.add('c-center');
           else if (diff === -1) card.classList.add('c-left');
           else if (diff === 1) card.classList.add('c-right');
@@ -2558,8 +2574,9 @@
           else if (diff > 1) card.classList.add('c-far-right');
         });
         if (dotsWrap) {
-          dotsWrap.querySelectorAll('.carousel-dot').forEach((d, i) =>
-            d.classList.toggle('active', i === current));
+          dotsWrap.querySelectorAll('.carousel-dot').forEach(function(d, i) {
+            d.classList.toggle('active', i === current);
+          });
         }
       }
 
@@ -2568,43 +2585,45 @@
         layout();
       }
 
-      // Dots
       if (dotsWrap) {
-        cards.forEach((_, i) => {
-          const dot = document.createElement('button');
+        dotsWrap.innerHTML = '';
+        cards.forEach(function(_, i) {
+          var dot = document.createElement('button');
           dot.className = 'carousel-dot' + (i === Math.floor(cards.length / 2) ? ' active' : '');
-          dot.addEventListener('click', () => { current = i; layout(); });
+          dot.addEventListener('click', function() { current = i; layout(); });
           dotsWrap.appendChild(dot);
         });
       }
 
-      if (prevBtn) prevBtn.addEventListener('click', () => go(-1));
-      if (nextBtn) nextBtn.addEventListener('click', () => go(1));
+      if (prevBtn) prevBtn.addEventListener('click', function() { go(-1); });
+      if (nextBtn) nextBtn.addEventListener('click', function() { go(1); });
 
-      // Click side cards to navigate
-      cards.forEach((card, i) => {
-        card.addEventListener('click', () => {
+      cards.forEach(function(card, i) {
+        card.addEventListener('click', function() {
           if (i !== current) { current = i; layout(); }
         });
       });
 
-      // Mouse wheel
-      wrap.addEventListener('wheel', (e) => {
+      wrap.addEventListener('wheel', function(e) {
         if (Math.abs(e.deltaY) > 10) {
           e.preventDefault();
           go(e.deltaY > 0 ? 1 : -1);
         }
       }, { passive: false });
 
-      // Touch swipe
-      let touchX = 0;
-      wrap.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
-      wrap.addEventListener('touchend', (e) => {
-        const dx = e.changedTouches[0].clientX - touchX;
+      var touchX = 0;
+      wrap.addEventListener('touchstart', function(e) { touchX = e.touches[0].clientX; }, { passive: true });
+      wrap.addEventListener('touchend', function(e) {
+        var dx = e.changedTouches[0].clientX - touchX;
         if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
       }, { passive: true });
 
       layout();
+    }
+
+    // Init all carousels except videos (videos init after API load)
+    document.querySelectorAll('[data-carousel]').forEach(function(wrap) {
+      if (wrap.getAttribute('data-carousel') !== 'videos') initCarousel(wrap);
     });
   </script>
 </body>

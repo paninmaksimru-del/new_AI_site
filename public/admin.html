@@ -108,7 +108,8 @@
     <button class="tabbtn" data-tab="tools">🔧 Инструменты</button>
     <button class="tabbtn" data-tab="tasks">✅ Задачи</button>
     <button class="tabbtn" data-tab="browser">🌐 Браузер</button>
-    <button class="tabbtn" data-tab="instructions">📖 Инструкции</button>
+    <button class="tabbtn" data-tab="instructions">Инструкции</button>
+    <button class="tabbtn" data-tab="videos">Видеоматериалы</button>
   </div>
 
   <!-- USERS -->
@@ -430,6 +431,33 @@
       <ul class="plain" id="instrList"><li class="loading">Загрузка...</li></ul>
     </div>
   </div>
+
+  <!-- ===== ВИДЕОМАТЕРИАЛЫ ===== -->
+  <div id="tab_videos" class="tabpane">
+    <div class="section-panel">
+      <h2>Видеоматериалы</h2>
+      <p class="muted">Видео для страницы обучения. Укажите название, описание, ссылку на embed (Rutube/YouTube) и длительность.</p>
+
+      <div class="form-grid" style="margin-top:16px;">
+        <div class="field"><label>ID (авто)</label><input type="text" id="videoId" placeholder="vid_001" /></div>
+        <div class="field"><label>Название</label><input type="text" id="videoTitle" placeholder="Введение в ИИ для сотрудников" /></div>
+        <div class="field"><label>Описание</label><input type="text" id="videoDesc" placeholder="Краткое объяснение ключевых понятий" /></div>
+        <div class="field"><label>Embed URL (Rutube/YouTube)</label><input type="text" id="videoEmbed" placeholder="https://rutube.ru/play/embed/xxxxxxx" /></div>
+        <div class="field"><label>Обложка URL (необязательно)</label><input type="text" id="videoThumb" placeholder="https://..." /></div>
+        <div class="field"><label>Длительность</label><input type="text" id="videoDuration" placeholder="12 мин" /></div>
+        <div class="field"><label>Порядок сортировки</label><input type="number" id="videoOrder" placeholder="1" value="1" /></div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:10px;">
+        <button class="btn primary" id="btnSaveVideo" type="button">Сохранить видео</button>
+        <button class="btn" id="btnClearVideo" type="button">Очистить форму</button>
+      </div>
+
+      <h3 style="margin-top:24px;">Все видео</h3>
+      <ul class="plain" id="videoList"><li class="loading">Загрузка...</li></ul>
+    </div>
+  </div>
+
 </main>
 
 <div class="toast-bar" id="toast"></div>
@@ -1416,6 +1444,87 @@ async function saveBrowserConfig() {
     toast('Настройки браузера сохранены');
   } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
 }
+
+// ===== VIDEOS =====
+let videosData = [];
+
+async function loadVideos() {
+  try {
+    videosData = await api('/api/videos');
+    renderVideoList();
+  } catch(e) { document.getElementById('videoList').innerHTML = '<li>Ошибка загрузки</li>'; }
+}
+
+function renderVideoList() {
+  const ul = document.getElementById('videoList');
+  if (!videosData.length) { ul.innerHTML = '<li class="muted">Нет видео</li>'; return; }
+  ul.innerHTML = videosData.sort((a,b) => (a.order||0) - (b.order||0)).map(v => {
+    var s = '<li style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--stroke);">';
+    s += '<div style="flex:1; min-width:0;"><b>' + escH(v.title || v.id) + '</b>';
+    s += '<span class="muted" style="font-size:12px; margin-left:8px;">' + escH(v.duration || '') + '</span>';
+    s += '<br><span class="muted" style="font-size:12px;">' + escH(v.desc || '') + '</span>';
+    if (v.embedUrl) s += '<br><span style="font-size:11px; color:rgba(78,135,255,.8);">' + escH(v.embedUrl) + '</span>';
+    s += '</div>';
+    s += '<div style="display:flex; gap:6px; flex-shrink:0;">';
+    s += '<button class="btn small" onclick="editVideo(\'' + v.id + '\')">Ред.</button>';
+    s += '<button class="btn small" style="border-color:rgba(255,96,96,.4); color:rgba(255,96,96,.9);" onclick="deleteVideo(\'' + v.id + '\')">Удалить</button>';
+    s += '</div></li>';
+    return s;
+  }).join('');
+}
+
+function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.getElementById('btnSaveVideo').addEventListener('click', async function() {
+  var id = document.getElementById('videoId').value.trim() || ('vid_' + Date.now());
+  var payload = {
+    id: id,
+    title: document.getElementById('videoTitle').value.trim(),
+    desc: document.getElementById('videoDesc').value.trim(),
+    embedUrl: document.getElementById('videoEmbed').value.trim(),
+    thumbUrl: document.getElementById('videoThumb').value.trim(),
+    duration: document.getElementById('videoDuration').value.trim(),
+    order: parseInt(document.getElementById('videoOrder').value) || 1
+  };
+  try {
+    await api('/api/videos', { method:'POST', body: JSON.stringify(payload) });
+    toast('Видео сохранено');
+    clearVideoForm();
+    loadVideos();
+  } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
+});
+
+document.getElementById('btnClearVideo').addEventListener('click', clearVideoForm);
+
+function clearVideoForm() {
+  ['videoId','videoTitle','videoDesc','videoEmbed','videoThumb','videoDuration'].forEach(function(fid) {
+    var el = document.getElementById(fid); if (el) el.value = '';
+  });
+  document.getElementById('videoOrder').value = '1';
+}
+
+function editVideo(id) {
+  var v = videosData.find(function(x){ return x.id === id; });
+  if (!v) return;
+  document.getElementById('videoId').value = v.id || '';
+  document.getElementById('videoTitle').value = v.title || '';
+  document.getElementById('videoDesc').value = v.desc || '';
+  document.getElementById('videoEmbed').value = v.embedUrl || '';
+  document.getElementById('videoThumb').value = v.thumbUrl || '';
+  document.getElementById('videoDuration').value = v.duration || '';
+  document.getElementById('videoOrder').value = v.order || 1;
+}
+
+async function deleteVideo(id) {
+  if (!confirm('Удалить видео ' + id + '?')) return;
+  try {
+    await api('/api/videos/' + encodeURIComponent(id), { method:'DELETE' });
+    toast('Видео удалено');
+    loadVideos();
+  } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
+}
+
+document.querySelector('[data-tab="videos"]').addEventListener('click', function() { if (!videosData.length) loadVideos(); });
 
 </script>
 </body>

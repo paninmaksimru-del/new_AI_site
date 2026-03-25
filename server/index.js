@@ -482,6 +482,53 @@ async function start() {
     }
   });
 
+  // Videos (education page)
+  app.get('/api/videos', async (req, res) => {
+    try {
+      const { rows } = await query('SELECT id, data FROM videos ORDER BY id');
+      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
+  app.post('/api/videos', async (req, res) => {
+    try {
+      const body = req.body || {};
+      const id = (body.id || 'vid_' + Date.now()).trim().replace(/\s+/g, '_');
+      body.id = id;
+      const data = JSON.stringify(body);
+      await query('INSERT INTO videos (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2', [id, data]);
+      const { rows } = await query('SELECT id, data FROM videos ORDER BY id');
+      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
+  app.put('/api/videos/:id', async (req, res) => {
+    try {
+      const id = decodeURIComponent(req.params.id || '');
+      const body = req.body || {};
+      body.id = id;
+      const data = JSON.stringify(body);
+      await query('INSERT INTO videos (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2', [id, data]);
+      res.json({ id, ...body });
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
+  app.delete('/api/videos/:id', async (req, res) => {
+    try {
+      const id = decodeURIComponent(req.params.id || '');
+      await query('DELETE FROM videos WHERE id = $1', [id]);
+      res.json({ ok: true });
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
   // Health
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });

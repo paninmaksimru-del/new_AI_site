@@ -1,6 +1,7 @@
 import express from 'express';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync, existsSync } from 'fs';
 import { getDb } from './db.js';
 import './seed.js';
 import { setupAuth, requireAuth, requireAdmin } from './auth.js';
@@ -149,7 +150,24 @@ app.delete('/api/cases/:id', (req, res) => {
 // Prompts
 app.get('/api/prompts', (req, res) => {
   try {
-    const rows = db().prepare('SELECT id, data FROM prompts ORDER BY id').all();
+    let rows = db().prepare('SELECT id, data FROM prompts ORDER BY id').all();
+    // If DB has fewer than 10 prompts, load from JSON library directly
+    if (rows.length < 10) {
+      const libPath = join(__dirname, '..', 'prompt-library copy.json');
+      if (existsSync(libPath)) {
+        const data = JSON.parse(readFileSync(libPath, 'utf8'));
+        const flat = [];
+        data.categories.forEach(cat => {
+          cat.prompts.forEach(p => {
+            flat.push({ id: cat.id + '_' + p.id, sectionTitle: cat.name, sectionSubtitle: (cat.description || '').replace(/\.$/, ''), title: p.title, meta: (p.description || '').replace(/\.$/, ''), text: p.prompt || '', result: (p.result || '').replace(/\.$/, '') });
+          });
+        });
+        db().prepare('DELETE FROM prompts').run();
+        const ins = db().prepare('INSERT INTO prompts (id, data) VALUES (?, ?)');
+        flat.forEach(p => ins.run(p.id, JSON.stringify(p)));
+        return res.json(flat);
+      }
+    }
     res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
   } catch (e) {
     res.status(500).json({ error: String(e.message) });

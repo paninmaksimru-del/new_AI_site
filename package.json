@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node --env-file=.env server/index.js",
     "dev": "node --env-file=.env --watch server/index.js",
+    "preview": "node server/preview-static.mjs",
     "init-db": "node server/init-db.js",
     "export-db": "node server/export-db.js"
   },

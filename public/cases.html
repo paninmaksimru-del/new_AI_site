@@ -1269,6 +1269,96 @@
       display:grid;
       gap: 12px;
     }
+    #promptsAccordion{
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .prompts-acc-inner{
+      display: grid;
+      gap: 12px;
+    }
+    .prompts-acc-inner > .acc-item.prompt-acc-hidden{
+      display: none !important;
+    }
+    .prompts-pagination{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .prompts-pagination[hidden]{ display: none !important; }
+    .prompts-page-arrow{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.85);
+      cursor: pointer;
+      transition: background .15s ease, transform .1s ease;
+    }
+    .prompts-page-arrow:hover:not(:disabled){
+      background: rgba(255,255,255,.12);
+    }
+    .prompts-page-arrow:active:not(:disabled){ transform: scale(0.96); }
+    .prompts-page-arrow:disabled{
+      opacity: .35;
+      cursor: not-allowed;
+    }
+    .prompts-page-arrow svg{ display: block; }
+    .prompts-page-nums{
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .prompts-page-num{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      height: 36px;
+      padding: 0 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      color: rgba(255,255,255,.62);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, color .15s ease, transform .1s ease;
+    }
+    .prompts-page-num:hover{
+      background: rgba(255,255,255,.1);
+      color: rgba(255,255,255,.88);
+    }
+    .prompts-page-num:active{ transform: scale(0.95); }
+    .prompts-page-num.active{
+      background: linear-gradient(180deg, rgba(0,200,120,.5), rgba(0,150,85,.4));
+      border-color: rgba(0,220,130,.55);
+      color: #fff;
+    }
+    @media (min-width: 768px){
+      .prompts-page-num{
+        min-width: 44px;
+        height: 44px;
+        font-size: 14px;
+      }
+      .prompts-page-arrow{
+        width: 44px;
+        height: 44px;
+      }
+    }
     .acc-item{
       border-radius: 16px;
       border: 1px solid rgba(255,255,255,.10);
@@ -1566,7 +1656,10 @@
           <h2 class="h2">Библиотека промптов</h2>
           <p class="lead">Раздел структурирован по направлениям — раскройте нужный, скопируйте промпт и подставьте значения в [квадратные скобки]</p>
           <div class="accordion" id="promptsAccordion" style="margin-top:18px;">
-            <p class="muted" style="padding:12px 0;">Загрузка промптов…</p>
+            <div id="promptsAccordionInner" class="prompts-acc-inner">
+              <p class="muted" style="padding:12px 0;">Загрузка промптов…</p>
+            </div>
+            <nav class="prompts-pagination" id="promptsPagination" hidden aria-label="Страницы направлений"></nav>
           </div>
         </div>
       </div>
@@ -2708,13 +2801,92 @@
       return null;
     }
 
+    var PROMPTS_SECTIONS_PER_PAGE = 5;
+
+    function initPromptsPagination() {
+      var outer = document.getElementById('promptsAccordion');
+      var inner = document.getElementById('promptsAccordionInner');
+      var nav = document.getElementById('promptsPagination');
+      if (!outer || !inner || !nav) return;
+
+      var items = Array.from(inner.querySelectorAll(':scope > .acc-item'));
+      items.forEach(function (el) { el.classList.remove('prompt-acc-hidden'); });
+
+      if (items.length <= PROMPTS_SECTIONS_PER_PAGE) {
+        nav.hidden = true;
+        nav.innerHTML = '';
+        nav.onclick = null;
+        return;
+      }
+
+      var totalPages = Math.ceil(items.length / PROMPTS_SECTIONS_PER_PAGE);
+      var current = 0;
+
+      var arrowPrev = '<svg width="10" height="16" viewBox="0 0 12 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M11 1L2 9.24242L11 17" stroke="currentColor" stroke-opacity="0.85" stroke-width="2" stroke-linecap="round"/></svg>';
+      var arrowNext = '<svg width="10" height="16" viewBox="0 0 12 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1 1L10 9.24242L1 17" stroke="currentColor" stroke-opacity="0.85" stroke-width="2" stroke-linecap="round"/></svg>';
+
+      function applyPage() {
+        items.forEach(function (el, i) {
+          var p = Math.floor(i / PROMPTS_SECTIONS_PER_PAGE);
+          if (p === current) {
+            el.classList.remove('prompt-acc-hidden');
+          } else {
+            el.classList.add('prompt-acc-hidden');
+            el.classList.remove('open');
+          }
+        });
+        var visible = items.filter(function (_, i) { return Math.floor(i / PROMPTS_SECTIONS_PER_PAGE) === current; });
+        if (visible.length && !visible.some(function (el) { return el.classList.contains('open'); })) {
+          visible[0].classList.add('open');
+        }
+        renderNav();
+      }
+
+      function renderNav() {
+        var nums = '';
+        for (var p = 0; p < totalPages; p++) {
+          nums += '<button type="button" class="prompts-page-num' + (p === current ? ' active' : '') + '" data-prompt-page="' + p + '">' + (p + 1) + '</button>';
+        }
+        nav.innerHTML =
+          '<button type="button" class="prompts-page-arrow prompts-page-prev" aria-label="Предыдущая страница"' + (current <= 0 ? ' disabled' : '') + '>' + arrowPrev + '</button>' +
+          '<div class="prompts-page-nums">' + nums + '</div>' +
+          '<button type="button" class="prompts-page-arrow prompts-page-next" aria-label="Следующая страница"' + (current >= totalPages - 1 ? ' disabled' : '') + '>' + arrowNext + '</button>';
+        nav.hidden = false;
+      }
+
+      nav.onclick = function (e) {
+        var t = e.target;
+        if (t.closest('.prompts-page-prev') && current > 0) {
+          current--;
+          applyPage();
+          return;
+        }
+        if (t.closest('.prompts-page-next') && current < totalPages - 1) {
+          current++;
+          applyPage();
+          return;
+        }
+        var numBtn = t.closest('[data-prompt-page]');
+        if (numBtn) {
+          var p = parseInt(numBtn.getAttribute('data-prompt-page'), 10);
+          if (!Number.isNaN(p) && p !== current) {
+            current = p;
+            applyPage();
+          }
+        }
+      };
+
+      applyPage();
+    }
+
     // ── Render prompts accordion ───────────────────────────────────────────────
     async function renderPrompts() {
-      const container = document.getElementById('promptsAccordion');
-      if (!container) return;
+      var outer = document.getElementById('promptsAccordion');
+      var inner = document.getElementById('promptsAccordionInner');
+      if (!outer || !inner) return;
       const prompts = await loadFromApi('/api/prompts');
       if (!prompts || !Array.isArray(prompts)) {
-        container.innerHTML = `
+        inner.innerHTML = `
           <div class="acc-item open">
             <div class="acc-head"><div class="acc-title"><b>Коммуникации (письма, записки, ответы)</b><span>Официальный стиль, лимит объёма, варианты формулировок</span></div><span class="muted2">▾</span></div>
             <div class="acc-body"><div class="prompt-grid">
@@ -2766,14 +2938,15 @@
 Обязательно: проблема, цель, варианты, анализ, рекомендация, план, риски.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_report_2">Копировать</button></div></div>
             </div></div>
           </div>`;
-        container.querySelectorAll('.acc-item .acc-head').forEach(head => {
+        outer.querySelectorAll('.acc-item .acc-head').forEach(head => {
           head.addEventListener('click', () => {
             const item = head.closest('.acc-item');
             const wasOpen = item.classList.contains('open');
-            container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
+            inner.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
             if (!wasOpen) item.classList.add('open');
           });
         });
+        initPromptsPagination();
         initPromptSliders();
         return;
       }
@@ -2791,11 +2964,13 @@
       });
 
       if (sections.length === 0) {
-        container.innerHTML = '<p class="muted" style="padding:12px 0;">Промптов пока нет. Добавьте их в <a href="/admin">админ-панели</a>.</p>';
+        inner.innerHTML = '<p class="muted" style="padding:12px 0;">Промптов пока нет. Добавьте их в <a href="/admin">админ-панели</a>.</p>';
+        var emptyNav = document.getElementById('promptsPagination');
+        if (emptyNav) { emptyNav.hidden = true; emptyNav.innerHTML = ''; emptyNav.onclick = null; }
         return;
       }
 
-      container.innerHTML = sections.map((sec, si) => `
+      inner.innerHTML = sections.map((sec, si) => `
         <div class="acc-item${si === 0 ? ' open' : ''}">
           <div class="acc-head">
             <div class="acc-title">
@@ -2828,14 +3003,16 @@
       `).join('');
 
       // Re-bind accordion clicks
-      container.querySelectorAll('.acc-item .acc-head').forEach(head => {
+      outer.querySelectorAll('.acc-item .acc-head').forEach(head => {
         head.addEventListener('click', () => {
           const item = head.closest('.acc-item');
           const wasOpen = item.classList.contains('open');
-          container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
+          inner.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
           if (!wasOpen) item.classList.add('open');
         });
       });
+
+      initPromptsPagination();
 
       // Re-attach typing observers after DOM rebuild
       initTypingAnimations();

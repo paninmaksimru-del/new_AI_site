@@ -1,4 +1,36 @@
 import { getDb } from './db.js';
+import { readFileSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Load prompts from JSON library file
+function loadPromptsFromLibrary() {
+  const libPath = join(__dirname, '..', 'prompt-library copy.json');
+  if (!existsSync(libPath)) return null;
+  try {
+    const data = JSON.parse(readFileSync(libPath, 'utf8'));
+    const flat = [];
+    data.categories.forEach(cat => {
+      cat.prompts.forEach(p => {
+        flat.push({
+          id: cat.id + '_' + p.id,
+          sectionTitle: cat.name,
+          sectionSubtitle: cat.description || '',
+          title: p.title,
+          meta: p.description || '',
+          text: p.prompt || '',
+          result: p.result || ''
+        });
+      });
+    });
+    return flat;
+  } catch (e) {
+    console.error('Failed to load prompt library:', e.message);
+    return null;
+  }
+}
 
 const defaultDepartments = ['Аналитический центр', 'ЕЦП', 'Центр развития Сколково', 'Платформа i.moscow и ИИ', 'ИС РПП'];
 
@@ -41,8 +73,10 @@ if (caseCount.c === 0) {
 const promptCount = db.prepare('SELECT COUNT(*) as c FROM prompts').get();
 if (promptCount.c === 0) {
   const ins = db.prepare('INSERT OR REPLACE INTO prompts (id, data) VALUES (?, ?)');
-  defaultPrompts.forEach(p => ins.run(p.id, JSON.stringify(p)));
-  console.log('Seeded prompts');
+  const libraryPrompts = loadPromptsFromLibrary();
+  const promptsToSeed = libraryPrompts || defaultPrompts;
+  promptsToSeed.forEach(p => ins.run(p.id, JSON.stringify(p)));
+  console.log('Seeded prompts:', promptsToSeed.length);
 }
 
 const toolCount = db.prepare('SELECT COUNT(*) as c FROM tools').get();

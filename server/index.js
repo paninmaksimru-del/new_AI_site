@@ -153,8 +153,12 @@ app.get('/api/prompts', (req, res) => {
     let rows = db().prepare('SELECT id, data FROM prompts ORDER BY id').all();
     // If DB has fewer than 10 prompts, load from JSON library directly
     if (rows.length < 10) {
-      const libPath = join(__dirname, '..', 'prompt-library.json');
-      if (existsSync(libPath)) {
+      const candidates = [
+        join(__dirname, '..', 'prompt-library.json'),
+        join(process.cwd(), 'prompt-library.json'),
+      ];
+      const libPath = candidates.find(p => existsSync(p));
+      if (libPath) {
         const data = JSON.parse(readFileSync(libPath, 'utf8'));
         const flat = [];
         data.categories.forEach(cat => {

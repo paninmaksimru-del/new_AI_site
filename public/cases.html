@@ -2118,7 +2118,7 @@
         }
       });
       // Библиотека промптов — загрузка из БД
-      renderPrompts().then(() => { initTypingAnimations(); initPromptSliders(); });
+      renderPrompts();
       initFeedbackForm();
 
       // события фильтров
@@ -2256,57 +2256,45 @@
       });
     }
 
-    function bindShowMore(container) {
-      const wrap = document.getElementById('promptsShowMoreWrap');
-      const btn  = document.getElementById('promptsShowMore');
-      if (!wrap || !btn) return;
-      const hidden = container.querySelectorAll('.acc-item-hidden');
-      if (hidden.length === 0) { wrap.style.display = 'none'; return; }
-      wrap.style.display = 'flex';
-      btn.addEventListener('click', () => {
-        hidden.forEach(el => { el.style.display = ''; el.classList.remove('acc-item-hidden'); });
-        wrap.style.display = 'none';
-        initPromptSliders();
+    function renderSections(container, sections) {
+      sections.forEach((sec, si) => {
+        const div = document.createElement('div');
+        div.className = 'acc-item';
+        div.innerHTML = `
+          <div class="acc-head">
+            <div class="acc-title">
+              <b>${escapeHtml(sec.title)}</b>
+              <span>${escapeHtml(sec.subtitle)}</span>
+            </div>
+            <span class="muted2">▾</span>
+          </div>
+          <div class="acc-body">
+            <div class="prompt-grid">
+              ${sec.items.map((p, pi) => buildPromptCard(p, sec.title + '_' + si + '_' + pi)).join('')}
+            </div>
+          </div>`;
+        // accordion toggle
+        div.querySelector('.acc-head').addEventListener('click', () => {
+          const wasOpen = div.classList.contains('open');
+          container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
+          if (!wasOpen) div.classList.add('open');
+        });
+        container.appendChild(div);
       });
     }
 
     async function renderPrompts() {
       const container = document.getElementById('promptsAccordion');
+      const showMoreWrap = document.getElementById('promptsShowMoreWrap');
+      const showMoreBtn  = document.getElementById('promptsShowMore');
       if (!container) return;
-      const prompts = await loadFromApi('/api/prompts');
 
-      if (!prompts || !Array.isArray(prompts) || prompts.length === 0) {
-        // Fallback: статичные примеры
-        container.innerHTML = `
-          <div class="acc-item">
-            <div class="acc-head"><div class="acc-title"><b>Коммуникации (письма, записки, ответы)</b><span>Официальный стиль, лимит объёма, варианты формулировок</span></div><span class="muted2">▾</span></div>
-            <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-title">Официальное письмо (универсальное)</div><div class="prompt-card-meta">Черновик официального письма по тезисам</div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_1" readonly>Роль: ты специалист Центра.\nЦель: подготовить официальное письмо [кому] по теме: [тема].</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-title">Письмо‑приглашение на встречу</div><div class="prompt-card-meta">Краткое приглашение с предложением слотов</div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_2" readonly>Роль: организатор встречи.\nЦель: письмо‑приглашение на встречу по теме: [тема].</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_2">Копировать</button></div></div>
-            </div></div>
-          </div>
-          <div class="acc-item">
-            <div class="acc-head"><div class="acc-title"><b>Аналитика (справки, сравнения, выводы)</b><span>Таблицы, риски, допущения и проверяемость.</span></div><span class="muted2">▾</span></div>
-            <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-title">Справка по документу</div><div class="prompt-card-meta">Короткая выжимка, требования, риски и вопросы.</div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_analytics_1" readonly>Роль: аналитик.\nЦель: краткая справка по документу.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_analytics_1">Копировать</button></div></div>
-            </div></div>
-          </div>
-          <div class="acc-item acc-item-hidden" style="display:none;">
-            <div class="acc-head"><div class="acc-title"><b>Проекты (протоколы, ТЗ, требования)</b><span>Протоколы, задачи, срок, критерии приёмки.</span></div><span class="muted2">▾</span></div>
-            <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-title">Протокол встречи из заметок</div><div class="prompt-card-meta">Структурированный протокол по заметкам.</div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_1" readonly>Роль: секретарь или PM встречи.\nЦель: оформить протокол по итогам встречи.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_1">Копировать</button></div></div>
-            </div></div>
-          </div>`;
-        bindAccordion(container);
-        bindShowMore(container);
-        initPromptSliders();
-        return;
-      }
+      const prompts = await loadFromApi('/api/prompts');
 
       // Group by sectionTitle
       const sections = [];
       const sectionMap = {};
-      prompts.forEach(p => {
+      (prompts || []).forEach(p => {
         const key = p.sectionTitle || 'Другое';
         if (!sectionMap[key]) {
           sectionMap[key] = { title: key, subtitle: p.sectionSubtitle || '', items: [] };
@@ -2317,31 +2305,33 @@
 
       if (sections.length === 0) {
         container.innerHTML = '<p class="muted" style="padding:12px 0;">Промптов пока нет. Добавьте их в <a href="/admin">админ-панели</a>.</p>';
+        if (showMoreWrap) showMoreWrap.style.display = 'none';
         return;
       }
 
-      const VISIBLE = 3;
-      container.innerHTML = sections.map((sec, si) => {
-        const hidden = si >= VISIBLE;
-        return `
-        <div class="acc-item${hidden ? ' acc-item-hidden' : ''}"${hidden ? ' style="display:none;"' : ''}>
-          <div class="acc-head">
-            <div class="acc-title">
-              <b>${escapeHtml(sec.title)}</b>
-              <span>${escapeHtml(sec.subtitle)}</span>
-            </div>
-            <span class="muted2">▾</span>
-          </div>
-          <div class="acc-body">
-            <div class="prompt-grid">
-              ${sec.items.map((p, pi) => buildPromptCard(p, sec.title + '_' + pi)).join('')}
-            </div>
-          </div>
-        </div>`;
-      }).join('');
+      container.innerHTML = '';
 
-      bindAccordion(container);
-      bindShowMore(container);
+      const VISIBLE = 3;
+      const visibleSections = sections.slice(0, VISIBLE);
+      const hiddenSections  = sections.slice(VISIBLE);
+
+      // Рендерим первые 3
+      renderSections(container, visibleSections);
+
+      // Показываем / скрываем кнопку
+      if (showMoreWrap && showMoreBtn) {
+        if (hiddenSections.length > 0) {
+          showMoreWrap.style.display = 'flex';
+          showMoreBtn.addEventListener('click', () => {
+            renderSections(container, hiddenSections);
+            showMoreWrap.style.display = 'none';
+            initPromptSliders();
+          }, { once: true });
+        } else {
+          showMoreWrap.style.display = 'none';
+        }
+      }
+
       initTypingAnimations();
       initPromptSliders();
     }

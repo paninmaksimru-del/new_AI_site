@@ -70,13 +70,20 @@ if (caseCount.c === 0) {
   console.log('Seeded cases');
 }
 
-const promptCount = db.prepare('SELECT COUNT(*) as c FROM prompts').get();
-if (promptCount.c === 0) {
-  const ins = db.prepare('INSERT OR REPLACE INTO prompts (id, data) VALUES (?, ?)');
-  const libraryPrompts = loadPromptsFromLibrary();
-  const promptsToSeed = libraryPrompts || defaultPrompts;
-  promptsToSeed.forEach(p => ins.run(p.id, JSON.stringify(p)));
-  console.log('Seeded prompts:', promptsToSeed.length);
+const libraryPrompts = loadPromptsFromLibrary();
+if (libraryPrompts && libraryPrompts.length > 0) {
+  // Always sync from JSON library — replaces old data
+  db.prepare('DELETE FROM prompts').run();
+  const ins = db.prepare('INSERT INTO prompts (id, data) VALUES (?, ?)');
+  libraryPrompts.forEach(p => ins.run(p.id, JSON.stringify(p)));
+  console.log('Seeded prompts from library:', libraryPrompts.length);
+} else {
+  const promptCount = db.prepare('SELECT COUNT(*) as c FROM prompts').get();
+  if (promptCount.c === 0) {
+    const ins = db.prepare('INSERT OR REPLACE INTO prompts (id, data) VALUES (?, ?)');
+    defaultPrompts.forEach(p => ins.run(p.id, JSON.stringify(p)));
+    console.log('Seeded default prompts:', defaultPrompts.length);
+  }
 }
 
 const toolCount = db.prepare('SELECT COUNT(*) as c FROM tools').get();

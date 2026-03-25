@@ -456,6 +456,7 @@
     .carousel-btn:hover{ background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.35); }
     .carousel-btn.prev{ left:8px; }
     .carousel-btn.next{ right:8px; }
+    .carousel-btn.hidden{ display:none !important; }
     .carousel-dots{
       display:flex; justify-content:center; gap:8px; margin-top:16px;
     }
@@ -2578,10 +2579,15 @@
             d.classList.toggle('active', i === current);
           });
         }
+        var showArrows = cards.length > 1;
+        if (prevBtn) prevBtn.classList.toggle('hidden', !showArrows);
+        if (nextBtn) nextBtn.classList.toggle('hidden', !showArrows);
       }
 
       function go(dir) {
-        current = Math.max(0, Math.min(cards.length - 1, current + dir));
+        var n = cards.length;
+        if (n <= 1) return;
+        current = (current + dir + n) % n;
         layout();
       }
 

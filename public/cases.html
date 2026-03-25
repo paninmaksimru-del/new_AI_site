@@ -1212,6 +1212,28 @@
       flex-wrap: wrap;
       margin-top: 8px;
     }
+    .prompt-card-result{
+      font-size: 12.5px;
+      color: rgba(0,200,120,.85);
+      margin: 6px 0 0;
+      line-height: 1.4;
+    }
+    .prompts-show-more{
+      display: flex;
+      justify-content: center;
+      margin-top: 18px;
+    }
+    .prompts-show-more .btn{
+      background: linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
+      border-color: rgba(255,255,255,.18);
+      color: rgba(255,255,255,.97);
+      padding: 12px 32px;
+      font-size: 14px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .prompts-show-more .btn:hover{ opacity: .88; }
 
     .site-footer{
       margin-top:auto; border-top:1px solid var(--stroke);
@@ -1339,6 +1361,9 @@
           <p class="lead">Раздел структурирован по направлениям — раскройте нужный, скопируйте промпт и подставьте значения в [квадратные скобки]</p>
           <div class="accordion" id="promptsAccordion" style="margin-top:18px;">
             <p class="muted" style="padding:12px 0;">Загрузка промптов…</p>
+          </div>
+          <div class="prompts-show-more" id="promptsShowMoreWrap" style="display:none;">
+            <button class="btn" id="promptsShowMore">Показать больше</button>
           </div>
         </div>
       </div>
@@ -2204,71 +2229,76 @@
     }
 
     // ── Render prompts accordion ───────────────────────────────────────────────
+    function buildPromptCard(p, idSuffix) {
+      const pid = 'prompt_' + safeId(idSuffix || p.id);
+      return `
+        <div class="prompt-card">
+          <div class="prompt-card-title">${escapeHtml(p.title)}</div>
+          <div class="prompt-card-meta">${escapeHtml(p.meta || p.description || '')}</div>
+          <div class="codebox" style="margin-top:10px;">
+            <textarea class="prompt-input" id="${pid}" readonly>${escapeHtml(p.text || p.prompt || '')}</textarea>
+          </div>
+          ${(p.result) ? `<div class="prompt-card-result">Результат: ${escapeHtml(p.result)}</div>` : ''}
+          <div class="prompt-card-actions">
+            <button class="btn small" type="button" data-copy="#${pid}">Копировать</button>
+          </div>
+        </div>`;
+    }
+
+    function bindAccordion(container) {
+      container.querySelectorAll('.acc-item .acc-head').forEach(head => {
+        head.addEventListener('click', () => {
+          const item = head.closest('.acc-item');
+          const wasOpen = item.classList.contains('open');
+          container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
+          if (!wasOpen) item.classList.add('open');
+        });
+      });
+    }
+
+    function bindShowMore(container) {
+      const wrap = document.getElementById('promptsShowMoreWrap');
+      const btn  = document.getElementById('promptsShowMore');
+      if (!wrap || !btn) return;
+      const hidden = container.querySelectorAll('.acc-item-hidden');
+      if (hidden.length === 0) { wrap.style.display = 'none'; return; }
+      wrap.style.display = 'flex';
+      btn.addEventListener('click', () => {
+        hidden.forEach(el => { el.style.display = ''; el.classList.remove('acc-item-hidden'); });
+        wrap.style.display = 'none';
+        initPromptSliders();
+      });
+    }
+
     async function renderPrompts() {
       const container = document.getElementById('promptsAccordion');
       if (!container) return;
       const prompts = await loadFromApi('/api/prompts');
-      if (!prompts || !Array.isArray(prompts)) {
+
+      if (!prompts || !Array.isArray(prompts) || prompts.length === 0) {
+        // Fallback: статичные примеры
         container.innerHTML = `
-          <div class="acc-item open">
+          <div class="acc-item">
             <div class="acc-head"><div class="acc-title"><b>Коммуникации (письма, записки, ответы)</b><span>Официальный стиль, лимит объёма, варианты формулировок</span></div><span class="muted2">▾</span></div>
             <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Официальное письмо (универсальное)</div><div class="prompt-card-meta">Черновик официального письма по тезисам</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_1" readonly>Роль: ты специалист Центра.
-Цель: подготовить официальное письмо [кому] по теме: [тема].
-</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Письмо‑приглашение на встречу</div><div class="prompt-card-meta">Краткое приглашение с предложением слотов</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_2" readonly>Роль: организатор встречи.
-Цель: письмо‑приглашение на встречу по теме: [тема].
-Формат: официальный но живой тон.
-Структура: 1) повод; 2) три варианта слотов; 3) просьба подтвердить время</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_2">Копировать</button></div></div>
+              <div class="prompt-card"><div class="prompt-card-title">Официальное письмо (универсальное)</div><div class="prompt-card-meta">Черновик официального письма по тезисам</div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_1" readonly>Роль: ты специалист Центра.\nЦель: подготовить официальное письмо [кому] по теме: [тема].</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_1">Копировать</button></div></div>
+              <div class="prompt-card"><div class="prompt-card-title">Письмо‑приглашение на встречу</div><div class="prompt-card-meta">Краткое приглашение с предложением слотов</div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_2" readonly>Роль: организатор встречи.\nЦель: письмо‑приглашение на встречу по теме: [тема].</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_2">Копировать</button></div></div>
             </div></div>
           </div>
           <div class="acc-item">
             <div class="acc-head"><div class="acc-title"><b>Аналитика (справки, сравнения, выводы)</b><span>Таблицы, риски, допущения и проверяемость.</span></div><span class="muted2">▾</span></div>
             <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Справка по документу</div><div class="prompt-card-meta">Короткая выжимка, требования, риски и вопросы.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_analytics_1" readonly>Роль: аналитик.
-Цель: краткая справка по документу.
-Контекст: вставь текст документа.
-Формат: 1) резюме; 2) требования; 3) риски и пробелы; 4) вопросы для уточнения.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_analytics_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Сравнительный анализ вариантов</div><div class="prompt-card-meta">Сравнение 2–4 вариантов по единым критериям.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_analytics_2" readonly>Роль: аналитик.
-Цель: сравнить варианты решения задачи.
-Контекст: опиши 2–4 варианта и критерии выбора.
-Формат: таблица (вариант / плюсы / риски / сроки) + выводы.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_analytics_2">Копировать</button></div></div>
+              <div class="prompt-card"><div class="prompt-card-title">Справка по документу</div><div class="prompt-card-meta">Короткая выжимка, требования, риски и вопросы.</div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_analytics_1" readonly>Роль: аналитик.\nЦель: краткая справка по документу.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_analytics_1">Копировать</button></div></div>
             </div></div>
           </div>
-          <div class="acc-item">
+          <div class="acc-item acc-item-hidden" style="display:none;">
             <div class="acc-head"><div class="acc-title"><b>Проекты (протоколы, ТЗ, требования)</b><span>Протоколы, задачи, срок, критерии приёмки.</span></div><span class="muted2">▾</span></div>
             <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Протокол встречи из заметок</div><div class="prompt-card-meta">Структурированный протокол по заметкам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_1" readonly>Роль: секретарь или PM встречи.
-Цель: оформить протокол по итогам встречи.
-Заметки: [вставь конспект].
-Формат: 1) участники; 2) повестка; 3) решения; 4) поручения (кто/что/срок); 5) вопросы.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Черновик ТЗ по задаче</div><div class="prompt-card-meta">Структурный черновик технического задания.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_2" readonly>Роль: постановщик задачи.
-Цель: черновик ТЗ по проекту.
-Контекст: кто заказчик, цель, ожидаемый результат.
-Формат: цель / требования / ограничения / критерии приёмки.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_2">Копировать</button></div></div>
-            </div></div>
-          </div>
-          <div class="acc-item">
-            <div class="acc-head"><div class="acc-title"><b>Отчётность и презентации</b><span>Еженедельные статусы, структура презентации.</span></div><span class="muted2">▾</span></div>
-            <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Еженедельный статус по проекту</div><div class="prompt-card-meta">Отчёт по прогрессу, рискам и следующим шагам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_report_1" readonly>Роль: руководитель проекта.
-Цель: статус за неделю.
-Контекст: что сделано, что в работе, какие блокеры.
-Формат: 1) общий статус; 2) таблица задач (задача/статус/владелец); 3) риски.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_report_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Структура презентации для решения</div><div class="prompt-card-meta">Список слайдов для презентации руководству.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_report_2" readonly>Роль: автор презентации.
-Цель: структура презентации по теме: [тема].
-Формат: список слайдов до 12 с описанием.
-Обязательно: проблема, цель, варианты, анализ, рекомендация, план, риски.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_report_2">Копировать</button></div></div>
+              <div class="prompt-card"><div class="prompt-card-title">Протокол встречи из заметок</div><div class="prompt-card-meta">Структурированный протокол по заметкам.</div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_1" readonly>Роль: секретарь или PM встречи.\nЦель: оформить протокол по итогам встречи.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_1">Копировать</button></div></div>
             </div></div>
           </div>`;
-        container.querySelectorAll('.acc-item .acc-head').forEach(head => {
-          head.addEventListener('click', () => {
-            const item = head.closest('.acc-item');
-            const wasOpen = item.classList.contains('open');
-            container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
-            if (!wasOpen) item.classList.add('open');
-          });
-        });
+        bindAccordion(container);
+        bindShowMore(container);
         initPromptSliders();
         return;
       }
@@ -2290,8 +2320,11 @@
         return;
       }
 
-      container.innerHTML = sections.map((sec, si) => `
-        <div class="acc-item${si === 0 ? ' open' : ''}">
+      const VISIBLE = 3;
+      container.innerHTML = sections.map((sec, si) => {
+        const hidden = si >= VISIBLE;
+        return `
+        <div class="acc-item${hidden ? ' acc-item-hidden' : ''}"${hidden ? ' style="display:none;"' : ''}>
           <div class="acc-head">
             <div class="acc-title">
               <b>${escapeHtml(sec.title)}</b>
@@ -2301,38 +2334,14 @@
           </div>
           <div class="acc-body">
             <div class="prompt-grid">
-              ${sec.items.map(p => `
-                <div class="prompt-card">
-                  <div class="prompt-card-head">
-                    <div>
-                      <div class="prompt-card-title">${escapeHtml(p.title)}</div>
-                      <div class="prompt-card-meta">${escapeHtml(p.meta||'')}</div>
-                    </div>
-                  </div>
-                  <div class="codebox" style="margin-top:10px;">
-                    <textarea class="prompt-input" id="prompt_${safeId(p.id)}" readonly>${escapeHtml(p.text||'')}</textarea>
-                  </div>
-                  <div class="prompt-card-actions">
-                    <button class="btn small" type="button" data-copy="#prompt_${safeId(p.id)}">Копировать</button>
-                  </div>
-                </div>
-              `).join('')}
+              ${sec.items.map((p, pi) => buildPromptCard(p, sec.title + '_' + pi)).join('')}
             </div>
           </div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
 
-      // Re-bind accordion clicks
-      container.querySelectorAll('.acc-item .acc-head').forEach(head => {
-        head.addEventListener('click', () => {
-          const item = head.closest('.acc-item');
-          const wasOpen = item.classList.contains('open');
-          container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
-          if (!wasOpen) item.classList.add('open');
-        });
-      });
-
-      // Re-attach typing observers after DOM rebuild
+      bindAccordion(container);
+      bindShowMore(container);
       initTypingAnimations();
       initPromptSliders();
     }

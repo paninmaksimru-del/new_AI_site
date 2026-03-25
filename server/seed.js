@@ -7,7 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Load prompts from JSON library file
 function loadPromptsFromLibrary() {
-  const libPath = join(__dirname, '..', 'prompt-library copy.json');
+  const libPath = join(__dirname, '..', 'prompt-library.json');
   if (!existsSync(libPath)) return null;
   try {
     const data = JSON.parse(readFileSync(libPath, 'utf8'));

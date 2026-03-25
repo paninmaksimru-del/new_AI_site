@@ -2311,36 +2311,39 @@
 
       const VISIBLE = 3;
       container.innerHTML = '';
-      renderSections(container, sections);
 
-      // Hide sections beyond first 3
-      const allItems = container.querySelectorAll('.acc-item');
-      allItems.forEach((el, i) => { if (i >= VISIBLE) el.style.display = 'none'; });
+      const visibleSections = sections.slice(0, VISIBLE);
+      const hiddenSections  = sections.slice(VISIBLE);
+
+      renderSections(container, visibleSections);
+      initTypingAnimations();
+      initPromptSliders();
 
       if (showMoreWrap && showMoreBtn) {
-        if (sections.length > VISIBLE) {
+        if (hiddenSections.length > 0) {
           showMoreWrap.style.display = 'flex';
           showMoreBtn.textContent = 'Показать все';
           let expanded = false;
+          let hiddenEls = [];
           showMoreBtn.onclick = () => {
             expanded = !expanded;
-            allItems.forEach((el, i) => {
-              if (i >= VISIBLE) el.style.display = expanded ? '' : 'none';
-            });
-            showMoreBtn.textContent = expanded ? 'Свернуть' : 'Показать все';
-            if (!expanded) {
-              const section = document.getElementById('promptsAccordion');
-              if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (expanded) {
+              renderSections(container, hiddenSections);
+              hiddenEls = Array.from(container.querySelectorAll('.acc-item')).slice(VISIBLE);
+              initPromptSliders();
+              showMoreBtn.textContent = 'Свернуть';
+            } else {
+              hiddenEls.forEach(el => el.remove());
+              hiddenEls = [];
+              initPromptSliders();
+              showMoreBtn.textContent = 'Показать все';
+              container.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-            if (expanded) initPromptSliders();
           };
         } else {
           showMoreWrap.style.display = 'none';
         }
       }
-
-      initTypingAnimations();
-      initPromptSliders();
     }
 
     // ─── Typewriter animation ───────────────────────────────────────────────

@@ -2508,6 +2508,50 @@
       }
     });
 
+    var IFRAME_EMBED_ALLOW = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; screen-wake-lock; fullscreen';
+
+    /** Rutube: страницы /video/ в iframe часто блокируются — нужен /play/embed/ */
+    function normalizeVideoEmbedUrl(raw) {
+      var url = (raw || '').trim();
+      if (!url) return url;
+      try {
+        var u = new URL(url.indexOf('//') >= 0 ? url : 'https://' + url);
+        var host = u.hostname.replace(/^www\./i, '').toLowerCase();
+
+        if (host === 'vk.com' || host === 'vkvideo.ru' || host === 'm.vk.com') {
+          if (u.pathname.indexOf('video_ext.php') !== -1) return u.toString();
+          var mClub = u.pathname.match(/\/video-(\d+)_(\d+)/);
+          if (mClub) {
+            return 'https://vkvideo.ru/video_ext.php?oid=-' + mClub[1] + '&id=' + mClub[2] + '&hd=2';
+          }
+          var mUser = u.pathname.match(/\/video(\d+)_(\d+)/);
+          if (mUser) {
+            return 'https://vkvideo.ru/video_ext.php?oid=' + mUser[1] + '&id=' + mUser[2] + '&hd=2';
+          }
+          return url;
+        }
+
+        if (host === 'rutube.ru') {
+          if (/rutube\.ru\/play\/embed\//i.test(url)) return url;
+          var m = u.pathname.match(/\/video\/(?:private\/)?([a-f0-9]{32})/i);
+          if (!m) return url;
+          var id = m[1];
+          var p = u.searchParams.get('p');
+          var embed = 'https://rutube.ru/play/embed/' + id + '/';
+          if (p) embed += '?p=' + encodeURIComponent(p);
+          return embed;
+        }
+
+        return url;
+      } catch (e) {
+        return url;
+      }
+    }
+
+    function escapeIframeSrc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    }
+
     // Load videos from API and render into carousel
     (function loadEducationVideos() {
       var stage = document.getElementById('videosStage');
@@ -2525,9 +2569,10 @@
           card.className = 'card';
           var hasEmbed = v.embedUrl && v.embedUrl.trim();
           if (hasEmbed) {
+            var embedSrc = normalizeVideoEmbedUrl(v.embedUrl);
             card.innerHTML =
               '<div style="border-radius:14px; overflow:hidden; margin-bottom:10px; aspect-ratio:16/9;">' +
-                '<iframe src="' + v.embedUrl + '" style="width:100%; height:100%; border:none;" allowfullscreen></iframe>' +
+                '<iframe src="' + escapeIframeSrc(embedSrc) + '" style="width:100%; height:100%; border:none;" allow="' + IFRAME_EMBED_ALLOW + '" allowfullscreen></iframe>' +
               '</div>' +
               '<h3>' + (v.title || '') + '</h3>' +
               '<p class="muted">' + (v.desc || '') + '</p>';

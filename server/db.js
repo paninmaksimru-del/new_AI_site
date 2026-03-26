@@ -68,6 +68,14 @@ export async function initSchema() {
       question TEXT NOT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS prompt_usages (
+      id SERIAL PRIMARY KEY,
+      user_login TEXT NOT NULL,
+      user_name TEXT,
+      prompt_id TEXT NOT NULL,
+      prompt_title TEXT,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
     CREATE TABLE IF NOT EXISTS kv (
       key TEXT PRIMARY KEY,
       value TEXT

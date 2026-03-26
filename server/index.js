@@ -563,6 +563,30 @@ async function start() {
     }
   });
 
+  // Prompt usages
+  app.post('/api/prompt-usages', async (req, res) => {
+    try {
+      const { user_login, user_name, prompt_id, prompt_title } = req.body || {};
+      if (!user_login || !prompt_id) return res.status(400).json({ error: 'user_login and prompt_id required' });
+      await query('INSERT INTO prompt_usages (user_login, user_name, prompt_id, prompt_title) VALUES ($1, $2, $3, $4)', [user_login, user_name || '', prompt_id, prompt_title || '']);
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.get('/api/prompt-usages', async (req, res) => {
+    try {
+      const { rows } = await query('SELECT * FROM prompt_usages ORDER BY created_at DESC');
+      res.json(rows);
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.get('/api/prompt-usages/count/:login', async (req, res) => {
+    try {
+      const { rows } = await query('SELECT COUNT(*) as c FROM prompt_usages WHERE user_login = $1', [req.params.login]);
+      res.json({ count: parseInt(rows[0].c) });
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
   // Speaker questions
   app.get('/api/speaker-questions', async (req, res) => {
     try {

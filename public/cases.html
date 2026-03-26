@@ -1537,6 +1537,36 @@
       margin-top: 8px;
     }
 
+    /* Prompt usage modal */
+    .pu-modal-overlay{
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(0,0,0,.6); backdrop-filter:blur(6px);
+      justify-content:center; align-items:center;
+    }
+    .pu-modal-overlay.open{ display:flex; }
+    .pu-modal{
+      background: var(--card, rgba(14,18,28,.96));
+      border: 1px solid var(--stroke, rgba(255,255,255,.1));
+      border-radius: 18px;
+      padding: 28px 24px;
+      width: 100%; max-width: 360px;
+      position: relative;
+      text-align: center;
+    }
+    .pu-modal-close{
+      position:absolute; top:12px; right:14px; background:none; border:none;
+      color:var(--muted); font-size:20px; cursor:pointer; line-height:1;
+    }
+    .pu-modal-close:hover{ color:#fff; }
+    .pu-modal h3{ margin:0 0 18px; font-size:16px; }
+    .pu-modal-confirm{
+      padding:11px 28px; border-radius:12px; border:none;
+      background:linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
+      color:#fff; font:inherit; font-size:14px; cursor:pointer; transition:opacity .15s;
+    }
+    .pu-modal-confirm:hover{ opacity:.88; }
+    .pu-modal-ok{ color:rgba(0,210,120,.9); font-size:15px; margin-top:12px; display:none; }
+
     .prompts-show-more{
       display: flex;
       justify-content: flex-start;
@@ -1685,6 +1715,18 @@
             <button class="btn" id="promptsShowMore">Показать все</button>
           </div>
         </div>
+
+    <!-- Prompt usage confirmation modal -->
+    <div class="pu-modal-overlay" id="puModal">
+      <div class="pu-modal">
+        <button class="pu-modal-close" id="puModalClose">&times;</button>
+        <h3>Вы использовали этот промт?</h3>
+        <div id="puModalActions">
+          <button class="pu-modal-confirm" id="puModalConfirm">Да, использовал(а)</button>
+        </div>
+        <div class="pu-modal-ok" id="puModalOk">Спасибо, учтено!</div>
+      </div>
+    </div>
       </div>
     </section>
 
@@ -2794,6 +2836,13 @@
           if (!el) return;
           const text = "value" in el ? el.value : el.innerText;
           copyText(text);
+          // If inside prompt library, show usage confirmation modal
+          if (copyBtn.closest('.prompt-card')) {
+            const card = copyBtn.closest('.prompt-card');
+            const title = card.querySelector('.prompt-card-title')?.textContent || '';
+            const pid = selector.replace('#prompt_', '');
+            showPromptUsageModal(pid, title);
+          }
           return;
         }
       });
@@ -3075,6 +3124,40 @@
           showMoreWrap.style.display = 'none';
         }
       }
+    }
+
+    // ─── Prompt usage confirmation ──────────────────────────────────────────
+    function showPromptUsageModal(promptId, promptTitle) {
+      const overlay = document.getElementById('puModal');
+      const closeBtn = document.getElementById('puModalClose');
+      const confirmBtn = document.getElementById('puModalConfirm');
+      const actionsEl = document.getElementById('puModalActions');
+      const okEl = document.getElementById('puModalOk');
+      if (!overlay) return;
+
+      actionsEl.style.display = '';
+      okEl.style.display = 'none';
+      overlay.classList.add('open');
+
+      function close() { overlay.classList.remove('open'); }
+      closeBtn.onclick = close;
+      overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+      confirmBtn.onclick = async () => {
+        const auth = JSON.parse(localStorage.getItem('mikAuth') || '{}');
+        const login = auth.login || localStorage.getItem('auth_login') || 'anonymous';
+        const name = auth.full_name || localStorage.getItem('auth_full_name') || '';
+        try {
+          await fetch('/api/prompt-usages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_login: login, user_name: name, prompt_id: promptId, prompt_title: promptTitle })
+          });
+        } catch(e) {}
+        actionsEl.style.display = 'none';
+        okEl.style.display = '';
+        setTimeout(close, 1200);
+      };
     }
 
     // ─── Typewriter animation ───────────────────────────────────────────────

@@ -111,6 +111,7 @@
     <button class="tabbtn" data-tab="instructions">Инструкции</button>
     <button class="tabbtn" data-tab="videos">Видеоматериалы</button>
     <button class="tabbtn" data-tab="spkq">🎤 Вопросы спикерам</button>
+    <button class="tabbtn" data-tab="pusage">📊 Использование промтов</button>
   </div>
 
   <!-- USERS -->
@@ -490,6 +491,26 @@
           </tr>
         </thead>
         <tbody id="spkqBody"><tr><td colspan="7" class="loading" style="padding:12px;">Загрузка...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PROMPT USAGES -->
+  <div id="tab_pusage" class="tabpane">
+    <div class="panel">
+      <h2>Использование промтов</h2>
+      <p class="muted">Подтверждённые использования промтов пользователями.</p>
+      <table style="width:100%; border-collapse:collapse; margin-top:16px; font-size:13px;">
+        <thead>
+          <tr style="text-align:left; border-bottom:1px solid rgba(255,255,255,.12);">
+            <th style="padding:8px 6px;">Дата</th>
+            <th style="padding:8px 6px;">Пользователь</th>
+            <th style="padding:8px 6px;">Логин</th>
+            <th style="padding:8px 6px;">Промт</th>
+            <th style="padding:8px 6px;">ID промта</th>
+          </tr>
+        </thead>
+        <tbody id="pusageBody"><tr><td colspan="5" class="loading" style="padding:12px;">Загрузка...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1647,6 +1668,24 @@ async function deleteSQ(id) {
   try { await api('/api/speaker-questions/' + id, { method:'DELETE' }); loadSpeakerQuestions(); } catch(e) { toast('Ошибка: '+e.message,'err'); }
 }
 document.querySelector('[data-tab="spkq"]').addEventListener('click', function() { loadSpeakerQuestions(); });
+
+// ── PROMPT USAGES ────────────────────────────────────────────────────────
+async function loadPromptUsages() {
+  const tbody = document.getElementById('pusageBody');
+  try {
+    const rows = await api('/api/prompt-usages');
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5" style="padding:12px; color:rgba(255,255,255,.5);">Данных пока нет</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+        <td style="padding:8px 6px; white-space:nowrap;">${esc(String(r.created_at || '').slice(0,16))}</td>
+        <td style="padding:8px 6px;">${esc(r.user_name || '')}</td>
+        <td style="padding:8px 6px;">${esc(r.user_login)}</td>
+        <td style="padding:8px 6px;">${esc(r.prompt_title || '')}</td>
+        <td style="padding:8px 6px;">${esc(r.prompt_id)}</td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="5" style="padding:12px; color:red;">Ошибка загрузки</td></tr>'; }
+}
+document.querySelector('[data-tab="pusage"]').addEventListener('click', function() { loadPromptUsages(); });
 
 </script>
 </body>

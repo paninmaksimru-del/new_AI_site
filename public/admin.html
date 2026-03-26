@@ -104,6 +104,7 @@
     <button class="tabbtn" data-tab="tools">🔧 Инструменты</button>
     <button class="tabbtn" data-tab="tasks">✅ Задачи</button>
     <button class="tabbtn" data-tab="browser">🌐 Браузер</button>
+    <button class="tabbtn" data-tab="spkq">🎤 Вопросы спикерам</button>
   </div>
 
   <!-- USERS -->
@@ -346,6 +347,28 @@
         <button class="btn ok" onclick="saveBrowserConfig()">Сохранить</button>
         <a href="/training#browser" target="_blank" class="btn small" style="text-decoration:none;">↗ Открыть на странице</a>
       </div>
+    </div>
+  </div>
+
+  <!-- SPEAKER QUESTIONS -->
+  <div id="tab_spkq" class="tabpane">
+    <div class="panel">
+      <h2>Вопросы спикерам</h2>
+      <p class="muted">Обращения пользователей к спикерам из раздела обучения.</p>
+      <table id="spkqTable" style="width:100%; border-collapse:collapse; margin-top:16px; font-size:13px;">
+        <thead>
+          <tr style="text-align:left; border-bottom:1px solid rgba(255,255,255,.12);">
+            <th style="padding:8px 6px;">Дата</th>
+            <th style="padding:8px 6px;">Спикер</th>
+            <th style="padding:8px 6px;">Имя</th>
+            <th style="padding:8px 6px;">Фамилия</th>
+            <th style="padding:8px 6px;">Telegram</th>
+            <th style="padding:8px 6px;">Вопрос</th>
+            <th style="padding:8px 6px;"></th>
+          </tr>
+        </thead>
+        <tbody id="spkqBody"><tr><td colspan="7" class="loading" style="padding:12px;">Загрузка...</td></tr></tbody>
+      </table>
     </div>
   </div>
 </main>
@@ -812,6 +835,30 @@ async function saveBrowserConfig() {
     toast('Настройки браузера сохранены');
   } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
 }
+
+// ── SPEAKER QUESTIONS ────────────────────────────────────────────────────────
+async function loadSpeakerQuestions() {
+  const tbody = document.getElementById('spkqBody');
+  try {
+    const rows = await api('/api/speaker-questions');
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" style="padding:12px; color:rgba(255,255,255,.5);">Обращений пока нет</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+        <td style="padding:8px 6px; white-space:nowrap;">${esc(r.created_at || '').slice(0,16)}</td>
+        <td style="padding:8px 6px; font-weight:600;">${esc(r.speaker)}</td>
+        <td style="padding:8px 6px;">${esc(r.first_name)}</td>
+        <td style="padding:8px 6px;">${esc(r.last_name)}</td>
+        <td style="padding:8px 6px;">${esc(r.telegram)}</td>
+        <td style="padding:8px 6px; max-width:280px; overflow:hidden; text-overflow:ellipsis;">${esc(r.question)}</td>
+        <td style="padding:8px 6px;"><button class="btn small" onclick="deleteSQ(${r.id})">✕</button></td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="7" style="padding:12px; color:red;">Ошибка загрузки</td></tr>'; }
+}
+async function deleteSQ(id) {
+  if (!confirm('Удалить обращение?')) return;
+  try { await api('/api/speaker-questions/' + id, { method:'DELETE' }); loadSpeakerQuestions(); } catch(e) { toast('Ошибка: '+e.message,'err'); }
+}
+loadSpeakerQuestions();
 
 </script>
 </body>

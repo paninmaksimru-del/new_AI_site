@@ -494,36 +494,96 @@
 
     /* Speakers */
     .speaker-grid{
+      display: grid;
       grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 16px;
+      margin-top: 16px;
     }
+    @media(max-width:760px){ .speaker-grid{ grid-template-columns: 1fr; } }
     .speaker-card{
       display:flex;
       flex-direction: column;
-      gap: 10px;
-    }
-    .speaker-top{
-      display:flex;
-      gap: 10px;
-      align-items:center;
+      align-items: center;
+      text-align: center;
+      padding: 24px 16px;
+      gap: 12px;
     }
     .speaker-photo{
-      width: 52px;
-      height: 52px;
+      width: 80px;
+      height: 80px;
       border-radius: 50%;
-      border: 1px solid rgba(255,255,255,.18);
-      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.4), transparent 55%),
-                  rgba(0,0,0,.7);
+      border: 2px solid rgba(0,200,120,.35);
       overflow:hidden;
       flex-shrink: 0;
     }
+    .speaker-photo img{ width:100%; height:100%; object-fit:cover; border-radius:50%; }
     .speaker-name{
       font-weight: 600;
-      margin-bottom: 2px;
+      font-size: 15px;
     }
-    .speaker-role{
+    .speaker-expertise{
       font-size: 13px;
       color: var(--muted-2);
+      line-height: 1.45;
     }
+    .speaker-contact-btn{
+      margin-top: auto;
+      padding: 9px 24px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,200,120,.3);
+      background: rgba(0,200,120,.1);
+      color: rgba(0,220,130,.92);
+      font: inherit;
+      font-size: 13.5px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .speaker-contact-btn:hover{
+      background: rgba(0,200,120,.2);
+      border-color: rgba(0,200,120,.5);
+    }
+    /* Speaker modal */
+    .speaker-modal-overlay{
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(0,0,0,.6); backdrop-filter:blur(6px);
+      justify-content:center; align-items:center;
+    }
+    .speaker-modal-overlay.open{ display:flex; }
+    .speaker-modal{
+      background: var(--card, rgba(14,18,28,.96));
+      border: 1px solid var(--stroke, rgba(255,255,255,.1));
+      border-radius: 18px;
+      padding: 28px 24px;
+      width: 100%; max-width: 420px;
+      position: relative;
+    }
+    .speaker-modal h3{ margin:0 0 18px; font-size:17px; }
+    .speaker-modal .field{ margin-bottom:12px; }
+    .speaker-modal label{ display:block; font-size:12.5px; color:var(--muted,rgba(255,255,255,.55)); margin-bottom:4px; }
+    .speaker-modal input,
+    .speaker-modal textarea{
+      width:100%; padding:9px 12px; border-radius:10px;
+      border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05);
+      color:rgba(255,255,255,.92); font:inherit; font-size:13.5px; outline:none;
+      transition: border-color .15s;
+    }
+    .speaker-modal input:focus,
+    .speaker-modal textarea:focus{ border-color:rgba(0,200,120,.5); }
+    .speaker-modal textarea{ min-height:80px; resize:vertical; }
+    .speaker-modal-actions{ display:flex; justify-content:flex-end; margin-top:16px; }
+    .speaker-modal-submit{
+      padding:10px 24px; border-radius:12px; border:none;
+      background:linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
+      color:#fff; font:inherit; font-size:14px; cursor:pointer; transition:opacity .15s;
+    }
+    .speaker-modal-submit:hover{ opacity:.88; }
+    .speaker-modal-submit:disabled{ opacity:.5; cursor:default; }
+    .speaker-modal-close{
+      position:absolute; top:12px; right:14px; background:none; border:none;
+      color:var(--muted); font-size:20px; cursor:pointer; line-height:1;
+    }
+    .speaker-modal-close:hover{ color:#fff; }
+    .speaker-modal-ok{ text-align:center; padding:24px 0; color:rgba(0,210,120,.9); font-size:15px; }
 
     /* Calendar */
     .seg{
@@ -1600,51 +1660,54 @@
         <h2 class="h2">Спикеры и наставники</h2>
         <p class="lead">Команда, которая ведет лекции, воркшопы и индивидуальные консультации по ИИ</p>
 
-        <div class="carousel-wrap" style="margin-top:16px;" data-carousel="speakers">
-          <button class="carousel-btn prev hidden" aria-label="Назад"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="10,2 4,8 10,14"/></svg></button>
-          <div class="carousel-stage">
+        <div class="speaker-grid">
           <article class="card speaker-card">
-            <div class="speaker-top">
-              <div class="speaker-photo" style="background:none; overflow:hidden;">
-                <img src="/speakers/alexei-voronov.jpg" alt="Алексей Воронов" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
-              </div>
-              <div>
-                <div class="speaker-name">Алексей Воронов</div>
-                <div class="speaker-role">Ведущий методист · Отдел обучения</div>
-              </div>
+            <div class="speaker-photo">
+              <img src="/speakers/alexei-voronov.jpg" alt="Алексей Воронов" />
             </div>
-            <p>Сферы экспертизы: Документы, деловая переписка, регламенты, внутренняя коммуникация</p>
+            <div class="speaker-name">Алексей Воронов</div>
+            <div class="speaker-expertise">Документы, деловая переписка, регламенты, внутренняя коммуникация</div>
+            <button class="speaker-contact-btn" data-speaker="Алексей Воронов">Связаться</button>
           </article>
           <article class="card speaker-card">
-            <div class="speaker-top">
-              <div class="speaker-photo" style="background:none; overflow:hidden;">
-                <img src="/speakers/marina-sokolova.jpg" alt="Марина Соколова" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
-              </div>
-              <div>
-                <div class="speaker-name">Марина Соколова</div>
-                <div class="speaker-role">Аналитик данных · Департамент развития</div>
-              </div>
+            <div class="speaker-photo">
+              <img src="/speakers/marina-sokolova.jpg" alt="Марина Соколова" />
             </div>
-            <p>Сферы экспертизы: Аналитика, отчетность, визуализация данных, работа с таблицами</p>
+            <div class="speaker-name">Марина Соколова</div>
+            <div class="speaker-expertise">Аналитика, отчетность, визуализация данных, работа с таблицами</div>
+            <button class="speaker-contact-btn" data-speaker="Марина Соколова">Связаться</button>
           </article>
           <article class="card speaker-card">
-            <div class="speaker-top">
-              <div class="speaker-photo" style="background:none; overflow:hidden;">
-                <img src="/speakers/dmitry-lebedev.jpg" alt="Дмитрий Лебедев" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
-              </div>
-              <div>
-                <div class="speaker-name">Дмитрий Лебедев</div>
-                <div class="speaker-role">Руководитель проектов · Управление ИТ</div>
-              </div>
+            <div class="speaker-photo">
+              <img src="/speakers/dmitry-lebedev.jpg" alt="Дмитрий Лебедев" />
             </div>
-            <p>Сферы экспертизы: Управление командами, внедрение ИИ в процессы подразделений</p>
+            <div class="speaker-name">Дмитрий Лебедев</div>
+            <div class="speaker-expertise">Управление командами, внедрение ИИ в процессы подразделений</div>
+            <button class="speaker-contact-btn" data-speaker="Дмитрий Лебедев">Связаться</button>
           </article>
-          </div>
-          <button class="carousel-btn next" aria-label="Вперед"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,2 12,8 6,14"/></svg></button>
-          <div class="carousel-dots"></div>
         </div>
       </div>
     </section>
+
+    <!-- Speaker contact modal -->
+    <div class="speaker-modal-overlay" id="speakerModal">
+      <div class="speaker-modal">
+        <button class="speaker-modal-close" id="speakerModalClose">&times;</button>
+        <div id="speakerFormWrap">
+          <h3>Вопрос спикеру: <span id="speakerModalName"></span></h3>
+          <div class="field"><label>Имя *</label><input type="text" id="sqFirstName" required /></div>
+          <div class="field"><label>Фамилия *</label><input type="text" id="sqLastName" required /></div>
+          <div class="field"><label>Ник в Telegram *</label><input type="text" id="sqTelegram" placeholder="@username" required /></div>
+          <div class="field"><label>Ваш вопрос *</label><textarea id="sqQuestion" required></textarea></div>
+          <div class="speaker-modal-actions">
+            <button class="speaker-modal-submit" id="sqSubmit">Отправить вопрос</button>
+          </div>
+        </div>
+        <div id="speakerFormOk" class="speaker-modal-ok" style="display:none;">
+          Ваш вопрос отправлен. Спикер свяжется с вами в Telegram.
+        </div>
+      </div>
+    </div>
 
     <!-- Календарь -->
     <section id="calendar">
@@ -2613,6 +2676,62 @@
 
       layout();
     });
+
+    // ── Speaker contact modal ──────────────────────────────────────────────
+    (function() {
+      const overlay = document.getElementById('speakerModal');
+      const nameEl  = document.getElementById('speakerModalName');
+      const formWrap = document.getElementById('speakerFormWrap');
+      const okWrap   = document.getElementById('speakerFormOk');
+      const closeBtn = document.getElementById('speakerModalClose');
+      const submitBtn = document.getElementById('sqSubmit');
+      let currentSpeaker = '';
+
+      document.querySelectorAll('.speaker-contact-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentSpeaker = btn.dataset.speaker;
+          nameEl.textContent = currentSpeaker;
+          formWrap.style.display = '';
+          okWrap.style.display = 'none';
+          document.getElementById('sqFirstName').value = '';
+          document.getElementById('sqLastName').value = '';
+          document.getElementById('sqTelegram').value = '';
+          document.getElementById('sqQuestion').value = '';
+          overlay.classList.add('open');
+        });
+      });
+
+      closeBtn.addEventListener('click', () => overlay.classList.remove('open'));
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
+
+      submitBtn.addEventListener('click', async () => {
+        const first_name = document.getElementById('sqFirstName').value.trim();
+        const last_name  = document.getElementById('sqLastName').value.trim();
+        const telegram   = document.getElementById('sqTelegram').value.trim();
+        const question   = document.getElementById('sqQuestion').value.trim();
+        if (!first_name || !last_name || !telegram || !question) {
+          alert('Пожалуйста, заполните все поля');
+          return;
+        }
+        submitBtn.disabled = true;
+        try {
+          const res = await fetch('/api/speaker-questions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ speaker: currentSpeaker, first_name, last_name, telegram, question })
+          });
+          if (res.ok) {
+            formWrap.style.display = 'none';
+            okWrap.style.display = '';
+          } else {
+            alert('Ошибка отправки, попробуйте позже');
+          }
+        } catch(e) {
+          alert('Ошибка сети, попробуйте позже');
+        }
+        submitBtn.disabled = false;
+      });
+    })();
   </script>
 </body>
 </html>

@@ -387,6 +387,33 @@ app.post('/api/analytics/events', (req, res) => {
   }
 });
 
+// Speaker questions
+app.get('/api/speaker-questions', (req, res) => {
+  try {
+    const rows = db().prepare('SELECT * FROM speaker_questions ORDER BY created_at DESC').all();
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: String(e.message) }); }
+});
+
+app.post('/api/speaker-questions', (req, res) => {
+  try {
+    const { speaker, first_name, last_name, telegram, question } = req.body || {};
+    if (!speaker || !first_name || !last_name || !telegram || !question) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    const stmt = db().prepare('INSERT INTO speaker_questions (speaker, first_name, last_name, telegram, question) VALUES (?, ?, ?, ?, ?)');
+    stmt.run(speaker, first_name, last_name, telegram, question);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: String(e.message) }); }
+});
+
+app.delete('/api/speaker-questions/:id', (req, res) => {
+  try {
+    db().prepare('DELETE FROM speaker_questions WHERE id = ?').run(req.params.id);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: String(e.message) }); }
+});
+
 // Health
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });

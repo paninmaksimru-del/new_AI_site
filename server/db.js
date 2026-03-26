@@ -47,6 +47,15 @@ function initSchema(database) {
       event_type TEXT,
       payload TEXT
     );
+    CREATE TABLE IF NOT EXISTS speaker_questions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      speaker TEXT NOT NULL,
+      first_name TEXT NOT NULL,
+      last_name TEXT NOT NULL,
+      telegram TEXT NOT NULL,
+      question TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
     CREATE TABLE IF NOT EXISTS kv (
       key TEXT PRIMARY KEY,
       value TEXT

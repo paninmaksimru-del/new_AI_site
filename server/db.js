@@ -71,6 +71,11 @@ export async function initSchema() {
       id TEXT PRIMARY KEY,
       data TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS video_categories (
+      id SERIAL PRIMARY KEY,
+      name TEXT UNIQUE NOT NULL,
+      color TEXT NOT NULL DEFAULT '#6B9FFF'
+    );
     CREATE INDEX IF NOT EXISTS idx_ui_events_ts ON ui_events(timestamp);
     CREATE INDEX IF NOT EXISTS idx_ui_events_type ON ui_events(event_type);
   `);

@@ -482,6 +482,40 @@ async function start() {
     }
   });
 
+  // Video Categories
+  app.get('/api/video-categories', async (req, res) => {
+    try {
+      const { rows } = await query('SELECT name, color FROM video_categories ORDER BY id');
+      res.json(rows);
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
+  app.post('/api/video-categories', async (req, res) => {
+    try {
+      const name = (req.body?.name || '').trim();
+      const color = (req.body?.color || '#6B9FFF').trim();
+      if (!name) return res.status(400).json({ error: 'name required' });
+      await query('INSERT INTO video_categories (name, color) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET color = $2', [name, color]);
+      const { rows } = await query('SELECT name, color FROM video_categories ORDER BY id');
+      res.json(rows);
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
+  app.delete('/api/video-categories/:name', async (req, res) => {
+    try {
+      const name = decodeURIComponent(req.params.name || '');
+      await query('DELETE FROM video_categories WHERE name = $1', [name]);
+      const { rows } = await query('SELECT name, color FROM video_categories ORDER BY id');
+      res.json(rows);
+    } catch (e) {
+      res.status(500).json({ error: String(e.message) });
+    }
+  });
+
   // Videos (education page)
   app.get('/api/videos', async (req, res) => {
     try {

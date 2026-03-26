@@ -438,12 +438,25 @@
       <h2>Видеоматериалы</h2>
       <p class="muted">Видео для страницы обучения. В поле embed укажите <strong>ссылку для встраивания</strong> (не страницу просмотра): Rutube <code>…/play/embed/…</code>, VK Видео <code>https://vkvideo.ru/video_ext.php?oid=…&amp;id=…</code>, YouTube <code>…/embed/…</code>.</p>
 
+      <!-- Categories management -->
+      <div style="margin-top:16px; padding:14px 16px; border-radius:12px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);">
+        <h3 style="font-size:14px; margin:0 0 10px;">Категории видео</h3>
+        <div id="videoCatList" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" id="newCatName" placeholder="Новая категория" style="flex:1; min-width:120px;" />
+          <input type="color" id="newCatColor" value="#6B9FFF" style="width:36px; height:32px; border:none; border-radius:6px; cursor:pointer;" />
+          <button class="btn small" id="btnAddCat" type="button">Добавить</button>
+        </div>
+      </div>
+
       <div class="form-grid" style="margin-top:16px;">
         <div class="field"><label>ID (авто)</label><input type="text" id="videoId" placeholder="vid_001" /></div>
         <div class="field"><label>Название</label><input type="text" id="videoTitle" placeholder="Введение в ИИ для сотрудников" /></div>
+        <div class="field"><label>Категория</label><select id="videoCategory" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:var(--text); font:inherit;"><option value="">-- выберите --</option></select></div>
         <div class="field"><label>Описание</label><input type="text" id="videoDesc" placeholder="Краткое объяснение ключевых понятий" /></div>
-        <div class="field"><label>Embed URL</label><input type="text" id="videoEmbed" placeholder="https://vkvideo.ru/video_ext.php?oid=-123&amp;id=456&amp;hd=2" /></div>
-        <div class="field"><label>Обложка URL (необязательно)</label><input type="text" id="videoThumb" placeholder="https://..." /></div>
+        <div class="field"><label>Embed URL (Rutube/YouTube)</label><input type="text" id="videoEmbed" placeholder="https://rutube.ru/play/embed/xxxxxxx" /></div>
+        <div class="field"><label>Обложка URL (необязательно)</label><input type="text" id="videoThumb" placeholder="/video-covers/cover.jpg" /></div>
+        <div class="field"><label>Спикер</label><input type="text" id="videoSpeaker" placeholder="А. Воронов" /></div>
         <div class="field"><label>Длительность</label><input type="text" id="videoDuration" placeholder="12 мин" /></div>
         <div class="field"><label>Порядок сортировки</label><input type="number" id="videoOrder" placeholder="1" value="1" /></div>
       </div>
@@ -1445,8 +1458,64 @@ async function saveBrowserConfig() {
   } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
 }
 
+// ===== VIDEO CATEGORIES =====
+var videoCats = [];
+
+async function loadVideoCats() {
+  try {
+    videoCats = await api('/api/video-categories');
+    renderVideoCats();
+    updateVideoCatSelect();
+  } catch(e) { console.error('cats err', e); }
+}
+
+function renderVideoCats() {
+  var el = document.getElementById('videoCatList');
+  if (!el) return;
+  if (!videoCats.length) { el.innerHTML = '<span class="muted" style="font-size:12px;">Нет категорий. Добавьте первую.</span>'; return; }
+  el.innerHTML = videoCats.map(function(c) {
+    return '<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);font-size:12px;">' +
+      '<span style="width:10px;height:10px;border-radius:50%;background:' + escH(c.color) + ';"></span>' +
+      escH(c.name) +
+      '<span style="cursor:pointer;opacity:.5;margin-left:2px;" onclick="deleteCat(\'' + escH(c.name).replace(/'/g,"\\'") + '\')">&times;</span>' +
+    '</span>';
+  }).join('');
+}
+
+function updateVideoCatSelect() {
+  var sel = document.getElementById('videoCategory');
+  if (!sel) return;
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">-- выберите --</option>';
+  videoCats.forEach(function(c) {
+    sel.innerHTML += '<option value="' + escH(c.name) + '">' + escH(c.name) + '</option>';
+  });
+  if (cur) sel.value = cur;
+}
+
+document.getElementById('btnAddCat').addEventListener('click', async function() {
+  var name = document.getElementById('newCatName').value.trim();
+  var color = document.getElementById('newCatColor').value || '#6B9FFF';
+  if (!name) return;
+  try {
+    await api('/api/video-categories', { method:'POST', body: JSON.stringify({ name: name, color: color }) });
+    document.getElementById('newCatName').value = '';
+    toast('Категория добавлена');
+    loadVideoCats();
+  } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
+});
+
+async function deleteCat(name) {
+  if (!confirm('Удалить категорию "' + name + '"?')) return;
+  try {
+    await api('/api/video-categories/' + encodeURIComponent(name), { method:'DELETE' });
+    toast('Категория удалена');
+    loadVideoCats();
+  } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
+}
+
 // ===== VIDEOS =====
-let videosData = [];
+var videosData = [];
 
 async function loadVideos() {
   try {
@@ -1461,7 +1530,9 @@ function renderVideoList() {
   ul.innerHTML = videosData.sort((a,b) => (a.order||0) - (b.order||0)).map(v => {
     var s = '<li style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--stroke);">';
     s += '<div style="flex:1; min-width:0;"><b>' + escH(v.title || v.id) + '</b>';
+    if (v.type) s += ' <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);">' + escH(v.type) + '</span>';
     s += '<span class="muted" style="font-size:12px; margin-left:8px;">' + escH(v.duration || '') + '</span>';
+    if (v.speaker) s += '<span class="muted" style="font-size:12px; margin-left:6px;">· ' + escH(v.speaker) + '</span>';
     s += '<br><span class="muted" style="font-size:12px;">' + escH(v.desc || '') + '</span>';
     if (v.embedUrl) s += '<br><span style="font-size:11px; color:rgba(78,135,255,.8);">' + escH(v.embedUrl) + '</span>';
     s += '</div>';
@@ -1473,14 +1544,16 @@ function renderVideoList() {
   }).join('');
 }
 
-function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;'); }
 
 document.getElementById('btnSaveVideo').addEventListener('click', async function() {
   var id = document.getElementById('videoId').value.trim() || ('vid_' + Date.now());
   var payload = {
     id: id,
     title: document.getElementById('videoTitle').value.trim(),
+    type: document.getElementById('videoCategory').value,
     desc: document.getElementById('videoDesc').value.trim(),
+    speaker: document.getElementById('videoSpeaker').value.trim(),
     embedUrl: document.getElementById('videoEmbed').value.trim(),
     thumbUrl: document.getElementById('videoThumb').value.trim(),
     duration: document.getElementById('videoDuration').value.trim(),
@@ -1497,10 +1570,11 @@ document.getElementById('btnSaveVideo').addEventListener('click', async function
 document.getElementById('btnClearVideo').addEventListener('click', clearVideoForm);
 
 function clearVideoForm() {
-  ['videoId','videoTitle','videoDesc','videoEmbed','videoThumb','videoDuration'].forEach(function(fid) {
+  ['videoId','videoTitle','videoDesc','videoEmbed','videoThumb','videoSpeaker','videoDuration'].forEach(function(fid) {
     var el = document.getElementById(fid); if (el) el.value = '';
   });
   document.getElementById('videoOrder').value = '1';
+  document.getElementById('videoCategory').value = '';
 }
 
 function editVideo(id) {
@@ -1508,7 +1582,9 @@ function editVideo(id) {
   if (!v) return;
   document.getElementById('videoId').value = v.id || '';
   document.getElementById('videoTitle').value = v.title || '';
+  document.getElementById('videoCategory').value = v.type || '';
   document.getElementById('videoDesc').value = v.desc || '';
+  document.getElementById('videoSpeaker').value = v.speaker || '';
   document.getElementById('videoEmbed').value = v.embedUrl || '';
   document.getElementById('videoThumb').value = v.thumbUrl || '';
   document.getElementById('videoDuration').value = v.duration || '';
@@ -1524,7 +1600,7 @@ async function deleteVideo(id) {
   } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
 }
 
-document.querySelector('[data-tab="videos"]').addEventListener('click', function() { if (!videosData.length) loadVideos(); });
+document.querySelector('[data-tab="videos"]').addEventListener('click', function() { loadVideoCats(); loadVideos(); });
 
 </script>
 </body>

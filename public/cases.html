@@ -2289,7 +2289,24 @@
       const showMoreBtn  = document.getElementById('promptsShowMore');
       if (!container) return;
 
-      const prompts = await loadFromApi('/api/prompts');
+      let prompts = await loadFromApi('/api/prompts');
+
+      // Fallback: if API has fewer than 10, load from static JSON
+      if (!prompts || prompts.length < 10) {
+        try {
+          const resp = await fetch('/prompt-library.json');
+          if (resp.ok) {
+            const lib = await resp.json();
+            const flat = [];
+            (lib.categories || []).forEach(cat => {
+              (cat.prompts || []).forEach(p => {
+                flat.push({ id: cat.id + '_' + p.id, sectionTitle: cat.name, sectionSubtitle: (cat.description || '').replace(/\.$/, ''), title: p.title, meta: (p.description || '').replace(/\.$/, ''), text: p.prompt || '', result: (p.result || '').replace(/\.$/, '') });
+              });
+            });
+            if (flat.length > 0) prompts = flat;
+          }
+        } catch(e) {}
+      }
 
       // Group by sectionTitle
       const sections = [];

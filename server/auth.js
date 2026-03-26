@@ -1,9 +1,6 @@
 // server/auth.js
-// Подключи в server/index.js:
-//   import { setupAuth, requireAuth, requireAdmin } from './auth.js';
-//   setupAuth(app, getDb);
-
 import crypto from 'crypto';
+import { query } from './db.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function hashPassword(password) {
@@ -15,19 +12,23 @@ function generateToken() {
 }
 
 // ── setup ─────────────────────────────────────────────────────────────────────
-export function setupAuth(app, getDb) {
-  const db = () => getDb();
-
+export async function setupAuth(app) {
   // Создать таблицы если нет
-  db().exec(`
+  await query(`
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       login TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'user',
       full_name TEXT,
       department TEXT,
-      contacts TEXT
+      contacts TEXT,
+      last_name TEXT,
+      first_name TEXT,
+      patronymic TEXT,
+      email TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      last_login_at TIMESTAMPTZ
     );
     CREATE TABLE IF NOT EXISTS sessions (
       token TEXT PRIMARY KEY,
@@ -36,45 +37,41 @@ export function setupAuth(app, getDb) {
     );
   `);
 
-  // Миграция: добавить колонки в существующую таблицу (если их нет)
-  const addColumn = (name, type = 'TEXT') => {
-    try { db().exec(`ALTER TABLE users ADD COLUMN ${name} ${type}`); } catch (_) {}
-  };
-  addColumn('full_name');
-  addColumn('department');
-  addColumn('contacts');
-  addColumn('last_name');
-  addColumn('first_name');
-  addColumn('patronymic');
-  addColumn('email');
+  // Добавить колонки в существующую таблицу (если БД уже была создана без них)
+  await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
+  await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`);
 
   // Создать дефолтных пользователей если таблица пустая
-  const count = db().prepare('SELECT COUNT(*) as c FROM users').get();
-  if (count.c === 0) {
-    db().prepare('INSERT INTO users (login, password_hash, role, full_name, department, contacts) VALUES (?, ?, ?, ?, ?, ?)').run(
-      'admin', hashPassword('admin123'), 'admin', 'Администратор', null, null
+  const { rows } = await query('SELECT COUNT(*) as c FROM users');
+  if (parseInt(rows[0].c) === 0) {
+    await query(
+      'INSERT INTO users (login, password_hash, role, full_name, department, contacts) VALUES ($1, $2, $3, $4, $5, $6)',
+      ['admin', hashPassword('admin123'), 'admin', 'Администратор', null, null]
     );
-    db().prepare('INSERT INTO users (login, password_hash, role, full_name, department, contacts) VALUES (?, ?, ?, ?, ?, ?)').run(
-      'user', hashPassword('user123'), 'user', 'Иванов Иван Иванович', 'Отдел цифровых инноваций', null
+    await query(
+      'INSERT INTO users (login, password_hash, role, full_name, department, contacts) VALUES ($1, $2, $3, $4, $5, $6)',
+      ['user', hashPassword('user123'), 'user', 'Иванов Иван Иванович', 'Отдел цифровых инноваций', null]
     );
     console.log('✅ Созданы дефолтные пользователи: admin/admin123 и user/user123');
   }
 
   // POST /api/login
-  app.post('/api/login', (req, res) => {
+  app.post('/api/login', async (req, res) => {
     try {
       const { login, password } = req.body || {};
       if (!login || !password) return res.status(400).json({ error: 'Введите логин и пароль' });
 
-      const user = db().prepare('SELECT * FROM users WHERE login = ?').get(login.trim());
+      const { rows } = await query('SELECT * FROM users WHERE login = $1', [login.trim()]);
+      const user = rows[0];
       if (!user || user.password_hash !== hashPassword(password)) {
         return res.status(401).json({ error: 'Неверный логин или пароль' });
       }
 
       const token = generateToken();
-      db().prepare('INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)').run(
+      await query('INSERT INTO sessions (token, user_id, created_at) VALUES ($1, $2, $3)', [
         token, user.id, new Date().toISOString()
-      );
+      ]);
+      await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
       res.json({
         ok: true,
@@ -90,8 +87,8 @@ export function setupAuth(app, getDb) {
     }
   });
 
-  // POST /api/register (публичная регистрация)
-  app.post('/api/register', (req, res) => {
+  // POST /api/register
+  app.post('/api/register', async (req, res) => {
     try {
       const { last_name, first_name, patronymic = '', email, password, password_confirm } = req.body || {};
 
@@ -105,18 +102,17 @@ export function setupAuth(app, getDb) {
       const login = email.trim().toLowerCase();
       const fullName = [last_name.trim(), first_name.trim(), patronymic.trim()].filter(Boolean).join(' ');
 
-      db().prepare(
-        'INSERT INTO users (login, password_hash, role, full_name, last_name, first_name, patronymic, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-      ).run(
-        login, hashPassword(password), 'user', fullName,
-        last_name.trim(), first_name.trim(), patronymic.trim(), email.trim()
+      await query(
+        'INSERT INTO users (login, password_hash, role, full_name, last_name, first_name, patronymic, email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [login, hashPassword(password), 'user', fullName, last_name.trim(), first_name.trim(), patronymic.trim(), email.trim()]
       );
 
-      const user = db().prepare('SELECT * FROM users WHERE login = ?').get(login);
+      const { rows } = await query('SELECT * FROM users WHERE login = $1', [login]);
+      const user = rows[0];
       const token = generateToken();
-      db().prepare('INSERT INTO sessions (token, user_id, created_at) VALUES (?, ?, ?)').run(
+      await query('INSERT INTO sessions (token, user_id, created_at) VALUES ($1, $2, $3)', [
         token, user.id, new Date().toISOString()
-      );
+      ]);
 
       res.json({
         ok: true,
@@ -128,16 +124,16 @@ export function setupAuth(app, getDb) {
         contacts: user.contacts || null
       });
     } catch (e) {
-      if (e.message && e.message.includes('UNIQUE')) return res.status(400).json({ error: 'Пользователь с таким email уже зарегистрирован' });
+      if (e.message && e.message.includes('unique')) return res.status(400).json({ error: 'Пользователь с таким email уже зарегистрирован' });
       res.status(500).json({ error: String(e.message) });
     }
   });
 
   // POST /api/logout
-  app.post('/api/logout', (req, res) => {
+  app.post('/api/logout', async (req, res) => {
     try {
       const token = req.headers['x-auth-token'] || req.body?.token;
-      if (token) db().prepare('DELETE FROM sessions WHERE token = ?').run(token);
+      if (token) await query('DELETE FROM sessions WHERE token = $1', [token]);
       res.json({ ok: true });
     } catch (e) {
       res.status(500).json({ error: String(e.message) });
@@ -145,79 +141,84 @@ export function setupAuth(app, getDb) {
   });
 
   // GET /api/me
-  app.get('/api/me', (req, res) => {
+  app.get('/api/me', async (req, res) => {
     try {
       const token = req.headers['x-auth-token'];
       if (!token) return res.status(401).json({ error: 'Не авторизован' });
-      const session = db().prepare('SELECT * FROM sessions WHERE token = ?').get(token);
-      if (!session) return res.status(401).json({ error: 'Сессия не найдена' });
-      const user = db().prepare('SELECT id, login, role, full_name, department, contacts FROM users WHERE id = ?').get(session.user_id);
-      res.json(user);
+      const { rows: sessions } = await query('SELECT * FROM sessions WHERE token = $1', [token]);
+      if (!sessions[0]) return res.status(401).json({ error: 'Сессия не найдена' });
+      const { rows: users } = await query(
+        'SELECT id, login, role, full_name, department, contacts, first_name, last_name, patronymic, email, created_at, last_login_at FROM users WHERE id = $1',
+        [sessions[0].user_id]
+      );
+      res.json(users[0]);
     } catch (e) {
       res.status(500).json({ error: String(e.message) });
     }
   });
 
   // GET /api/users (только для admin)
-  app.get('/api/users', requireAdmin(getDb), (req, res) => {
+  app.get('/api/users', requireAdmin(), async (req, res) => {
     try {
-      const users = db().prepare('SELECT id, login, role, full_name, department, contacts FROM users ORDER BY id').all();
-      res.json(users);
+      const { rows } = await query('SELECT id, login, role, full_name, department, contacts, first_name, last_name, patronymic, email, created_at, last_login_at FROM users ORDER BY id');
+      res.json(rows);
     } catch (e) {
       res.status(500).json({ error: String(e.message) });
     }
   });
 
-  // PUT /api/users/:id (обновить пользователя: full_name, department, contacts, пароль — только admin)
-  app.put('/api/users/:id', requireAdmin(getDb), (req, res) => {
+  // PUT /api/users/:id
+  app.put('/api/users/:id', requireAdmin(), async (req, res) => {
     try {
       const id = req.params.id;
       const { login, password, role, full_name, department, contacts } = req.body || {};
-      const user = db().prepare('SELECT id FROM users WHERE id = ?').get(id);
-      if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+      const { rows } = await query('SELECT id FROM users WHERE id = $1', [id]);
+      if (!rows[0]) return res.status(404).json({ error: 'Пользователь не найден' });
+
       const updates = [];
       const values = [];
-      if (login !== undefined) { updates.push('login = ?'); values.push(login.trim()); }
-      if (password !== undefined && String(password).length > 0) { updates.push('password_hash = ?'); values.push(hashPassword(password)); }
-      if (role !== undefined) { updates.push('role = ?'); values.push(role === 'admin' ? 'admin' : 'user'); }
-      if (full_name !== undefined) { updates.push('full_name = ?'); values.push(full_name ? String(full_name).trim() : null); }
-      if (department !== undefined) { updates.push('department = ?'); values.push(department ? String(department).trim() : null); }
-      if (contacts !== undefined) { updates.push('contacts = ?'); values.push(contacts ? String(contacts).trim() : null); }
+      let i = 1;
+      if (login !== undefined) { updates.push(`login = $${i++}`); values.push(login.trim()); }
+      if (password !== undefined && String(password).length > 0) { updates.push(`password_hash = $${i++}`); values.push(hashPassword(password)); }
+      if (role !== undefined) { updates.push(`role = $${i++}`); values.push(role === 'admin' ? 'admin' : 'user'); }
+      if (full_name !== undefined) { updates.push(`full_name = $${i++}`); values.push(full_name ? String(full_name).trim() : null); }
+      if (department !== undefined) { updates.push(`department = $${i++}`); values.push(department ? String(department).trim() : null); }
+      if (contacts !== undefined) { updates.push(`contacts = $${i++}`); values.push(contacts ? String(contacts).trim() : null); }
       if (updates.length === 0) return res.json({ ok: true });
+
       values.push(id);
-      db().prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+      await query(`UPDATE users SET ${updates.join(', ')} WHERE id = $${i}`, values);
       res.json({ ok: true });
     } catch (e) {
-      if (e.message && e.message.includes('UNIQUE')) return res.status(400).json({ error: 'Логин уже занят' });
+      if (e.message && e.message.includes('unique')) return res.status(400).json({ error: 'Логин уже занят' });
       res.status(500).json({ error: String(e.message) });
     }
   });
 
-  // POST /api/users (создать пользователя, только admin)
-  app.post('/api/users', requireAdmin(getDb), (req, res) => {
+  // POST /api/users
+  app.post('/api/users', requireAdmin(), async (req, res) => {
     try {
       const { login, password, role, full_name, department, contacts } = req.body || {};
       if (!login || !password) return res.status(400).json({ error: 'login и password обязательны' });
       const validRole = role === 'admin' ? 'admin' : 'user';
-      db().prepare('INSERT INTO users (login, password_hash, role, full_name, department, contacts) VALUES (?, ?, ?, ?, ?, ?)').run(
-        login.trim(),
-        hashPassword(password),
-        validRole,
-        full_name ? String(full_name).trim() : null,
-        department ? String(department).trim() : null,
-        contacts ? String(contacts).trim() : null
+      await query(
+        'INSERT INTO users (login, password_hash, role, full_name, department, contacts) VALUES ($1, $2, $3, $4, $5, $6)',
+        [login.trim(), hashPassword(password), validRole,
+         full_name ? String(full_name).trim() : null,
+         department ? String(department).trim() : null,
+         contacts ? String(contacts).trim() : null]
       );
       res.json({ ok: true });
     } catch (e) {
-      if (e.message.includes('UNIQUE')) return res.status(400).json({ error: 'Логин уже занят' });
+      if (e.message && e.message.includes('unique')) return res.status(400).json({ error: 'Логин уже занят' });
       res.status(500).json({ error: String(e.message) });
     }
   });
 
-  // DELETE /api/users/:id (только admin)
-  app.delete('/api/users/:id', requireAdmin(getDb), (req, res) => {
+  // DELETE /api/users/:id
+  app.delete('/api/users/:id', requireAdmin(), async (req, res) => {
     try {
-      db().prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+      await query('DELETE FROM users WHERE id = $1', [req.params.id]);
       res.json({ ok: true });
     } catch (e) {
       res.status(500).json({ error: String(e.message) });
@@ -226,29 +227,28 @@ export function setupAuth(app, getDb) {
 }
 
 // ── middleware ────────────────────────────────────────────────────────────────
-export function requireAuth(getDb) {
-  return (req, res, next) => {
+export function requireAuth() {
+  return async (req, res, next) => {
     const token = req.headers['x-auth-token'] || req.query.token;
     if (!token) return res.redirect('/login');
-    const session = getDb().prepare('SELECT * FROM sessions WHERE token = ?').get(token);
-    if (!session) return res.redirect('/login');
-    const user = getDb().prepare('SELECT * FROM users WHERE id = ?').get(session.user_id);
-    if (!user) return res.redirect('/login');
-    req.user = user;
+    const { rows: sessions } = await query('SELECT * FROM sessions WHERE token = $1', [token]);
+    if (!sessions[0]) return res.redirect('/login');
+    const { rows: users } = await query('SELECT * FROM users WHERE id = $1', [sessions[0].user_id]);
+    if (!users[0]) return res.redirect('/login');
+    req.user = users[0];
     next();
   };
 }
 
-export function requireAdmin(getDb) {
-  return (req, res, next) => {
+export function requireAdmin() {
+  return async (req, res, next) => {
     const token = req.headers['x-auth-token'] || req.query.token;
     if (!token) return res.status(401).json({ error: 'Не авторизован' });
-    const session = getDb().prepare('SELECT * FROM sessions WHERE token = ?').get(token);
-    if (!session) return res.status(401).json({ error: 'Не авторизован' });
-    const user = getDb().prepare('SELECT * FROM users WHERE id = ?').get(session.user_id);
-    if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Нет доступа' });
-    req.user = user;
+    const { rows: sessions } = await query('SELECT * FROM sessions WHERE token = $1', [token]);
+    if (!sessions[0]) return res.status(401).json({ error: 'Не авторизован' });
+    const { rows: users } = await query('SELECT * FROM users WHERE id = $1', [sessions[0].user_id]);
+    if (!users[0] || users[0].role !== 'admin') return res.status(403).json({ error: 'Нет доступа' });
+    req.user = users[0];
     next();
   };
 }
-

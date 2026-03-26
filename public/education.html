@@ -536,19 +536,21 @@
     }
     .speaker-contact-btn{
       margin-top: auto;
-      padding: 9px 24px;
-      border-radius: 12px;
-      border: 1px solid rgba(0,200,120,.3);
-      background: rgba(0,200,120,.1);
-      color: rgba(0,220,130,.92);
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
+      color: rgba(255,255,255,.97);
       font: inherit;
-      font-size: 13.5px;
+      font-size: 14px;
+      min-height: 40px;
       cursor: pointer;
-      transition: all .15s;
+      transition: transform .12s ease, opacity .15s;
     }
     .speaker-contact-btn:hover{
-      background: rgba(0,200,120,.2);
-      border-color: rgba(0,200,120,.5);
+      transform: translateY(-1px);
+      opacity: .88;
     }
     /* Speaker modal */
     .speaker-modal-overlay{

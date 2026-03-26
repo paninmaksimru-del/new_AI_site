@@ -112,6 +112,8 @@
     <button class="tabbtn" data-tab="videos">Видеоматериалы</button>
     <button class="tabbtn" data-tab="spkq">🎤 Вопросы спикерам</button>
     <button class="tabbtn" data-tab="pusage">📊 Использование промптов</button>
+    <button class="tabbtn" data-tab="feedback">💬 Обратная связь</button>
+    <button class="tabbtn" data-tab="accessreq">🔑 Запросы доступа</button>
   </div>
 
   <!-- USERS -->
@@ -511,6 +513,47 @@
           </tr>
         </thead>
         <tbody id="pusageBody"><tr><td colspan="5" class="loading" style="padding:12px;">Загрузка...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FEEDBACK -->
+  <div id="tab_feedback" class="tabpane">
+    <div class="panel">
+      <h2>Обратная связь</h2>
+      <p class="muted">Сигналы от пользователей: идеи, ошибки, запросы кейсов/промптов.</p>
+      <table style="width:100%; border-collapse:collapse; margin-top:16px; font-size:13px;">
+        <thead>
+          <tr style="text-align:left; border-bottom:1px solid rgba(255,255,255,.12);">
+            <th style="padding:8px 6px;">ID</th>
+            <th style="padding:8px 6px;">Подразделение</th>
+            <th style="padding:8px 6px;">Дата</th>
+            <th style="padding:8px 6px;">Тип</th>
+            <th style="padding:8px 6px;">Сообщение</th>
+            <th style="padding:8px 6px;">Оценка</th>
+          </tr>
+        </thead>
+        <tbody id="adminFbBody"><tr><td colspan="6" class="loading" style="padding:12px;">Загрузка...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ACCESS REQUESTS -->
+  <div id="tab_accessreq" class="tabpane">
+    <div class="panel">
+      <h2>Запросы доступа</h2>
+      <p class="muted">Запросы на предоставление доступа к ИИ-инструментам.</p>
+      <table style="width:100%; border-collapse:collapse; margin-top:16px; font-size:13px;">
+        <thead>
+          <tr style="text-align:left; border-bottom:1px solid rgba(255,255,255,.12);">
+            <th style="padding:8px 6px;">ID</th>
+            <th style="padding:8px 6px;">Подразделение</th>
+            <th style="padding:8px 6px;">Дата</th>
+            <th style="padding:8px 6px;">Инструмент</th>
+            <th style="padding:8px 6px;">Причина</th>
+          </tr>
+        </thead>
+        <tbody id="adminArBody"><tr><td colspan="5" class="loading" style="padding:12px;">Загрузка...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1686,6 +1729,45 @@ async function loadPromptUsages() {
   } catch(e) { tbody.innerHTML = '<tr><td colspan="5" style="padding:12px; color:red;">Ошибка загрузки</td></tr>'; }
 }
 document.querySelector('[data-tab="pusage"]').addEventListener('click', function() { loadPromptUsages(); });
+
+// ── FEEDBACK (from analytics dataset) ────────────────────────────────────
+async function loadAdminFeedback() {
+  const tbody = document.getElementById('adminFbBody');
+  try {
+    const ds = await api('/api/analytics/dataset');
+    const rows = (ds.ui || []).filter(e => e.event_type === 'feedback').sort((a,b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" style="padding:12px; color:rgba(255,255,255,.5);">Нет данных</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+        <td style="padding:8px 6px;"><b>${esc(r.ticket_id || '-')}</b></td>
+        <td style="padding:8px 6px;">${esc(r.department || '-')}</td>
+        <td style="padding:8px 6px;">${esc(String(r.timestamp||'').slice(0,10))}</td>
+        <td style="padding:8px 6px;">${esc(r.type || '-')}</td>
+        <td style="padding:8px 6px; max-width:280px; overflow:hidden; text-overflow:ellipsis;">${esc((r.message||'').slice(0,90))}</td>
+        <td style="padding:8px 6px;">${r.rating != null ? esc(String(r.rating)) : '—'}</td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="6" style="padding:12px; color:red;">Ошибка загрузки</td></tr>'; }
+}
+document.querySelector('[data-tab="feedback"]').addEventListener('click', function() { loadAdminFeedback(); });
+
+// ── ACCESS REQUESTS (from analytics dataset) ─────────────────────────────
+async function loadAdminAccess() {
+  const tbody = document.getElementById('adminArBody');
+  try {
+    const ds = await api('/api/analytics/dataset');
+    const rows = (ds.ui || []).filter(e => e.event_type === 'access_request').sort((a,b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5" style="padding:12px; color:rgba(255,255,255,.5);">Нет данных</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+        <td style="padding:8px 6px;"><b>${esc(r.id || '-')}</b></td>
+        <td style="padding:8px 6px;">${esc(r.dept || r.department || '-')}</td>
+        <td style="padding:8px 6px;">${esc(String(r.timestamp||'').slice(0,10))}</td>
+        <td style="padding:8px 6px;">${esc(r.tool_name || r.tool_id || '-')}</td>
+        <td style="padding:8px 6px; max-width:280px;">${esc((r.reason||'').slice(0,90))}</td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="5" style="padding:12px; color:red;">Ошибка загрузки</td></tr>'; }
+}
+document.querySelector('[data-tab="accessreq"]').addEventListener('click', function() { loadAdminAccess(); });
 
 </script>
 </body>

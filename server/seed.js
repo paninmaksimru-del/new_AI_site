@@ -1,4 +1,4 @@
-import { getDb } from './db.js';
+import { query } from './db.js';
 
 const defaultDepartments = ['Аналитический центр', 'ЕЦП', 'Центр развития Сколково', 'Платформа i.moscow и ИИ', 'ИС РПП'];
 
@@ -22,40 +22,52 @@ const defaultTasks = [
   { id: 't_parse_incoming', name: 'разобрать документ / входящие материалы', tools: 'NotebookLM / ChatGPT', weight: 0.78 },
 ];
 
-const db = getDb();
-
-const deptCount = db.prepare('SELECT COUNT(*) as c FROM departments').get();
-if (deptCount.c === 0) {
-  const ins = db.prepare('INSERT OR IGNORE INTO departments (name) VALUES (?)');
-  defaultDepartments.forEach(name => ins.run(name));
+const { rows: deptRows } = await query('SELECT COUNT(*) as c FROM departments');
+if (parseInt(deptRows[0].c) === 0) {
+  for (const name of defaultDepartments) {
+    await query('INSERT INTO departments (name) VALUES ($1) ON CONFLICT DO NOTHING', [name]);
+  }
   console.log('Seeded departments');
 }
 
-const caseCount = db.prepare('SELECT COUNT(*) as c FROM cases').get();
-if (caseCount.c === 0) {
-  const ins = db.prepare('INSERT OR REPLACE INTO cases (id, data) VALUES (?, ?)');
-  defaultCases.forEach(c => ins.run(c.id, JSON.stringify(c)));
+const { rows: tccRows } = await query('SELECT COUNT(*) as c FROM case_task_categories');
+if (parseInt(tccRows[0].c) === 0) {
+  const catNames = [...new Set(defaultCases.map(c => c.taskCategory).filter(Boolean))];
+  for (const name of catNames) {
+    await query('INSERT INTO case_task_categories (name) VALUES ($1) ON CONFLICT DO NOTHING', [name]);
+  }
+  console.log('Seeded case_task_categories');
+}
+
+const { rows: caseRows } = await query('SELECT COUNT(*) as c FROM cases');
+if (parseInt(caseRows[0].c) === 0) {
+  for (const c of defaultCases) {
+    await query('INSERT INTO cases (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2', [c.id, JSON.stringify(c)]);
+  }
   console.log('Seeded cases');
 }
 
-const promptCount = db.prepare('SELECT COUNT(*) as c FROM prompts').get();
-if (promptCount.c === 0) {
-  const ins = db.prepare('INSERT OR REPLACE INTO prompts (id, data) VALUES (?, ?)');
-  defaultPrompts.forEach(p => ins.run(p.id, JSON.stringify(p)));
+const { rows: promptRows } = await query('SELECT COUNT(*) as c FROM prompts');
+if (parseInt(promptRows[0].c) === 0) {
+  for (const p of defaultPrompts) {
+    await query('INSERT INTO prompts (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2', [p.id, JSON.stringify(p)]);
+  }
   console.log('Seeded prompts');
 }
 
-const toolCount = db.prepare('SELECT COUNT(*) as c FROM tools').get();
-if (toolCount.c === 0) {
-  const ins = db.prepare('INSERT OR REPLACE INTO tools (id, data) VALUES (?, ?)');
-  defaultTools.forEach(t => ins.run(t.id, JSON.stringify(t)));
+const { rows: toolRows } = await query('SELECT COUNT(*) as c FROM tools');
+if (parseInt(toolRows[0].c) === 0) {
+  for (const t of defaultTools) {
+    await query('INSERT INTO tools (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2', [t.id, JSON.stringify(t)]);
+  }
   console.log('Seeded tools');
 }
 
-const taskCount = db.prepare('SELECT COUNT(*) as c FROM tasks').get();
-if (taskCount.c === 0) {
-  const ins = db.prepare('INSERT OR REPLACE INTO tasks (id, data) VALUES (?, ?)');
-  defaultTasks.forEach(t => ins.run(t.id, JSON.stringify(t)));
+const { rows: taskRows } = await query('SELECT COUNT(*) as c FROM tasks');
+if (parseInt(taskRows[0].c) === 0) {
+  for (const t of defaultTasks) {
+    await query('INSERT INTO tasks (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2', [t.id, JSON.stringify(t)]);
+  }
   console.log('Seeded tasks');
 }
 

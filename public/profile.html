@@ -243,21 +243,17 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
       <div class="glass-deep-overlay"></div>
       <div style="position:relative; z-index:2;">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
-          <h1 class="greeting" id="greetingTitle">Добро пожаловать, Алексей!</h1>
+          <h1 class="greeting" id="greetingTitle"></h1>
           <span style="font-size:13px; color:var(--muted);">Неделя 3–9 марта · <span id="activeDaysBadge">21</span> активный день</span>
         </div>
-        <div class="hero-inner" style="display:flex; gap:24px; align-items:flex-start;">
+        <div class="hero-inner" id="heroInner" style="display:flex; gap:24px; align-items:flex-start; opacity:0; transition: opacity 0.3s ease;">
           <div style="display:flex; gap:18px; align-items:flex-start; flex:1 1 auto;">
-            <div class="avatar" id="avatar">АП<div class="avatar-camera">📷</div></div>
+            <div class="avatar" id="avatar"><div class="avatar-camera">📷</div></div>
             <div>
-              <p class="profile-name">Алексей Петров</p>
-              <p class="profile-role">Менеджер проектов · Отдел цифровых инноваций</p>
-              <p class="profile-center">Центр трансформации бизнеса</p>
-              <div class="profile-contacts">
-                <span>Tel: +7 (999) 123-45-67</span>
-                <span>e-mail: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7d1c530d18090f120b3d101416530f08">[email&#160;protected]</a></span>
-                <span>TG: @a_petrov</span>
-              </div>
+              <p class="profile-name"></p>
+              <p class="profile-role"></p>
+              <p class="profile-center"></p>
+              <div class="profile-contacts"></div>
             </div>
           </div>
           <div class="hero-right" style="display:flex; flex-direction:column; gap:8px; align-items:flex-end; flex:0 0 auto;">
@@ -550,6 +546,9 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
         return;
       }
       var me = await res.json();
+      if (me.first_name) {
+        PROFILE.firstName = me.first_name;
+      }
       if (me.full_name) {
         PROFILE.name = me.full_name;
         PROFILE.initials = me.full_name.split(/\s+/).map(function(p){ return p && p[0] ? p[0] : ''; }).join('').slice(0, 2).toUpperCase();
@@ -573,8 +572,8 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     if (AUTH.full_name) PROFILE.name = AUTH.full_name;
 
     var greetingEl = document.getElementById('greetingTitle');
-    if (greetingEl && PROFILE.name) {
-      var firstName = PROFILE.name.split(/\s+/)[0] || PROFILE.name;
+    if (greetingEl) {
+      var firstName = PROFILE.firstName || PROFILE.name.split(/\s+/)[0] || PROFILE.name;
       greetingEl.textContent = 'Добро пожаловать, ' + firstName + '!';
     }
 
@@ -608,10 +607,12 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 
     var avatarEl = document.getElementById('avatar');
     if (avatarEl && PROFILE.initials) {
-      if (avatarEl.firstChild) {
-        avatarEl.firstChild.nodeValue = PROFILE.initials;
-      }
+      avatarEl.insertAdjacentText('afterbegin', PROFILE.initials);
     }
+
+    // Показать профиль после загрузки данных
+    var heroInner = document.getElementById('heroInner');
+    if (heroInner) heroInner.style.opacity = '1';
   })();
 
   var progBar = document.getElementById('progBar');

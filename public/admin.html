@@ -47,6 +47,10 @@
     .tabpane.active{ display:block; }
     .list-item{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.08); background:rgba(0,0,0,.2); margin-bottom:8px; flex-wrap:wrap; }
     .list-item span{ flex:1; min-width:0; word-break:break-word; }
+    .case-dnd-item{ transition: opacity .15s, background .15s; }
+    .case-dnd-item.dnd-dragging{ opacity:.4; }
+    .case-dnd-item.dnd-over{ background:rgba(99,102,241,.18); border-color:rgba(99,102,241,.5); }
+    .drag-handle:hover{ color:#fff !important; }
     .list-actions{ display:flex; gap:8px; flex-shrink:0; }
     ul.plain{ list-style:none; padding:0; margin:0; }
     .badge{ display:inline-block; padding:3px 7px; border-radius:7px; font-size:12px; background:rgba(255,255,255,.1); margin-left:6px; }
@@ -97,13 +101,15 @@
 
 <main class="wrap">
   <div class="tabs" role="tablist" style="margin-top:24px;">
-    <button class="tabbtn active" data-tab="users">👥 Пользователи</button>
-    <button class="tabbtn" data-tab="dept">🏢 Подразделения</button>
-    <button class="tabbtn" data-tab="cases">📋 Кейсы</button>
-    <button class="tabbtn" data-tab="prompts">💬 Промпты</button>
-    <button class="tabbtn" data-tab="tools">🔧 Инструменты</button>
-    <button class="tabbtn" data-tab="tasks">✅ Задачи</button>
-    <button class="tabbtn" data-tab="browser">🌐 Браузер</button>
+    <button class="tabbtn active" data-tab="users">Пользователи</button>
+    <button class="tabbtn" data-tab="refs">Справочники</button>
+    <button class="tabbtn" data-tab="cases">Кейсы</button>
+    <button class="tabbtn" data-tab="prompts">Промпты</button>
+    <button class="tabbtn" data-tab="tools">Инструменты</button>
+    <button class="tabbtn" data-tab="tasks">Задачи</button>
+    <button class="tabbtn" data-tab="browser">Браузер</button>
+    <button class="tabbtn" data-tab="instructions">Инструкции</button>
+    <button class="tabbtn" data-tab="videos">Видеоматериалы</button>
   </div>
 
   <!-- USERS -->
@@ -135,16 +141,44 @@
     </div>
   </div>
 
-  <!-- DEPARTMENTS -->
-  <div id="tab_dept" class="tabpane">
+  <!-- REFERENCE DATA (подразделения + категории задач) -->
+  <div id="tab_refs" class="tabpane">
     <div class="panel">
-      <h2>Подразделения</h2>
-      <p class="muted">Используются в фильтрах дашборда, кейсов и формы обратной связи.</p>
-      <div class="field-row" style="align-items:flex-end; margin-top:12px;">
-        <div class="field" style="flex:1;"><label>Название</label><input type="text" id="deptName" placeholder="Например: Платформа i.moscow и ИИ" /></div>
-        <div class="field" style="width:auto;flex:0;padding-top:0;"><label>&nbsp;</label><button class="btn ok" id="deptAdd">Добавить</button></div>
+      <h2>Справочники</h2>
+      <p class="muted">Значения для выбора в формах: подразделения — в фильтрах дашборда, кейсов и обратной связи; категория задачи — в карточках кейсов.</p>
+      <div class="panel" style="margin-top:12px;">
+        <h3>Подразделения</h3>
+        <div class="field-row" style="align-items:flex-end; margin-top:12px;">
+          <div class="field" style="flex:1;"><label>Название</label><input type="text" id="deptName" placeholder="Например: Платформа i.moscow и ИИ" /></div>
+          <div class="field" style="width:auto;flex:0;padding-top:0;"><label>&nbsp;</label><button class="btn ok" id="deptAdd">Добавить</button></div>
+        </div>
+        <ul class="plain" id="deptList"><li class="loading">Загрузка...</li></ul>
       </div>
-      <ul class="plain" id="deptList"><li class="loading">Загрузка...</li></ul>
+      <div class="panel" style="margin-top:12px;">
+        <h3>Категория задачи</h3>
+        <div class="field-row" style="align-items:flex-end; margin-top:12px;">
+          <div class="field" style="flex:1;"><label>Название</label><input type="text" id="taskCatName" placeholder="Например: Презентация и визуал" /></div>
+          <div class="field" style="width:auto;flex:0;padding-top:0;"><label>&nbsp;</label><button class="btn ok" id="taskCatAdd">Добавить</button></div>
+        </div>
+        <ul class="plain" id="taskCatList"><li class="loading">Загрузка...</li></ul>
+      </div>
+      <div class="panel" style="margin-top:12px;">
+        <h3>Инструменты ИИ</h3>
+        <p class="muted" style="font-size:12px;margin-top:4px;">Список инструментов для выбора в шагах кейсов. Иконка отображается на карточке и в модальном окне.</p>
+        <div class="field-row" style="align-items:flex-end; margin-top:12px; flex-wrap:wrap; gap:8px;">
+          <div class="field" style="flex:1; min-width:160px;"><label>Название</label><input type="text" id="aiToolName" placeholder="Например: ChatGPT" /></div>
+          <div class="field" style="width:90px;flex:0;">
+            <label>Цвет тега</label>
+            <input type="color" id="aiToolColor" value="#6366f1" style="width:100%;height:36px;padding:2px 4px;border-radius:8px;border:1px solid var(--stroke-2);background:transparent;cursor:pointer;" />
+          </div>
+          <div class="field" style="flex:1; min-width:180px;">
+            <label>Иконка файл (PNG, SVG, до 128×128)</label>
+            <input type="file" id="aiToolIconFile" accept="image/png,image/svg+xml,image/jpeg,image/webp" style="font-size:13px;" />
+          </div>
+          <div class="field" style="width:auto;flex:0;padding-top:0;"><label>&nbsp;</label><button class="btn ok" id="aiToolAdd">Добавить</button></div>
+        </div>
+        <ul class="plain" id="aiToolList"><li class="loading">Загрузка...</li></ul>
+      </div>
     </div>
   </div>
 
@@ -159,10 +193,11 @@
         <div class="field-row">
           <div class="field"><label>ID (латиница, подчёркивания)</label><input type="text" id="caseId" placeholder="case_protocol" /></div>
           <div class="field"><label>Название</label><input type="text" id="caseTitle" placeholder="Протокол встречи за 15 минут" /></div>
+          <div class="field" style="max-width:130px;"><label>Порядок (сортировка)</label><input type="number" id="caseSortOrder" placeholder="0" min="0" style="width:100%;" /></div>
         </div>
         <div class="field-row">
-          <div class="field"><label>Категория задачи</label><input type="text" id="caseTaskCategory" placeholder="Провести встречу / зафиксировать итоги" /></div>
-          <div class="field"><label>Контекст</label><input type="text" id="caseContext" placeholder="Управление" /></div>
+          <div class="field"><label>Категория задачи</label><select id="caseTaskCategory"><option value="">— Выбрать —</option></select></div>
+          <div class="field"><label>Подразделение</label><select id="caseContext"><option value="">— Выбрать —</option></select></div>
         </div>
         <div class="field-row">
           <div class="field"><label>Роли (через запятую)</label><input type="text" id="caseRole" placeholder="Руководитель, Проектный менеджер" /></div>
@@ -172,7 +207,6 @@
         </div>
         <div class="field"><label>Когда использовать / цель</label><input type="text" id="caseWhenToUse" /></div>
         <div class="field"><label>Результат</label><input type="text" id="caseResult" /></div>
-        <div class="field"><label>Инструменты (через запятую)</label><input type="text" id="caseTools" /></div>
         <div style="margin-top:16px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <label style="font-size:14px;color:var(--muted);margin:0;">Шаги кейса</label>
@@ -344,10 +378,99 @@
 
       <div class="field-row" style="margin-top:20px;">
         <button class="btn ok" onclick="saveBrowserConfig()">Сохранить</button>
-        <a href="/training#browser" target="_blank" class="btn small" style="text-decoration:none;">↗ Открыть на странице</a>
+        <a href="/education#browser" target="_blank" class="btn small" style="text-decoration:none;">↗ Открыть на странице</a>
       </div>
     </div>
   </div>
+
+  <!-- INSTRUCTIONS -->
+  <div id="tab_instructions" class="tabpane">
+    <div class="panel">
+      <h2>Инструкции</h2>
+      <p class="muted">Пошаговые инструкции для сотрудников. Каждая инструкция имеет свою страницу по слагу.</p>
+      <div class="actions-bar">
+        <button class="btn accent" id="instrAdd">+ Новая инструкция</button>
+      </div>
+
+      <!-- Форма редактирования -->
+      <div id="instrForm" style="display:none;" class="panel">
+        <h3 id="instrFormTitle">Новая инструкция</h3>
+
+        <div class="field-row">
+          <div class="field" style="flex:0 0 220px;">
+            <label>Слаг (ID, латиница/дефис)</label>
+            <input type="text" id="instrSlug" placeholder="dolphin-anty" />
+          </div>
+          <div class="field" style="flex:1;">
+            <label>Ссылка для скачивания</label>
+            <input type="url" id="instrTitle" placeholder="https://dolphin.ru.com/" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Описание</label>
+          <textarea id="instrDesc" rows="2" placeholder="Краткое описание инструкции для сотрудников..."></textarea>
+        </div>
+
+        <!-- Редактор шагов -->
+        <div style="margin-top:18px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <label style="font-size:14px;color:var(--muted);margin:0;">Шаги инструкции</label>
+            <button class="btn small accent" type="button" id="instrAddStep">+ Добавить шаг</button>
+          </div>
+          <div id="instrStepsEditor"></div>
+        </div>
+
+        <div class="field-row" style="margin-top:18px;align-items:center;">
+          <button class="btn ok" id="instrSave">Сохранить</button>
+          <button class="btn small" id="instrCancel">Отмена</button>
+          <a id="instrOpenLink" href="#" target="_blank" class="btn small" style="text-decoration:none;display:none;">↗ Открыть на странице</a>
+        </div>
+      </div>
+
+      <ul class="plain" id="instrList"><li class="loading">Загрузка...</li></ul>
+    </div>
+  </div>
+
+  <!-- ===== ВИДЕОМАТЕРИАЛЫ ===== -->
+  <div id="tab_videos" class="tabpane">
+    <div class="section-panel">
+      <h2>Видеоматериалы</h2>
+      <p class="muted">Видео для страницы обучения. В поле embed укажите <strong>ссылку для встраивания</strong> (не страницу просмотра): Rutube <code>…/play/embed/…</code>, VK Видео <code>https://vkvideo.ru/video_ext.php?oid=…&amp;id=…</code>, YouTube <code>…/embed/…</code>.</p>
+
+      <!-- Categories management -->
+      <div style="margin-top:16px; padding:14px 16px; border-radius:12px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);">
+        <h3 style="font-size:14px; margin:0 0 10px;">Категории видео</h3>
+        <div id="videoCatList" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" id="newCatName" placeholder="Новая категория" style="flex:1; min-width:120px;" />
+          <input type="color" id="newCatColor" value="#6B9FFF" style="width:36px; height:32px; border:none; border-radius:6px; cursor:pointer;" />
+          <button class="btn small" id="btnAddCat" type="button">Добавить</button>
+        </div>
+      </div>
+
+      <div class="form-grid" style="margin-top:16px;">
+        <div class="field"><label>ID (авто)</label><input type="text" id="videoId" placeholder="vid_001" /></div>
+        <div class="field"><label>Название</label><input type="text" id="videoTitle" placeholder="Введение в ИИ для сотрудников" /></div>
+        <div class="field"><label>Категория</label><select id="videoCategory" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:var(--text); font:inherit;"><option value="">-- выберите --</option></select></div>
+        <div class="field"><label>Описание</label><input type="text" id="videoDesc" placeholder="Краткое объяснение ключевых понятий" /></div>
+        <div class="field"><label>Embed URL (Rutube/YouTube)</label><input type="text" id="videoEmbed" placeholder="https://rutube.ru/play/embed/xxxxxxx" /></div>
+        <div class="field"><label>Обложка URL (необязательно)</label><input type="text" id="videoThumb" placeholder="/video-covers/cover.jpg" /></div>
+        <div class="field"><label>Спикер</label><input type="text" id="videoSpeaker" placeholder="А. Воронов" /></div>
+        <div class="field"><label>Длительность</label><input type="text" id="videoDuration" placeholder="12 мин" /></div>
+        <div class="field"><label>Порядок сортировки</label><input type="number" id="videoOrder" placeholder="1" value="1" /></div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:10px;">
+        <button class="btn primary" id="btnSaveVideo" type="button">Сохранить видео</button>
+        <button class="btn" id="btnClearVideo" type="button">Очистить форму</button>
+      </div>
+
+      <h3 style="margin-top:24px;">Все видео</h3>
+      <ul class="plain" id="videoList"><li class="loading">Загрузка...</li></ul>
+    </div>
+  </div>
+
 </main>
 
 <div class="toast-bar" id="toast"></div>
@@ -463,17 +586,67 @@ async function editUser(id) {
 }
 
 // ── DEPARTMENTS ───────────────────────────────────────────────────────────────
+let _deptNames = [];
+
 async function loadDepts() {
   const ul = document.getElementById('deptList');
   try {
-    const arr = await api('/api/departments');
-    ul.innerHTML = arr.length ? arr.map((name,i) => `
-      <li class="list-item">
-        <span>${esc(name)}</span>
-        <div class="list-actions"><button class="btn small danger" onclick="delDept('${esc(name)}')">Удалить</button></div>
-      </li>`).join('') : '<li class="loading">Подразделений нет</li>';
+    _deptNames = await api('/api/departments');
+    renderDeptList();
   } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
 }
+
+function renderDeptList() {
+  const ul = document.getElementById('deptList');
+  ul.innerHTML = _deptNames.length ? _deptNames.map((name, i) => `
+    <li class="list-item" id="dept-item-${i}">
+      <span class="dept-name-label">${esc(name)}</span>
+      <div class="list-actions">
+        <button class="btn small" onclick="startEditDept(${i})">Редактировать</button>
+        <button class="btn small danger" onclick="delDept('${esc(name)}')">Удалить</button>
+      </div>
+    </li>`).join('') : '<li class="loading">Подразделений нет</li>';
+}
+
+function startEditDept(i) {
+  const li = document.getElementById(`dept-item-${i}`);
+  if (!li) return;
+  const name = _deptNames[i];
+  li.innerHTML = `
+    <div style="display:flex; gap:8px; align-items:center; flex:1;">
+      <input type="text" id="dept-edit-${i}" value="${esc(name)}"
+        style="flex:1; background:rgba(255,255,255,.07); border:1px solid var(--stroke-2);
+               border-radius:8px; padding:6px 10px; color:var(--text); font-size:14px;" />
+      <button class="btn small ok" onclick="saveDeptEdit(${i})">Сохранить</button>
+      <button class="btn small" onclick="renderDeptList()">Отмена</button>
+    </div>`;
+  const input = document.getElementById(`dept-edit-${i}`);
+  if (input) {
+    input.focus();
+    input.select();
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  saveDeptEdit(i);
+      if (e.key === 'Escape') renderDeptList();
+    });
+  }
+}
+
+async function saveDeptEdit(i) {
+  const input = document.getElementById(`dept-edit-${i}`);
+  if (!input) return;
+  const newName = input.value.trim();
+  const oldName = _deptNames[i];
+  if (!newName) { toast('Название не может быть пустым', 'err'); return; }
+  if (newName === oldName) { renderDeptList(); return; }
+  try {
+    const updated = [..._deptNames];
+    updated[i] = newName;
+    await api('/api/departments', { method: 'PUT', body: JSON.stringify(updated) });
+    toast('Сохранено');
+    loadDepts();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
 async function delDept(name) {
   try { await api(`/api/departments/${encodeURIComponent(name)}`, {method:'DELETE'}); toast('Удалено'); loadDepts(); }
   catch(e) { toast(e.message,'err'); }
@@ -485,23 +658,310 @@ document.getElementById('deptAdd').addEventListener('click', async () => {
   catch(e) { toast(e.message,'err'); }
 });
 
+// ── CASE TASK CATEGORIES (справочник) ─────────────────────────────────────────
+let _taskCatNames = [];
+
+async function loadTaskCats() {
+  const ul = document.getElementById('taskCatList');
+  try {
+    _taskCatNames = await api('/api/case-task-categories');
+    renderTaskCatList();
+  } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
+}
+
+function renderTaskCatList() {
+  const ul = document.getElementById('taskCatList');
+  ul.innerHTML = _taskCatNames.length ? _taskCatNames.map((name, i) => `
+    <li class="list-item" id="taskcat-item-${i}">
+      <span class="taskcat-name-label">${esc(name)}</span>
+      <div class="list-actions">
+        <button class="btn small" onclick="startEditTaskCat(${i})">Редактировать</button>
+        <button class="btn small danger" onclick="delTaskCat('${esc(name)}')">Удалить</button>
+      </div>
+    </li>`).join('') : '<li class="loading">Категорий пока нет — добавьте первую</li>';
+}
+
+function startEditTaskCat(i) {
+  const li = document.getElementById(`taskcat-item-${i}`);
+  if (!li) return;
+  const name = _taskCatNames[i];
+  li.innerHTML = `
+    <div style="display:flex; gap:8px; align-items:center; flex:1;">
+      <input type="text" id="taskcat-edit-${i}" value="${esc(name)}"
+        style="flex:1; background:rgba(255,255,255,.07); border:1px solid var(--stroke);
+               border-radius:8px; padding:6px 10px; color:var(--text); font-size:14px;" />
+      <button class="btn small ok" onclick="saveTaskCatEdit(${i})">Сохранить</button>
+      <button class="btn small" onclick="renderTaskCatList()">Отмена</button>
+    </div>`;
+  const input = document.getElementById(`taskcat-edit-${i}`);
+  if (input) {
+    input.focus();
+    input.select();
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  saveTaskCatEdit(i);
+      if (e.key === 'Escape') renderTaskCatList();
+    });
+  }
+}
+
+async function saveTaskCatEdit(i) {
+  const input = document.getElementById(`taskcat-edit-${i}`);
+  if (!input) return;
+  const newName = input.value.trim();
+  const oldName = _taskCatNames[i];
+  if (!newName) { toast('Название не может быть пустым', 'err'); return; }
+  if (newName === oldName) { renderTaskCatList(); return; }
+  try {
+    const updated = [..._taskCatNames];
+    updated[i] = newName;
+    await api('/api/case-task-categories', { method: 'PUT', body: JSON.stringify(updated) });
+    toast('Сохранено');
+    loadTaskCats();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function delTaskCat(name) {
+  try { await api(`/api/case-task-categories/${encodeURIComponent(name)}`, {method:'DELETE'}); toast('Удалено'); loadTaskCats(); }
+  catch(e) { toast(e.message,'err'); }
+}
+document.getElementById('taskCatAdd').addEventListener('click', async () => {
+  const name = document.getElementById('taskCatName').value.trim();
+  if (!name) return;
+  try { await api('/api/case-task-categories', {method:'POST', body:JSON.stringify({name})}); document.getElementById('taskCatName').value=''; toast('Добавлено'); loadTaskCats(); }
+  catch(e) { toast(e.message,'err'); }
+});
+
+async function loadCaseTaskCategories(selectedValue) {
+  const sel = document.getElementById('caseTaskCategory');
+  if (!sel) return;
+  let names = [];
+  try {
+    names = await api('/api/case-task-categories');
+  } catch(e) {
+    sel.innerHTML = '<option value="">— Нет данных —</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">— Выбрать —</option>' +
+    names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  if (selectedValue && !names.includes(selectedValue)) {
+    sel.insertAdjacentHTML('beforeend', `<option value="${esc(selectedValue)}">${esc(selectedValue)} (не в справочнике)</option>`);
+  }
+  if (selectedValue) sel.value = selectedValue;
+}
+
+// ── AI TOOLS (справочник инструментов) ────────────────────────────────────────
+let _aiTools = []; // [{id, name, iconBase64, iconMime}]
+
+async function loadAiTools() {
+  const ul = document.getElementById('aiToolList');
+  try {
+    _aiTools = await api('/api/tools');
+    renderAiToolList();
+  } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
+}
+
+function renderAiToolList() {
+  const ul = document.getElementById('aiToolList');
+  ul.innerHTML = _aiTools.length ? _aiTools.map((t, i) => {
+    const iconHtml = t.iconBase64
+      ? `<img src="data:${t.iconMime||'image/png'};base64,${t.iconBase64}" style="width:22px;height:22px;border-radius:4px;object-fit:cover;flex-shrink:0;" />`
+      : `<span style="width:22px;height:22px;border-radius:4px;background:rgba(255,255,255,.12);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${esc((t.name||t.id||'').slice(0,2).toUpperCase())}</span>`;
+    const colorDot = t.color ? `<span title="Цвет тега" style="flex:0 0 14px;width:14px;height:14px;border-radius:50%;background:${esc(t.color)};border:1px solid rgba(255,255,255,.2);align-self:center;"></span>` : '';
+    return `<li class="list-item" id="aitool-item-${i}">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;">
+        ${iconHtml}
+        <span>${esc(t.name||t.id)}</span>
+        ${colorDot}
+      </div>
+      <div class="list-actions">
+        <button class="btn small" onclick="startEditAiTool(${i})">Редактировать</button>
+        <button class="btn small danger" onclick="delAiTool('${esc(t.id)}')">Удалить</button>
+      </div>
+    </li>`;
+  }).join('') : '<li class="loading">Инструментов нет — добавьте первый</li>';
+}
+
+function startEditAiTool(i) {
+  const li = document.getElementById(`aitool-item-${i}`);
+  if (!li) return;
+  const t = _aiTools[i];
+  const iconPreview = t.iconBase64
+    ? `<img id="aitool-icon-preview-${i}" src="data:${t.iconMime||'image/png'};base64,${t.iconBase64}" style="width:28px;height:28px;border-radius:4px;object-fit:cover;" />`
+    : `<span id="aitool-icon-preview-${i}" style="width:28px;height:28px;border-radius:4px;background:rgba(255,255,255,.12);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">${esc((t.name||t.id||'').slice(0,2).toUpperCase())}</span>`;
+  li.innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center;flex:1;flex-wrap:wrap;">
+      ${iconPreview}
+      <input type="text" id="aitool-edit-name-${i}" value="${esc(t.name||t.id||'')}"
+        style="flex:1;min-width:120px;background:rgba(255,255,255,.07);border:1px solid var(--stroke-2);border-radius:8px;padding:6px 10px;color:var(--text);font-size:14px;" />
+      <input type="color" id="aitool-edit-color-${i}" value="${esc(t.color||'#6366f1')}"
+        title="Цвет тега" style="width:40px;height:36px;padding:2px 4px;border-radius:8px;border:1px solid var(--stroke-2);background:transparent;cursor:pointer;flex-shrink:0;" />
+      <input type="file" id="aitool-edit-file-${i}" accept="image/png,image/svg+xml,image/jpeg,image/webp"
+        style="flex:1;min-width:140px;font-size:12px;" />
+      <button class="btn small ok" onclick="saveAiToolEdit(${i})">Сохранить</button>
+      <button class="btn small" onclick="renderAiToolList()">Отмена</button>
+    </div>`;
+  const fileInput = document.getElementById(`aitool-edit-file-${i}`);
+  if (fileInput) {
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const prev = document.getElementById(`aitool-icon-preview-${i}`);
+        if (prev) { prev.outerHTML = `<img id="aitool-icon-preview-${i}" src="${e.target.result}" style="width:28px;height:28px;border-radius:4px;object-fit:cover;" />`; }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+}
+
+async function saveAiToolEdit(i) {
+  const nameInput  = document.getElementById(`aitool-edit-name-${i}`);
+  const colorInput = document.getElementById(`aitool-edit-color-${i}`);
+  const fileInput  = document.getElementById(`aitool-edit-file-${i}`);
+  if (!nameInput) return;
+  const newName = nameInput.value.trim();
+  if (!newName) { toast('Название не может быть пустым', 'err'); return; }
+  const oldTool = _aiTools[i];
+  const updated = { ...oldTool, name: newName };
+  if (colorInput && colorInput.value) updated.color = colorInput.value;
+  if (fileInput && fileInput.files[0]) {
+    const b64data = await readFileAsBase64(fileInput.files[0]);
+    updated.iconBase64 = b64data.base64;
+    updated.iconMime = b64data.mime;
+  }
+  try {
+    await api(`/api/tools/${encodeURIComponent(oldTool.id)}`, { method: 'PUT', body: JSON.stringify(updated) });
+    toast('Сохранено');
+    loadAiTools();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function delAiTool(id) {
+  try { await api(`/api/tools/${encodeURIComponent(id)}`, {method:'DELETE'}); toast('Удалено'); loadAiTools(); }
+  catch(e) { toast(e.message,'err'); }
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const dataUrl = e.target.result;
+      const [header, base64] = dataUrl.split(',');
+      const mime = header.match(/:(.*?);/)?.[1] || 'image/png';
+      resolve({ base64, mime });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('aiToolAdd').addEventListener('click', async () => {
+  const name = document.getElementById('aiToolName').value.trim();
+  if (!name) { toast('Введите название', 'err'); return; }
+  const fileInput = document.getElementById('aiToolIconFile');
+  const id = name.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g,'_');
+  const colorVal = document.getElementById('aiToolColor')?.value || '#6366f1';
+  const toolData = { id, name, color: colorVal };
+  if (fileInput && fileInput.files[0]) {
+    const b64data = await readFileAsBase64(fileInput.files[0]);
+    toolData.iconBase64 = b64data.base64;
+    toolData.iconMime = b64data.mime;
+  }
+  try {
+    await api('/api/tools', { method: 'POST', body: JSON.stringify(toolData) });
+    document.getElementById('aiToolName').value = '';
+    document.getElementById('aiToolColor').value = '#6366f1';
+    fileInput.value = '';
+    toast('Добавлено');
+    loadAiTools();
+  } catch(e) { toast(e.message,'err'); }
+});
+
 // ── CASES ─────────────────────────────────────────────────────────────────────
+let _casesListData = []; // полный кэш для DnD
+
 async function loadCases() {
   const ul = document.getElementById('caseList');
   try {
-    const arr = await api('/api/cases');
-    ul.innerHTML = arr.length ? arr.map(c => `
-      <li class="list-item">
-        <span><b>${esc(c.title||c.id)}</b><span class="badge">${esc(c.id)}</span><span class="badge ${c.maturity==='ready'?'ok':c.maturity==='pilot'?'warn':''}">${esc(c.maturity||'')}</span></span>
-        <div class="list-actions">
-          <button class="btn small" onclick="openCase('${esc(c.id)}')">Изменить</button>
-          <button class="btn small danger" onclick="delCase('${esc(c.id)}')">Удалить</button>
-        </div>
-      </li>`).join('') : '<li class="loading">Кейсов нет — добавьте первый</li>';
+    const arr = await api('/api/cases?all=true');
+    arr.sort((a, b) => (a.sortOrder ?? 9999) - (b.sortOrder ?? 9999));
+    _casesListData = arr;
+    renderCaseList();
   } catch(e) { ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
 }
+
+function renderCaseList() {
+  const ul = document.getElementById('caseList');
+  if (!_casesListData.length) {
+    ul.innerHTML = '<li class="loading">Кейсов нет — добавьте первый</li>';
+    return;
+  }
+  ul.innerHTML = _casesListData.map((c, i) => `
+    <li class="list-item case-dnd-item" draggable="true" data-case-id="${esc(c.id)}" data-idx="${i}" style="cursor:grab;flex-wrap:nowrap;gap:6px;">
+      <span class="drag-handle" title="Перетащить" style="font-size:11px;color:var(--muted);cursor:grab;user-select:none;flex:0 0 10px;text-align:center;">⠿</span>
+      <span style="font-size:10px;font-weight:700;background:rgba(255,255,255,.08);border-radius:4px;padding:1px 4px;color:var(--muted);flex:0 0 auto;white-space:nowrap;">${c.sortOrder ?? '—'}</span>
+      <b style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;">${esc(c.title||c.id)}</b>
+      <span style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">
+        <span class="badge">${esc(c.id)}</span>
+        <span class="badge ${c.maturity==='ready'?'ok':c.maturity==='pilot'?'warn':''}">${esc(c.maturity||'')}</span>
+        ${c.maturity==='draft'?'<span class="badge" style="border-color:rgba(255,96,96,.5);color:rgba(255,96,96,.9);background:rgba(255,96,96,.08)">🔒</span>':''}
+      </span>
+      <div class="list-actions">
+        <button class="btn small" onclick="openCase('${esc(c.id)}')">Изменить</button>
+        <button class="btn small danger" onclick="delCase('${esc(c.id)}')">Удалить</button>
+      </div>
+    </li>`).join('');
+  initCaseDragDrop();
+}
+
+function initCaseDragDrop() {
+  const ul = document.getElementById('caseList');
+  const items = ul.querySelectorAll('.case-dnd-item');
+  let dragSrcIdx = null;
+
+  items.forEach((li, i) => {
+    li.addEventListener('dragstart', e => {
+      dragSrcIdx = i;
+      li.classList.add('dnd-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    li.addEventListener('dragend', () => {
+      li.classList.remove('dnd-dragging');
+      ul.querySelectorAll('.case-dnd-item').forEach(el => el.classList.remove('dnd-over'));
+    });
+    li.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      ul.querySelectorAll('.case-dnd-item').forEach(el => el.classList.remove('dnd-over'));
+      li.classList.add('dnd-over');
+    });
+    li.addEventListener('dragleave', () => li.classList.remove('dnd-over'));
+    li.addEventListener('drop', async e => {
+      e.preventDefault();
+      if (dragSrcIdx === null || dragSrcIdx === i) return;
+      const [moved] = _casesListData.splice(dragSrcIdx, 1);
+      _casesListData.splice(i, 0, moved);
+      // пересчитываем sortOrder начиная с 1
+      _casesListData.forEach((c, idx) => { c.sortOrder = idx + 1; });
+      renderCaseList();
+      await saveCaseSortOrders();
+    });
+  });
+}
+
+async function saveCaseSortOrders() {
+  try {
+    for (const c of _casesListData) {
+      await api(`/api/cases/${encodeURIComponent(c.id)}`, { method:'PUT', body:JSON.stringify(c) });
+    }
+    toast('Порядок сохранён');
+  } catch(e) { toast('Ошибка сохранения порядка','err'); }
+}
 // ── STEPS EDITOR ─────────────────────────────────────────────────────────────
-let stepsData = []; // [{title, bullets:[], prompt}]
+let stepsData = []; // [{title, bullets:[], prompt, aiTool, instructionId}]
+let availableInstructions = []; // кэш инструкций для select в шагах
+let availableAiTools = []; // кэш инструментов ИИ для select в шагах
 
 function renderStepsEditor() {
   const container = document.getElementById('stepsEditor');
@@ -529,6 +989,21 @@ function renderStepsEditor() {
         <textarea style="min-height:70px;" oninput="stepsData[${si}].bullets=this.value.split('\n').map(s=>s.trim()).filter(Boolean)" placeholder="Сформулировать цель&#10;Попросить ИИ предложить структуру&#10;Уточнить формулировки">${esc((step.bullets||[]).join('\n'))}</textarea>
       </div>
       <div class="field">
+        <label>Инструмент</label>
+        <select onchange="stepsData[${si}].aiTool=this.value">
+          <option value="">— не указан —</option>
+          ${availableAiTools.map(t => `<option value="${esc(t.name||t.id)}" ${(step.aiTool||'')===(t.name||t.id)?'selected':''}>${esc(t.name||t.id)}</option>`).join('')}
+          ${(step.aiTool && !availableAiTools.find(t=>(t.name||t.id)===step.aiTool)) ? `<option value="${esc(step.aiTool)}" selected>${esc(step.aiTool)} (не в справочнике)</option>` : ''}
+        </select>
+      </div>
+      <div class="field">
+        <label>Инструкция «Как использовать»</label>
+        <select onchange="stepsData[${si}].instructionId=this.value">
+          <option value="">— без инструкции —</option>
+          ${availableInstructions.map(i => `<option value="${esc(i.id)}" ${step.instructionId===i.id?'selected':''}>${esc(i.id)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
         <label>Промпт для этого шага</label>
         <textarea style="min-height:90px;" oninput="stepsData[${si}].prompt=this.value" placeholder="Роль: ...&#10;Цель: ...&#10;Формат: ...">${esc(step.prompt||'')}</textarea>
       </div>
@@ -549,38 +1024,58 @@ function removeStep(idx) {
 }
 
 document.getElementById('addStepBtn').addEventListener('click', () => {
-  stepsData.push({ title: '', bullets: [], prompt: '' });
+  stepsData.push({ title: '', bullets: [], prompt: '', aiTool: '', instructionId: '' });
   renderStepsEditor();
   // Scroll to new step
   const blocks = document.querySelectorAll('.step-block');
   if (blocks.length) blocks[blocks.length-1].scrollIntoView({behavior:'smooth', block:'nearest'});
 });
 
+async function loadCaseContextDepts(selectedValue) {
+  const sel = document.getElementById('caseContext');
+  if (!sel) return;
+  try {
+    const depts = await api('/api/departments');
+    sel.innerHTML = '<option value="">— Выбрать —</option>' +
+      depts.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  } catch(e) {
+    sel.innerHTML = '<option value="">— Нет данных —</option>';
+  }
+  if (selectedValue) sel.value = selectedValue;
+}
+
 async function openCase(id) {
   stepsData = [];
+  // Загружаем список инструкций для select в шагах
+  try { availableInstructions = await api('/api/instructions'); } catch(_) { availableInstructions = []; }
+  try { availableAiTools = await api('/api/tools'); } catch(_) { availableAiTools = []; }
   document.getElementById('caseForm').style.display='block';
   document.getElementById('caseFormTitle').textContent = id ? 'Изменить кейс' : 'Новый кейс';
-  ['caseId','caseTitle','caseTaskCategory','caseContext','caseRole','caseWhenToUse','caseResult','caseTools'].forEach(f => document.getElementById(f).value='');
+  ['caseId','caseTitle','caseRole','caseWhenToUse','caseResult','caseSortOrder'].forEach(f => document.getElementById(f).value='');
   document.getElementById('caseMaturity').value='ready';
+  await loadCaseContextDepts('');
+  await loadCaseTaskCategories('');
   if (id) {
     try {
-      const arr = await api('/api/cases');
+      const arr = await api('/api/cases?all=true');
       const c = arr.find(x=>x.id===id);
       if (c) {
         document.getElementById('caseId').value=c.id;
         document.getElementById('caseTitle').value=c.title||'';
-        document.getElementById('caseTaskCategory').value=c.taskCategory||'';
-        document.getElementById('caseContext').value=c.context||'';
+        await loadCaseContextDepts(c.context||'');
+        await loadCaseTaskCategories(c.taskCategory||'');
         document.getElementById('caseRole').value=Array.isArray(c.role)?c.role.join(', '):(c.role||'');
         document.getElementById('caseMaturity').value=c.maturity||'ready';
         document.getElementById('caseWhenToUse').value=c.whenToUse||'';
         document.getElementById('caseResult').value=c.result||'';
-        document.getElementById('caseTools').value=Array.isArray(c.tools)?c.tools.join(', '):(c.tools||'');
+        document.getElementById('caseSortOrder').value=c.sortOrder??'';
         // Загружаем шаги
         stepsData = (c.steps||[]).map(s => ({
           title: s.title||'',
           bullets: Array.isArray(s.bullets)?s.bullets:[],
-          prompt: s.prompt||''
+          prompt: s.prompt||'',
+          aiTool: s.aiTool||'',
+          instructionId: s.instructionId||''
         }));
       }
     } catch(e) { toast('Ошибка загрузки','err'); }
@@ -601,8 +1096,13 @@ document.getElementById('caseSave').addEventListener('click', async () => {
   const steps = stepsData.map(s => ({
     title: s.title||'',
     bullets: s.bullets||[],
-    prompt: s.prompt||''
+    prompt: s.prompt||'',
+    aiTool: s.aiTool||'',
+    instructionId: s.instructionId||''
   }));
+  // инструменты берём из шагов (поле aiTool), дубли убираем
+  const toolsFromSteps = [...new Set(steps.map(s => s.aiTool).filter(Boolean))];
+  const sortOrderVal = parseInt(document.getElementById('caseSortOrder').value);
   const item = {
     id,
     title: document.getElementById('caseTitle').value.trim(),
@@ -612,7 +1112,8 @@ document.getElementById('caseSave').addEventListener('click', async () => {
     maturity: document.getElementById('caseMaturity').value,
     whenToUse: document.getElementById('caseWhenToUse').value.trim(),
     result: document.getElementById('caseResult').value.trim(),
-    tools: document.getElementById('caseTools').value.trim().split(',').map(s=>s.trim()).filter(Boolean),
+    tools: toolsFromSteps,
+    sortOrder: isNaN(sortOrderVal) ? 9999 : sortOrderVal,
     steps
   };
   try {
@@ -789,9 +1290,153 @@ document.getElementById('taskSave').addEventListener('click', async () => {
   catch(e) { toast(e.message,'err'); }
 });
 
+// ── BROWSER CONFIG LOAD ───────────────────────────────────────────────────────
+async function loadBrowserConfig() {
+  try {
+    const cfg = await api('/api/browser-config');
+    if (!cfg || !Object.keys(cfg).length) return;
+    if (cfg.visible !== undefined) document.getElementById('brwVisible').value = cfg.visible;
+    if (cfg.download) document.getElementById('brwDownload').value = cfg.download;
+    if (cfg.register) document.getElementById('brwRegister').value = cfg.register;
+    if (cfg.title) document.getElementById('brwTitle').value = cfg.title;
+    if (cfg.subtitle) document.getElementById('brwSubtitle').value = cfg.subtitle;
+    if (Array.isArray(cfg.steps)) {
+      const rows = document.querySelectorAll('#brwSteps .field-row');
+      cfg.steps.forEach((step, i) => {
+        if (!rows[i]) return;
+        const inputs = rows[i].querySelectorAll('input[type=text]');
+        if (inputs[0]) inputs[0].value = step.label || '';
+        if (inputs[1]) inputs[1].value = step.hint || '';
+      });
+    }
+  } catch(e) { /* молча игнорируем — покажем дефолтные значения */ }
+}
+
+// ── INSTRUCTIONS ──────────────────────────────────────────────────────────────
+let instrSteps = [];
+
+async function loadInstructions() {
+  const ul = document.getElementById('instrList');
+  try {
+    const arr = await api('/api/instructions');
+    ul.innerHTML = arr.length ? arr.map(i => `
+      <li class="list-item">
+        <span>
+          <b>${esc(i.title || i.id)}</b>
+          <span class="badge">${esc(i.slug || i.id)}</span>
+          <small class="muted" style="margin-left:6px;">${(i.steps || []).length} шаг(ов)</small>
+        </span>
+        <div class="list-actions">
+          <a href="/instruction/${esc(i.slug || i.id)}" target="_blank" class="btn small" style="text-decoration:none;">↗ Открыть</a>
+          <button class="btn small" onclick="openInstr('${esc(i.id)}')">Изменить</button>
+          <button class="btn small danger" onclick="delInstr('${esc(i.id)}')">Удалить</button>
+        </div>
+      </li>`).join('') : '<li class="loading">Инструкций нет</li>';
+  } catch(e) {
+    ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`;
+  }
+}
+
+function renderInstrSteps() {
+  const container = document.getElementById('instrStepsEditor');
+  if (!instrSteps.length) {
+    container.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:8px 0 4px;">Шагов нет. Нажмите «+ Добавить шаг».</p>';
+    return;
+  }
+  container.innerHTML = instrSteps.map((step, si) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div style="min-width:32px;height:32px;border-radius:50%;background:var(--ok);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        ${String(si + 1).padStart(2, '0')}
+      </div>
+      <div class="field" style="flex:1;margin:0;">
+        <input type="text" placeholder="Описание / детали шага"
+          value="${esc(step.description || '')}"
+          oninput="instrSteps[${si}].description=this.value" />
+      </div>
+      <button class="btn small danger" onclick="removeInstrStep(${si})" title="Удалить шаг">✕</button>
+    </div>`).join('');
+}
+
+function removeInstrStep(si) {
+  instrSteps.splice(si, 1);
+  renderInstrSteps();
+}
+
+async function openInstr(id) {
+  instrSteps = [];
+  document.getElementById('instrSlug').value = '';
+  document.getElementById('instrTitle').value = '';
+  document.getElementById('instrDesc').value = '';
+  document.getElementById('instrOpenLink').style.display = 'none';
+
+  if (id) {
+    document.getElementById('instrFormTitle').textContent = 'Редактировать инструкцию';
+    try {
+      const arr = await api('/api/instructions');
+      const item = arr.find(x => x.id === id);
+      if (item) {
+        document.getElementById('instrSlug').value = item.slug || item.id;
+        document.getElementById('instrTitle').value = item.title || '';
+        document.getElementById('instrDesc').value = item.description || '';
+        instrSteps = (item.steps || []).map(s => ({ description: s.description || '' }));
+        const link = document.getElementById('instrOpenLink');
+        link.href = `/instruction/${encodeURIComponent(item.slug || item.id)}`;
+        link.style.display = '';
+      }
+    } catch(e) { toast('Ошибка загрузки', 'err'); }
+  } else {
+    document.getElementById('instrFormTitle').textContent = 'Новая инструкция';
+  }
+
+  renderInstrSteps();
+  document.getElementById('instrForm').style.display = 'block';
+  document.getElementById('instrForm').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function delInstr(id) {
+  if (!confirm(`Удалить инструкцию "${id}"?`)) return;
+  try {
+    await api(`/api/instructions/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    toast('Инструкция удалена');
+    loadInstructions();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+document.getElementById('instrAdd').addEventListener('click', () => openInstr(null));
+document.getElementById('instrCancel').addEventListener('click', () => {
+  document.getElementById('instrForm').style.display = 'none';
+  instrSteps = [];
+});
+document.getElementById('instrAddStep').addEventListener('click', () => {
+  instrSteps.push({ description: '' });
+  renderInstrSteps();
+});
+document.getElementById('instrSave').addEventListener('click', async () => {
+  const slug = document.getElementById('instrSlug').value.trim()
+    .toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-_]/g, '') || 'instr-new';
+  const item = {
+    id: slug,
+    slug,
+    title: document.getElementById('instrTitle').value.trim(),
+    description: document.getElementById('instrDesc').value.trim(),
+    steps: instrSteps.map(s => ({ description: s.description || '' }))
+  };
+  try {
+    await api(`/api/instructions/${encodeURIComponent(slug)}`, {
+      method: 'PUT',
+      body: JSON.stringify(item)
+    });
+    toast('Инструкция сохранена');
+    document.getElementById('instrForm').style.display = 'none';
+    instrSteps = [];
+    loadInstructions();
+  } catch(e) { toast(e.message, 'err'); }
+});
+
 // INIT
 document.addEventListener('DOMContentLoaded', () => {
-  loadUsers(); loadDepts(); loadCases(); loadPrompts(); loadTools(); loadTasks();
+  loadUsers(); loadDepts(); loadTaskCats(); loadAiTools(); loadCases(); loadPrompts(); loadTools(); loadTasks();
+  loadBrowserConfig(); loadInstructions();
 });
 
 // ── BROWSER CONFIG ────────────────────────────────────────────────────────────
@@ -812,6 +1457,150 @@ async function saveBrowserConfig() {
     toast('Настройки браузера сохранены');
   } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
 }
+
+// ===== VIDEO CATEGORIES =====
+var videoCats = [];
+
+async function loadVideoCats() {
+  try {
+    videoCats = await api('/api/video-categories');
+    renderVideoCats();
+    updateVideoCatSelect();
+  } catch(e) { console.error('cats err', e); }
+}
+
+function renderVideoCats() {
+  var el = document.getElementById('videoCatList');
+  if (!el) return;
+  if (!videoCats.length) { el.innerHTML = '<span class="muted" style="font-size:12px;">Нет категорий. Добавьте первую.</span>'; return; }
+  el.innerHTML = videoCats.map(function(c) {
+    return '<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);font-size:12px;">' +
+      '<span style="width:10px;height:10px;border-radius:50%;background:' + escH(c.color) + ';"></span>' +
+      escH(c.name) +
+      '<span style="cursor:pointer;opacity:.5;margin-left:2px;" onclick="deleteCat(\'' + escH(c.name).replace(/'/g,"\\'") + '\')">&times;</span>' +
+    '</span>';
+  }).join('');
+}
+
+function updateVideoCatSelect() {
+  var sel = document.getElementById('videoCategory');
+  if (!sel) return;
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">-- выберите --</option>';
+  videoCats.forEach(function(c) {
+    sel.innerHTML += '<option value="' + escH(c.name) + '">' + escH(c.name) + '</option>';
+  });
+  if (cur) sel.value = cur;
+}
+
+document.getElementById('btnAddCat').addEventListener('click', async function() {
+  var name = document.getElementById('newCatName').value.trim();
+  var color = document.getElementById('newCatColor').value || '#6B9FFF';
+  if (!name) return;
+  try {
+    await api('/api/video-categories', { method:'POST', body: JSON.stringify({ name: name, color: color }) });
+    document.getElementById('newCatName').value = '';
+    toast('Категория добавлена');
+    loadVideoCats();
+  } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
+});
+
+async function deleteCat(name) {
+  if (!confirm('Удалить категорию "' + name + '"?')) return;
+  try {
+    await api('/api/video-categories/' + encodeURIComponent(name), { method:'DELETE' });
+    toast('Категория удалена');
+    loadVideoCats();
+  } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
+}
+
+// ===== VIDEOS =====
+var videosData = [];
+
+async function loadVideos() {
+  try {
+    videosData = await api('/api/videos');
+    renderVideoList();
+  } catch(e) { document.getElementById('videoList').innerHTML = '<li>Ошибка загрузки</li>'; }
+}
+
+function renderVideoList() {
+  const ul = document.getElementById('videoList');
+  if (!videosData.length) { ul.innerHTML = '<li class="muted">Нет видео</li>'; return; }
+  ul.innerHTML = videosData.sort((a,b) => (a.order||0) - (b.order||0)).map(v => {
+    var s = '<li style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--stroke);">';
+    s += '<div style="flex:1; min-width:0;"><b>' + escH(v.title || v.id) + '</b>';
+    if (v.type) s += ' <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);">' + escH(v.type) + '</span>';
+    s += '<span class="muted" style="font-size:12px; margin-left:8px;">' + escH(v.duration || '') + '</span>';
+    if (v.speaker) s += '<span class="muted" style="font-size:12px; margin-left:6px;">· ' + escH(v.speaker) + '</span>';
+    s += '<br><span class="muted" style="font-size:12px;">' + escH(v.desc || '') + '</span>';
+    if (v.embedUrl) s += '<br><span style="font-size:11px; color:rgba(78,135,255,.8);">' + escH(v.embedUrl) + '</span>';
+    s += '</div>';
+    s += '<div style="display:flex; gap:6px; flex-shrink:0;">';
+    s += '<button class="btn small" onclick="editVideo(\'' + v.id + '\')">Ред.</button>';
+    s += '<button class="btn small" style="border-color:rgba(255,96,96,.4); color:rgba(255,96,96,.9);" onclick="deleteVideo(\'' + v.id + '\')">Удалить</button>';
+    s += '</div></li>';
+    return s;
+  }).join('');
+}
+
+function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;'); }
+
+document.getElementById('btnSaveVideo').addEventListener('click', async function() {
+  var id = document.getElementById('videoId').value.trim() || ('vid_' + Date.now());
+  var payload = {
+    id: id,
+    title: document.getElementById('videoTitle').value.trim(),
+    type: document.getElementById('videoCategory').value,
+    desc: document.getElementById('videoDesc').value.trim(),
+    speaker: document.getElementById('videoSpeaker').value.trim(),
+    embedUrl: document.getElementById('videoEmbed').value.trim(),
+    thumbUrl: document.getElementById('videoThumb').value.trim(),
+    duration: document.getElementById('videoDuration').value.trim(),
+    order: parseInt(document.getElementById('videoOrder').value) || 1
+  };
+  try {
+    await api('/api/videos', { method:'POST', body: JSON.stringify(payload) });
+    toast('Видео сохранено');
+    clearVideoForm();
+    loadVideos();
+  } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
+});
+
+document.getElementById('btnClearVideo').addEventListener('click', clearVideoForm);
+
+function clearVideoForm() {
+  ['videoId','videoTitle','videoDesc','videoEmbed','videoThumb','videoSpeaker','videoDuration'].forEach(function(fid) {
+    var el = document.getElementById(fid); if (el) el.value = '';
+  });
+  document.getElementById('videoOrder').value = '1';
+  document.getElementById('videoCategory').value = '';
+}
+
+function editVideo(id) {
+  var v = videosData.find(function(x){ return x.id === id; });
+  if (!v) return;
+  document.getElementById('videoId').value = v.id || '';
+  document.getElementById('videoTitle').value = v.title || '';
+  document.getElementById('videoCategory').value = v.type || '';
+  document.getElementById('videoDesc').value = v.desc || '';
+  document.getElementById('videoSpeaker').value = v.speaker || '';
+  document.getElementById('videoEmbed').value = v.embedUrl || '';
+  document.getElementById('videoThumb').value = v.thumbUrl || '';
+  document.getElementById('videoDuration').value = v.duration || '';
+  document.getElementById('videoOrder').value = v.order || 1;
+}
+
+async function deleteVideo(id) {
+  if (!confirm('Удалить видео ' + id + '?')) return;
+  try {
+    await api('/api/videos/' + encodeURIComponent(id), { method:'DELETE' });
+    toast('Видео удалено');
+    loadVideos();
+  } catch(e) { toast('Ошибка: ' + e.message, 'err'); }
+}
+
+document.querySelector('[data-tab="videos"]').addEventListener('click', function() { loadVideoCats(); loadVideos(); });
 
 </script>
 </body>

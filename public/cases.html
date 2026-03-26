@@ -1220,7 +1220,7 @@
     }
     .prompts-show-more{
       display: flex;
-      justify-content: center;
+      justify-content: flex-start;
       margin-top: 18px;
     }
     .prompts-show-more .btn{
@@ -2238,7 +2238,6 @@
           <div class="codebox" style="margin-top:10px;">
             <textarea class="prompt-input" id="${pid}" readonly>${escapeHtml(p.text || p.prompt || '')}</textarea>
           </div>
-          ${(p.result) ? `<div class="prompt-card-result">Результат: ${escapeHtml(p.result)}</div>` : ''}
           <div class="prompt-card-actions">
             <button class="btn small" type="button" data-copy="#${pid}">Копировать</button>
           </div>
@@ -2352,6 +2351,7 @@
             } else {
               hiddenEls.forEach(el => el.remove());
               hiddenEls = [];
+              container.querySelectorAll('.acc-item.open').forEach(i => i.classList.remove('open'));
               initPromptSliders();
               showMoreBtn.textContent = 'Показать все';
               container.scrollIntoView({ behavior: 'smooth', block: 'start' });

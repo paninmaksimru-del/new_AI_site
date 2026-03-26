@@ -503,28 +503,36 @@
     .speaker-card{
       display:flex;
       flex-direction: column;
-      align-items: flex-start;
-      text-align: left;
-      padding: 24px 16px;
+      gap: 10px;
+      padding: 20px 16px;
+    }
+    .speaker-top{
+      display:flex;
       gap: 12px;
+      align-items:center;
     }
     .speaker-photo{
-      width: 80px;
-      height: 80px;
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
-      border: 2px solid rgba(0,200,120,.35);
+      border: 1px solid rgba(255,255,255,.18);
       overflow:hidden;
       flex-shrink: 0;
     }
     .speaker-photo img{ width:100%; height:100%; object-fit:cover; border-radius:50%; }
     .speaker-name{
       font-weight: 600;
-      font-size: 15px;
+      margin-bottom: 2px;
+    }
+    .speaker-role{
+      font-size: 13px;
+      color: var(--muted-2);
     }
     .speaker-expertise{
       font-size: 13px;
-      color: var(--muted-2);
+      color: rgba(255,255,255,.7);
       line-height: 1.45;
+      margin: 0;
     }
     .speaker-contact-btn{
       margin-top: auto;
@@ -1662,27 +1670,42 @@
 
         <div class="speaker-grid">
           <article class="card speaker-card">
-            <div class="speaker-photo">
-              <img src="/speakers/alexei-voronov.jpg" alt="Алексей Воронов" />
+            <div class="speaker-top">
+              <div class="speaker-photo">
+                <img src="/speakers/alexei-voronov.jpg" alt="Алексей Воронов" />
+              </div>
+              <div>
+                <div class="speaker-name">Алексей Воронов</div>
+                <div class="speaker-role">Ведущий методист · Отдел обучения</div>
+              </div>
             </div>
-            <div class="speaker-name">Алексей Воронов</div>
-            <div class="speaker-expertise">Документы, деловая переписка, регламенты, внутренняя коммуникация</div>
+            <p class="speaker-expertise">Сферы экспертизы: Документы, деловая переписка, регламенты, внутренняя коммуникация</p>
             <button class="speaker-contact-btn" data-speaker="Алексей Воронов">Связаться</button>
           </article>
           <article class="card speaker-card">
-            <div class="speaker-photo">
-              <img src="/speakers/marina-sokolova.jpg" alt="Марина Соколова" />
+            <div class="speaker-top">
+              <div class="speaker-photo">
+                <img src="/speakers/marina-sokolova.jpg" alt="Марина Соколова" />
+              </div>
+              <div>
+                <div class="speaker-name">Марина Соколова</div>
+                <div class="speaker-role">Аналитик данных · Департамент развития</div>
+              </div>
             </div>
-            <div class="speaker-name">Марина Соколова</div>
-            <div class="speaker-expertise">Аналитика, отчетность, визуализация данных, работа с таблицами</div>
+            <p class="speaker-expertise">Сферы экспертизы: Аналитика, отчетность, визуализация данных, работа с таблицами</p>
             <button class="speaker-contact-btn" data-speaker="Марина Соколова">Связаться</button>
           </article>
           <article class="card speaker-card">
-            <div class="speaker-photo">
-              <img src="/speakers/dmitry-lebedev.jpg" alt="Дмитрий Лебедев" />
+            <div class="speaker-top">
+              <div class="speaker-photo">
+                <img src="/speakers/dmitry-lebedev.jpg" alt="Дмитрий Лебедев" />
+              </div>
+              <div>
+                <div class="speaker-name">Дмитрий Лебедев</div>
+                <div class="speaker-role">Руководитель проектов · Управление ИТ</div>
+              </div>
             </div>
-            <div class="speaker-name">Дмитрий Лебедев</div>
-            <div class="speaker-expertise">Управление командами, внедрение ИИ в процессы подразделений</div>
+            <p class="speaker-expertise">Сферы экспертизы: Управление командами, внедрение ИИ в процессы подразделений</p>
             <button class="speaker-contact-btn" data-speaker="Дмитрий Лебедев">Связаться</button>
           </article>
         </div>

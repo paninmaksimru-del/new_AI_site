@@ -446,6 +446,44 @@ async function start() {
     }
   });
 
+  // Materials
+  app.get('/api/materials', async (req, res) => {
+    try {
+      const { rows } = await query('SELECT id, data FROM materials ORDER BY id');
+      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.put('/api/materials', async (req, res) => {
+    try {
+      const list = Array.isArray(req.body) ? req.body : [];
+      await query('DELETE FROM materials');
+      for (const m of list) {
+        const id = (m.id || 'mat_' + Date.now()).toString().trim();
+        await query('INSERT INTO materials (id, data) VALUES ($1, $2)', [id, JSON.stringify(m)]);
+      }
+      const { rows } = await query('SELECT id, data FROM materials ORDER BY id');
+      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.post('/api/materials', async (req, res) => {
+    try {
+      const body = req.body || {};
+      const id = (body.id || 'mat_' + Date.now()).toString().trim();
+      await query('INSERT INTO materials (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2', [id, JSON.stringify(body)]);
+      const { rows } = await query('SELECT id, data FROM materials ORDER BY id');
+      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.delete('/api/materials/:id', async (req, res) => {
+    try {
+      await query('DELETE FROM materials WHERE id = $1', [req.params.id]);
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
   // Instructions
   app.get('/api/instructions', async (req, res) => {
     try {

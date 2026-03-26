@@ -80,6 +80,10 @@ export async function initSchema() {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+    CREATE TABLE IF NOT EXISTS materials (
+      id TEXT PRIMARY KEY,
+      data TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS instructions (
       id TEXT PRIMARY KEY,
       data TEXT NOT NULL

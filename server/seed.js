@@ -117,4 +117,38 @@ if (parseInt(taskRows[0].c) === 0) {
   console.log('Seeded tasks');
 }
 
+const defaultMaterials = [
+  { id: '1', title: 'ТОП-10 бесплатных нейросетей на все случаи жизни', link: 'https://habr.com/ru/companies/bothub/articles/1012792/', description: 'Обзор лучших бесплатных нейросетей для работы, учёбы и повседневных задач' },
+  { id: '2', title: 'Можно ли собрать рабочий сайт через ИИ, зная только базовый HTML', link: 'https://habr.com/ru/companies/tensor/articles/1012316/', description: 'Эксперимент по созданию полноценного сайта с помощью ИИ без глубоких знаний программирования' },
+  { id: '3', title: 'Гайд по пользованию ChatGPT', link: 'https://youtu.be/3n3BDmb_QEg?si=qDLI9s4lsVbIMJ0Y', description: 'Видеоурок по основам работы с ChatGPT для начинающих' },
+  { id: '4', title: 'Гайд по работе языковых моделей', link: 'https://habr.com/ru/companies/skillfactory/articles/837366/', description: 'Подробное объяснение принципов работы больших языковых моделей простым языком' },
+  { id: '5', title: 'Я дал ИИ собственный компьютер и 483 сессии свободы', link: 'https://habr.com/ru/articles/1007574/', description: 'Эксперимент: что произойдёт, если дать ИИ-агенту полный доступ к компьютеру' },
+  { id: '6', title: 'The Only AI Tools You Need (Part 1 — Daily Use)', link: 'https://www.youtube.com/watch?v=htZRCE2GgIs', description: 'Подборка самых полезных ИИ-инструментов для ежедневного использования' },
+  { id: '7', title: 'NotebookLM + Gemini: бесплатные AI-презентации', link: 'https://www.youtube.com/watch?v=Hjj5Z-zblWQ', description: 'Как создавать качественные презентации бесплатно с помощью Google NotebookLM и Gemini' },
+  { id: '8', title: 'AI Agents, Clearly Explained', link: 'https://www.youtube.com/watch?v=FwOTs4UxQS4', description: 'Понятное объяснение концепции ИИ-агентов и их возможностей' },
+  { id: '9', title: '101 Ways To Use AI In Your Daily Life', link: 'https://www.youtube.com/watch?v=zkXonmqIBFg', description: '101 практический сценарий применения ИИ в повседневной жизни' },
+  { id: '10', title: 'AI инструменты для продуктивности: полный обзор', link: 'https://www.youtube.com/watch?v=JMQ0X_si144', description: 'Обзор ИИ-инструментов, которые помогают работать быстрее и эффективнее' },
+  { id: '11', title: '25+ лучших гугловских инструментов и гайдов по ИИ', link: 'https://habr.com/ru/articles/984326/', description: 'Каталог ИИ-инструментов и обучающих материалов от Google' },
+  { id: '12', title: 'The AI Skills Playbook (Google)', link: 'https://services.google.com/fh/files/misc/the-ai-skills-playbook.pdf', description: 'Руководство Google по развитию навыков работы с ИИ в команде' },
+  { id: '13', title: 'Использование средств и ресурсов ИИ для бизнеса', link: 'https://learn.microsoft.com/ru-ru/training/modules/leverage-ai-tools/', description: 'Курс Microsoft по применению ИИ-инструментов в бизнес-процессах' },
+  { id: '14', title: 'GPT в ChatGPT — как создавать и использовать', link: 'https://help.openai.com/ru-ru/articles/8554407-gpts-in-chatgpt', description: 'Официальное руководство OpenAI по созданию и использованию кастомных GPT' },
+  { id: '15', title: 'Нанимаем ChatGPT на работу: автоматизация бизнес-процессов', link: 'https://habr.com/ru/articles/985272/', description: 'Практические примеры автоматизации рабочих задач с помощью ChatGPT' },
+  { id: '16', title: 'Введение в Claude API', link: 'https://docs.anthropic.com/en/docs/intro-to-claude', description: 'Официальная документация Anthropic по началу работы с Claude API' },
+  { id: '17', title: 'Гайд по написанию промптов (OpenAI)', link: 'https://platform.openai.com/docs/guides/prompt-engineering', description: 'Официальное руководство OpenAI по эффективному написанию промптов' },
+  { id: '18', title: 'Основы работы с ChatGPT (OpenAI Academy)', link: 'https://academy.openai.com/', description: 'Бесплатные курсы OpenAI Academy по основам работы с ChatGPT' },
+  { id: '19', title: 'Как работают AI модели (Cursor Learn)', link: 'https://www.cursor.com/learn/how-ai-models-work', description: 'Наглядное объяснение принципов работы современных ИИ-моделей' },
+  { id: '20', title: 'Безопасный ИИ: принципы ответственного использования', link: 'https://www.cloudskillsboost.google/course_templates/388', description: 'Курс Google Cloud по принципам безопасного и ответственного применения ИИ' },
+  { id: '21', title: 'ИИ в бизнесе (Сколково)', link: 'https://www.youtube.com/watch?v=9YrTyzYGp58&list=PLt17IPLzK6i46MydtD-7ifjn6FkakUKbI&index=5', description: 'Лекция Сколково о применении искусственного интеллекта в бизнесе' },
+  { id: '22', title: 'Как в продуктовом подходе помогают ИИ-инструменты', link: 'https://www.youtube.com/watch?v=gHkPs_quiyY&list=PLt17IPLzK6i46MydtD-7ifjn6FkakUKbI&index=18', description: 'Доклад о роли ИИ-инструментов в продуктовом менеджменте' },
+  { id: '23', title: 'Claude Skills — расширения для Claude Code', link: 'https://docs.anthropic.com/en/docs/claude-code/skills', description: 'Документация Anthropic по созданию и использованию skills в Claude Code' },
+];
+
+const { rows: matRows } = await query('SELECT COUNT(*) as c FROM materials');
+if (parseInt(matRows[0].c) === 0) {
+  for (const m of defaultMaterials) {
+    await query('INSERT INTO materials (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2', [m.id, JSON.stringify(m)]);
+  }
+  console.log('Seeded materials:', defaultMaterials.length);
+}
+
 console.log('Seed done');

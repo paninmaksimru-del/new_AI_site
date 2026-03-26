@@ -1986,6 +1986,9 @@
         <div class="articles-grid" id="articlesGrid" style="flex-wrap:wrap;">
           <p class="muted" style="padding:12px 0;">Загрузка материалов…</p>
         </div>
+        <div id="materialsShowMoreWrap" style="display:none; margin-top:18px;">
+          <button class="btn" id="materialsShowMore" style="background:linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78)); border-color:rgba(255,255,255,.18); color:rgba(255,255,255,.97); padding:12px 32px; font-size:14px; border-radius:14px; cursor:pointer; transition:opacity .15s;">Показать все</button>
+        </div>
       </div>
     </section>
 
@@ -2150,13 +2153,16 @@
 
     async function loadMaterials() {
       const grid = document.getElementById("articlesGrid");
+      const showMoreWrap = document.getElementById("materialsShowMoreWrap");
+      const showMoreBtn = document.getElementById("materialsShowMore");
       if (!grid) return;
+      const VISIBLE = 6;
       try {
         const res = await fetch('/api/materials');
         const materials = res.ok ? await res.json() : [];
         if (!materials.length) { grid.innerHTML = '<p class="muted">Материалов пока нет</p>'; return; }
-        grid.innerHTML = materials.map(m => {
-          const esc = s => String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+        const esc = s => String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+        function renderCard(m) {
           return `<article class="card" style="display:flex; flex-direction:column; gap:10px;">
             <div>
               <h3 style="font-size:15px; line-height:1.4; margin-bottom:6px;">${esc(m.title)}</h3>
@@ -2166,7 +2172,24 @@
               <a href="${esc(m.link)}" target="_blank" rel="noopener" style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.85); font-size:13px; font-weight:500; text-decoration:none; transition:background .15s;">Перейти</a>
             </div>
           </article>`;
-        }).join('');
+        }
+        grid.innerHTML = materials.slice(0, VISIBLE).map(renderCard).join('');
+
+        if (showMoreWrap && showMoreBtn && materials.length > VISIBLE) {
+          showMoreWrap.style.display = 'block';
+          let expanded = false;
+          showMoreBtn.onclick = () => {
+            expanded = !expanded;
+            if (expanded) {
+              grid.innerHTML = materials.map(renderCard).join('');
+              showMoreBtn.textContent = 'Свернуть';
+            } else {
+              grid.innerHTML = materials.slice(0, VISIBLE).map(renderCard).join('');
+              showMoreBtn.textContent = 'Показать все';
+              grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          };
+        }
       } catch(e) { grid.innerHTML = '<p class="muted">Не удалось загрузить материалы</p>'; }
     }
 

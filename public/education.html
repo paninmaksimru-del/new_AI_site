@@ -409,6 +409,31 @@
     .sprint-subtopic li{ font-size:12px; color:var(--muted-2); }
     .track-cta{ padding:16px var(--pad) 20px; margin-top:auto; }
 
+    /* 3D Ring Gallery */
+    .ring-filter-btn{
+      padding:6px 14px; border-radius:999px; font-size:12px; font-weight:500;
+      border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04);
+      color:var(--muted); cursor:pointer; transition:all .2s; font-family:inherit;
+    }
+    .ring-filter-btn:hover{ background:rgba(255,255,255,.08); color:var(--text); border-color:rgba(255,255,255,.20); }
+    .ring-filter-btn.active{ background:rgba(38,210,152,.14); border-color:rgba(38,210,152,.35); color:rgba(38,210,152,.95); }
+    .ring-nav-btn{
+      width:44px; height:44px; border-radius:50%;
+      border:1px solid rgba(255,255,255,.18); background:rgba(7,10,16,.75);
+      backdrop-filter:blur(8px); color:rgba(255,255,255,.85);
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; z-index:10; transition:background .15s, border-color .15s;
+    }
+    .ring-nav-btn:hover{ background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.30); }
+    .ring-cat-label{
+      position:absolute; font-size:13px; font-weight:400;
+      color:rgba(255,255,255,.30); pointer-events:auto; cursor:pointer;
+      transition:color .25s, opacity .3s; white-space:nowrap; user-select:none;
+      letter-spacing:0.3px;
+    }
+    .ring-cat-label:hover{ color:rgba(255,255,255,.9); }
+    .ring-cat-label .ring-cat-count{ font-size:10px; vertical-align:super; margin-left:2px; opacity:.5; }
+
     /* Carousel — 3D drum effect */
     .carousel-wrap{ position:relative; perspective:1200px; overflow:hidden; padding:20px 0 10px; }
     .carousel-stage{
@@ -1547,18 +1572,36 @@
       </div>
     </section>
 
-    <!-- Видеоматериалы — карусель, данные из /api/videos -->
-    <section id="videos">
-      <div class="wrap">
-        <h2 class="h2">Видеоматериалы</h2>
-        <p class="lead">Записи лекций, воркшопов и короткие обучающие ролики.</p>
-        <div class="carousel-wrap" style="margin-top:16px;" data-carousel="videos">
-          <button class="carousel-btn prev hidden" aria-label="Назад"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="10,2 4,8 10,14"/></svg></button>
-          <div class="carousel-stage" id="videosStage">
-            <div class="muted" style="text-align:center; padding:40px 0;">Загрузка видео...</div>
+    <!-- Видеоматериалы — 3D кольцо в стиле CLOU -->
+    <section id="videos" style="position:relative; overflow:hidden;">
+      <div class="wrap" style="position:relative; z-index:2;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h2 class="h2">Видеоматериалы</h2>
+            <p class="lead">Записи лекций, воркшопов и короткие обучающие ролики. Перетаскивайте кольцо или крутите колесико.</p>
           </div>
-          <button class="carousel-btn next" aria-label="Вперед"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,2 12,8 6,14"/></svg></button>
-          <div class="carousel-dots"></div>
+          <div id="ring-filters" style="display:flex; gap:6px; flex-wrap:wrap; padding-top:4px;">
+            <button class="ring-filter-btn active" data-ring-filter="all">Все</button>
+          </div>
+        </div>
+      </div>
+      <div id="ring-viewport" style="width:100%; height:520px; position:relative; cursor:grab; user-select:none;">
+        <canvas id="ring-canvas" style="width:100%; height:100%; display:block;"></canvas>
+        <div id="ring-cat-labels" style="position:absolute; inset:0; pointer-events:none;"></div>
+        <button id="ring-prev" class="ring-nav-btn" style="position:absolute; left:12px; top:50%; transform:translateY(-50%);"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="10,2 4,8 10,14"/></svg></button>
+        <button id="ring-next" class="ring-nav-btn" style="position:absolute; right:12px; top:50%; transform:translateY(-50%);"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,2 12,8 6,14"/></svg></button>
+      </div>
+      <!-- Center preview overlay -->
+      <div id="ring-preview" style="position:fixed; inset:0; z-index:999; display:none; align-items:center; justify-content:center; background:rgba(7,10,16,.75); backdrop-filter:blur(6px);">
+        <div id="ring-preview-card" style="width:640px; max-width:94vw; border-radius:18px; overflow:hidden; background:rgba(10,12,20,.96); border:1px solid rgba(255,255,255,.10); box-shadow:0 40px 100px rgba(0,0,0,.7); position:relative;">
+          <button id="ring-preview-close" style="position:absolute; top:14px; right:14px; z-index:5; width:40px; height:40px; border-radius:50%; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.7); font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center;">&#10005;</button>
+          <div id="ring-preview-media" style="width:100%; aspect-ratio:16/9; background:#0a0e16; position:relative; overflow:hidden;"></div>
+          <div style="padding:22px 28px 26px;">
+            <div id="ring-preview-type" style="font-size:12px; font-weight:500; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px;"></div>
+            <div id="ring-preview-title" style="font-size:22px; font-weight:600; line-height:1.3; margin-bottom:8px;"></div>
+            <div id="ring-preview-desc" style="font-size:14px; color:var(--muted); line-height:1.55; margin-bottom:14px;"></div>
+            <div id="ring-preview-meta" style="display:flex; align-items:center; gap:14px; font-size:13px; color:var(--muted-2);"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -2507,47 +2550,340 @@
       }
     });
 
-    // Load videos from API and render into carousel
-    (function loadEducationVideos() {
-      var stage = document.getElementById('videosStage');
-      if (!stage) return;
+    // ===== 3D RING GALLERY (Three.js) =====
+    (function initRingGallery() {
+      var viewport = document.getElementById('ring-viewport');
+      var canvas = document.getElementById('ring-canvas');
+      if (!viewport || !canvas) return;
 
-      fetch('/api/videos').then(function(r){ return r.json(); }).then(function(videos) {
-        if (!videos || !videos.length) {
-          stage.innerHTML = '<div class="muted" style="text-align:center; padding:40px 0;">Видео пока не добавлены</div>';
-          return;
-        }
-        videos.sort(function(a,b){ return (a.order||0) - (b.order||0); });
-        stage.innerHTML = '';
-        videos.forEach(function(v, i) {
-          var card = document.createElement('article');
-          card.className = 'card';
-          var hasEmbed = v.embedUrl && v.embedUrl.trim();
-          if (hasEmbed) {
-            card.innerHTML =
-              '<div style="border-radius:14px; overflow:hidden; margin-bottom:10px; aspect-ratio:16/9;">' +
-                '<iframe src="' + v.embedUrl + '" style="width:100%; height:100%; border:none;" allowfullscreen></iframe>' +
-              '</div>' +
-              '<h3>' + (v.title || '') + '</h3>' +
-              '<p class="muted">' + (v.desc || '') + '</p>';
-          } else {
-            card.innerHTML =
-              '<div class="video-thumb">' +
-                '<div class="vt-bg" style="animation-delay:' + (i * -2) + 's;"></div>' +
-                '<svg class="vt-dots" width="100%" height="100%"><pattern id="vdot' + i + '" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="9" cy="9" r="1" fill="currentColor"/></pattern><rect width="100%" height="100%" fill="url(#vdot' + i + ')"/></svg>' +
-                '<div class="vt-play" style="animation-delay:' + (i * -0.8) + 's;"><svg width="20" height="20" viewBox="0 0 20 20"><polygon points="6,3 17,10 6,17" fill="rgba(255,255,255,.9)"/></svg></div>' +
-                (v.duration ? '<div class="vt-dur">' + v.duration + '</div>' : '') +
-              '</div>' +
-              '<h3>' + (v.title || '') + '</h3>' +
-              '<p class="muted">' + (v.desc || '') + '</p>';
+      // Load Three.js dynamically
+      var s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+      s.onload = function() { buildRing(); };
+      document.head.appendChild(s);
+
+      var CATEGORIES = [];
+      var FALLBACK_CATS = [
+        { name:'Воркшопы', color:'#26D298' },
+        { name:'Лекции', color:'#6B9FFF' },
+        { name:'Гайды', color:'#FFB84E' },
+        { name:'Обзоры', color:'#FF7676' },
+        { name:'Интенсивы', color:'#B888FF' }
+      ];
+
+      // Fallback demo data
+      var DEMO = [
+        { title:'Интенсив по ИИ для руководителей', desc:'Образовательный интенсив для руководителей Фонда МИК', type:'Интенсивы', duration:'1ч 18м', speaker:'А. Воронов', embedUrl:'', bg:'#0d2e1e' },
+        { title:'Как формулировать запросы', desc:'Живые демонстрации промпт-инжиниринга', type:'Воркшопы', duration:'18 мин', speaker:'М. Соколова', embedUrl:'', bg:'#142840' },
+        { title:'Безопасность при работе с ИИ', desc:'Какие данные можно загружать в ИИ-сервисы', type:'Лекции', duration:'10 мин', speaker:'Д. Лебедев', embedUrl:'', bg:'#301218' },
+        { title:'Промпт-инжиниринг: основы', desc:'Эффективные промпты для задач разного типа', type:'Гайды', duration:'25 мин', speaker:'А. Воронов', embedUrl:'', bg:'#28260e' },
+        { title:'ИИ для аналитики', desc:'Нейросети для анализа данных и отчетов', type:'Лекции', duration:'22 мин', speaker:'М. Соколова', embedUrl:'', bg:'#0a2230' },
+        { title:'Автоматизация рутины', desc:'1-2 часа в день с помощью ИИ-ассистентов', type:'Воркшопы', duration:'15 мин', speaker:'Д. Лебедев', embedUrl:'', bg:'#1e2e10' },
+        { title:'Документы через ИИ', desc:'Обзор и генерация документов с помощью LLM', type:'Гайды', duration:'20 мин', speaker:'А. Воронов', embedUrl:'', bg:'#2e1e0a' },
+        { title:'GPT vs Claude vs Gemini', desc:'Сравнительный обзор трех моделей', type:'Обзоры', duration:'30 мин', speaker:'М. Соколова', embedUrl:'', bg:'#122228' },
+        { title:'ИИ в управлении проектами', desc:'Практические кейсы ИИ в PM', type:'Воркшопы', duration:'18 мин', speaker:'Д. Лебедев', embedUrl:'', bg:'#1e1030' },
+        { title:'Этика использования ИИ', desc:'Границы, риски и ответственность', type:'Лекции', duration:'12 мин', speaker:'А. Воронов', embedUrl:'', bg:'#0e2e1e' },
+        { title:'Нейросети для презентаций', desc:'Профессиональные слайды с помощью ИИ', type:'Гайды', duration:'14 мин', speaker:'М. Соколова', embedUrl:'', bg:'#10102e' },
+        { title:'DeepSeek: обзор модели', desc:'Возможности и лучшие сценарии', type:'Обзоры', duration:'16 мин', speaker:'Д. Лебедев', embedUrl:'', bg:'#2e1020' }
+      ];
+
+      var BG_COLORS = ['#0d2e1e','#142840','#301218','#28260e','#0a2230','#1e2e10','#2e1e0a','#122228','#1e1030','#0e2e1e','#10102e','#2e1020'];
+
+      function buildRing() {
+        // Load categories from API first, then videos
+        fetch('/api/video-categories').then(function(r){ return r.json(); }).then(function(cats) {
+          if (cats && cats.length) CATEGORIES = cats;
+          else CATEGORIES = FALLBACK_CATS;
+        }).catch(function() {
+          CATEGORIES = FALLBACK_CATS;
+        }).finally(function() {
+          // Build filter buttons dynamically
+          var filtersEl = document.getElementById('ring-filters');
+          if (filtersEl) {
+            filtersEl.innerHTML = '<button class="ring-filter-btn active" data-ring-filter="all">Все</button>';
+            CATEGORIES.forEach(function(cat) {
+              filtersEl.innerHTML += '<button class="ring-filter-btn" data-ring-filter="' + cat.name + '">' + cat.name + '</button>';
+            });
           }
-          stage.appendChild(card);
+          // Now load videos
+          fetch('/api/videos').then(function(r){ return r.json(); }).then(function(data) {
+            if (data && data.length) {
+              var mapped = data.sort(function(a,b){ return (a.order||0)-(b.order||0); }).map(function(v,i) {
+                return {
+                  title: v.title || '', desc: v.desc || '', type: v.type || '',
+                  duration: v.duration || '', speaker: v.speaker || '',
+                  embedUrl: v.embedUrl || '', thumbUrl: v.thumbUrl || '',
+                  bg: BG_COLORS[i % BG_COLORS.length]
+                };
+              });
+              // Filter categories to only those that have videos
+              var usedTypes = {};
+              mapped.forEach(function(v) { if (v.type) usedTypes[v.type] = true; });
+              CATEGORIES = CATEGORIES.filter(function(c) { return usedTypes[c.name]; });
+              // Update filter buttons to show only used categories
+              if (filtersEl) {
+                filtersEl.innerHTML = '<button class="ring-filter-btn active" data-ring-filter="all">Все</button>';
+                CATEGORIES.forEach(function(cat) {
+                  filtersEl.innerHTML += '<button class="ring-filter-btn" data-ring-filter="' + cat.name + '">' + cat.name + '</button>';
+                });
+              }
+              render3DRing(mapped);
+            } else { render3DRing(DEMO); }
+          }).catch(function() { render3DRing(DEMO); });
         });
-        // Re-init carousel for videos after cards loaded
-        initCarousel(stage.closest('[data-carousel]'));
-      }).catch(function() {
-        stage.innerHTML = '<div class="muted" style="text-align:center; padding:40px 0;">Не удалось загрузить видео</div>';
-      });
+      }
+
+      // roundRect polyfill
+      if (!CanvasRenderingContext2D.prototype.roundRect) {
+        CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r) {
+          this.beginPath(); this.moveTo(x+r,y); this.lineTo(x+w-r,y);
+          this.quadraticCurveTo(x+w,y,x+w,y+r); this.lineTo(x+w,y+h-r);
+          this.quadraticCurveTo(x+w,y+h,x+w-r,y+h); this.lineTo(x+r,y+h);
+          this.quadraticCurveTo(x,y+h,x,y+h-r); this.lineTo(x,y+r);
+          this.quadraticCurveTo(x,y,x+r,y); this.closePath();
+        };
+      }
+
+      function render3DRing(videoList) {
+        // Sort by category
+        var sorted = [];
+        CATEGORIES.forEach(function(cat) {
+          videoList.forEach(function(v) { if (v.type === cat.name) sorted.push(v); });
+        });
+        // Add uncategorized
+        videoList.forEach(function(v) {
+          if (!sorted.includes(v)) sorted.push(v);
+        });
+
+        var VW = viewport.offsetWidth, VH = viewport.offsetHeight;
+        var scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x070A10, 0.0007);
+
+        var camera = new THREE.PerspectiveCamera(45, VW/VH, 1, 3000);
+        camera.position.set(0, 240, 680);
+        camera.lookAt(0, 10, 0);
+
+        var renderer3 = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        renderer3.setSize(VW, VH);
+        renderer3.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer3.setClearColor(0x070A10, 0);
+
+        var ringGrp = new THREE.Group();
+        scene.add(ringGrp);
+
+        var RAD = 380, CW = 105, CH = 140;
+        var n = sorted.length, meshes = [];
+
+        function makeTex(v) {
+          var c = document.createElement('canvas'); c.width = 210; c.height = 280;
+          var x = c.getContext('2d');
+          var hex = v.bg || '#1a2a3a';
+          var rr = parseInt(hex.slice(1,3),16), gg = parseInt(hex.slice(3,5),16), bb = parseInt(hex.slice(5,7),16);
+          var grad = x.createLinearGradient(0,0,c.width,c.height);
+          grad.addColorStop(0, 'rgb('+Math.min(255,rr+35)+','+Math.min(255,gg+35)+','+Math.min(255,bb+35)+')');
+          grad.addColorStop(1, 'rgb('+Math.max(0,rr-15)+','+Math.max(0,gg-15)+','+Math.max(0,bb-15)+')');
+          x.fillStyle = grad; x.roundRect(0,0,c.width,c.height,10); x.fill();
+          x.strokeStyle = 'rgba(255,255,255,0.06)'; x.lineWidth = 1;
+          x.roundRect(.5,.5,c.width-1,c.height-1,10); x.stroke();
+          // Play
+          x.beginPath(); x.arc(c.width/2, c.height/2-18, 22, 0, Math.PI*2);
+          x.fillStyle = 'rgba(255,255,255,0.08)'; x.fill();
+          x.strokeStyle = 'rgba(255,255,255,0.15)'; x.lineWidth = 1; x.stroke();
+          x.fillStyle = 'rgba(255,255,255,0.75)'; x.beginPath();
+          x.moveTo(c.width/2+6,c.height/2-28); x.lineTo(c.width/2-10,c.height/2-18);
+          x.lineTo(c.width/2+6,c.height/2-8); x.fill();
+          // Bottom
+          x.fillStyle = 'rgba(0,0,0,0.45)'; x.fillRect(0,c.height-65,c.width,65);
+          x.fillStyle = 'rgba(255,255,255,0.88)'; x.font = '600 11px sans-serif'; x.textAlign = 'center';
+          var words = v.title.split(' '), lines = [], ln = '';
+          words.forEach(function(w) { var t = ln ? ln+' '+w : w; if (x.measureText(t).width > c.width-20) { lines.push(ln); ln = w; } else ln = t; });
+          if (ln) lines.push(ln);
+          var sy = c.height-48+(2-Math.min(lines.length,3))*7;
+          lines.slice(0,3).forEach(function(l,i) { x.fillText(l, c.width/2, sy+i*14); });
+          x.fillStyle = 'rgba(255,255,255,0.35)'; x.font = '400 9px sans-serif';
+          x.fillText(v.duration || '', c.width/2, c.height-6);
+          var tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter; return tex;
+        }
+
+        sorted.forEach(function(v, i) {
+          var a = (i/n)*Math.PI*2;
+          var geo = new THREE.PlaneGeometry(CW, CH);
+          var mat = new THREE.MeshBasicMaterial({ map: makeTex(v), transparent: true, side: THREE.DoubleSide });
+          var mesh = new THREE.Mesh(geo, mat);
+          mesh.position.set(Math.cos(a)*RAD, 0, Math.sin(a)*RAD);
+          mesh.lookAt(0,0,0);
+          mesh.userData = { video: v };
+          ringGrp.add(mesh); meshes.push(mesh);
+        });
+
+        // Decorative ring
+        var rGeo = new THREE.RingGeometry(RAD-1, RAD+1, 128);
+        var rMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.025, side: THREE.DoubleSide });
+        var rM = new THREE.Mesh(rGeo, rMat); rM.rotation.x = Math.PI/2; ringGrp.add(rM);
+
+        // Category labels
+        var labelsEl = document.getElementById('ring-cat-labels');
+        labelsEl.innerHTML = '';
+        var catCounts = {}; CATEGORIES.forEach(function(c) { catCounts[c.name] = 0; });
+        sorted.forEach(function(v) { if (catCounts[v.type] !== undefined) catCounts[v.type]++; });
+        var catMids = {}, ci = 0;
+        CATEGORIES.forEach(function(cat) {
+          var cnt = catCounts[cat.name] || 0;
+          catMids[cat.name] = ((ci + cnt/2) / n) * Math.PI * 2;
+          ci += cnt;
+          var el = document.createElement('div');
+          el.className = 'ring-cat-label';
+          el.style.pointerEvents = 'auto';
+          el.innerHTML = cat.name + ' <span class="ring-cat-count">(' + cnt + ')</span>';
+          el.addEventListener('click', function() { tgt = -catMids[cat.name] + Math.PI/2; });
+          labelsEl.appendChild(el);
+        });
+        var labelArr = Array.from(labelsEl.children);
+
+        function posLabels() {
+          var LR = Math.min(VW, VH) * 0.44;
+          CATEGORIES.forEach(function(cat, idx) {
+            var a = (catMids[cat.name] || 0) + ringGrp.rotation.y - Math.PI/2;
+            var lx = VW/2 + Math.cos(a)*LR;
+            var ly = VH/2 + Math.sin(a)*LR*0.30;
+            var el = labelArr[idx]; if (!el) return;
+            el.style.left = lx + 'px'; el.style.top = ly + 'px';
+            el.style.transform = 'translate(-50%,-50%)';
+            el.style.color = cat.color;
+            var behind = Math.sin(a);
+            el.style.opacity = behind > 0.15 ? '0' : String(Math.min(1, (0.15-behind)*3));
+          });
+        }
+
+        // Interaction
+        var tgt = 0, cur = 0, vel = 0, dragging = false, dsx = 0, dsr = 0, lastX = 0;
+        canvas.addEventListener('mousedown', function(e) {
+          dragging = true; dsx = e.clientX; lastX = e.clientX; dsr = tgt; vel = 0;
+          canvas.style.cursor = 'grabbing';
+        });
+        window.addEventListener('mousemove', function(e) {
+          if (!dragging) return;
+          vel = (e.clientX - lastX) * 0.004; lastX = e.clientX;
+          tgt = dsr + (e.clientX - dsx) * 0.004;
+        });
+        window.addEventListener('mouseup', function() { if (dragging) { dragging = false; canvas.style.cursor = 'grab'; } });
+        viewport.addEventListener('wheel', function(e) { e.preventDefault(); tgt += e.deltaY * -0.003; }, { passive: false });
+        var tsx = 0;
+        viewport.addEventListener('touchstart', function(e) { tsx = e.touches[0].clientX; dsr = tgt; }, { passive: true });
+        viewport.addEventListener('touchmove', function(e) { tgt = dsr + (e.touches[0].clientX - tsx) * 0.005; }, { passive: true });
+        document.getElementById('ring-prev').addEventListener('click', function() { tgt += Math.PI*2/n; });
+        document.getElementById('ring-next').addEventListener('click', function() { tgt -= Math.PI*2/n; });
+
+        // Category filter buttons
+        document.querySelectorAll('.ring-filter-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            document.querySelectorAll('.ring-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            var cat = btn.getAttribute('data-ring-filter');
+            if (cat === 'all') {
+              // Show all - reset opacity
+              meshes.forEach(function(m) { m.userData.filtered = false; });
+            } else {
+              // Highlight only matching category, dim others
+              meshes.forEach(function(m) {
+                m.userData.filtered = (m.userData.video.type !== cat);
+              });
+              // Rotate to first card of this category
+              if (catMids[cat] !== undefined) {
+                tgt = -catMids[cat] + Math.PI/2;
+              }
+            }
+          });
+        });
+
+        // Raycaster
+        var ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), hovered = null;
+        canvas.addEventListener('mousemove', function(e) {
+          if (dragging) return;
+          var rect = canvas.getBoundingClientRect();
+          mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+          ray.setFromCamera(mouse, camera);
+          var hits = ray.intersectObjects(meshes);
+          if (hits.length > 0) {
+            if (hovered !== hits[0].object) {
+              if (hovered) hovered.scale.set(1,1,1);
+              hovered = hits[0].object;
+              hovered.scale.set(1.12,1.12,1.12);
+              canvas.style.cursor = 'pointer';
+            }
+          } else {
+            if (hovered) { hovered.scale.set(1,1,1); hovered = null; canvas.style.cursor = dragging ? 'grabbing' : 'grab'; }
+          }
+        });
+
+        canvas.addEventListener('click', function(e) {
+          if (Math.abs(e.clientX - dsx) > 8) return;
+          var rect = canvas.getBoundingClientRect();
+          mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+          ray.setFromCamera(mouse, camera);
+          var hits = ray.intersectObjects(meshes);
+          if (hits.length > 0) showRingPreview(hits[0].object.userData.video);
+        });
+
+        // Preview
+        var pvEl = document.getElementById('ring-preview');
+        function showRingPreview(v) {
+          var catObj = CATEGORIES.find(function(c){ return c.name === v.type; });
+          document.getElementById('ring-preview-type').textContent = v.type;
+          document.getElementById('ring-preview-type').style.color = catObj ? catObj.color : '#26D298';
+          document.getElementById('ring-preview-title').textContent = v.title;
+          document.getElementById('ring-preview-desc').textContent = v.desc;
+          document.getElementById('ring-preview-meta').innerHTML = '<span>' + (v.speaker||'') + '</span><span style="width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.3);"></span><span>' + (v.duration||'') + '</span>';
+          var media = document.getElementById('ring-preview-media');
+          if (v.embedUrl) {
+            var embedFixed = v.embedUrl.replace('/video/private/', '/play/embed/').split('?')[0];
+            media.innerHTML = '<iframe src="' + embedFixed + '" style="width:100%;height:100%;border:none;position:absolute;inset:0;" allowfullscreen></iframe>';
+          } else {
+            media.innerHTML = '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(135deg,' + (v.bg||'#1a2a3a') + ',#050508);">' +
+              '<div style="width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.20);display:flex;align-items:center;justify-content:center;">' +
+                '<div style="width:0;height:0;border-style:solid;border-width:14px 0 14px 24px;border-color:transparent transparent transparent rgba(255,255,255,.9);margin-left:5px;"></div>' +
+              '</div>' +
+              '<div style="font-size:13px;color:rgba(255,255,255,.35);">Видео скоро будет доступно</div>' +
+            '</div>';
+          }
+          pvEl.style.display = 'flex';
+        }
+        document.getElementById('ring-preview-close').addEventListener('click', function(e) {
+          e.stopPropagation(); pvEl.style.display = 'none';
+          document.getElementById('ring-preview-media').innerHTML = '';
+        });
+        pvEl.addEventListener('click', function(e) {
+          if (e.target === pvEl) { pvEl.style.display = 'none'; document.getElementById('ring-preview-media').innerHTML = ''; }
+        });
+
+        // Animate
+        function animate() {
+          requestAnimationFrame(animate);
+          if (!dragging) { tgt += vel; vel *= 0.95; if (Math.abs(vel) < 0.00005) vel = 0; }
+          cur += (tgt - cur) * 0.07;
+          ringGrp.rotation.y = cur;
+          meshes.forEach(function(m) {
+            var wp = new THREE.Vector3(); m.getWorldPosition(wp);
+            var d = wp.clone().sub(camera.position).normalize();
+            var cd = new THREE.Vector3(0,0,1).applyQuaternion(m.quaternion);
+            var dot = d.dot(cd);
+            var baseOpa = THREE.MathUtils.clamp(0.2+dot*1.3, 0.08, 1);
+            m.material.opacity = m.userData.filtered ? baseOpa * 0.15 : baseOpa;
+          });
+          posLabels();
+          renderer3.render(scene, camera);
+        }
+
+        window.addEventListener('resize', function() {
+          VW = viewport.offsetWidth; VH = viewport.offsetHeight;
+          camera.aspect = VW/VH; camera.updateProjectionMatrix();
+          renderer3.setSize(VW, VH);
+        });
+
+        animate();
+      }
     })();
 
     // 3D Drum Carousels

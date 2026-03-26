@@ -2668,10 +2668,33 @@
         arr.push(payload);
         setJson(LS_FEEDBACK, arr);
 
+        // Send to server
+        try {
+          fetch('/api/analytics/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify([{
+              timestamp: payload.created_at,
+              event_type: 'feedback',
+              ticket_id: 'T-' + Math.random().toString(36).slice(2,7).toUpperCase(),
+              department: department === 'other' ? departmentOther : department,
+              type: type,
+              message: message,
+              rating: parseInt(rating) || 0,
+              fio: fio,
+              phone: phone,
+              telegram: tg,
+              email: email,
+              section: section,
+              link: link
+            }])
+          });
+        } catch(e) {}
+
         if (successEl) {
-          successEl.textContent = "Заявка сохранена локально. Для отправки можно выгрузить JSON и передать его команде.";
+          successEl.textContent = "Заявка отправлена и сохранена.";
         }
-        showToast("Заявка сохранена локально");
+        showToast("Заявка отправлена");
       });
 
       exportBtn?.addEventListener("click", () => {

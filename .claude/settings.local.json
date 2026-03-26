@@ -13,7 +13,9 @@
       "Bash(ls /Users/max/new_AI_site/new_AI_site/.env*)",
       "Bash(curl -s http://localhost:19080/api/browser-config)",
       "Bash(curl -s -X POST http://localhost:19080/api/login -H \"Content-Type: application/json\" -d '{\"\"login\"\":\"\"admin\"\",\"\"password\"\":\"\"admin\"\"}')",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:19080/admin.html)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:19080/admin.html)",
+      "Bash(npm install:*)",
+      "Bash(npx vite:*)"
     ]
   }
 }

@@ -21,6 +21,20 @@
       "runtimeArgs": ["serve", "public", "-l", "8765", "--no-clipboard"],
       "port": 8765,
       "autoPort": false
+    },
+    {
+      "name": "vite-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "preview", "--port", "4173", "--host"],
+      "port": 4173,
+      "autoPort": false
+    },
+    {
+      "name": "vite-dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--port", "5173", "--host"],
+      "port": 5173,
+      "autoPort": false
     }
   ]
 }

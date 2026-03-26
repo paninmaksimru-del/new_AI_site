@@ -7,6 +7,9 @@
   "scripts": {
     "start": "node --env-file=.env server/index.js",
     "dev": "node --env-file=.env --watch server/index.js",
+    "dev:vite": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "init-db": "node server/init-db.js",
     "export-db": "node server/export-db.js"
   },
@@ -14,7 +17,28 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@fontsource/geist-sans": "^5.2.5",
+    "@radix-ui/react-slot": "^1.2.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "express": "^4.21.1",
-    "pg": "^8.20.0"
+    "hls.js": "^1.6.15",
+    "lucide-react": "^1.6.0",
+    "pg": "^8.20.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.2",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.2"
   }
 }

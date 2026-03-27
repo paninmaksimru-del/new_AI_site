@@ -1024,6 +1024,26 @@ function logout() {
     tool_python: "Python"
   };
 
+  const CASE_LABELS = {
+    case_protocol: "Протокол встречи за 15 минут",
+    case_letter: "Черновик официального письма",
+    case_summary_doc: "Сводка по документу",
+    case_project_plan: "План проекта",
+    case_data_insights: "Аналитика данных",
+    case_decision_note: "Записка для принятия решения"
+  };
+
+  const PROMPT_LABELS = {
+    prompt_comm_1: "Официальное письмо (универсальное)",
+    prompt_comm_2: "Письмо-приглашение на встречу",
+    p_official_letter: "Официальное письмо",
+    p_meeting_invite: "Приглашение на встречу",
+    p_project_wbs: "WBS структура проекта",
+    p_action_items: "Список поручений",
+    p_risk_register: "Реестр рисков",
+    p_summary_note: "Сводная записка"
+  };
+
   const KEY_EVENTS = new Set(["case_used_click","prompt_used_click","tool_used_click"]);
 
   /* ===== Entity metadata cache (for resolving IDs to titles) ===== */
@@ -2373,8 +2393,8 @@ function drawDonut(canvasId, items, opts) {
 
     // Config per type: label, color, resolver
     const config = {
-      topCases:   { label: 'Топ кейс',       color: 'rgba(38, 210, 152, .85)',  resolve: () => { const m = ENTITY_META.cases[top.id]; return m ? m.title : top.id; } },
-      topPrompts: { label: 'Топ промпт',      color: 'rgba(120, 140, 255, .85)', resolve: () => { const m = ENTITY_META.prompts[top.id]; return m ? m.title : top.id; } },
+      topCases:   { label: 'Топ кейс',       color: 'rgba(38, 210, 152, .85)',  resolve: () => { const m = ENTITY_META.cases[top.id]; return m ? m.title : (CASE_LABELS[top.id] || top.id); } },
+      topPrompts: { label: 'Топ промпт',      color: 'rgba(120, 140, 255, .85)', resolve: () => { const m = ENTITY_META.prompts[top.id]; return m ? m.title : (PROMPT_LABELS[top.id] || top.id); } },
       topTools:   { label: 'Топ инструмент',   color: 'rgba(255, 193, 7, .85)',   resolve: () => { const m = ENTITY_META.tools[top.id]; return m ? m.name : (TOOL_LABELS[top.id] || top.id); } }
     };
 

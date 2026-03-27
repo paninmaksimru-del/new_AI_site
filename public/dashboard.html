@@ -600,43 +600,42 @@
     .top-kpi-card > div[id^="top"]{ flex: 1 1 auto; display:flex; align-items:center; justify-content:center; min-height: 84px; }
     .top-kpi-card > div[id^="top"] .kpi{ width: 100%; max-width: 360px; }
 
-    /* Top entity clickable cards */
-    .top-entity-link {
-      display: block;
-      text-decoration: none;
-      color: inherit;
-      padding: 14px 16px;
-      background: rgba(0,0,0,.10);
+    /* Top entity cards with color accent */
+    .top-entity-card {
+      padding: 16px 18px;
+      background: rgba(0,0,0,.12);
       border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.08);
-      transition: border-color .2s, transform .2s, box-shadow .2s;
-      cursor: pointer;
+      border: 1px solid rgba(255,255,255,.06);
+      border-left: 3px solid var(--accent-color, rgba(255,255,255,.2));
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
-    .top-entity-link:hover {
-      border-color: rgba(255,255,255,.22);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,.3);
+    .top-entity-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--accent-color, var(--muted-2));
+      margin-bottom: 8px;
     }
     .top-entity-title {
-      font-size: 16px;
-      font-weight: 700;
-      line-height: 1.4;
-      margin-top: 6px;
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1.35;
       word-break: break-word;
+      color: rgba(255,255,255,.92);
     }
     .top-entity-count {
       font-size: 12px;
       color: var(--muted-2);
-      margin-top: 6px;
+      margin-top: 8px;
     }
-    .top-entity-arrow {
-      float: right;
-      font-size: 16px;
-      color: var(--muted-2);
-      margin-top: -20px;
-      transition: color .2s;
+    .top-entity-count strong {
+      color: rgba(255,255,255,.75);
+      font-weight: 700;
     }
-    .top-entity-link:hover .top-entity-arrow { color: rgba(255,255,255,.7); }
 
     /* Top-5 table: force stable center alignment */
     .table-scroll table{ width:100%; border-collapse: collapse; }
@@ -748,18 +747,15 @@ function logout() {
         </div>
 
         <div class="card pad top-kpi-card">
-          <h3 style="margin-top:0;">Топ кейс</h3>
-<div id="topCases"></div>
+          <div id="topCases"></div>
         </div>
 
         <div class="card pad top-kpi-card">
-          <h3 style="margin-top:0;">Топ промпт</h3>
-<div id="topPrompts"></div>
+          <div id="topPrompts"></div>
         </div>
 
         <div class="card pad top-kpi-card">
-          <h3 style="margin-top:0;">Топ инструмент</h3>
-<div id="topTools"></div>
+          <div id="topTools"></div>
         </div>
       </div>
     </div>
@@ -2375,30 +2371,22 @@ function drawDonut(canvasId, items, opts) {
 
     const top = items[0];
 
-    // Resolve ID to human-readable title and link
-    let title = top.id;
-    let href = '#';
-    if (containerId === 'topCases') {
-      const meta = ENTITY_META.cases[top.id];
-      title = meta ? meta.title : top.id;
-      href = '/cases';
-    } else if (containerId === 'topPrompts') {
-      const meta = ENTITY_META.prompts[top.id];
-      title = meta ? meta.title : top.id;
-      href = '/cases#prompts';
-    } else if (containerId === 'topTools') {
-      const meta = ENTITY_META.tools[top.id];
-      title = meta ? meta.name : (TOOL_LABELS[top.id] || top.id);
-      href = '/cases#tools';
-    }
+    // Config per type: label, color, resolver
+    const config = {
+      topCases:   { label: 'Топ кейс',       color: 'rgba(38, 210, 152, .85)',  resolve: () => { const m = ENTITY_META.cases[top.id]; return m ? m.title : top.id; } },
+      topPrompts: { label: 'Топ промпт',      color: 'rgba(120, 140, 255, .85)', resolve: () => { const m = ENTITY_META.prompts[top.id]; return m ? m.title : top.id; } },
+      topTools:   { label: 'Топ инструмент',   color: 'rgba(255, 193, 7, .85)',   resolve: () => { const m = ENTITY_META.tools[top.id]; return m ? m.name : (TOOL_LABELS[top.id] || top.id); } }
+    };
+
+    const cfg = config[containerId] || { label: 'Топ', color: 'rgba(255,255,255,.3)', resolve: () => top.id };
+    const title = cfg.resolve();
 
     box.innerHTML = `
-      <a class="top-entity-link" href="${href}">
-        <div class="muted2" style="font-size:12px;">Топ</div>
+      <div class="top-entity-card" style="--accent-color: ${cfg.color};">
+        <div class="top-entity-label">${cfg.label}</div>
         <div class="top-entity-title">${escapeHtml(String(title))}</div>
-        <div class="top-entity-count">Использований: ${top.count}</div>
-        <span class="top-entity-arrow">&#8599;</span>
-      </a>
+        <div class="top-entity-count"><strong>${top.count}</strong> использований</div>
+      </div>
     `;
   }
 

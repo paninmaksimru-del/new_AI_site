@@ -661,8 +661,8 @@ async function start() {
   app.get('/admin.html', (req, res) => res.sendFile(join(publicDir, 'admin.html')));
   app.get('/profile.html', (req, res) => res.sendFile(join(publicDir, 'profile.html')));
 
-  app.listen(port, () => {
-    console.log(`MIK AI Platform listening on http://localhost:${port}`);
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`MIK AI Platform listening on http://0.0.0.0:${port}`);
   });
 }
 

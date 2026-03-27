@@ -101,19 +101,19 @@
 
 <main class="wrap">
   <div class="tabs" role="tablist" style="margin-top:24px;">
-    <button class="tabbtn active" data-tab="users">👥 Пользователи</button>
-    <button class="tabbtn" data-tab="refs">📚 Справочники</button>
-    <button class="tabbtn" data-tab="cases">📋 Кейсы</button>
-    <button class="tabbtn" data-tab="prompts">💬 Промпты</button>
-    <button class="tabbtn" data-tab="tools">🔧 Инструменты</button>
-    <button class="tabbtn" data-tab="tasks">✅ Задачи</button>
-    <button class="tabbtn" data-tab="browser">🌐 Браузер</button>
+    <button class="tabbtn active" data-tab="users">Пользователи</button>
+    <button class="tabbtn" data-tab="refs">Справочники</button>
+    <button class="tabbtn" data-tab="cases">Кейсы</button>
+    <button class="tabbtn" data-tab="prompts">Промпты</button>
+    <button class="tabbtn" data-tab="tools">Инструменты</button>
+    <button class="tabbtn" data-tab="tasks">Задачи</button>
+    <button class="tabbtn" data-tab="browser">Браузер</button>
     <button class="tabbtn" data-tab="instructions">Инструкции</button>
     <button class="tabbtn" data-tab="videos">Видеоматериалы</button>
-    <button class="tabbtn" data-tab="spkq">🎤 Вопросы спикерам</button>
-    <button class="tabbtn" data-tab="pusage">📊 Использование промптов</button>
-    <button class="tabbtn" data-tab="feedback">💬 Обратная связь</button>
-    <button class="tabbtn" data-tab="accessreq">🔑 Запросы доступа</button>
+    <button class="tabbtn" data-tab="spkq">Вопросы спикерам</button>
+    <button class="tabbtn" data-tab="pusage">Использование промптов</button>
+    <button class="tabbtn" data-tab="feedback">Обратная связь</button>
+    <button class="tabbtn" data-tab="accessreq">Запросы доступа</button>
   </div>
 
   <!-- USERS -->
@@ -206,7 +206,7 @@
         <div class="field-row">
           <div class="field"><label>Роли (через запятую)</label><input type="text" id="caseRole" placeholder="Руководитель, Проектный менеджер" /></div>
           <div class="field" style="max-width:200px;"><label>Зрелость</label>
-            <select id="caseMaturity"><option value="ready">✅ Готовый</option><option value="pilot">🔬 Пилот</option><option value="draft">📝 Черновик</option></select>
+            <select id="caseMaturity"><option value="ready">Готовый</option><option value="pilot">Пилот</option><option value="draft">Черновик</option></select>
           </div>
         </div>
         <div class="field"><label>Когда использовать / цель</label><input type="text" id="caseWhenToUse" /></div>
@@ -273,7 +273,7 @@
             </select>
           </div>
           <div class="field"><label>Оф. контур</label>
-            <select id="toolOfficial"><option value="ok">✅ ok</option><option value="limited">⚠️ limited</option><option value="no">❌ no</option></select>
+            <select id="toolOfficial"><option value="ok">ok</option><option value="limited">limited</option><option value="no">no</option></select>
           </div>
           <div class="field"><label>Доступ</label>
             <select id="toolAccess"><option value="ready">ready</option><option value="request">request</option></select>
@@ -569,7 +569,7 @@
     if (!auth || auth.isAuthorized !== true) { window.location.replace('/login'); return; }
     if (auth.role !== 'admin') { window.location.replace('/profile'); return; }
     var el = document.getElementById('userName');
-    if (el) el.textContent = '👤 ' + (auth.full_name || auth.login || 'admin');
+    if (el) el.textContent = (auth.full_name || auth.login || 'admin');
   } catch(e) { window.location.replace('/login'); }
 })();
 
@@ -991,7 +991,7 @@ function renderCaseList() {
       <span style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">
         <span class="badge">${esc(c.id)}</span>
         <span class="badge ${c.maturity==='ready'?'ok':c.maturity==='pilot'?'warn':''}">${esc(c.maturity||'')}</span>
-        ${c.maturity==='draft'?'<span class="badge" style="border-color:rgba(255,96,96,.5);color:rgba(255,96,96,.9);background:rgba(255,96,96,.08)">🔒</span>':''}
+        ${c.maturity==='draft'?'<span class="badge" style="border-color:rgba(255,96,96,.5);color:rgba(255,96,96,.9);background:rgba(255,96,96,.08)">Скрыт</span>':''}
       </span>
       <div class="list-actions">
         <button class="btn small" onclick="openCase('${esc(c.id)}')">Изменить</button>

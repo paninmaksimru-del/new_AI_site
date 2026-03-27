@@ -52,7 +52,7 @@ export async function setupAuth(app) {
       'INSERT INTO users (login, password_hash, role, full_name, department, contacts) VALUES ($1, $2, $3, $4, $5, $6)',
       ['user', hashPassword('user123'), 'user', 'Иванов Иван Иванович', 'Отдел цифровых инноваций', null]
     );
-    console.log('✅ Созданы дефолтные пользователи: admin/admin123 и user/user123');
+    console.log('Созданы дефолтные пользователи: admin/admin123 и user/user123');
   }
 
   // POST /api/login

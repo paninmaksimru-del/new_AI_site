@@ -3096,10 +3096,12 @@
       }
 
       // Group by sectionTitle
+      const HIDDEN_SECTIONS = ['Госсектор и публичное управление'];
       const sections = [];
       const sectionMap = {};
       (prompts || []).forEach(p => {
         const key = p.sectionTitle || 'Другое';
+        if (HIDDEN_SECTIONS.includes(key)) return;
         if (!sectionMap[key]) {
           sectionMap[key] = { title: key, subtitle: p.sectionSubtitle || '', items: [] };
           sections.push(sectionMap[key]);

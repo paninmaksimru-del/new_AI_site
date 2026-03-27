@@ -1230,6 +1230,73 @@
       }
     }
 
+    /* -- MATERIALS SEARCH -- */
+    .materials-search-wrap {
+      max-width: 480px;
+      margin: 18px auto 0;
+      padding: 0 16px;
+    }
+    .materials-search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .materials-search-icon {
+      position: absolute;
+      left: 14px;
+      width: 16px;
+      height: 16px;
+      color: var(--muted-2);
+      pointer-events: none;
+    }
+    .materials-search-input {
+      width: 100%;
+      padding: 11px 38px 11px 40px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: rgba(0,0,0,.22);
+      color: rgba(255,255,255,.90);
+      font-size: 14px;
+      outline: none;
+      min-height: 44px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .materials-search-input::placeholder { color: var(--muted-2); }
+    .materials-search-input:focus {
+      border-color: rgba(0,200,110,.5);
+      box-shadow: 0 0 0 3px rgba(0,200,110,.12);
+    }
+    .materials-search-clear {
+      position: absolute;
+      right: 10px;
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: rgba(255,255,255,.08);
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s;
+    }
+    .materials-search-clear:hover { background: rgba(255,255,255,.15); }
+    .materials-search-count {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted-2);
+      margin: 10px 0 0;
+    }
+    .materials-highlight {
+      background: rgba(0,200,110,.25);
+      color: rgba(255,255,255,.95);
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+
   </style>
 </head>
 <body>
@@ -1983,6 +2050,15 @@
         <h2 class="h2">Полезные материалы</h2>
         <p class="lead">Статьи для самостоятельного изучения — от базовых понятий до практических советов</p>
 
+        <div class="materials-search-wrap">
+          <div class="materials-search-box">
+            <svg class="materials-search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><line x1="13" y1="13" x2="18" y2="18"/></svg>
+            <input type="search" id="materialsSearchInput" class="materials-search-input" placeholder="Поиск по материалам..." autocomplete="off" aria-label="Поиск по полезным материалам" aria-controls="articlesGrid" />
+            <button type="button" id="materialsSearchClear" class="materials-search-clear" style="display:none;" aria-label="Очистить">&times;</button>
+          </div>
+          <p id="materialsSearchCount" class="materials-search-count" style="display:none;"></p>
+        </div>
+
         <div class="articles-grid" id="articlesGrid" style="flex-wrap:wrap;">
           <p class="muted" style="padding:12px 0;">Загрузка материалов…</p>
         </div>
@@ -2155,40 +2231,102 @@
       const grid = document.getElementById("articlesGrid");
       const showMoreWrap = document.getElementById("materialsShowMoreWrap");
       const showMoreBtn = document.getElementById("materialsShowMore");
+      const searchInput = document.getElementById("materialsSearchInput");
+      const searchClear = document.getElementById("materialsSearchClear");
+      const searchCount = document.getElementById("materialsSearchCount");
       if (!grid) return;
       const VISIBLE = 6;
-      try {
-        const res = await fetch('/api/materials');
-        const materials = res.ok ? await res.json() : [];
-        if (!materials.length) { grid.innerHTML = '<p class="muted">Материалов пока нет</p>'; return; }
-        const esc = s => String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-        function renderCard(m) {
-          return `<article class="card" style="display:flex; flex-direction:column; gap:10px;">
+      let allMaterials = [];
+      let expanded = false;
+
+      const esc = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+
+      function highlightText(text, query) {
+        if (!query) return esc(text);
+        const escaped = esc(text);
+        const qEsc = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const qEscHtml = qEsc.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+        const re = new RegExp('(' + qEscHtml + ')', 'gi');
+        return escaped.replace(re, '<mark class="materials-highlight">$1</mark>');
+      }
+
+      function renderCard(m, query) {
+        const titleHtml = query ? highlightText(m.title, query) : esc(m.title);
+        const descHtml  = query ? highlightText(m.description || '', query) : esc(m.description || '');
+        return `<article class="card" style="display:flex; flex-direction:column; gap:10px;">
             <div>
-              <h3 style="font-size:15px; line-height:1.4; margin-bottom:6px;">${esc(m.title)}</h3>
-              <p class="muted" style="font-size:13px;">${esc(m.description || '')}</p>
+              <h3 style="font-size:15px; line-height:1.4; margin-bottom:6px;">${titleHtml}</h3>
+              <p class="muted" style="font-size:13px;">${descHtml}</p>
             </div>
             <div style="display:flex; align-items:center; justify-content:flex-end; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
               <a href="${esc(m.link)}" target="_blank" rel="noopener" style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.85); font-size:13px; font-weight:500; text-decoration:none; transition:background .15s;">Перейти</a>
             </div>
           </article>`;
-        }
-        grid.innerHTML = materials.slice(0, VISIBLE).map(renderCard).join('');
+      }
 
-        if (showMoreWrap && showMoreBtn && materials.length > VISIBLE) {
-          showMoreWrap.style.display = 'block';
-          let expanded = false;
+      function renderDefault() {
+        grid.innerHTML = allMaterials.slice(0, expanded ? allMaterials.length : VISIBLE).map(m => renderCard(m, '')).join('');
+        if (showMoreWrap) showMoreWrap.style.display = allMaterials.length > VISIBLE ? 'block' : 'none';
+        if (showMoreBtn) showMoreBtn.textContent = expanded ? 'Свернуть' : 'Показать все';
+        if (searchCount) searchCount.style.display = 'none';
+      }
+
+      function applySearch(query) {
+        const q = query.trim().toLowerCase();
+        if (searchClear) searchClear.style.display = q ? 'flex' : 'none';
+
+        if (!q) { renderDefault(); return; }
+
+        const filtered = allMaterials.filter(m =>
+          (m.title || '').toLowerCase().includes(q) ||
+          (m.description || '').toLowerCase().includes(q)
+        );
+
+        if (showMoreWrap) showMoreWrap.style.display = 'none';
+
+        if (searchCount) {
+          searchCount.style.display = 'block';
+          searchCount.textContent = 'Найдено: ' + filtered.length + ' из ' + allMaterials.length;
+        }
+
+        if (!filtered.length) {
+          grid.innerHTML = '<p class="muted" style="padding:24px 0; text-align:center;">Ничего не найдено</p>';
+          return;
+        }
+
+        grid.innerHTML = filtered.map(m => renderCard(m, query.trim())).join('');
+      }
+
+      try {
+        const res = await fetch('/api/materials');
+        allMaterials = res.ok ? await res.json() : [];
+        if (!allMaterials.length) { grid.innerHTML = '<p class="muted">Материалов пока нет</p>'; return; }
+
+        renderDefault();
+
+        if (showMoreWrap && showMoreBtn && allMaterials.length > VISIBLE) {
           showMoreBtn.onclick = () => {
             expanded = !expanded;
-            if (expanded) {
-              grid.innerHTML = materials.map(renderCard).join('');
-              showMoreBtn.textContent = 'Свернуть';
-            } else {
-              grid.innerHTML = materials.slice(0, VISIBLE).map(renderCard).join('');
-              showMoreBtn.textContent = 'Показать все';
-              grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            renderDefault();
+            if (!expanded) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
           };
+        }
+
+        /* -- Search wiring -- */
+        if (searchInput) {
+          searchInput.addEventListener('input', () => applySearch(searchInput.value));
+          searchInput.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { searchInput.value = ''; expanded = false; renderDefault(); searchInput.blur(); }
+          });
+        }
+        if (searchClear && searchInput) {
+          searchClear.addEventListener('click', () => {
+            searchInput.value = '';
+            searchClear.style.display = 'none';
+            expanded = false;
+            renderDefault();
+            searchInput.focus();
+          });
         }
       } catch(e) { grid.innerHTML = '<p class="muted">Не удалось загрузить материалы</p>'; }
     }

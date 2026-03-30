@@ -712,22 +712,12 @@ function logout() {
             </select>
           </div>
 
-          <button class="btn small" id="btnDemo" type="button" title="Сгенерировать шумовые данные (demo)">
-            Сгенерировать demo
-          </button>
-
-          <button class="btn ghost small" id="btnClearDemo" type="button" title="Очистить демо-данные">
-            Обнулить demo
-          </button>
-          <button class="btn small" id="btnRegenerateDemo" type="button" title="Очистить и сгенерировать демо-данные заново">
-            Demo заново
-          </button>
 </div>
       </div>
     </div>
   </section>
 
-  <!-- 0.5) Leader + Top entities -->
+  <!-- 1) Leader + Top entities -->
   <section>
     <div class="wrap">
       <div class="grid four-col top-entities top-entities-eq">
@@ -759,44 +749,9 @@ function logout() {
         </div>
       </div>
     </div>
-  
-  <!-- 0.6) Top employees -->
-  <section>
-    <div class="wrap">
-      <div class="card pad">
-        <h3 style="margin:0;">Топ - 5 работников, использующих ИИ</h3>
-
-        <div class="table-scroll" style="margin-top:14px;">
-  <table aria-label="Топ сотрудников, использующих ИИ">
-    <thead>
-      <tr>
-        <th role="button" tabindex="0" class="th-sort" data-sort="fio">ФИО <span class="th-ind" aria-hidden="true"></span></th>
-        <th role="button" tabindex="0" class="th-sort" data-sort="cases">Решенные кейсы <span class="th-ind" aria-hidden="true"></span></th>
-        <th role="button" tabindex="0" class="th-sort" data-sort="prompts">Использованные промпты <span class="th-ind" aria-hidden="true"></span></th>
-        <th role="button" tabindex="0" class="th-sort" data-sort="tools">Задействованные инструменты <span class="th-ind" aria-hidden="true"></span></th>
-      </tr>
-    </thead>
-    <tbody id="tblTopEmployees"></tbody>
-  </table>
-</div>
-
-<div id="topEmpPager" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:12px;">
-  <span class="muted2" id="topEmpMeta">—</span>
-  <div style="display:flex; gap:10px; align-items:center;">
-    <button class="btn ghost small" id="topEmpPrev" type="button">Назад</button>
-    <span class="badge" id="topEmpPage">1/1</span>
-    <button class="btn ghost small" id="topEmpNext" type="button">Вперёд</button>
-  </div>
-</div>
-      </div>
-    </div>
   </section>
 
-
-</section>
-
-
-  <!-- 1) KPI row -->
+  <!-- 2) KPI row -->
   <section>
     <div class="wrap">
       <div class="card pad">
@@ -885,55 +840,39 @@ function logout() {
     </div>
   </section>
 
-  
-
-<!-- 2) Base charts -->
+  <!-- 4) Top employees -->
   <section>
     <div class="wrap">
-      <div class="grid two-col equal-cols">
-    <div class="card chart">
-  <div class="row">
-    <div>
-      <h3 style="margin:0;">Активность (ключевые действия) по дням </h3>
-    </div>
-    <!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-    <span class="badge pilot" id="kpiActiveHint">—</span>
+      <div class="card pad">
+        <h3 style="margin:0;">Топ - 5 работников, использующих ИИ</h3>
+
+        <div class="table-scroll" style="margin-top:14px;">
+  <table aria-label="Топ сотрудников, использующих ИИ">
+    <thead>
+      <tr>
+        <th role="button" tabindex="0" class="th-sort" data-sort="fio">ФИО <span class="th-ind" aria-hidden="true"></span></th>
+        <th role="button" tabindex="0" class="th-sort" data-sort="cases">Решенные кейсы <span class="th-ind" aria-hidden="true"></span></th>
+        <th role="button" tabindex="0" class="th-sort" data-sort="prompts">Использованные промпты <span class="th-ind" aria-hidden="true"></span></th>
+        <th role="button" tabindex="0" class="th-sort" data-sort="tools">Задействованные инструменты <span class="th-ind" aria-hidden="true"></span></th>
+      </tr>
+    </thead>
+    <tbody id="tblTopEmployees"></tbody>
+  </table>
+</div>
+
+<div id="topEmpPager" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:12px;">
+  <span class="muted2" id="topEmpMeta">—</span>
+  <div style="display:flex; gap:10px; align-items:center;">
+    <button class="btn ghost small" id="topEmpPrev" type="button">Назад</button>
+    <span class="badge" id="topEmpPage">1/1</span>
+    <button class="btn ghost small" id="topEmpNext" type="button">Вперёд</button>
   </div>
-  <canvas id="cActive"></canvas>
 </div>
-        <div class="card chart">
-          <div class="row">
-            <div>
-                     <h3 style="margin:0;">Оценочная экономия времени</h3>
-</div>
-            <span class="badge ok" id="kpiSavedHint">—</span>
-            
-<span class="muted2" style="display:inline-flex; align-items:center;">FTE <span class="info-icon" tabindex="0" role="button" aria-label="Что такое FTE" data-tip="FTE (Full-Time Equivalent) — это эквивалент полной занятости одного сотрудника.&#10;1 FTE ≈ 160 раб. ч/мес.">!</span></span>
-          </div>
-          <canvas id="cSaved"></canvas>
-        </div>
       </div>
     </div>
   </section>
 
-  <!-- 4) Top tasks (bars) -->
+  <!-- 5) Top tasks (bars) -->
   <section>
     <div class="wrap">
       <div class="card pad">
@@ -960,7 +899,37 @@ function logout() {
     </div>
   </section>
 
-  <!-- 5) Operational blocks: Onboarding → Feedback → Access (stacked) -->
+  <!-- Base charts (hidden) -->
+  <!--
+  <section>
+    <div class="wrap">
+      <div class="grid two-col equal-cols">
+    <div class="card chart">
+  <div class="row">
+    <div>
+      <h3 style="margin:0;">Активность (ключевые действия) по дням </h3>
+    </div>
+    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
+    <span class="badge pilot" id="kpiActiveHint">—</span>
+  </div>
+  <canvas id="cActive"></canvas>
+</div>
+        <div class="card chart">
+          <div class="row">
+            <div>
+                     <h3 style="margin:0;">Оценочная экономия времени</h3>
+</div>
+            <span class="badge ok" id="kpiSavedHint">—</span>
+<span class="muted2" style="display:inline-flex; align-items:center;">FTE <span class="info-icon" tabindex="0" role="button" aria-label="Что такое FTE" data-tip="FTE (Full-Time Equivalent) — это эквивалент полной занятости одного сотрудника.&#10;1 FTE ≈ 160 раб. ч/мес.">!</span></span>
+          </div>
+          <canvas id="cSaved"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+  -->
+
+  <!-- 6) Operational blocks: Onboarding → Feedback → Access (stacked) -->
   <section>
     <div class="wrap">
 

@@ -97,6 +97,14 @@ export async function initSchema() {
       name TEXT UNIQUE NOT NULL,
       color TEXT NOT NULL DEFAULT '#6B9FFF'
     );
+    CREATE TABLE IF NOT EXISTS dashboard_feedback (
+      id SERIAL PRIMARY KEY,
+      score SMALLINT NOT NULL CHECK (score BETWEEN 1 AND 10),
+      comment TEXT,
+      user_login TEXT,
+      user_name TEXT,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
     CREATE INDEX IF NOT EXISTS idx_ui_events_ts ON ui_events(timestamp);
     CREATE INDEX IF NOT EXISTS idx_ui_events_type ON ui_events(event_type);
   `);

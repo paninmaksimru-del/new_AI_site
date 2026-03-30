@@ -641,6 +641,117 @@
     .table-scroll table{ width:100%; border-collapse: collapse; }
     .table-scroll thead th, .table-scroll tbody td{ text-align:center !important; vertical-align: middle; }
 
+    /* ── Feedback widget ── */
+    .fb-trigger{
+      position:fixed; bottom:24px; right:24px; z-index:50;
+      width:52px; height:52px; border-radius:50%;
+      background:var(--mik-accent); border:none; color:#fff;
+      cursor:pointer; font-size:22px; line-height:1;
+      box-shadow: 0 8px 32px rgba(78,135,255,.35);
+      transition: transform .15s ease, box-shadow .15s ease;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .fb-trigger:hover{ transform:scale(1.08); box-shadow: 0 10px 40px rgba(78,135,255,.5); }
+
+    .fb-popup{
+      position:fixed; bottom:90px; right:24px; z-index:51;
+      width:380px; max-width:calc(100vw - 48px);
+      padding:24px;
+      background: rgba(12,16,28,.82);
+      border:1px solid var(--mik-stroke);
+      border-radius:var(--radius);
+      backdrop-filter:var(--blur);
+      -webkit-backdrop-filter:var(--blur);
+      box-shadow:var(--shadow);
+      animation: fbSlideIn .3s ease-out;
+    }
+    .fb-popup[hidden]{ display:none; }
+    .fb-popup.fb-closing{ animation: fbSlideOut .2s ease-in forwards; }
+
+    @keyframes fbSlideIn{ from{ opacity:0; transform:translateY(20px); } to{ opacity:1; transform:translateY(0); }}
+    @keyframes fbSlideOut{ from{ opacity:1; transform:translateY(0); } to{ opacity:0; transform:translateY(20px); }}
+
+    .fb-close{
+      position:absolute; top:12px; right:12px;
+      width:28px; height:28px; border-radius:50%;
+      border:1px solid var(--mik-stroke); background:rgba(255,255,255,.05);
+      color:var(--muted); cursor:pointer; font-size:16px;
+      display:flex; align-items:center; justify-content:center;
+      transition: background .15s;
+    }
+    .fb-close:hover{ background:rgba(255,255,255,.12); }
+
+    .fb-step{ transition: opacity .2s ease; }
+    .fb-step[hidden]{ display:none; }
+
+    .fb-scores{
+      display:flex; gap:6px; justify-content:center;
+      margin-top:14px; flex-wrap:wrap;
+    }
+    .fb-score-btn{
+      width:36px; height:36px; border-radius:50%;
+      border:1px solid var(--mik-stroke-2);
+      background:rgba(255,255,255,.04);
+      color:var(--muted); cursor:pointer;
+      font-size:13px; font-weight:700;
+      transition: all .15s ease;
+    }
+    .fb-score-btn:hover{
+      background:rgba(78,135,255,.15);
+      border-color:rgba(78,135,255,.4);
+      color:var(--text);
+    }
+    .fb-score-btn.selected{
+      background:var(--mik-accent);
+      border-color:var(--mik-accent);
+      color:#fff;
+      box-shadow: 0 0 12px rgba(78,135,255,.4);
+    }
+    .fb-score-btn.selected.sc-low{
+      background:var(--danger); border-color:var(--danger);
+      box-shadow: 0 0 12px rgba(255,96,96,.35);
+    }
+    .fb-score-btn.selected.sc-mid{
+      background:var(--warn); border-color:var(--warn); color:#1a1a1a;
+      box-shadow: 0 0 12px rgba(255,193,7,.35);
+    }
+    .fb-score-btn.selected.sc-high{
+      background:var(--ok); border-color:var(--ok);
+      box-shadow: 0 0 12px rgba(38,210,152,.35);
+    }
+
+    .fb-labels{
+      display:flex; justify-content:space-between;
+      margin-top:16px;
+      font-size:12px; color:var(--muted-2);
+    }
+
+    .fb-textarea{
+      width:100%; margin-top:14px; padding:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.05);
+      border-radius:14px; color:var(--text);
+      resize:vertical; font-size:14px; line-height:1.4;
+      min-height:80px;
+    }
+    .fb-textarea::placeholder{ color:var(--muted-2); }
+    .fb-textarea:focus{ outline:none; border-color:rgba(78,135,255,.5); }
+
+    .fb-submit{
+      width:100%; margin-top:12px; padding:12px 20px;
+      background:var(--mik-accent); border:none;
+      border-radius:14px; color:#fff;
+      font-weight:700; font-size:14px;
+      cursor:pointer; transition: background .15s;
+    }
+    .fb-submit:hover{ background:rgba(78,135,255,1); }
+    .fb-submit:disabled{ opacity:.5; cursor:not-allowed; }
+
+    @media(max-width:480px){
+      .fb-popup{ left:12px; right:12px; bottom:12px; width:auto; }
+      .fb-trigger{ bottom:16px; right:16px; width:46px; height:46px; font-size:18px; }
+    }
+
 </style>
 </head>
 
@@ -938,6 +1049,38 @@ function logout() {
   </section>
 
   </main>
+
+<!-- Feedback trigger -->
+<button class="fb-trigger" id="fbTrigger" type="button" title="Обратная связь">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
+
+<!-- Feedback popup -->
+<div class="fb-popup" id="fbPopup" hidden>
+  <button class="fb-close" id="fbClose" type="button" aria-label="Закрыть">&times;</button>
+
+  <div class="fb-step" id="fbStep1">
+    <h4 style="margin:0 0 6px;">Обратная связь</h4>
+    <p class="muted" style="font-size:14px; margin:0 0 4px;">Насколько для вас полезна платформа?</p>
+    <div class="fb-labels"><span>Совсем не полезна</span><span>Очень полезна</span></div>
+    <div class="fb-scores" id="fbScores"></div>
+  </div>
+
+  <div class="fb-step" id="fbStep2" hidden>
+    <h4 style="margin:0 0 6px;">Спасибо за оценку!</h4>
+    <p class="muted" style="font-size:14px; margin:0;">Расскажите подробнее — что понравилось или что можно улучшить?</p>
+    <textarea class="fb-textarea" id="fbComment" rows="4" placeholder="Ваш комментарий (необязательно)..."></textarea>
+    <button class="fb-submit" id="fbSubmit" type="button">Отправить</button>
+  </div>
+
+  <div class="fb-step" id="fbStep3" hidden>
+    <div style="text-align:center; padding:20px 0;">
+      <span style="font-size:32px; color:var(--ok);">&#10003;</span>
+      <h4 style="margin:8px 0 4px;">Спасибо!</h4>
+      <p class="muted" style="font-size:13px; margin:0;">Ваш отзыв помогает нам стать лучше</p>
+    </div>
+  </div>
+</div>
 
 <div class="tooltip" id="tooltip"></div>
 
@@ -2731,6 +2874,122 @@ document.querySelectorAll('.seg button[data-period]').forEach(b => {
     window.addEventListener("resize", () => renderAll(), { passive:true });
   }
 
+  /* ── Feedback widget ── */
+  function initFeedbackWidget() {
+    const trigger = document.getElementById("fbTrigger");
+    const popup   = document.getElementById("fbPopup");
+    const closeBtn= document.getElementById("fbClose");
+    const scoresEl= document.getElementById("fbScores");
+    const step1   = document.getElementById("fbStep1");
+    const step2   = document.getElementById("fbStep2");
+    const step3   = document.getElementById("fbStep3");
+    const submitBtn=document.getElementById("fbSubmit");
+    const commentEl=document.getElementById("fbComment");
+    if (!trigger || !popup) return;
+
+    // Hide if already submitted within 7 days
+    const submitted = localStorage.getItem("fb_dashboard_submitted");
+    if (submitted && Date.now() - Number(submitted) < 7 * 86400000) {
+      trigger.style.display = "none";
+      return;
+    }
+
+    let fbScore = null;
+
+    // Generate score buttons
+    for (let i = 1; i <= 10; i++) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "fb-score-btn";
+      btn.textContent = i;
+      btn.addEventListener("click", () => {
+        fbScore = i;
+        scoresEl.querySelectorAll(".fb-score-btn").forEach(b => {
+          b.classList.remove("selected", "sc-low", "sc-mid", "sc-high");
+        });
+        btn.classList.add("selected");
+        if (i <= 4) btn.classList.add("sc-low");
+        else if (i <= 7) btn.classList.add("sc-mid");
+        else btn.classList.add("sc-high");
+
+        setTimeout(() => {
+          step1.hidden = true;
+          step2.hidden = false;
+          commentEl.focus();
+        }, 400);
+      });
+      scoresEl.appendChild(btn);
+    }
+
+    function openPopup() { popup.hidden = false; popup.classList.remove("fb-closing"); }
+    function closePopup() {
+      popup.classList.add("fb-closing");
+      setTimeout(() => {
+        popup.hidden = true;
+        popup.classList.remove("fb-closing");
+        // reset to step 1
+        step1.hidden = false; step2.hidden = true; step3.hidden = true;
+        scoresEl.querySelectorAll(".fb-score-btn").forEach(b => b.classList.remove("selected","sc-low","sc-mid","sc-high"));
+        fbScore = null;
+        commentEl.value = "";
+      }, 200);
+    }
+
+    trigger.addEventListener("click", () => { popup.hidden ? openPopup() : closePopup(); });
+    closeBtn.addEventListener("click", closePopup);
+
+    submitBtn.addEventListener("click", async () => {
+      if (!fbScore) return;
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Отправляем...";
+      const comment = (commentEl.value || "").trim().slice(0, 2000);
+      const auth = (() => { try { return JSON.parse(localStorage.getItem("mikAuth") || "{}"); } catch { return {}; } })();
+      const payload = { score: fbScore, comment, login: auth.login || "", name: auth.name || "" };
+
+      try {
+        const r = await fetch("/api/dashboard-feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!r.ok) throw new Error("status " + r.status);
+      } catch (e) {
+        // fallback: save locally
+        const pending = JSON.parse(localStorage.getItem("fb_dashboard_pending") || "[]");
+        pending.push({ ...payload, ts: Date.now() });
+        localStorage.setItem("fb_dashboard_pending", JSON.stringify(pending));
+      }
+
+      localStorage.setItem("fb_dashboard_submitted", String(Date.now()));
+      step2.hidden = true;
+      step3.hidden = false;
+      setTimeout(() => {
+        closePopup();
+        trigger.style.display = "none";
+      }, 2000);
+    });
+
+    // Flush pending feedback from previous sessions
+    (async () => {
+      const pending = JSON.parse(localStorage.getItem("fb_dashboard_pending") || "[]");
+      if (!pending.length) return;
+      const ok = [];
+      for (const item of pending) {
+        try {
+          const r = await fetch("/api/dashboard-feedback", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(item)
+          });
+          if (r.ok) ok.push(item);
+        } catch {}
+      }
+      const remaining = pending.filter(p => !ok.includes(p));
+      if (remaining.length) localStorage.setItem("fb_dashboard_pending", JSON.stringify(remaining));
+      else localStorage.removeItem("fb_dashboard_pending");
+    })();
+  }
+
   async function init() {
     setupUI();
     initAdoptionBuilder();
@@ -2744,6 +3003,7 @@ document.querySelectorAll('.seg button[data-period]').forEach(b => {
     state.adoptionGrain = "weeks";
     await loadEntityMeta();
     renderAll();
+    initFeedbackWidget();
   }
 
   document.addEventListener("DOMContentLoaded", init);

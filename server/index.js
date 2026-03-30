@@ -651,6 +651,29 @@ async function start() {
     } catch (e) { res.status(500).json({ error: String(e.message) }); }
   });
 
+  // Dashboard feedback
+  app.post('/api/dashboard-feedback', async (req, res) => {
+    try {
+      const score = Number(req.body?.score);
+      if (!score || score < 1 || score > 10) return res.status(400).json({ error: 'score 1-10 required' });
+      const comment = (req.body?.comment || '').trim().slice(0, 2000);
+      const login = (req.body?.login || '').trim();
+      const name = (req.body?.name || '').trim();
+      await query(
+        'INSERT INTO dashboard_feedback (score, comment, user_login, user_name) VALUES ($1, $2, $3, $4)',
+        [score, comment || null, login || null, name || null]
+      );
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.get('/api/dashboard-feedback', async (req, res) => {
+    try {
+      const { rows } = await query('SELECT * FROM dashboard_feedback ORDER BY created_at DESC');
+      res.json(rows);
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
   // Health
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });

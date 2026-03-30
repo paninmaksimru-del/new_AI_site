@@ -2938,6 +2938,11 @@ document.querySelectorAll('.seg button[data-period]').forEach(b => {
     trigger.addEventListener("click", () => { popup.hidden ? openPopup() : closePopup(); });
     closeBtn.addEventListener("click", closePopup);
 
+    // Auto-show popup after 10 seconds on page
+    setTimeout(() => {
+      if (popup.hidden && trigger.style.display !== "none") openPopup();
+    }, 10000);
+
     submitBtn.addEventListener("click", async () => {
       if (!fbScore) return;
       submitBtn.disabled = true;

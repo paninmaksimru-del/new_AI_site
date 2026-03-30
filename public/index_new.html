@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>Витрина ИИ-инструментов — Фонд МИК</title>
+
+  <!-- Базовые стили и тёмный дизайн в стиле файла чеклист+дизайн -->
+  <style>
+    :root{
+      --bg: #070A10;
+      --panel: rgba(255,255,255,.06);
+      --panel-2: rgba(255,255,255,.08);
+      --stroke: rgba(255,255,255,.12);
+      --stroke-2: rgba(255,255,255,.18);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --muted-2: rgba(255,255,255,.56);
+      --ok: rgba(38, 210, 152, .95);
+      --warn: rgba(255, 193, 7, .95);
+      --pilot: rgba(120, 140, 255, .95);
+      --danger: rgba(255, 96, 96, .95);
+
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --blur: blur(14px);
+
+      --radius: 18px;
+      --radius-sm: 12px;
+
+      --max: 1100px;
+      --gap: clamp(14px, 2vw, 22px);
+      --pad: clamp(16px, 2.4vw, 26px);
+
+      --header-h: 68px;
+
+      --focus: 0 0 0 3px rgba(120,140,255,.35);
+    }
+
+    *{ box-sizing: border-box; }
+    html{ scroll-behavior: smooth; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background:
+        radial-gradient(1200px 700px at 15% 85%, rgba(0,90,55,.9), transparent 58%),
+        radial-gradient(900px 600px at 85% 15%, rgba(0,70,45,.7), transparent 55%),
+        radial-gradient(700px 500px at 50% 50%, rgba(0,50,35,.4), transparent 65%),
+        linear-gradient(160deg, #021510 0%, #031a12 40%, #042018 70%, #021408 100%);
+      color: var(--text);
+      line-height: 1.45;
+      overflow-x: hidden;
+    }
+    a{ color: inherit; text-decoration: none; }
+    button, input, select, textarea{
+      font: inherit;
+      color: inherit;
+    }
+    :focus-visible{ outline: none; box-shadow: var(--focus); border-radius: 10px; }
+
+    .progress{
+      position: fixed;
+      top:0;
+      left:0;
+      height: 3px;
+      width: 100%;
+      z-index: 1000;
+      background: rgba(255,255,255,.05);
+    }
+    .progress > i{
+      display:block;
+      height:100%;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(0,180,100,.95), rgba(0,230,130,.95));
+      transition: width .08s linear;
+    }
+
+    header{
+      position: sticky;
+      top:0;
+      z-index: 900;
+      height: var(--header-h);
+      backdrop-filter: var(--blur);
+      background: rgba(2,18,12,.85);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .topbar{
+      max-width: var(--max);
+      margin:0 auto;
+      height: 100%;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      padding: 0 var(--pad);
+      gap: 12px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-width: 220px;
+    }
+    .brand .logo{
+      width: 120px; height: 60px;
+      background: transparent !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden !important;
+      max-width: 30vw;
+    }
+    .brand .logo::before{ display: none !important; }
+    .brand .logo img{
+      width: 100%; height: 100%;
+      object-fit: contain;
+      mix-blend-mode: screen;
+      display: block;
+    }
+    .brand .name{
+      font-weight: 700;
+      letter-spacing: .2px;
+      font-size: 14px;
+      line-height: 1.25;
+      color: rgba(255,255,255,.9);
+    }
+
+    nav{
+      display:flex;
+      align-items:center;
+      gap: 6px;
+    }
+    .nowrap{ white-space: nowrap; }
+    .navlink{
+      padding: 10px 12px;
+      border-radius: 12px;
+      color: rgba(255,255,255,.78);
+      border: 1px solid transparent;
+      transition: background .15s ease, border-color .15s ease, color .15s ease;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .navlink:hover{
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.10);
+      color: rgba(255,255,255,.92);
+    }
+    .navlink.active{
+      background: rgba(0,180,100,.14);
+      border-color: rgba(0,200,110,.26);
+      color: rgba(255,255,255,.95);
+    }
+
+    .profile-btn{
+      margin-left: 8px;
+      padding-inline: 14px;
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.05);
+      cursor:pointer;
+      min-height: 40px;
+      font-size: 14px;
+    }
+
+    .burger{
+      display:none;
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+    }
+    .burger i{
+      width: 18px; height: 2px;
+      background: rgba(255,255,255,.86);
+      position: relative;
+      display:block;
+      border-radius: 10px;
+    }
+    .burger i:before,
+    .burger i:after{
+      content:"";
+      position:absolute;
+      left:0;
+      width: 18px; height:2px;
+      background: rgba(255,255,255,.86);
+      border-radius: 10px;
+    }
+    .burger i:before{ top:-6px; }
+    .burger i:after{ top: 6px; }
+
+    .mobile-menu{
+      display:none;
+      position: absolute;
+      left:0; right:0;
+      top: var(--header-h);
+      background: rgba(2,18,12,.96);
+      backdrop-filter: var(--blur);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      padding: 12px var(--pad) 16px;
+    }
+    .mobile-menu .navlink{
+      display:block;
+      width: 100%;
+      margin: 6px 0;
+    }
+
+    /* ── PERSISTENT SIDEBAR ─────────────────────────────────────────────── */
+    :root { --sb-collapsed: 64px; --sb-expanded: 280px; }
+
+    body { display:flex; flex-direction:column; min-height:100vh; }
+
+    .page-layout {
+      display:flex; flex:1;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      top: var(--header-h);
+      left: 0;
+      height: calc(100vh - var(--header-h));
+      width: var(--sb-collapsed);
+      background: #021510;
+      border-right: 1px solid rgba(255,255,255,.09);
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      transition: width .25s cubic-bezier(.4,0,.2,1);
+      overflow: visible;
+    }
+    .sidebar.expanded { width: var(--sb-expanded); }
+
+    /* Toggle button */
+    .sb-toggle {
+      position: absolute;
+      top: 20px;
+      right: -13px;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: #0a2e1c;
+      border: 1px solid rgba(255,255,255,.18);
+      color: rgba(255,255,255,.75);
+      display: flex; align-items:center; justify-content:center;
+      cursor: pointer;
+      font-size: 14px;
+      z-index: 10;
+      transition: background .15s;
+      flex-shrink: 0;
+    }
+    .sb-toggle:hover { background:#0d3d22; color:#fff; }
+    .sb-toggle .sb-toggle-icon { display:inline-block; transition: transform .25s; }
+    .sidebar.expanded .sb-toggle .sb-toggle-icon { transform: rotate(180deg); }
+
+    /* Brand row (only in expanded) */
+    .sb-brand {
+      display:flex; align-items:center; gap:10px;
+      padding: 16px 14px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      white-space:nowrap; overflow:hidden;
+      flex-shrink:0;
+    }
+    .sb-brand-logo {
+      width:36px; height:36px; flex-shrink:0;
+      background: transparent;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .sb-brand-logo img { width:100%; height:100%; object-fit:contain; mix-blend-mode:screen; }
+    .sb-brand-name {
+      font-weight:700; font-size:14px; color:var(--text);
+      opacity:0; transition: opacity .15s;
+      white-space:nowrap;
+    }
+    .sidebar.expanded .sb-brand-name { opacity:1; transition-delay:.1s; }
+
+    /* Scrollable body */
+    .sb-body {
+      flex:1; overflow-y:auto; overflow-x:hidden; position:relative;
+      padding: 8px 0;
+    }
+    .sb-body::-webkit-scrollbar { width:4px; }
+    .sb-body::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); border-radius:4px; }
+
+    /* Group */
+    .sb-group { margin-bottom:2px; }
+    .sb-group-head {
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 10px 14px 6px;
+      color: rgba(0,200,110,.9);
+      font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+      white-space:nowrap; overflow:hidden;
+      cursor:pointer; user-select:none;
+    }
+    .sb-group-head .sb-gh-right {
+      display:flex; align-items:center; gap:6px;
+      opacity:0; transition: opacity .1s;
+    }
+    .sidebar.expanded .sb-gh-right { opacity:1; transition-delay:.1s; }
+    .sb-count {
+      background:rgba(0,170,90,.15); color:rgba(0,210,110,.9);
+      border-radius:20px; padding:1px 7px; font-size:10px; font-weight:700;
+    }
+    .sb-arrow { font-size:10px; transition: transform .2s; }
+    .sb-group:not(.open) .sb-arrow { transform: rotate(-90deg); }
+
+    .sb-items { overflow:hidden; }
+    .sb-group:not(.open) .sb-items { display:none; }
+
+    /* Item */
+    .sb-item {
+      display:flex; align-items:center; gap:12px;
+      padding: 9px 16px;
+      color: rgba(255,255,255,.72);
+      font-size:13.5px; text-decoration:none;
+      white-space:nowrap; overflow:hidden;
+      transition: background .12s, color .12s;
+      cursor:pointer;
+    }
+    .sb-item:hover { background:rgba(0,170,90,.12); color:#fff; }
+    .sb-icon {
+      width:32px; height:32px; border-radius:9px;
+      background:rgba(255,255,255,.06);
+      display:flex; align-items:center; justify-content:center;
+      font-size:16px; flex-shrink:0;
+    }
+    .sb-label {
+      opacity:0; transition:opacity .1s; flex:1;
+    }
+    .sidebar.expanded .sb-label { opacity:1; transition-delay:.1s; }
+
+    /* Divider */
+    .sb-divider { height:1px; background:rgba(255,255,255,.07); margin:8px 12px; }
+
+    /* Footer */
+    .sb-footer { padding:8px 0; border-top:1px solid rgba(255,255,255,.07); flex-shrink:0; }
+    .sb-footer-item {
+      display:flex; align-items:center; gap:12px;
+      padding:9px 16px;
+      color:rgba(255,255,255,.45); font-size:13px;
+      text-decoration:none; white-space:nowrap;
+      transition:background .12s, color .12s;
+    }
+    .sb-footer-item:hover { background:rgba(255,255,255,.05); color:rgba(255,255,255,.8); }
+
+    /* Notice */
+    .sb-notice {
+      margin:8px;
+      padding:10px 12px;
+      border-radius:10px;
+      background:rgba(255,193,7,.07);
+      border:1px solid rgba(255,193,7,.18);
+      font-size:11.5px; color:rgba(255,193,7,.85); line-height:1.5;
+      white-space:nowrap; overflow:hidden;
+      opacity:0; transition:opacity .1s;
+    }
+    .sidebar.expanded .sb-notice { opacity:1; white-space:normal; transition-delay:.12s; }
+
+    /* Push main content when sidebar is shown */
+    .main-content {
+      margin-left: var(--sb-collapsed);
+      transition: margin-left .25s cubic-bezier(.4,0,.2,1);
+      flex:1; min-width:0;
+    }
+    .sidebar.expanded ~ .main-content,
+    .sidebar.expanded + .main-content {
+      margin-left: var(--sb-expanded);
+    }
+
+    @media (max-width: 760px) {
+      .sidebar { display:none; }
+      .main-content { margin-left:0 !important; }
+    }
+
+        main{ display:block; }
+    section{
+      scroll-margin-top: calc(var(--header-h) + 14px);
+      padding: 40px 0;
+    }
+    .wrap{
+      max-width: var(--max);
+      margin:0 auto;
+      padding: 0 var(--pad);
+    }
+
+    .panel{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: var(--blur);
+    }
+    .panel.pad{ padding: var(--pad); }
+    .muted{ color: var(--muted); }
+    .muted2{ color: var(--muted-2); }
+    .h2{
+      font-size: clamp(22px, 2.2vw, 30px);
+      line-height: 1.15;
+      margin: 0 0 10px 0;
+    }
+    .lead{
+      color: var(--muted);
+      margin: 0;
+      max-width: 78ch;
+    }
+
+    /* ── SCROLL HERO (tablet animation) ────────────────────── */
+    .scroll-section {
+      height: max(150vh, 1100px);
+      position: relative;
+    }
+    .scroll-sticky {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: clamp(16px, 3vw, 40px);
+    }
+    .scroll-title {
+      text-align: center;
+      margin-bottom: clamp(16px, 2.5vw, 32px);
+      will-change: transform;
+      position: relative;
+      z-index: 2;
+    }
+    .scroll-eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      color: rgba(0,212,255,.85);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 14px;
+    }
+    .scroll-eyebrow::before {
+      content: '';
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: rgba(0,212,255,.9);
+      box-shadow: 0 0 8px rgba(0,212,255,.7);
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+    .scroll-h1 {
+      font-size: clamp(30px, 4.5vw, 58px);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -.025em;
+      color: #fff;
+      margin: 0;
+    }
+    .scroll-h1 em {
+      font-style: normal;
+      color: rgba(0,212,255,.9);
+    }
+    /* Tablet frame */
+    .scroll-card {
+      width: 100%;
+      max-width: min(900px, 88vw);
+      border: 4px solid #555;
+      border-radius: 28px;
+      background: #1c1c1e;
+      padding: clamp(6px, 1.2vw, 14px);
+      will-change: transform;
+      box-shadow:
+        0 0   #0000004d,
+        0 9px  20px #0000004a,
+        0 37px 37px #00000042,
+        0 84px 50px #00000026,
+        0 0 60px rgba(0,212,255,.08);
+      transform-origin: center 30%;
+    }
+    .scroll-card-inner {
+      border-radius: 18px;
+      overflow: hidden;
+      background: #000;
+      width: 100%;
+      aspect-ratio: 16/9;
+      line-height: 0;
+    }
+    .scroll-card-inner video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1);   opacity: 1; }
+      50%       { transform: scale(1.5); opacity: .6; }
+    }
+    @media (max-width: 600px) {
+      .scroll-h1 { font-size: 26px; }
+      .scroll-card { border-width: 3px; border-radius: 20px; }
+      .scroll-card-inner { border-radius: 12px; }
+    }
+
+    /* ── GLOW CARD EFFECT ──────────────────────────────────── */
+    /* CSS custom-property API (set by JS) */
+    .mik-card, .public-card, .hw-item {
+      --active: 0;
+      --start: 0;
+      --spread: 40;
+      --glow-border: 3px;
+    }
+    .public-card { position: relative; }
+    .hw-item     { position: relative; }
+
+    /* ── Animated gradient border ── */
+    .mik-card::before,
+    .public-card::before,
+    .hw-item::before {
+      content: '';
+      pointer-events: none;
+      position: absolute;
+      /* extend outside by border-width so mask covers the ring */
+      inset: calc(-1 * var(--glow-border));
+      border-radius: calc(inherit + var(--glow-border));
+      border: var(--glow-border) solid transparent;
+
+      /* Exact gradient from the original Aceternity GlowingEffect component */
+      background:
+        radial-gradient(circle,           #dd7bbb 10%, #dd7bbb00 20%),
+        radial-gradient(circle at 40% 40%, #d79f1e  5%, #d79f1e00 15%),
+        radial-gradient(circle at 60% 60%, #5a922c 10%, #5a922c00 20%),
+        radial-gradient(circle at 40% 60%, #4c7894 10%, #4c789400 20%),
+        repeating-conic-gradient(
+          from 236.84deg at 50% 50%,
+          #dd7bbb 0%,
+          #d79f1e calc(25% / 5),
+          #5a922c calc(50% / 5),
+          #4c7894 calc(75% / 5),
+          #dd7bbb calc(100% / 5)
+        );
+      background-attachment: fixed; /* gradient stays fixed to viewport */
+
+      /* mask: show gradient only in the 3px border ring */
+      -webkit-mask-image:
+        linear-gradient(#0000 0 0),
+        conic-gradient(
+          from calc((var(--start) - var(--spread)) * 1deg),
+          #0000 0deg, #fff, #0000 calc(var(--spread) * 2deg)
+        );
+      -webkit-mask-clip: padding-box, border-box;
+      -webkit-mask-composite: source-in;          /* WebKit intersect */
+          mask-image:
+        linear-gradient(#0000 0 0),
+        conic-gradient(
+          from calc((var(--start) - var(--spread)) * 1deg),
+          #0000 0deg, #fff, #0000 calc(var(--spread) * 2deg)
+        );
+          mask-clip: padding-box, border-box;
+          mask-composite: intersect;              /* Standard intersect */
+
+      opacity: var(--active);
+      transition: opacity .4s ease;
+    }
+
+    /* Static base border */
+    .mik-card::after,
+    .public-card::after,
+    .hw-item::after {
+      content: '';
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+
+    /* Remove old CSS borders from cards */
+    .mik-card:not(.is-stub) { border-color: transparent !important; overflow: visible; }
+    .public-card            { border-color: transparent !important; }
+
+    /* Stubs: keep dashed border, skip glow layers */
+    .mik-card.is-stub::before,
+    .mik-card.is-stub::after { display: none; }
+
+    /* HERO */
+    #hero{
+      padding: 86px 0 60px;
+      position: relative;
+      overflow: hidden;
+      background: #020c18;
+    }
+    #hero::before{
+      content:'';
+      position:absolute;
+      top:0; left:0; right:0;
+      height:38%;
+      background: linear-gradient(to bottom, #020c18 0%, transparent 100%);
+      z-index:1;
+      pointer-events:none;
+    }
+    #wave-canvas{
+      position:absolute;
+      inset:0;
+      width:100% !important;
+      height:100% !important;
+      z-index:0;
+    }
+    #hero .wrap{ position:relative; z-index:2; }
+    .hero-box{
+      position: relative;
+      overflow: hidden;
+      border-radius: clamp(18px, 3vw, 26px);
+      padding: clamp(18px, 3.4vw, 42px);
+      background:
+        radial-gradient(900px 400px at 15% 25%, rgba(120,140,255,.18), transparent 60%),
+        radial-gradient(900px 400px at 85% 10%, rgba(38,210,152,.14), transparent 60%),
+        rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 18px 60px rgba(0,0,0,.45);
+      backdrop-filter: var(--blur);
+    }
+    .grid-anim{
+      pointer-events:none;
+      position:absolute;
+      inset:-40px;
+      opacity:.28;
+      background-image:
+        linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(closest-side at 30% 30%, rgba(0,0,0,.9), transparent 70%);
+      transform: translateZ(0);
+      animation: drift 18s linear infinite;
+      filter: blur(.2px);
+    }
+    @keyframes drift{
+      from{ transform: translate3d(0,0,0); }
+      to{ transform: translate3d(-44px,-44px,0); }
+    }
+    .hero-title{
+      font-size: clamp(28px, 3.4vw, 46px);
+      line-height: 1.07;
+      margin: 0 0 14px;
+      max-width: 40ch;
+    }
+    .hero-desc{
+      color: rgba(255,255,255,.78);
+      margin: 0 0 18px;
+      max-width: 70ch;
+      font-size: clamp(15px, 1.35vw, 18px);
+    }
+
+    /* Каталог ИИ-инструментов */
+    .tools-split{
+      margin-top: 12px;
+      display:flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .accordion{
+      margin-top: 16px;
+      display:grid;
+      gap: 12px;
+    }
+    .acc-item{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: 0 18px 36px rgba(0,0,0,.35);
+      overflow: hidden;
+      position: relative;
+    }
+    .acc-head{
+      position: relative;
+      z-index: 1;
+      padding: 14px 16px 12px;
+      cursor:pointer;
+      user-select:none;
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .acc-title b{
+      display:block;
+      font-size: 15px;
+      margin-bottom: 2px;
+    }
+    .acc-title span{
+      font-size: 13px;
+      color: var(--muted-2);
+    }
+    .acc-body{
+      display:none;
+      position: relative;
+      z-index: 1;
+      padding: 0 16px 16px;
+    }
+    .acc-item.open .acc-body{ display:block; }
+    .acc-item.open .acc-body::before{
+      content:"";
+      display:block;
+      height: 1px;
+      background: rgba(255,255,255,.08);
+      margin: 4px 0 14px;
+    }
+
+    .mik-services-grid{
+      margin-top: 14px;
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: var(--gap);
+    }
+    .mik-card{
+      position: relative;
+      padding: 18px 18px 18px;
+      border-radius: 20px;
+      background:
+        radial-gradient(120% 160% at 0% 0%, rgba(0,140,70,.55), transparent 65%),
+        radial-gradient(140% 180% at 120% 0%, rgba(0,200,100,.40), transparent 70%),
+        rgba(3,18,10,.96);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 26px 70px rgba(0,0,0,.7);
+      color: #fff;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+    }
+    .mik-card:hover{
+      transform: translateY(-3px);
+      box-shadow: 0 32px 80px rgba(0,0,0,.85);
+      border-color: rgba(0,200,100,.65);
+    }
+    .mik-card h5{
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+    .mik-card p{
+      margin: 0;
+      font-size: 13px;
+    }
+    .mik-meta{
+      margin-top: 10px;
+      font-size: 12px;
+      opacity: .9;
+    }
+    .mik-card.is-stub{
+      opacity:.45;
+      border-style: dashed;
+      display: none;
+    }
+    .mik-card.is-stub.shown { display: block; }
+    .mik-card.is-future{
+      display:none;
+    }
+
+    .public-services-grid,
+    .pub-extra-grid{
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: var(--gap);
+    }
+    .public-services-grid{ display: grid; margin-top: 14px; }
+    .pub-extra-grid{ display: none; margin-top: var(--gap); }
+    .pub-extra-grid.shown { display: grid; }
+    .public-card{
+      padding: 16px 16px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      cursor: pointer;
+      transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .public-card:hover{
+      transform: translateY(-3px);
+      box-shadow: 0 24px 70px rgba(0,0,0,.65);
+      border-color: rgba(120,140,255,.5);
+      background: rgba(255,255,255,.055);
+    }
+    .public-card-icon{
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .public-card-icon svg,
+    .public-card-icon img{
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: block;
+    }
+    .public-card h5{
+      margin: 0;
+      font-size: 15px;
+    }
+    .public-card p.public-desc{
+      margin: 6px 0 0;
+      font-size: 13px;
+    }
+    .public-desc{ color: rgba(255,255,255,.78); }
+    .public-best{
+      margin-top: 6px;
+      color: rgba(255,255,255,.9);
+    }
+
+    /* Промпты внутри каталога */
+    .prompt-grid{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .prompt-card{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.20);
+      padding: 12px;
+    }
+    .prompt-card-title{
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,.92);
+      margin: 0 0 2px;
+    }
+    .prompt-card-meta{
+      font-size: 12.5px;
+      color: rgba(255,255,255,.66);
+      margin: 0;
+    }
+    .codebox{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.30);
+      padding: 8px 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12.8px;
+      color: rgba(255,255,255,.90);
+      margin-top: 8px;
+    }
+    .codebox textarea.prompt-input{
+      width: 100%;
+      min-height: 120px;
+      border: none;
+      outline: none;
+      background: transparent;
+      resize: vertical;
+      color: inherit;
+      font: inherit;
+    }
+    .prompt-card-actions{
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      cursor:pointer;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      user-select:none;
+      min-height: 40px;
+      white-space: nowrap;
+      font-size: 14px;
+    }
+    .btn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.08);
+      border-color: rgba(255,255,255,.20);
+    }
+    .btn.small{
+      padding: 8px 11px;
+      border-radius: 12px;
+      min-height: 34px;
+      font-size: 13px;
+    }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(78,135,255,.95), rgba(60,230,180,.78));
+      border-color: rgba(255,255,255,.18);
+      color: rgba(255,255,255,.97);
+    }
+
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%) translateY(30px);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 2000;
+      background: rgba(10,12,18,.92);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      padding: 10px 12px;
+      color: rgba(255,255,255,.88);
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      transition: opacity .18s ease, transform .18s ease;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      max-width: min(520px, 92vw);
+      text-align: left;
+      font-size: 13px;
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 980px){
+      .mik-services-grid,
+      .public-services-grid,
+      .pub-extra-grid{
+        grid-template-columns: repeat(2, minmax(0,1fr));
+      }
+      .prompt-grid{
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 760px){
+      nav{ display:none; }
+      .burger{ display:flex; }
+      .mobile-menu.show{ display:block; }
+      .mik-services-grid,
+      .public-services-grid,
+      .pub-extra-grid{
+        grid-template-columns: 1fr;
+      }
+    }
+  
+    /* Hero button animations */
+    .hero-btn {
+      position: relative;
+      overflow: hidden;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .hero-btn:hover {
+      transform: translateY(-2px);
+    }
+    .hero-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,.08);
+      opacity: 0;
+      transition: opacity .18s ease;
+    }
+    .hero-btn:hover::after { opacity: 1; }
+    .hero-btn-primary:hover {
+      box-shadow: 0 8px 28px rgba(78,135,255,.35);
+    }
+    .hero-btn-green:hover {
+      box-shadow: 0 8px 28px rgba(0,200,100,.25);
+      border-color: rgba(0,200,100,.6) !important;
+    }
+
+    .site-footer{
+      margin-top: auto;
+      border-top: 1px solid var(--stroke);
+      background: rgba(2,14,10,.92);
+      backdrop-filter: var(--blur);
+    }
+    .footer-inner{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 40px var(--pad) 28px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 32px;
+    }
+    .footer-col-title{
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .7px;
+      text-transform: uppercase;
+      color: rgba(0,210,110,.75);
+      margin: 0 0 12px;
+    }
+    .footer-links{
+      list-style: none;
+      margin: 0; padding: 0;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .footer-links a{
+      font-size: 13.5px;
+      color: var(--muted);
+      transition: color .13s;
+    }
+    .footer-links a:hover{ color: var(--text); }
+    .footer-bottom{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 18px var(--pad);
+      border-top: 1px solid rgba(255,255,255,.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .footer-copy{ font-size: 12.5px; color: var(--muted-2); }
+
+    @media(max-width: 760px){
+      .footer-inner{ grid-template-columns: 1fr 1fr; }
+    }
+    @media(max-width: 480px){
+      .footer-inner{ grid-template-columns: 1fr; }
+    }
+
+    /* ── HOW-IT-WORKS SLIDER ─────────────────────────────────────────────── */
+    .hw-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: var(--gap);
+    }
+    .hw-dots {
+      display: none;
+    }
+    @media (max-width: 760px) {
+      .hw-grid {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 12px;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      .hw-grid::-webkit-scrollbar { display: none; }
+      .hw-grid > div {
+        flex: 0 0 72vw;
+        max-width: 260px;
+        scroll-snap-align: start;
+      }
+      .hw-dots {
+        display: flex;
+        justify-content: center;
+        gap: 7px;
+        margin-top: 14px;
+      }
+      .hw-dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: rgba(255,255,255,.2);
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        transition: background .2s, transform .2s;
+      }
+      .hw-dot.active {
+        background: rgba(0,200,110,.85);
+        transform: scale(1.25);
+      }
+    }
+</style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
+
+  <header>
+    <div class="topbar">
+      <a class="brand" href="/">
+        <span class="logo"><img src="/mik_logo_white.svg" alt="МИК" /></span>
+        
+      </a>
+      <nav aria-label="Основная навигация">
+        <a class="navlink" href="/education" data-section="education">Обучение</a>
+        <a class="navlink" href="/cases" data-section="cases">Кейсы</a>
+        <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
+        <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a>
+        <a class="profile-btn" href="/profile" id="profileBtn">
+          <span class="nowrap">Личный кабинет</span>
+        </a>
+      </nav>
+<button class="burger" id="burgerBtn" aria-label="Открыть меню" aria-controls="mobileMenu" aria-expanded="false">
+        <i aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню" role="dialog">
+      <a class="navlink" href="/education" data-section="education">Обучение</a>
+      <a class="navlink" href="/cases" data-section="cases">Кейсы</a>
+      <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
+      <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a>
+      <a class="profile-btn" href="/profile">
+        <span class="nowrap">Личный кабинет</span>
+      </a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Scroll Hero: ContainerScroll animation -->
+    <section class="scroll-section" id="scroll-hero">
+      <div class="scroll-sticky">
+        <div class="scroll-title" id="scrollTitle">
+          <p class="scroll-eyebrow">Фонд МИК</p>
+          <h1 class="scroll-h1">Инновации <em>начинаются</em><br>с нас</h1>
+        </div>
+        <div class="scroll-card" id="scrollCard">
+          <div class="scroll-card-inner">
+            <video autoplay muted loop playsinline preload="auto">
+              <source src="https://s3.i.moscow/front/video/videosMain/robotBlock2.webm" type="video/webm">
+              <source src="https://s3.i.moscow/front/video/videosMain/robotBlock2.mp4" type="video/mp4">
+            </video>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Главный блок -->
+    <section id="hero">
+      <canvas id="wave-canvas" aria-hidden="true"></canvas>
+      <div class="wrap">
+        <div class="hero-box">
+          <div class="grid-anim" aria-hidden="true"></div>
+          <h1 class="hero-title">Витрина ИИ‑инструментов для сотрудников Фонда МИК</h1>
+          <p class="hero-desc">Пробуем и внедряем различные ИИ‑системы в повседневную работу</p>
+          <div style="display:flex; gap:12px; margin-top:22px; flex-wrap:wrap;">
+            <a href="/education" class="btn primary hero-btn hero-btn-primary" style="display:inline-flex; align-items:center; gap:8px; padding:12px 22px; border-radius:14px; font-size:15px; font-weight:600; text-decoration:none;">Для новичков</a>
+            <a href="/cases" class="btn hero-btn hero-btn-green" style="display:inline-flex; align-items:center; gap:8px; padding:12px 22px; border-radius:14px; font-size:15px; font-weight:600; text-decoration:none; background:rgba(0,200,100,.14); border-color:rgba(0,200,100,.35); color:rgba(255,255,255,.95);">Для практиков</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Блок "Как устроен ресурс" -->
+    <section id="how-it-works">
+      <div class="wrap">
+        <div class="panel pad">
+          <h2 class="h2">Как устроен ресурс</h2>
+          <p class="lead" style="margin-bottom:22px;">Четыре раздела, которые помогут начать и углубиться в работу с ИИ</p>
+          <div class="hw-grid" id="hwGrid">
+            <div style="padding:18px; border-radius:16px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04);">
+              <div style="font-size:15px; font-weight:700; margin-bottom:6px;">Нейросети</div>
+              <div style="font-size:13px; color:var(--muted);">Все ИИ-сервисы контура и публичные инструменты в одном месте</div>
+            </div>
+            <div style="padding:18px; border-radius:16px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04);">
+              <div style="font-size:15px; font-weight:700; margin-bottom:6px;">Промпты</div>
+              <div style="font-size:13px; color:var(--muted);">Готовые шаблоны запросов для ежедневных задач — скопируйте, подставьте данные, получите результат</div>
+            </div>
+            <div style="padding:18px; border-radius:16px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04);">
+              <div style="font-size:15px; font-weight:700; margin-bottom:6px;">Кейсы</div>
+              <div style="font-size:13px; color:var(--muted);">Пошаговые сценарии, где несколько нейросетей работают вместе для решения одной задачи</div>
+            </div>
+            <div style="padding:18px; border-radius:16px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04);">
+              <div style="font-size:15px; font-weight:700; margin-bottom:6px;">Материалы</div>
+              <div style="font-size:13px; color:var(--muted);">Треки по уровням, интерактивный календарь мероприятий и инструменты для старта работы с ИИ</div>
+            </div>
+          </div>
+          <div class="hw-dots" id="hwDots">
+            <button class="hw-dot active" data-idx="0" aria-label="Слайд 1"></button>
+            <button class="hw-dot" data-idx="1" aria-label="Слайд 2"></button>
+            <button class="hw-dot" data-idx="2" aria-label="Слайд 3"></button>
+            <button class="hw-dot" data-idx="3" aria-label="Слайд 4"></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Блок с витриной сервисов и библиотекой промптов -->
+    <section>
+      <div class="wrap">
+        <div class="panel pad">
+          <h2 class="h2">Сервисы контура Фонда МИК</h2>
+          <p class="lead">Внутренние ИИ‑инструменты, доступные в официальном контуре Фонда МИК</p>
+
+          <div class="mik-services-grid" id="mikServicesGrid" style="margin-top: 18px;">
+            <a href="/chat.html" class="mik-card" style="text-decoration:none; color:inherit; display:block;">
+              <h5>Чат с ИИ</h5>
+              <p>Задавайте вопросы, создавайте проекты и получайте помощь в работе с материалами прямо в чате.</p>
+            </a>
+            <article class="mik-card">
+              <h5>База знаний</h5>
+              <p>Найдите нужный документ, регламент или стандарт по смыслу, а не по точному названию.</p>
+            </article>
+            <article class="mik-card">
+              <h5>Генерация презентаций</h5>
+              <p>Опишите тему — ИИ соберёт структуру и подготовит слайды в PPTX.</p>
+            </article>
+            <article class="mik-card">
+              <h5>Изображения и видео</h5>
+              <p>Создавайте иллюстрации и ролики по текстовому описанию.</p>
+            </article>
+            <article class="mik-card">
+              <h5>Транскрибация встреч</h5>
+              <p>Загрузите запись — сервис расшифрует речь и сформирует протокол.</p>
+            </article>
+            <article class="mik-card">
+              <h5>Распознавание документов</h5>
+              <p>Загрузите скан или фото — сервис распознает текст и ответит на вопросы по содержимому.</p>
+            </article>
+            <article class="mik-card is-stub">
+              <h5>Скоро</h5>
+              <p>Новый сервис в разработке.</p>
+            </article>
+            <article class="mik-card is-stub">
+              <h5>Скоро</h5>
+              <p>Новый сервис в разработке.</p>
+            </article>
+            <article class="mik-card is-stub">
+              <h5>Скоро</h5>
+              <p>Новый сервис в разработке.</p>
+            </article>
+          </div>
+          <div style="margin-top: 16px;">
+            <button class="btn small" type="button" id="showMoreMik">Показать ещё</button>
+          </div>
+        </div>
+
+        <div style="height: 26px;"></div>
+
+        <div class="panel pad">
+          <h2 class="h2">Публичные сервисы</h2>
+          <p class="lead">Инструменты вне контура Фонда МИК. Используйте только обезличенные данные</p>
+
+          <div class="public-services-grid" id="publicServicesGrid" style="margin-top: 18px;">
+            <a class="public-card" href="https://chatgpt.com" target="_blank" rel="noopener">
+              <div class="public-card-icon">
+                <img src="/AI_cons/chatgpt-icon.png" alt="ChatGPT" width="44" height="44" />
+              </div>
+              <h5>ChatGPT</h5>
+              <p class="public-desc">Флагманская модель OpenAI для работы с текстами, кодом и анализом</p>
+            </a>
+            <a class="public-card" href="https://claude.ai" target="_blank" rel="noopener">
+              <div class="public-card-icon">
+                <img src="/AI_cons/claude-ai-icon.png" alt="Claude" width="44" height="44" />
+              </div>
+              <h5>Claude</h5>
+              <p class="public-desc">Языковая модель Anthropic. Отлично справляется с длинными документами и аналитикой</p>
+            </a>
+            <a class="public-card" href="https://chat.deepseek.com" target="_blank" rel="noopener">
+              <div class="public-card-icon">
+                <img src="/AI_cons/deepseek-logo-icon.png" alt="DeepSeek" width="44" height="44" />
+              </div>
+              <h5>DeepSeek</h5>
+              <p class="public-desc">Мощная открытая модель для аналитики, длинных ответов и проработки гипотез</p>
+            </a>
+            <a class="public-card" href="https://www.perplexity.ai" target="_blank" rel="noopener">
+              <div class="public-card-icon">
+                <img src="/AI_cons/perplexity-ai-icon.png" alt="Perplexity" width="44" height="44" />
+              </div>
+              <h5>Perplexity</h5>
+              <p class="public-desc">ИИ-поисковик с источниками. Лучше для исследований и поиска актуальной информации</p>
+            </a>
+            <a class="public-card" href="https://www.manus.im" target="_blank" rel="noopener">
+              <div class="public-card-icon">
+                <img src="/AI_cons/manus-ai-icon.png" alt="Manus" width="44" height="44" />
+              </div>
+              <h5>Manus</h5>
+              <p class="public-desc">Автономный ИИ-агент для выполнения сложных многошаговых задач</p>
+            </a>
+            <a class="public-card" href="https://openclaws.io" target="_blank" rel="noopener">
+              <div class="public-card-icon">
+                <img src="/AI_cons/openclaw-icon.png" alt="OpenClaw" width="44" height="44" />
+              </div>
+              <h5>OpenClaw</h5>
+              <p class="public-desc">Открытый ИИ-инструмент для работы с данными и автоматизации задач</p>
+            </a>
+          </div>
+          <div class="pub-extra-grid" id="pubExtraGrid">
+            <a class="public-card" href="https://alice.yandex.ru/" target="_blank" rel="noopener">
+              <div class="public-card-icon">
+                <img src="/AI_cons/yandexgpt-icon.png" alt="YandexGPT" width="44" height="44" />
+              </div>
+              <h5>YandexGPT</h5>
+              <p class="public-desc">Нейросеть от Яндекса. Лучше для документов, писем и черновиков на русском языке</p>
+            </a>
+            <a class="public-card" href="https://giga.chat" target="_blank" rel="noopener">
+              <div class="public-card-icon">
+                <img src="/AI_cons/gigachat-icon.jpg" alt="GigaChat" width="44" height="44" />
+              </div>
+              <h5>GigaChat</h5>
+              <p class="public-desc">Чат‑модель от Сбера. Лучше для деловой переписки, сводок и уточнения формулировок</p>
+            </a>
+          </div>
+          <div style="margin-top: 16px;">
+            <button class="btn small" type="button" id="showMorePub">Показать ещё</button>
+          </div>
+        </div>
+
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div>
+        <p class="footer-col-title">Платформа</p>
+        <ul class="footer-links">
+          <li><a href="/education">Материалы</a></li>
+          <li><a href="/cases">Кейсы и промпты</a></li>
+          <li><a href="/dashboard">Статистика</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer-col-title">Аккаунт</p>
+        <ul class="footer-links">
+          <li><a href="/profile">Личный кабинет</a></li>
+          <li><a href="/login">Войти</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer-col-title">Контакты</p>
+        <ul class="footer-links">
+          <li><a href="#feedback">Написать нам</a></li>
+          <li><a href="/cases#feedback">Обратная связь</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy">2026 Фонд МИК</span>
+      <span class="footer-copy">Внутренний ресурс для сотрудников</span>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    function smoothScrollTo(hash) {
+      const el = document.querySelector(hash);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      if (!toast) return;
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    async function copyFromSelector(selector) {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      const text = "value" in el ? el.value : el.innerText;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const tmp = document.createElement("textarea");
+          tmp.style.position = "fixed";
+          tmp.style.opacity = "0";
+          tmp.value = text;
+          document.body.appendChild(tmp);
+          tmp.select();
+          document.execCommand("copy");
+          document.body.removeChild(tmp);
+        }
+        showToast("Промпт скопирован в буфер обмена");
+      } catch (e) {
+        console.error(e);
+        showToast("Не удалось скопировать текст");
+      }
+    }
+
+    // ── API helpers ────────────────────────────────────────────────────────────
+    async function loadFromApi(path) {
+      try {
+        const res = await fetch(path);
+        if (res.ok) { const d = await res.json(); if (Array.isArray(d)) return d; }
+      } catch(_) {}
+      return null;
+    }
+
+    function escHtml(s) {
+      return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+    }
+
+    // ── Init MIK tools (статика уже в HTML, просто инициализируем кнопку) ──────
+    function renderMikTools() {
+      const grid = document.getElementById('mikServicesGrid');
+      if (!grid) return;
+      initShowMore('showMoreMik', '.mik-card.is-stub', grid);
+    }
+
+    // ── Generic showMore initializer ──────────────────────────────────────────
+    function initShowMore(btnId, selector, container) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+      const cards = Array.from((container || document).querySelectorAll(selector));
+      if (!cards.length) { newBtn.style.display = 'none'; return; }
+      // Карточки уже скрыты через CSS — просто вешаем обработчик
+      newBtn.style.display = '';
+      newBtn.textContent = 'Показать ещё';
+      newBtn.addEventListener('click', () => {
+        const isShown = cards[0].classList.contains('shown');
+        cards.forEach(c => c.classList.toggle('shown', !isShown));
+        newBtn.textContent = isShown ? 'Показать ещё' : 'Скрыть';
+      });
+    }
+
+    // ── Init public tools (6 карточек по умолчанию, по кнопке — YandexGPT, GigaChat) ─
+    function renderPublicTools() {
+      const extraGrid = document.getElementById('pubExtraGrid');
+      const btn = document.getElementById('showMorePub');
+      if (!extraGrid || !btn) return;
+      btn.addEventListener('click', () => {
+        const isShown = extraGrid.classList.toggle('shown');
+        btn.textContent = isShown ? 'Скрыть' : 'Показать ещё';
+      });
+    }
+
+    // ── Render prompts accordion ───────────────────────────────────────────────
+    async function renderPrompts() {
+      const container = document.getElementById('promptsAccordion');
+      if (!container) return;
+      const prompts = await loadFromApi('/api/prompts');
+      if (!prompts || !Array.isArray(prompts)) {
+        container.innerHTML = `
+          <div class="acc-item open">
+            <div class="acc-head"><div class="acc-title"><b>Коммуникации (письма, записки, ответы)</b><span>Официальный стиль, лимит объёма, варианты формулировок.</span></div><span class="muted2">▾</span></div>
+            <div class="acc-body"><div class="prompt-grid">
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Официальное письмо (универсальное)</div><div class="prompt-card-meta">Черновик официального письма по тезисам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_1" readonly>Роль: ты специалист Центра.
+Цель: подготовить официальное письмо [кому] по теме: [тема].
+Контекст: 1–3 предложения — ситуация и что нужно сделать.
+Формат: 120–180 слов, деловой стиль без канцелярита.
+Ограничения: не добавляй факты, которых нет во вводных.
+Вывод: предложи 2 варианта письма + тему (subject).</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_1">Копировать</button></div></div>
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Письмо‑приглашение на встречу</div><div class="prompt-card-meta">Краткое приглашение с предложением слотов.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_2" readonly>Роль: организатор встречи.
+Цель: письмо‑приглашение на встречу по теме: [тема].
+Формат: до 150 слов, официальный но живой тон.
+Структура: 1) повод; 2) три варианта слотов; 3) просьба подтвердить время.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_2">Копировать</button></div></div>
+            </div></div>
+          </div>
+          <div class="acc-item">
+            <div class="acc-head"><div class="acc-title"><b>Аналитика (справки, сравнения, выводы)</b><span>Таблицы, риски, допущения и проверяемость.</span></div><span class="muted2">▾</span></div>
+            <div class="acc-body"><div class="prompt-grid">
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Справка по документу</div><div class="prompt-card-meta">Короткая выжимка, требования, риски и вопросы.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_analytics_1" readonly>Роль: аналитик.
+Цель: краткая справка по документу.
+Контекст: вставь текст документа.
+Формат: 1) резюме; 2) требования; 3) риски и пробелы; 4) вопросы для уточнения.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_analytics_1">Копировать</button></div></div>
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Сравнительный анализ вариантов</div><div class="prompt-card-meta">Сравнение 2–4 вариантов по единым критериям.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_analytics_2" readonly>Роль: аналитик.
+Цель: сравнить варианты решения задачи.
+Контекст: опиши 2–4 варианта и критерии выбора.
+Формат: таблица (вариант / плюсы / риски / сроки) + выводы.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_analytics_2">Копировать</button></div></div>
+            </div></div>
+          </div>
+          <div class="acc-item">
+            <div class="acc-head"><div class="acc-title"><b>Проекты (протоколы, ТЗ, требования)</b><span>Протоколы, задачи, owner/срок, критерии приёмки.</span></div><span class="muted2">▾</span></div>
+            <div class="acc-body"><div class="prompt-grid">
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Протокол встречи из заметок</div><div class="prompt-card-meta">Структурированный протокол по заметкам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_1" readonly>Роль: секретарь или PM встречи.
+Цель: оформить протокол по итогам встречи.
+Заметки: [вставь конспект].
+Формат: 1) участники; 2) повестка; 3) решения; 4) поручения (кто/что/срок); 5) вопросы.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_1">Копировать</button></div></div>
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Черновик ТЗ по задаче</div><div class="prompt-card-meta">Структурный черновик технического задания.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_2" readonly>Роль: постановщик задачи.
+Цель: черновик ТЗ по проекту.
+Контекст: кто заказчик, цель, ожидаемый результат.
+Формат: цель / scope / требования / ограничения / критерии приёмки.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_2">Копировать</button></div></div>
+            </div></div>
+          </div>
+          <div class="acc-item">
+            <div class="acc-head"><div class="acc-title"><b>Отчётность и презентации</b><span>Еженедельные статусы, структура презентации.</span></div><span class="muted2">▾</span></div>
+            <div class="acc-body"><div class="prompt-grid">
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Еженедельный статус по проекту</div><div class="prompt-card-meta">Отчёт по прогрессу, рискам и следующим шагам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_report_1" readonly>Роль: руководитель проекта.
+Цель: статус за неделю.
+Контекст: что сделано, что в работе, какие блокеры.
+Формат: 1) общий статус; 2) таблица задач (задача/статус/владелец); 3) риски.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_report_1">Копировать</button></div></div>
+              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Структура презентации для решения</div><div class="prompt-card-meta">Список слайдов для презентации руководству.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_report_2" readonly>Роль: автор презентации.
+Цель: структура презентации по теме: [тема].
+Формат: список слайдов до 12 с описанием.
+Обязательно: проблема, цель, варианты, анализ, рекомендация, план, риски.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_report_2">Копировать</button></div></div>
+            </div></div>
+          </div>`;
+        container.querySelectorAll('.acc-item .acc-head').forEach(head => {
+          head.addEventListener('click', () => {
+            const item = head.closest('.acc-item');
+            const wasOpen = item.classList.contains('open');
+            container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
+            if (!wasOpen) item.classList.add('open');
+          });
+        });
+        return;
+      }
+
+      // Group by sectionTitle
+      const sections = [];
+      const sectionMap = {};
+      prompts.forEach(p => {
+        const key = p.sectionTitle || 'Другое';
+        if (!sectionMap[key]) {
+          sectionMap[key] = { title: key, subtitle: p.sectionSubtitle || '', items: [] };
+          sections.push(sectionMap[key]);
+        }
+        sectionMap[key].items.push(p);
+      });
+
+      if (sections.length === 0) {
+        container.innerHTML = '<p class="muted" style="padding:12px 0;">Промптов пока нет. Добавьте их в <a href="/admin">админ-панели</a>.</p>';
+        return;
+      }
+
+      container.innerHTML = sections.map((sec, si) => `
+        <div class="acc-item${si === 0 ? ' open' : ''}">
+          <div class="acc-head">
+            <div class="acc-title">
+              <b>${escHtml(sec.title)}</b>
+              <span>${escHtml(sec.subtitle)}</span>
+            </div>
+            <span class="muted2">▾</span>
+          </div>
+          <div class="acc-body">
+            <div class="prompt-grid">
+              ${sec.items.map(p => `
+                <div class="prompt-card">
+                  <div class="prompt-card-head">
+                    <div>
+                      <div class="prompt-card-title">${escHtml(p.title)}</div>
+                      <div class="prompt-card-meta">${escHtml(p.meta||'')}</div>
+                    </div>
+                  </div>
+                  <div class="codebox" style="margin-top:10px;">
+                    <textarea class="prompt-input" id="prompt_${escHtml(p.id)}" readonly>${escHtml(p.text||'')}</textarea>
+                  </div>
+                  <div class="prompt-card-actions">
+                    <button class="btn small" type="button" data-copy="#prompt_${escHtml(p.id)}">Копировать</button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Re-bind accordion clicks
+      container.querySelectorAll('.acc-item .acc-head').forEach(head => {
+        head.addEventListener('click', () => {
+          const item = head.closest('.acc-item');
+          const wasOpen = item.classList.contains('open');
+          container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
+          if (!wasOpen) item.classList.add('open');
+        });
+      });
+    }
+
+    // ── HOW-IT-WORKS SLIDER DOTS ──────────────────────────────────────────────
+    function initHwSlider() {
+      const grid = document.getElementById('hwGrid');
+      const dots = Array.from(document.querySelectorAll('#hwDots .hw-dot'));
+      if (!grid || !dots.length) return;
+      const cards = Array.from(grid.children);
+
+      function updateDots() {
+        const scrollLeft = grid.scrollLeft;
+        const cardWidth = cards[0] ? cards[0].offsetWidth + 12 : 1;
+        const idx = Math.round(scrollLeft / cardWidth);
+        dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+      }
+
+      grid.addEventListener('scroll', updateDots, { passive: true });
+
+      dots.forEach((dot, i) => {
+        dot.addEventListener('click', () => {
+          const cardWidth = cards[0] ? cards[0].offsetWidth + 12 : 0;
+          grid.scrollTo({ left: cardWidth * i, behavior: 'smooth' });
+        });
+      });
+    }
+
+    // ── SIDEBAR LOGIC ──────────────────────────────────────────────────────────
+
+
+
+
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // Промпты — загружаем из API, fallback на статичный HTML
+      renderPrompts();
+      renderMikTools();
+      renderPublicTools();
+      initHwSlider();
+      // бургер + мобильное меню
+      const burger = document.getElementById("burgerBtn");
+      const mobileMenu = document.getElementById("mobileMenu");
+      if (burger && mobileMenu) {
+        burger.addEventListener("click", () => {
+          const isOpen = mobileMenu.classList.toggle("show");
+          burger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+        mobileMenu.addEventListener("click", (e) => {
+          const link = e.target.closest("a.navlink");
+          if (link) {
+            mobileMenu.classList.remove("show");
+            burger.setAttribute("aria-expanded", "false");
+          }
+        });
+      }
+
+      // клик по навигации (smooth scroll)
+      document.addEventListener("click", (e) => {
+        const a = e.target.closest("a.navlink[href^='#']");
+        if (a) {
+          const href = a.getAttribute("href");
+          if (href && href.startsWith("#")) {
+            e.preventDefault();
+            smoothScrollTo(href);
+          }
+        }
+      });
+
+      // Аккордеон промптов (статичный fallback)
+      document.querySelectorAll('.accordion .acc-item .acc-head').forEach(head => {
+        head.addEventListener('click', () => {
+          const item = head.closest('.acc-item');
+          const wasOpen = item.classList.contains('open');
+          item.closest('.accordion').querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
+          if (!wasOpen) item.classList.add('open');
+        });
+      });
+
+      // копирование промптов
+      document.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-copy]");
+        if (!btn) return;
+        const selector = btn.getAttribute("data-copy");
+        if (!selector) return;
+        copyFromSelector(selector);
+      });
+
+      // Кнопка "Показать ещё" для карточек МИК
+      const showMoreMikBtn = document.getElementById('showMoreMik');
+      if (showMoreMikBtn) {
+        const futureCards = Array.from(document.querySelectorAll('.mik-card.is-future'));
+        showMoreMikBtn.addEventListener('click', () => {
+          const isHidden = futureCards.length && getComputedStyle(futureCards[0]).display === 'none';
+          futureCards.forEach(c => c.style.display = isHidden ? 'flex' : 'none');
+          showMoreMikBtn.textContent = isHidden ? 'Скрыть' : 'Показать ещё';
+        });
+      }
+
+      // Личный кабинет: редирект на /login если не авторизован; показ ФИО если авторизован
+      (function initProfileBtn() {
+        const token = localStorage.getItem('auth_token');
+        const auth = (() => { try { return JSON.parse(localStorage.getItem('mikAuth')); } catch(_) { return null; } })();
+        const isAuthed = token && auth && auth.isAuthorized;
+        const fullName = localStorage.getItem('auth_full_name') || (auth && auth.full_name);
+        const profileBtns = document.querySelectorAll('a[href="/profile"], .profile-btn[href="/profile"], #profileBtn');
+        profileBtns.forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!token || !auth || !auth.isAuthorized) {
+              window.location = '/login';
+              return;
+            }
+            window.location = '/profile';
+          });
+          if (isAuthed && fullName && btn.querySelector('.nowrap')) {
+            btn.querySelector('.nowrap').textContent = fullName;
+          }
+        });
+      })();
+
+      // простая подсветка активного пункта меню
+      const sections = Array.from(document.querySelectorAll("section[id]"));
+      const links = Array.from(document.querySelectorAll("a.navlink[href^='#']"));
+      if ("IntersectionObserver" in window && sections.length && links.length) {
+        const map = new Map(
+          links.map(l => [l.getAttribute("href").replace("#",""), l])
+        );
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const id = entry.target.id;
+            links.forEach(l => l.classList.remove("active"));
+            const active = map.get(id);
+            if (active) active.classList.add("active");
+          });
+        }, { threshold: 0.4 });
+        sections.forEach(s => observer.observe(s));
+      }
+    });
+  </script>
+
+<!-- Glow card effect -->
+<script>
+(function () {
+  const PROXIMITY      = 80;    // px — zone around card that activates glow
+  const INACTIVE_ZONE  = 0.01;  // fraction of card size — dead zone at center
+  const MOVE_DURATION  = 400;   // ms — angle easing duration (like motion/react)
+
+  /* ── Per-card angle tweener (smooth like framer-motion spring) ── */
+  function makeTweener(initial) {
+    return { cur: initial, target: initial, rafId: null };
+  }
+
+  function tweenTo(tw, target, onUpdate) {
+    // Shortest-path angle delta (avoids spinning backwards)
+    const diff = ((target - tw.cur + 180) % 360) - 180;
+    tw.target = tw.cur + diff;
+    if (tw.rafId !== null) return;        // already animating
+
+    const start = performance.now();
+    const from  = tw.cur;
+    const to    = tw.target;
+
+    function tick(now) {
+      const t = Math.min((now - start) / MOVE_DURATION, 1);
+      // Ease-out expo: matches [0.16, 1, 0.3, 1] cubic-bezier closely
+      const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+      tw.cur = from + (to - from) * eased;
+      onUpdate(tw.cur);
+      if (t < 1) {
+        tw.rafId = requestAnimationFrame(tick);
+      } else {
+        tw.cur = to;
+        tw.rafId = null;
+      }
+    }
+    tw.rafId = requestAnimationFrame(tick);
+  }
+
+  /* ── Initialise cards ── */
+  // Mark hw-grid divs
+  document.querySelectorAll('.hw-grid > div').forEach(el => {
+    el.classList.add('hw-item');
+    el.style.border = 'none';
+  });
+
+  const SELECTOR = '.mik-card:not(.is-stub), .public-card, .hw-item';
+  const tweeners = new WeakMap();
+
+  function getCards() {
+    const cards = Array.from(document.querySelectorAll(SELECTOR));
+    cards.forEach(c => { if (!tweeners.has(c)) tweeners.set(c, makeTweener(0)); });
+    return cards;
+  }
+
+  /* ── Mouse tracking ── */
+  let mx = 0, my = 0, scrollTick = false;
+
+  document.addEventListener('pointermove', e => {
+    mx = e.clientX; my = e.clientY;
+    updateAll();
+  }, { passive: true });
+
+  window.addEventListener('scroll', () => {
+    if (!scrollTick) {
+      scrollTick = true;
+      requestAnimationFrame(() => { scrollTick = false; updateAll(); });
+    }
+  }, { passive: true });
+
+  function updateAll() {
+    getCards().forEach(card => {
+      const r   = card.getBoundingClientRect();
+      const cx  = r.left + r.width  * 0.5;
+      const cy  = r.top  + r.height * 0.5;
+
+      // Dead zone — centre of card
+      const dist         = Math.hypot(mx - cx, my - cy);
+      const inactiveR    = 0.5 * Math.min(r.width, r.height) * INACTIVE_ZONE;
+      if (dist < inactiveR) { card.style.setProperty('--active', '0'); return; }
+
+      // Proximity check
+      const near =
+        mx > r.left   - PROXIMITY &&
+        mx < r.right  + PROXIMITY &&
+        my > r.top    - PROXIMITY &&
+        my < r.bottom + PROXIMITY;
+
+      card.style.setProperty('--active', near ? '1' : '0');
+      if (!near) return;
+
+      // Smooth angle tween (identical to motion/react animate() call)
+      const targetAngle = Math.atan2(my - cy, mx - cx) * 180 / Math.PI + 90;
+      const tw = tweeners.get(card);
+      tweenTo(tw, targetAngle, val => card.style.setProperty('--start', String(val)));
+    });
+  }
+})();
+</script>
+
+<!-- Wave animation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script>
+(function(){
+  const canvas = document.getElementById('wave-canvas');
+  if (!canvas || typeof THREE === 'undefined') return;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x020c18, 1);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x020c18, 0.020);
+
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 300);
+  camera.position.set(0, 14, 22);
+  camera.lookAt(0, 0, -5);
+
+  const COLS = 80, ROWS = 80, SPACING = 0.72;
+  const W = COLS * SPACING, D = ROWS * SPACING;
+
+  const idx = (c, r) => r * (COLS + 1) + c;
+  const totalVerts = (COLS + 1) * (ROWS + 1);
+
+  // Points
+  const ptPosArr = new Float32Array(totalVerts * 3);
+  const ptColArr = new Float32Array(totalVerts * 3);
+  for (let r = 0; r <= ROWS; r++) {
+    for (let c = 0; c <= COLS; c++) {
+      const i = idx(c, r) * 3;
+      ptPosArr[i]   = (c / COLS - 0.5) * W;
+      ptPosArr[i+1] = 0;
+      ptPosArr[i+2] = (r / ROWS - 0.5) * D;
+      ptColArr[i]=0; ptColArr[i+1]=0.78; ptColArr[i+2]=1;
+    }
+  }
+  const ptGeo = new THREE.BufferGeometry();
+  ptGeo.setAttribute('position', new THREE.BufferAttribute(ptPosArr, 3));
+  ptGeo.setAttribute('color',    new THREE.BufferAttribute(ptColArr, 3));
+  scene.add(new THREE.Points(ptGeo, new THREE.PointsMaterial({
+    size: 0.11, vertexColors: true, transparent: true, opacity: 0.9,
+    sizeAttenuation: true, blending: THREE.AdditiveBlending, depthWrite: false
+  })));
+
+  // Lines
+  const lineMap = [];
+  for (let r = 0; r <= ROWS; r++)
+    for (let c = 0; c <= COLS; c++) {
+      if (c < COLS) lineMap.push([idx(c,r), idx(c+1,r)]);
+      if (r < ROWS) lineMap.push([idx(c,r), idx(c,r+1)]);
+    }
+  const lnPosArr = new Float32Array(lineMap.length * 6);
+  const lnColArr = new Float32Array(lineMap.length * 6);
+  const lnGeo = new THREE.BufferGeometry();
+  lnGeo.setAttribute('position', new THREE.BufferAttribute(lnPosArr, 3));
+  lnGeo.setAttribute('color',    new THREE.BufferAttribute(lnColArr, 3));
+  scene.add(new THREE.LineSegments(lnGeo, new THREE.LineBasicMaterial({
+    vertexColors: true, transparent: true, opacity: 0.20,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  })));
+
+  const heights = new Float32Array(totalVerts);
+
+  function resize() {
+    const hero = document.getElementById('hero');
+    const w = hero.offsetWidth, h = hero.offsetHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  new ResizeObserver(resize).observe(document.getElementById('hero'));
+
+  let t = 0;
+  (function animate() {
+    requestAnimationFrame(animate);
+    t += 0.008;
+    const pos = ptGeo.attributes.position.array;
+    const col = ptGeo.attributes.color.array;
+    for (let r = 0; r <= ROWS; r++) {
+      for (let c = 0; c <= COLS; c++) {
+        const i = idx(c, r), b = i * 3;
+        const x = pos[b], z = pos[b+2];
+        const y = Math.sin(x*0.28 + t*1.2)*2.8
+                + Math.sin(z*0.22 - t*0.9)*2.0
+                + Math.sin((x+z)*0.18 + t*0.7)*1.4;
+        heights[i] = y;
+        pos[b+1] = y;
+        const n = (y + 6.2) / 12.4;
+        col[b]=n*0.05; col[b+1]=0.35+n*0.65; col[b+2]=0.70+n*0.30;
+      }
+    }
+    ptGeo.attributes.position.needsUpdate = true;
+    ptGeo.attributes.color.needsUpdate    = true;
+    for (let s = 0; s < lineMap.length; s++) {
+      const [ia, ib] = lineMap[s], pa=ia*3, pb=ib*3, ls=s*6;
+      lnPosArr[ls]=pos[pa]; lnPosArr[ls+1]=pos[pa+1]; lnPosArr[ls+2]=pos[pa+2];
+      lnPosArr[ls+3]=pos[pb]; lnPosArr[ls+4]=pos[pb+1]; lnPosArr[ls+5]=pos[pb+2];
+      const n=((heights[ia]+heights[ib])*0.5+6.2)/12.4;
+      lnColArr[ls]=n*0.04; lnColArr[ls+1]=0.3+n*0.55; lnColArr[ls+2]=0.65+n*0.35;
+      lnColArr[ls+3]=n*0.04; lnColArr[ls+4]=0.3+n*0.55; lnColArr[ls+5]=0.65+n*0.35;
+    }
+    lnGeo.attributes.position.needsUpdate = true;
+    lnGeo.attributes.color.needsUpdate    = true;
+    renderer.render(scene, camera);
+  })();
+})();
+</script>
+
+<!-- Scroll Hero Animation -->
+<script>
+(function () {
+  const section = document.getElementById('scroll-hero');
+  const card    = document.getElementById('scrollCard');
+  const title   = document.getElementById('scrollTitle');
+  if (!section || !card || !title) return;
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(v, lo, hi) { return Math.min(Math.max(v, lo), hi); }
+
+  function onScroll() {
+    const rect   = section.getBoundingClientRect();
+    const viewH  = window.innerHeight;
+    const total  = section.offsetHeight - viewH;           // scrollable range
+    const scrolled = clamp(-rect.top, 0, total);
+    const p = total > 0 ? scrolled / total : 0;            // 0 → 1
+
+    // Card: rotateX 20 → 0, scale 1.08 → 1
+    const rotX  = lerp(20, 0, p);
+    const sc    = lerp(1.08, 1, p);
+    card.style.transform = `perspective(1000px) rotateX(${rotX}deg) scale(${sc})`;
+
+    // Title: translateY 0 → -80px, opacity 1 → 0
+    const ty  = lerp(0, -80, p);
+    const op  = lerp(1, 0, Math.min(p * 2, 1));
+    title.style.transform = `translateY(${ty}px)`;
+    title.style.opacity   = op;
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll(); // initial call
+})();
+</script>
+</body>
+</html>
+

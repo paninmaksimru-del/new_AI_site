@@ -332,6 +332,135 @@
       padding-right: 4px;
     }
 
+    /* ── CUSTOM SELECT (pill → dropdown animation) ──────────────────────── */
+    .cs-field {
+      padding: 0 !important;
+      background: none !important;
+      border: none !important;
+      min-height: 0 !important;
+    }
+    .cs-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .cs-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 12px 8px 14px;
+      border-radius: 30px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(5,7,14,.8);
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 14px;
+      color: rgba(255,255,255,.82);
+      transition: background .2s, border-color .2s, color .2s;
+      user-select: none;
+      -webkit-user-select: none;
+      min-height: 40px;
+    }
+    .cs-trigger:hover {
+      background: rgba(255,255,255,.08);
+      border-color: rgba(255,255,255,.22);
+    }
+    .cs-trigger.is-open {
+      border-color: rgba(0,200,120,.45);
+      background: rgba(0,200,120,.07);
+      color: rgba(0,200,120,.9);
+    }
+    .cs-trigger.is-active {
+      border-color: rgba(0,200,120,.45);
+      background: rgba(0,200,120,.09);
+      color: rgba(0,200,120,.9);
+    }
+    .cs-chevron {
+      display: inline-flex;
+      align-items: center;
+      opacity: .55;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .2s;
+      flex-shrink: 0;
+    }
+    .cs-trigger.is-open .cs-chevron { transform: rotate(180deg); opacity: .8; }
+    .cs-trigger.is-active .cs-chevron { opacity: .8; }
+
+    /* Panel */
+    .cs-panel-wrap {
+      position: absolute;
+      top: 0; left: 0;
+      z-index: 850;
+      min-width: 220px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(9,13,22,.97);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 24px 60px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.04);
+      overflow: hidden;
+      transform-origin: top left;
+      animation: cs-open .32s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+    .cs-panel-wrap.is-closing {
+      animation: cs-close .22s ease forwards !important;
+    }
+    @keyframes cs-open {
+      from { opacity:0; transform:scale(.88); border-radius:30px; }
+      to   { opacity:1; transform:scale(1);   border-radius:20px; }
+    }
+    @keyframes cs-close {
+      from { opacity:1; transform:scale(1);   }
+      to   { opacity:0; transform:scale(.88); border-radius:30px; }
+    }
+
+    .cs-panel-head {
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 13px 14px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      animation: cs-head-in .22s ease .07s both;
+    }
+    @keyframes cs-head-in {
+      from { opacity:0; transform:translateY(-5px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .cs-panel-head strong {
+      font-size: 13px; font-weight: 600;
+      color: rgba(255,255,255,.88);
+      letter-spacing: .01em;
+    }
+    .cs-close-btn {
+      display:flex; align-items:center; justify-content:center;
+      width:22px; height:22px; border-radius:50%;
+      border:none; background:rgba(255,255,255,.1);
+      color:rgba(255,255,255,.65); cursor:pointer; font-size:11px;
+      transition: background .18s, color .18s; padding:0; line-height:1;
+    }
+    .cs-close-btn:hover { background:rgba(255,255,255,.18); color:rgba(255,255,255,.95); }
+
+    .cs-panel-list {
+      padding: 5px 0; max-height: 260px; overflow-y: auto;
+    }
+    .cs-panel-list::-webkit-scrollbar { width: 3px; }
+    .cs-panel-list::-webkit-scrollbar-track { background: transparent; }
+    .cs-panel-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:2px; }
+
+    .cs-item {
+      padding: 9px 14px; font-size: 14px;
+      color: rgba(255,255,255,.78); cursor: pointer;
+      transition: background .14s, color .14s;
+      opacity: 0;
+      animation: cs-item-in .28s ease forwards;
+      animation-delay: calc(var(--idx, 0) * 0.04s + 0.1s);
+    }
+    @keyframes cs-item-in {
+      from { opacity:0; transform:translateY(6px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .cs-item:hover { background:rgba(255,255,255,.07); color:rgba(255,255,255,.95); }
+    .cs-item.is-selected {
+      color:rgba(0,200,120,.9); background:rgba(0,200,120,.08); font-weight:500;
+    }
+
     .statusline{
       font-size: 13px;
       color: var(--muted-2);
@@ -343,6 +472,9 @@
       display:grid;
       grid-template-columns: repeat(2, minmax(0,1fr));
       gap: var(--gap);
+    }
+    .case-grid > .case-card.case-page-hidden{
+      display: none !important;
     }
     .case-card{
       position: relative;
@@ -395,7 +527,7 @@
       background: rgba(0,0,0,.25);
       white-space: nowrap;
     }
-    .badge.status-ready{ border-color: rgba(0,220,120,.8); color: rgba(0,220,120,.96); background: rgba(0,220,120,.12); }
+    .badge.status-ready{ display:none; }
     .badge.status-draft{ border-color: rgba(255,193,7,.8); color: rgba(255,193,7,.96); background: rgba(255,193,7,.10); }
     .badge.status-pilot{ border-color: rgba(0,190,110,.9); color: rgba(0,190,110,.98); background: rgba(0,190,110,.16); }
 
@@ -404,14 +536,39 @@
       flex-wrap: wrap;
       gap: 6px;
       margin-top: 4px;
-      font-size: 11px;
-      color: rgba(255,255,255,.86);
     }
-    .tools-tags span{
-      padding: 3px 7px;
+    .tool-chip{
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px 3px 3px;
       border-radius: 999px;
-      background: rgba(0,0,0,.45);
-      border: 1px solid rgba(255,255,255,.12);
+      border: 1px solid transparent;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+      line-height: 1.4;
+    }
+    .tool-chip__icon{
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7.5px;
+      font-weight: 700;
+      flex-shrink: 0;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: -0.3px;
+      overflow: hidden;
+    }
+    .tool-chip__icon img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
     }
 
     .case-footer{
@@ -588,71 +745,447 @@
       display:flex;
     }
     .modal{
-      width: min(780px, 100%);
-      max-height: min(560px, 90vh);
-      background: rgba(6,8,16,.98);
+      width: min(1040px, calc(100vw - 40px));
+      max-height: min(640px, 92vh);
+      background:
+        radial-gradient(720px 260px at 18% 0%, rgba(0,180,100,.12), transparent 58%),
+        linear-gradient(180deg, rgba(12,14,22,.98), rgba(7,9,15,.98));
       border-radius: 22px;
-      border: 1px solid rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.12);
       box-shadow: 0 24px 90px rgba(0,0,0,.75);
       padding: 18px 18px 16px;
       display:flex;
       flex-direction: column;
       gap: 12px;
+      overflow: hidden;
+      position: relative;
     }
-    .modal .head{
-      display:flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items:flex-start;
+    .modal::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:22px;
+      pointer-events:none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
     }
-    .modal .head h3{
-      margin:0 0 4px;
-      font-size: 18px;
-    }
-    .modal .body{
-      overflow:auto;
-      padding-right: 4px;
-      font-size: 13px;
-    }
-    .modal .close{
+    .case-modal-close{
+      position:absolute;
+      top:18px;
+      right:18px;
       border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.28);
-      background: rgba(255,255,255,.08);
-      width: 32px;
-      height: 32px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.04);
+      width: 42px;
+      height: 42px;
       display:inline-flex;
       align-items:center;
       justify-content:center;
       cursor:pointer;
       padding: 0;
       line-height: 1;
-      font-size: 16px;
+      color: rgba(255,255,255,.70);
+      font-size: 22px;
       flex-shrink: 0;
     }
-
-    .case-steps{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-      margin-top: 10px;
+    .case-modal-header{
+      padding-right: 56px;
+      display:flex;
+      flex-direction: column;
+      gap: 6px;
     }
-    .case-step{
+    .case-modal-title{
+      margin:0;
+      font-size: 26px;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+    }
+    .case-modal-badges{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap: 10px;
+      width:100%;
+    }
+    .case-modal-badges-line{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      width:100%;
+    }
+    .case-modal-badges .badge{
+      padding: 8px 12px;
+      font-size: 14px;
+      line-height: 1;
+      background: rgba(255,255,255,.03);
+      border-color: rgba(255,255,255,.14);
+    }
+    .case-modal-badges .badge.status-ready{
+      display: none !important;
+    }
+    .case-modal-badges .badge.status-pilot{
+      background: rgba(8, 83, 54, .60);
+      border-color: rgba(28, 210, 139, .52);
+      color: #7af0bd;
+    }
+    .case-modal-badges .badge.status-draft{
+      background: rgba(255,193,7,.08);
+      border-color: rgba(255,193,7,.34);
+      color: rgba(255,222,115,.98);
+    }
+    .case-modal-intro{
+      margin:0;
+      width:100%;
+      color: rgba(255,255,255,.70);
+      font-size: 14px;
+      line-height: 1.4;
+      padding-right: 12px;
+    }
+    .case-modal-slider{
       border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: radial-gradient(120% 160% at 0% 0%, rgba(0,170,100,.35), transparent 60%), rgba(5,7,14,.98);
-      padding: 10px 11px 11px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+      overflow: hidden;
+      flex: 1 1 auto;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      padding: 0;
     }
-    .case-step h4{
-      margin:0 0 6px;
+    .case-modal-stage{
+      position:relative;
+      min-height: 0;
+      padding: 16px 16px 12px;
+      display:flex;
+      align-items:stretch;
+      overflow:auto;
+      flex: 1 1 auto;
+    }
+    .case-modal-step{
+      width:100%;
+      display:none;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      animation: caseStepFade .22s ease;
+      min-height: 0;
+      align-content:start;
+      justify-items:stretch;
+    }
+    .case-modal-step.active{
+      display:grid;
+    }
+    @keyframes caseStepFade{
+      from{ opacity:0; transform:translateY(8px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+    .case-modal-step-top{
+      display:flex;
+      justify-content:flex-start;
+      gap: 10px;
+      align-items:flex-start;
+      width:100%;
+    }
+    .case-modal-step-top > div{
+      width:100%;
+    }
+    .case-modal-step-index{
+      color:#8cf2c3;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+    .case-modal-step-title{
+      display: none !important;
+    }
+    .case-modal-content-grid{
+      display:grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+      align-items:start;
+      width:100%;
+    }
+    .case-modal-aside{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(4, 9, 14, .74);
+      padding: 12px;
+      min-height: 0;
+    }
+    .case-modal-prompt{
+      display:flex;
+      flex-direction:column;
+      align-items:stretch;
+      width:100%;
+      border: none;
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+      min-height: 0;
+    }
+    .case-modal-prompt-label{
+      margin:0 0 2px;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+    .case-modal-prompt-subtitle{
+      margin:0 0 10px;
+      color: rgba(255,255,255,.70);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .case-modal-prompt-box{
+      position:relative;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(8, 34, 24, .58), rgba(6, 11, 18, .98));
+      border: 1px solid rgba(44, 214, 150, .32);
+      padding: 8px;
+      width:100%;
+    }
+    .case-modal-prompt-box textarea,
+    .case-modal-prompt-input{
+      width:100%;
+      height:170px;
+      min-height:170px;
+      max-height:260px;
+      resize:none;
+      overflow:auto;
+      overflow-x: hidden;
+      border:0;
+      outline:none;
+      background:transparent;
+      color: rgba(255,255,255,.94);
+      line-height:1.35;
+      font-size:13px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,.32) rgba(255,255,255,.06);
+    }
+    .case-modal-prompt-box textarea::-webkit-scrollbar,
+    .case-modal-prompt-input::-webkit-scrollbar{
+      width: 10px;
+      height: 10px;
+    }
+    .case-modal-prompt-box textarea::-webkit-scrollbar-track,
+    .case-modal-prompt-input::-webkit-scrollbar-track{
+      margin: 4px 0;
+      background: rgba(255,255,255,.05);
+      border-radius: 999px;
+    }
+    .case-modal-prompt-box textarea::-webkit-scrollbar-thumb,
+    .case-modal-prompt-input::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,.22);
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    .case-modal-prompt-box textarea::-webkit-scrollbar-thumb:hover,
+    .case-modal-prompt-input::-webkit-scrollbar-thumb:hover{
+      background: rgba(44, 214, 150, .42);
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    .case-modal-prompt-box textarea::-webkit-scrollbar-corner,
+    .case-modal-prompt-input::-webkit-scrollbar-corner{
+      background: transparent;
+    }
+    .case-modal-copy{
+      position:absolute;
+      top:8px;
+      right:8px;
+      width:30px;
+      height:30px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.05);
+      color:rgba(255,255,255,.70);
+      display:grid;
+      place-items:center;
+      transition:background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+    }
+    .case-modal-copy:hover{
+      background:rgba(255,255,255,.08);
+      border-color:rgba(22,199,132,.30);
+      color:rgba(255,255,255,.94);
+      transform:translateY(-1px);
+    }
+    .case-modal-copy svg{
+      width:14px;
+      height:14px;
+      display:block;
+    }
+    .case-modal-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      justify-content:flex-start;
+      align-items:center;
+      margin-top:8px;
+      flex-shrink:0;
+      width:100%;
+    }
+    .case-modal-btn-row{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:8px;
+      width:100%;
+      max-width:50%;
+    }
+    .case-modal-btn{
+      min-height:36px;
+      padding:0 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.07);
+      color: rgba(255,255,255,.92);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      text-decoration:none;
+      transition:transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+      white-space:nowrap;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+      cursor:pointer;
+      font-size: 14px;
+      width:100%;
+      max-width:100%;
+    }
+    .case-modal-btn:hover{
+      transform:translateY(-1px);
+      background:rgba(255,255,255,.10);
+      border-color:rgba(255,255,255,.24);
+    }
+    .case-modal-btn.tool{
+      min-width:138px;
+      background:linear-gradient(180deg, rgba(22,199,132,.18), rgba(12,78,52,.28));
+      border-color:rgba(22,199,132,.42);
+      color:#eafff5;
+      font-weight:600;
+      cursor:default;
+    }
+    .case-modal-btn.tool[disabled]{
+      opacity: 1;
+      pointer-events:none;
+    }
+    .case-modal-aside{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .case-modal-aside h3{
+      margin:0;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    .case-modal-aside p{
+      margin:0;
+      color: rgba(255,255,255,.70);
+      line-height: 1.45;
       font-size: 14px;
     }
-    .case-step ul{
-      padding-left: 18px;
-      margin: 0;
+    .case-modal-instructions{
+      width:100%;
+      margin-top:8px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.02);
     }
-    .case-step li{
-      margin: 2px 0;
+    .case-modal-instructions[hidden]{
+      display:none !important;
     }
+    .case-modal-instructions-body{
+      padding:12px;
+      color: rgba(255,255,255,.70);
+      font-size:14px;
+    }
+    .case-modal-instructions-body ol{
+      margin:0;
+      padding-left:18px;
+    }
+    .case-modal-instructions-body li + li{
+      margin-top:6px;
+    }
+    .case-modal-meta{
+      display:grid;
+      gap:8px;
+    }
+    .case-modal-meta-item{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.02);
+      color: rgba(255,255,255,.82);
+      font-size:14px;
+      line-height:1.4;
+    }
+    .case-modal-meta-item b{
+      display:block;
+      margin-bottom:4px;
+      color:#fff;
+      font-size:13px;
+    }
+    .case-modal-footer{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-start;
+      gap:10px;
+      padding:12px;
+      border-top:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.02);
+      min-height:54px;
+    }
+    .case-modal-nav-btn{
+      min-width:108px;
+      min-height:40px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.07);
+      color: rgba(255,255,255,.92);
+      cursor:pointer;
+      padding:0 14px;
+      transition:transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+    .case-modal-nav-btn:hover:not(:disabled){
+      transform:translateY(-1px);
+      background:rgba(255,255,255,.10);
+      border-color:rgba(255,255,255,.24);
+    }
+    .case-modal-nav-btn.primary{
+      background:linear-gradient(180deg, rgba(22,199,132,.98), rgba(15,169,104,.98));
+      color:#05110c;
+      border-color:rgba(22,199,132,.55);
+      font-weight:700;
+    }
+    .case-modal-nav-btn:disabled{
+      opacity:.45;
+      cursor:default;
+    }
+    .case-modal-dots{
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      gap:8px;
+      flex: 0 0 auto;
+    }
+    .case-modal-dot{
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      border:0;
+      padding:0;
+      background:rgba(255,255,255,.18);
+      cursor:pointer;
+      transition:transform .15s ease, background .15s ease;
+    }
+    .case-modal-dot.active{
+      background:#16c784;
+      transform:scale(1.15);
+    }
+    .case-modal-dot:hover{
+      background:rgba(255,255,255,.34);
+    }
+
     .codebox{
       border-radius: 14px;
       border: 1px solid rgba(255,255,255,.16);
@@ -676,9 +1209,6 @@
 
     @media (max-width: 980px){
       .case-grid{
-        grid-template-columns: 1fr;
-      }
-      .case-steps{
         grid-template-columns: 1fr;
       }
       .form-grid{
@@ -713,11 +1243,127 @@
         scroll-snap-align: start;
         scroll-snap-stop: always;
       }
+      .case-modal-footer{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .case-modal-dots{
+        order:-1;
+        justify-content:center;
+      }
+      #caseModalNext{ order:0; }
+      #caseModalPrev{ order:2; }
+      .case-modal-nav-btn,
+      .case-modal-nav-btn.primary{
+        width:100%;
+      }
+      .case-modal-btn-row{
+        max-width:100%;
+      }
+      .case-modal-prompt-box textarea,
+      .case-modal-prompt-input{
+        height: 380px;
+        min-height: 380px;
+        max-height: none;
+      }
     }
     .accordion{
       margin-top: 16px;
       display:grid;
       gap: 12px;
+    }
+    #promptsAccordion{
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .prompts-acc-inner{
+      display: grid;
+      gap: 12px;
+    }
+    .prompts-acc-inner > .acc-item.prompt-acc-hidden{
+      display: none !important;
+    }
+    .prompts-pagination{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .prompts-pagination[hidden]{ display: none !important; }
+    .cases-catalog-pagination{
+      margin-top: 14px;
+    }
+    .prompts-page-arrow{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.85);
+      cursor: pointer;
+      transition: background .15s ease, transform .1s ease;
+    }
+    .prompts-page-arrow:hover:not(:disabled){
+      background: rgba(255,255,255,.12);
+    }
+    .prompts-page-arrow:active:not(:disabled){ transform: scale(0.96); }
+    .prompts-page-arrow:disabled{
+      opacity: .35;
+      cursor: not-allowed;
+    }
+    .prompts-page-arrow svg{ display: block; }
+    .prompts-page-nums{
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .prompts-page-num{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      height: 36px;
+      padding: 0 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      color: rgba(255,255,255,.62);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, color .15s ease, transform .1s ease;
+    }
+    .prompts-page-num:hover{
+      background: rgba(255,255,255,.1);
+      color: rgba(255,255,255,.88);
+    }
+    .prompts-page-num:active{ transform: scale(0.95); }
+    .prompts-page-num.active{
+      background: linear-gradient(180deg, rgba(0,200,120,.5), rgba(0,150,85,.4));
+      border-color: rgba(0,220,130,.55);
+      color: #fff;
+    }
+    @media (min-width: 768px){
+      .prompts-page-num{
+        min-width: 44px;
+        height: 44px;
+        font-size: 14px;
+      }
+      .prompts-page-arrow{
+        width: 44px;
+        height: 44px;
+      }
     }
     .acc-item{
       border-radius: 16px;
@@ -891,6 +1537,53 @@
       margin-top: 8px;
     }
 
+    /* Prompt usage modal */
+    .pu-modal-overlay{
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(0,0,0,.6); backdrop-filter:blur(6px);
+      justify-content:center; align-items:center;
+    }
+    .pu-modal-overlay.open{ display:flex; }
+    .pu-modal{
+      background: var(--card, rgba(14,18,28,.96));
+      border: 1px solid var(--stroke, rgba(255,255,255,.1));
+      border-radius: 18px;
+      padding: 28px 24px;
+      width: 100%; max-width: 360px;
+      position: relative;
+      text-align: center;
+    }
+    .pu-modal-close{
+      position:absolute; top:12px; right:14px; background:none; border:none;
+      color:var(--muted); font-size:20px; cursor:pointer; line-height:1;
+    }
+    .pu-modal-close:hover{ color:#fff; }
+    .pu-modal h3{ margin:0 0 18px; font-size:16px; }
+    .pu-modal-confirm{
+      padding:11px 28px; border-radius:12px; border:none;
+      background:linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
+      color:#fff; font:inherit; font-size:14px; cursor:pointer; transition:opacity .15s;
+    }
+    .pu-modal-confirm:hover{ opacity:.88; }
+    .pu-modal-ok{ color:rgba(0,210,120,.9); font-size:15px; margin-top:12px; display:none; }
+
+    .prompts-show-more{
+      display: flex;
+      justify-content: flex-start;
+      margin-top: 18px;
+    }
+    .prompts-show-more .btn{
+      background: linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
+      border-color: rgba(255,255,255,.18);
+      color: rgba(255,255,255,.97);
+      padding: 12px 32px;
+      font-size: 14px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .prompts-show-more .btn:hover{ opacity: .88; }
+
     .site-footer{
       margin-top:auto; border-top:1px solid var(--stroke);
       background:rgba(7,10,16,.94); backdrop-filter:var(--blur);
@@ -1018,7 +1711,25 @@
           <div class="accordion" id="promptsAccordion" style="margin-top:18px;">
             <p class="muted" style="padding:12px 0;">Загрузка промптов…</p>
           </div>
+          <div class="prompts-show-more" id="promptsShowMoreWrap" style="display:none;">
+            <button class="btn" id="promptsShowMore">Показать все</button>
+          </div>
         </div>
+
+    <!-- Prompt usage confirmation modal -->
+    <div class="pu-modal-overlay" id="puModal">
+      <div class="pu-modal">
+        <button class="pu-modal-close" id="puModalClose">&times;</button>
+        <div id="puModalAsk">
+          <h3>Вы использовали этот промпт?</h3>
+          <button class="pu-modal-confirm" id="puModalConfirm">Да, использовал(а)</button>
+        </div>
+        <div id="puModalOk" style="display:none; padding:18px 0;">
+          <div style="font-size:28px; margin-bottom:10px;">✓</div>
+          <div style="font-size:15px; color:rgba(0,210,120,.9);">Принято, результат учтён в вашей статистике</div>
+        </div>
+      </div>
+    </div>
       </div>
     </section>
 
@@ -1031,7 +1742,6 @@
 
           <div class="controls" style="margin-top:18px;">
             <div class="field" style="flex:1; min-width: 180px;">
-              <span class="muted2">🔎</span>
               <input id="caseSearch" type="text" placeholder="Поиск по кейсам (например: презентация, видео, протокол)" />
             </div>
             <div class="field">
@@ -1045,6 +1755,12 @@
               </select>
             </div>
             <div class="field">
+              <select id="caseTool">
+                <option value="all">Все инструменты</option>
+              </select>
+            </div>
+            <!-- Селектор роли скрыт в UI; логика фильтра и CustomSelect сохранены -->
+            <div class="field" style="display:none" aria-hidden="true">
               <select id="caseRole">
                 <option value="all">Любая роль</option>
               </select>
@@ -1055,6 +1771,7 @@
           <div class="statusline" id="caseStatus"></div>
 
           <div class="case-grid" id="casesCards"></div>
+          <nav class="prompts-pagination cases-catalog-pagination" id="casesPagination" hidden aria-label="Страницы каталога кейсов"></nav>
         </div>
       </div>
     </section>
@@ -1064,10 +1781,10 @@
       <div class="wrap">
         <div class="panel pad">
           <h2 class="h2">Обратная связь</h2>
-          <p class="lead">Идеи, улучшения, новые промпты и кейсы для этого каталога.</p>
+          <p class="lead">Идеи, улучшения, новые промпты и кейсы для этого каталога</p>
           <p class="muted" style="margin:10px 0 0;">
             Напишите, каких сценариев вам не хватает, или поделитесь рабочим кейсом. Заявки сохраняются локально
-            на вашем устройстве, их можно выгрузить в JSON и отправить команде.
+            на вашем устройстве, их можно выгрузить в JSON и отправить команде
           </p>
 
           <div class="form-grid" style="margin-top:18px;">
@@ -1093,7 +1810,7 @@
               </div>
 
               <h3 style="margin-top:16px;">Как связаться</h3>
-              <div class="hintline" style="margin: 0 0 8px;">Достаточно одного канала связи.</div>
+              <div class="hintline" style="margin: 0 0 8px;">Достаточно одного канала связи</div>
 
               <label for="fb_phone">Телефон</label>
               <input id="fb_phone" type="text" placeholder="+7 …" />
@@ -1129,7 +1846,7 @@
               </select>
 
               <label for="fb_message">Сообщение</label>
-              <textarea id="fb_message" placeholder="Опишите, что нужно улучшить / добавить, и приведите пример кейса (если есть)."></textarea>
+              <textarea id="fb_message" placeholder="Опишите, что нужно улучшить / добавить, и приведите пример кейса (если есть)"></textarea>
               <div class="hintline">Чем конкретнее пример, тем быстрее мы сможем улучшить каталог.</div>
 
               <label for="fb_link">Ссылка/источник (опционально)</label>
@@ -1194,14 +1911,20 @@
   <!-- Modal: Case detail -->
   <div class="overlay" id="caseOverlay" aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Сценарий кейса">
-      <div class="head">
-        <div>
-          <h3 id="caseModalTitle">Кейс</h3>
-          <div id="caseModalBadges" style="margin-top:8px; display:flex; gap:8px; flex-wrap: wrap;"></div>
-        </div>
-        <button class="close" id="caseModalClose" aria-label="Закрыть">✕</button>
+      <button class="case-modal-close" id="caseModalClose" type="button" aria-label="Закрыть">✕</button>
+      <div class="case-modal-header">
+        <h3 class="case-modal-title" id="caseModalTitle">Кейс</h3>
+        <div class="case-modal-badges" id="caseModalBadges"></div>
+        <p class="case-modal-intro" id="caseModalIntro"></p>
       </div>
-      <div class="body" id="caseModalBody"></div>
+      <section class="case-modal-slider">
+        <div class="case-modal-stage" id="caseModalBody"></div>
+        <footer class="case-modal-footer">
+          <button class="case-modal-nav-btn" id="caseModalPrev" type="button">Назад</button>
+          <div class="case-modal-dots" id="caseModalDots" aria-label="Прогресс по шагам"></div>
+          <button class="case-modal-nav-btn primary" id="caseModalNext" type="button">Далее</button>
+        </footer>
+      </section>
     </div>
   </div>
 
@@ -1211,25 +1934,61 @@
 
     // Данные загружаются из API, при ошибке — встроенные
     let casesData = [];
+    let activeCaseId = null;
+    let activeCaseSteps = [];
+    let activeCaseStepIndex = 0;
+    let instructionsCache = []; // кэш инструкций из /api/instructions
+
+    /** Инструмент шага: aiTool / tool / суффикс в title / fallback на массив tools кейса (как в админке) */
+    function stepToolLabelFromStep(step, caseToolsArr) {
+      if (step?.tool) return String(step.tool).trim();
+      if (step?.aiTool) return String(step.aiTool).trim();
+      const fromTitle = String(step?.title || "").match(/\(([^)]+)\)\s*$/);
+      if (fromTitle && fromTitle[1]) return fromTitle[1].trim();
+      if (Array.isArray(caseToolsArr) && caseToolsArr.length) return String(caseToolsArr[0]).trim();
+      return "";
+    }
+    function uniqueStepToolTags(steps, caseToolsArr) {
+      const seen = new Set();
+      const out = [];
+      for (const step of steps || []) {
+        const t = stepToolLabelFromStep(step, caseToolsArr);
+        if (!t) continue;
+        if (!seen.has(t)) { seen.add(t); out.push(t); }
+      }
+      return out;
+    }
 
     // Маппинг из формата БД в формат страницы
     function mapApiCase(c) {
+      const tools = Array.isArray(c.tools) ? c.tools : (c.tools ? c.tools.split(',').map(s=>s.trim()) : []);
+      const steps = Array.isArray(c.steps) ? c.steps : (c.promptTemplate ? [{
+        title: 'Промпт',
+        bullets: c.result ? [c.result] : [],
+        prompt: c.promptTemplate,
+        aiTool: ''
+      }] : []);
       return {
         id: c.id,
         title: c.title || c.id,
         status: c.maturity || 'draft',
         used: c.used || 0,
         task: c.taskCategory || c.task || 'Общее',
-        context: c.context || 'Общее',
-        role: Array.isArray(c.role) ? c.role.join(' / ') : (c.role || 'Специалист'),
-        tools: Array.isArray(c.tools) ? c.tools : (c.tools ? c.tools.split(',').map(s=>s.trim()) : []),
+        context: c.context || '',
+        role: Array.isArray(c.role) ? c.role.join(' / ') : (c.role || ''),
+        tools,
+        stepToolTags: uniqueStepToolTags(steps, tools),
         goal: c.whenToUse || c.goal || '',
-        steps: Array.isArray(c.steps) ? c.steps : (c.promptTemplate ? [{
-          title: 'Промпт',
-          bullets: c.result ? [c.result] : [],
-          prompt: c.promptTemplate
-        }] : [])
+        sortOrder: c.sortOrder ?? 9999,
+        steps
       };
+    }
+
+    async function loadInstructionsCache() {
+      try {
+        const res = await fetch('/api/instructions');
+        if (res.ok) instructionsCache = await res.json();
+      } catch(_) {}
     }
 
     async function loadCasesFromApi() {
@@ -1239,11 +1998,84 @@
           const arr = await res.json();
           if (arr && arr.length) {
             casesData = arr.map(mapApiCase);
+            // сортируем по полю sortOrder (задаётся в админке)
+            casesData.sort((a, b) => (a.sortOrder ?? 9999) - (b.sortOrder ?? 9999));
             return true;
           }
         }
       } catch(e) {}
       return false;
+    }
+
+    let _aiToolsMap = {}; // name/id (и lowercase) -> {iconBase64, iconMime, ...} из /api/tools
+    async function loadAiToolsCache() {
+      try {
+        const res = await fetch('/api/tools');
+        if (res.ok) {
+          const arr = await res.json();
+          _aiToolsMap = {};
+          for (const t of arr) {
+            const nameKey = (t.name || '').trim();
+            const idKey   = (t.id   || '').trim();
+            // индексируем по name, id и их lowercase вариантам для надёжного поиска
+            if (nameKey) { _aiToolsMap[nameKey] = t; _aiToolsMap[nameKey.toLowerCase()] = t; }
+            if (idKey)   { _aiToolsMap[idKey]   = t; _aiToolsMap[idKey.toLowerCase()]   = t; }
+          }
+        }
+      } catch(_) {}
+    }
+
+    const TOOL_CONFIG = {
+      'ChatGPT':    { bg:'#10a37f', label:'GP' },
+      'Claude':     { bg:'#c07b4a', label:'Cl' },
+      'Gemini':     { bg:'#4285f4', label:'Ge' },
+      'Gamma':      { bg:'#7c3aed', label:'Gm' },
+      'Whisper':    { bg:'#0ea5e9', label:'Ws' },
+      'Runway':     { bg:'#ef4444', label:'Rw' },
+      'Perplexity': { bg:'#1fb8cd', label:'Px' },
+      'Midjourney': { bg:'#5865f2', label:'MJ' },
+      'DALL-E':     { bg:'#10a37f', label:'DE' },
+      'Canva':      { bg:'#00c4cc', label:'Cv' },
+      'Figma':      { bg:'#f24e1e', label:'Fi' },
+      'Notion':     { bg:'#6b7280', label:'Nt' },
+      'Stable Diffusion': { bg:'#8b5cf6', label:'SD' },
+      'Copilot':    { bg:'#0078d4', label:'Co' },
+      'HeyGen':     { bg:'#a855f7', label:'HG' },
+      'ElevenLabs': { bg:'#f59e0b', label:'EL' },
+      'Kling':      { bg:'#f97316', label:'Kl' },
+      'Sora':       { bg:'#6366f1', label:'So' },
+    };
+    const _TOOL_FALLBACKS = ['#6366f1','#ec4899','#f59e0b','#06b6d4','#84cc16','#f97316','#8b5cf6','#10b981'];
+    function _toolColor(t) {
+      if (TOOL_CONFIG[t]) return TOOL_CONFIG[t].bg;
+      let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      return _TOOL_FALLBACKS[h % _TOOL_FALLBACKS.length];
+    }
+    function _toolLabel(t) {
+      if (TOOL_CONFIG[t]) return TOOL_CONFIG[t].label;
+      const w = t.trim().split(/\s+/);
+      return w.length >= 2 ? (w[0][0]+w[1][0]).toUpperCase() : t.slice(0,2).toUpperCase();
+    }
+    function _hexToRgb(hex) {
+      const h = hex.replace('#','');
+      return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+    }
+    function toolChip(t) {
+      // ищем сначала точное совпадение, затем регистронезависимое
+      const dbTool = _aiToolsMap[t] || _aiToolsMap[t.toLowerCase()];
+      // приоритет цвета: справочник → TOOL_CONFIG → хэш-fallback
+      const bg = (dbTool && dbTool.color) ? dbTool.color : _toolColor(t);
+      const label = _toolLabel(t);
+      const [r,g,b] = _hexToRgb(bg);
+      const hasIcon = dbTool && dbTool.iconBase64;
+      const iconHtml = hasIcon
+        ? `<img src="data:${dbTool.iconMime||'image/png'};base64,${dbTool.iconBase64}" alt="${escapeHtml(t)}" />`
+        : label;
+      // если иконка — не красим фон кружка (картинка сама несёт цвет)
+      const iconBg = hasIcon ? 'transparent' : bg;
+      return `<span class="tool-chip" style="background:rgba(${r},${g},${b},0.15);border-color:rgba(${r},${g},${b},0.4);color:${bg}">`
+        + `<span class="tool-chip__icon" style="background:${iconBg}">${iconHtml}</span>`
+        + `${escapeHtml(t)}</span>`;
     }
 
     function escapeHtml(str) {
@@ -1256,6 +2088,127 @@
     }
     function safeId(str) {
       return String(str || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+    function stripStepPrefix(title) {
+      return String(title || "")
+        .replace(/^Шаг\s*\d+\s*[—-]\s*/i, "")
+        .replace(/\s*\(([^)]+)\)\s*$/, "")
+        .trim() || "Шаг кейса";
+    }
+    function getStepToolLabel(step, data) {
+      const arr = Array.isArray(data?.tools) ? data.tools : [];
+      const t = stepToolLabelFromStep(step, arr);
+      return t || "Инструмент не указан";
+    }
+    function getStepInstructions(step) {
+      // Приоритет 1: связанная инструкция из /api/instructions
+      if (step?.instructionId) {
+        const instr = instructionsCache.find(i => i.id === step.instructionId);
+        if (instr && Array.isArray(instr.steps) && instr.steps.length) {
+          return instr.steps.map(s => s.description).filter(Boolean);
+        }
+      }
+      // Приоритет 2: bullets шага
+      if (Array.isArray(step?.bullets) && step.bullets.length) return step.bullets;
+      // Фолбэк
+      return [
+        "Вставьте свои данные в промпт.",
+        "Проверьте результат и при необходимости уточните формулировки.",
+        "Скопируйте результат и переходите к следующему шагу."
+      ];
+    }
+    function renderCaseModalDots(total, activeIndex) {
+      const dotsEl = document.getElementById("caseModalDots");
+      if (!dotsEl) return;
+      dotsEl.innerHTML = Array.from({ length: total }, (_, idx) => `
+        <button
+          class="case-modal-dot${idx === activeIndex ? " active" : ""}"
+          type="button"
+          data-case-step="${idx}"
+          aria-label="Перейти к шагу ${idx + 1}"
+        ></button>
+      `).join("");
+    }
+    function renderCaseModalStepState() {
+      const stepCards = Array.from(document.querySelectorAll(".case-modal-step"));
+      stepCards.forEach((stepEl, idx) => stepEl.classList.toggle("active", idx === activeCaseStepIndex));
+
+      const prevBtn = document.getElementById("caseModalPrev");
+      const nextBtn = document.getElementById("caseModalNext");
+      if (prevBtn) prevBtn.disabled = activeCaseStepIndex === 0;
+      if (nextBtn) {
+        nextBtn.disabled = activeCaseSteps.length === 0;
+        nextBtn.textContent = activeCaseStepIndex === activeCaseSteps.length - 1 ? "Завершить кейс" : "Далее";
+        nextBtn.classList.add('primary');
+      }
+      renderCaseModalDots(activeCaseSteps.length, activeCaseStepIndex);
+    }
+    function goToCaseStep(index) {
+      if (!activeCaseSteps.length) return;
+      if (index < 0 || index >= activeCaseSteps.length) return;
+      activeCaseStepIndex = index;
+      const stageEl = document.getElementById("caseModalBody");
+      if (stageEl) stageEl.scrollTop = 0;
+      renderCaseModalStepState();
+    }
+    function renderCaseModalSteps(data) {
+      const bodyEl = document.getElementById("caseModalBody");
+      if (!bodyEl) return;
+
+      bodyEl.innerHTML = activeCaseSteps.map((step, idx) => {
+        const promptId = `prompt_${safeId(data.id)}_step_${idx}`;
+        const instructionId = `instruction_${safeId(data.id)}_step_${idx}`;
+        const instructions = getStepInstructions(step);
+        const toolLabel = getStepToolLabel(step, data);
+        const promptText = String(step?.prompt || "").trim();
+        const promptSubtitle = String(step?.subtitle || data.promptSubtitle || "").trim();
+        const promptBox = promptText ? `
+          <div class="case-modal-prompt-box">
+            <button class="case-modal-copy" type="button" data-copy="#${promptId}" aria-label="Скопировать промпт">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="9" y="9" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.7"></rect>
+                <path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path>
+              </svg>
+            </button>
+            <textarea class="case-modal-prompt-input" readonly id="${promptId}">${escapeHtml(promptText)}</textarea>
+          </div>
+        ` : `
+          <div class="case-modal-prompt-box">
+            <textarea class="case-modal-prompt-input" readonly id="${promptId}">Промпт для этого шага не указан.</textarea>
+          </div>
+        `;
+
+        return `
+          <article class="case-modal-step${idx === 0 ? " active" : ""}" data-step="${idx}">
+            <div class="case-modal-step-top">
+              <div>
+                <div class="case-modal-step-index">Шаг ${idx + 1} из ${activeCaseSteps.length}</div>
+                <h2 class="case-modal-step-title">${escapeHtml(stripStepPrefix(step?.title || ""))}</h2>
+              </div>
+            </div>
+            <div class="case-modal-content-grid">
+              <div class="case-modal-prompt">
+                <h3 class="case-modal-prompt-label">Промпт</h3>
+                ${promptSubtitle ? `<p class="case-modal-prompt-subtitle">${escapeHtml(promptSubtitle)}</p>` : ""}
+                ${promptBox}
+                <div class="case-modal-actions">
+                  <div class="case-modal-btn-row">
+                    <button class="case-modal-btn tool" type="button" disabled aria-disabled="true">Инструмент: ${escapeHtml(toolLabel)}</button>
+                    <button class="case-modal-btn" type="button" data-open-instruction="${instructionId}" aria-expanded="false">Как использовать</button>
+                  </div>
+                </div>
+                <div class="case-modal-instructions" id="${instructionId}" hidden>
+                  <div class="case-modal-instructions-body">
+                    <ol>
+                      ${instructions.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("");
     }
 
     function checkIsAuthed() {
@@ -1313,6 +2266,7 @@
       const task = document.getElementById("caseTask")?.value || "all";
       const context = document.getElementById("caseContext")?.value || "all";
       const role = document.getElementById("caseRole")?.value || "all";
+      const tool = document.getElementById("caseTool")?.value || "all";
 
       const usedMap = getJson(LS_CASE_USED, {});
       const authed = checkIsAuthed();
@@ -1321,8 +2275,13 @@
         if (task !== "all" && c.task !== task) return false;
         if (context !== "all" && c.context !== context) return false;
         if (role !== "all" && c.role !== role) return false;
+        if (tool !== "all") {
+          const caseTools = (c.stepToolTags && c.stepToolTags.length) ? c.stepToolTags : (c.tools || []);
+          if (!caseTools.includes(tool)) return false;
+        }
         if (search) {
-          const haystack = (c.title + " " + c.goal + " " + c.tools.join(" ")).toLowerCase();
+          const toolsHay = ((c.stepToolTags && c.stepToolTags.length) ? c.stepToolTags : c.tools || []).join(" ");
+          const haystack = (c.title + " " + c.goal + " " + toolsHay + " " + (c.tools || []).join(" ")).toLowerCase();
           if (!haystack.includes(search)) return false;
         }
         return true;
@@ -1348,16 +2307,16 @@
           <div class="case-top">
             <div>
               <h3 class="case-title">${escapeHtml(c.title)}</h3>
-              <p class="case-meta">${escapeHtml(c.goal)}</p>
+              ${c.goal ? `<p class="case-meta">${escapeHtml(c.goal)}</p>` : ''}
               <div class="badges">
                 <span class="badge ${statusBadgeClass}">${statusLabel}</span>
-                <span class="badge">${escapeHtml(c.task)}</span>
-                <span class="badge">${escapeHtml(c.role)}</span>
-                <span class="badge">${escapeHtml(c.context)}</span>
+                ${c.task ? `<span class="badge">${escapeHtml(c.task)}</span>` : ''}
+                ${c.role ? `<span class="badge">${escapeHtml(c.role)}</span>` : ''}
+                ${c.context ? `<span class="badge">${escapeHtml(c.context)}</span>` : ''}
               </div>
-              <div class="tools-tags">
-                ${c.tools.map(t => `<span>${escapeHtml(t)}</span>`).join("")}
-              </div>
+              ${(c.stepToolTags && c.stepToolTags.length) ? `<div class="tools-tags">
+                ${c.stepToolTags.map(t => toolChip(t)).join("")}
+              </div>` : ""}
             </div>
           </div>
           <div class="case-footer">
@@ -1380,36 +2339,170 @@
           ? `Ничего не найдено (${casesData.length} кейсов). Попробуйте изменить критерии поиска.`
           : `Найдено: ${filtered.length} из ${casesData.length}`;
       }
+
+      initCasesPagination();
     }
 
+    // ── CUSTOM SELECT ────────────────────────────────────────────────────────
+    class CustomSelect {
+      constructor(selectEl, title) {
+        this.select = selectEl;
+        this.title = title;
+        this.panelEl = null;
+        this._docClick = this._onDocClick.bind(this);
+        this._build();
+        document.addEventListener('click', this._docClick, true);
+      }
+
+      _build() {
+        this.wrapper = document.createElement('div');
+        this.wrapper.className = 'cs-wrap';
+
+        this.trigger = document.createElement('div');
+        this.trigger.className = 'cs-trigger';
+        this.trigger.setAttribute('role', 'button');
+        this.trigger.setAttribute('tabindex', '0');
+        this.trigger.innerHTML = `
+          <span class="cs-trigger-label">${this._selectedLabel()}</span>
+          <svg class="cs-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>`;
+
+        this.trigger.addEventListener('click', e => { e.stopPropagation(); this._toggle(); });
+        this.trigger.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._toggle(); }
+          if (e.key === 'Escape') this._close();
+        });
+
+        const field = this.select.closest('.field');
+        if (field) field.classList.add('cs-field');
+
+        this.select.parentNode.insertBefore(this.wrapper, this.select);
+        this.select.style.display = 'none';
+        this.wrapper.appendChild(this.trigger);
+        this.wrapper.appendChild(this.select);
+        this._updateState();
+      }
+
+      _selectedLabel() {
+        const opt = Array.from(this.select.options).find(o => o.value === this.select.value);
+        return opt ? opt.textContent : this.title;
+      }
+
+      _updateState() {
+        this.trigger.classList.toggle('is-active', this.select.value !== 'all');
+      }
+
+      _toggle() { this.panelEl ? this._close() : this._open(); }
+
+      _open() {
+        // Close any other open panel
+        document.querySelectorAll('.cs-panel-wrap').forEach(p => {
+          if (!this.wrapper.contains(p)) { p.classList.add('is-closing'); setTimeout(() => p.remove(), 220); }
+        });
+        document.querySelectorAll('.cs-trigger').forEach(t => {
+          if (t !== this.trigger) t.classList.remove('is-open');
+        });
+
+        this.trigger.classList.add('is-open');
+        this.panelEl = document.createElement('div');
+        this.panelEl.className = 'cs-panel-wrap';
+        this.panelEl.innerHTML = `
+          <div class="cs-panel-head">
+            <strong>${this.title}</strong>
+            <button class="cs-close-btn" type="button">&#x2715;</button>
+          </div>
+          <div class="cs-panel-list">
+            ${Array.from(this.select.options).map((o, i) => `
+              <div class="cs-item${o.value === this.select.value ? ' is-selected' : ''}"
+                   data-value="${o.value}" style="--idx:${i}">${o.textContent}</div>`
+            ).join('')}
+          </div>`;
+
+        this.wrapper.appendChild(this.panelEl);
+
+        this.panelEl.querySelector('.cs-close-btn').addEventListener('click', e => {
+          e.stopPropagation(); this._close();
+        });
+        this.panelEl.querySelectorAll('.cs-item').forEach(el => {
+          el.addEventListener('click', e => { e.stopPropagation(); this._pick(el.dataset.value); });
+        });
+      }
+
+      _close() {
+        if (!this.panelEl) return;
+        this.trigger.classList.remove('is-open');
+        const p = this.panelEl; this.panelEl = null;
+        p.classList.add('is-closing');
+        setTimeout(() => p.remove(), 220);
+      }
+
+      _pick(value) {
+        this.select.value = value;
+        this.trigger.querySelector('.cs-trigger-label').textContent = this._selectedLabel();
+        this._updateState();
+        this._close();
+        this.select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      reset() {
+        if (this.panelEl) this._close();
+        this.select.value = 'all';
+        this.trigger.querySelector('.cs-trigger-label').textContent = this._selectedLabel();
+        this._updateState();
+      }
+
+      refresh() {
+        // Rebuild trigger label after options are added to hidden select
+        this.trigger.querySelector('.cs-trigger-label').textContent = this._selectedLabel();
+      }
+
+      _onDocClick(e) {
+        if (this.panelEl && !this.wrapper.contains(e.target)) this._close();
+      }
+    }
+
+    let csTask, csContext, csRole, csTool;
+
     function initFilters() {
-      const taskSelect = document.getElementById("caseTask");
+      const taskSelect    = document.getElementById("caseTask");
       const contextSelect = document.getElementById("caseContext");
-      const roleSelect = document.getElementById("caseRole");
+      const roleSelect    = document.getElementById("caseRole");
+      const toolSelect    = document.getElementById("caseTool");
       if (!taskSelect || !contextSelect || !roleSelect) return;
 
-      const tasks = Array.from(new Set(casesData.map(c => c.task)));
-      const contexts = Array.from(new Set(casesData.map(c => c.context)));
-      const roles = Array.from(new Set(casesData.map(c => c.role)));
+      const tasks    = Array.from(new Set(casesData.map(c => c.task)   .filter(Boolean)));
+      const contexts = Array.from(new Set(casesData.map(c => c.context).filter(Boolean)));
+      const roles    = Array.from(new Set(casesData.map(c => c.role)   .filter(Boolean)));
+      const tools    = Array.from(new Set(
+        casesData.flatMap(c => (c.stepToolTags && c.stepToolTags.length) ? c.stepToolTags : (c.tools || []))
+      )).filter(Boolean).sort();
 
       tasks.forEach(v => {
-        const o = document.createElement("option");
-        o.value = v;
-        o.textContent = v;
+        const o = document.createElement("option"); o.value = v; o.textContent = v;
         taskSelect.appendChild(o);
       });
       contexts.forEach(v => {
-        const o = document.createElement("option");
-        o.value = v;
-        o.textContent = v;
+        const o = document.createElement("option"); o.value = v; o.textContent = v;
         contextSelect.appendChild(o);
       });
       roles.forEach(v => {
-        const o = document.createElement("option");
-        o.value = v;
-        o.textContent = v;
+        const o = document.createElement("option"); o.value = v; o.textContent = v;
         roleSelect.appendChild(o);
       });
+      if (toolSelect) {
+        tools.forEach(v => {
+          const o = document.createElement("option"); o.value = v; o.textContent = v;
+          toolSelect.appendChild(o);
+        });
+      }
+
+      // Refresh custom selects after options are added
+      if (csTask)    csTask.refresh();
+      if (csContext) csContext.refresh();
+      if (csRole)    csRole.refresh();
+      if (csTool)    csTool.refresh();
     }
 
     function openCaseModal(id) {
@@ -1418,8 +2511,8 @@
       const overlay = document.getElementById("caseOverlay");
       const titleEl = document.getElementById("caseModalTitle");
       const badgesEl = document.getElementById("caseModalBadges");
-      const bodyEl = document.getElementById("caseModalBody");
-      if (!overlay || !titleEl || !badgesEl || !bodyEl) return;
+      const introEl = document.getElementById("caseModalIntro");
+      if (!overlay || !titleEl || !badgesEl || !introEl) return;
 
       const statusBadgeClass =
         data.status === "ready" ? "status-ready" :
@@ -1430,49 +2523,33 @@
         data.status === "pilot" ? "Пилот" :
         "Черновик";
 
+      activeCaseId = data.id;
+      activeCaseSteps = Array.isArray(data.steps) && data.steps.length
+        ? data.steps
+        : [{ title: "Промпт", bullets: [], prompt: "", aiTool: "" }];
+      activeCaseStepIndex = 0;
+
       titleEl.textContent = data.title;
+      const metaBadges = `
+        ${data.task ? `<span class="badge">${escapeHtml(data.task)}</span>` : ""}
+        ${data.context ? `<span class="badge">${escapeHtml(data.context)}</span>` : ""}
+        ${data.role ? `<span class="badge">${escapeHtml(data.role)}</span>` : ""}`;
+      const toolBadges = (data.stepToolTags && data.stepToolTags.length)
+        ? data.stepToolTags.map(t => toolChip(t)).join("")
+        : "";
       badgesEl.innerHTML = `
-        <span class="badge ${statusBadgeClass}">${statusLabel}</span>
-        <span class="badge">${escapeHtml(data.task)}</span>
-        <span class="badge">${escapeHtml(data.context)}</span>
-        <span class="badge">${escapeHtml(data.role)}</span>
-      `;
-
-      const stepsHtml = data.steps.map((step, idx) => {
-        const promptId = `prompt_${safeId(data.id)}_step_${idx}`;
-        const bullets = step.bullets && step.bullets.length
-          ? `<ul>${step.bullets.map(li => `<li>${escapeHtml(li)}</li>`).join("")}</ul>`
-          : "";
-        const promptBox = step.prompt ? `
-          <div class="codebox">
-            <textarea id="${promptId}" readonly>${escapeHtml(step.prompt)}</textarea>
-            <div style="margin-top:6px; display:flex; justify-content:flex-end;">
-              <button class="btn small" type="button" data-copy="#${promptId}">Копировать промпт</button>
-            </div>
-          </div>
-        ` : "";
-        return `
-          <div class="case-step">
-            <h4>${escapeHtml(step.title)}</h4>
-            ${bullets}
-            ${promptBox}
-          </div>
-        `;
-      }).join("");
-
-      bodyEl.innerHTML = `
-        <p class="muted">${escapeHtml(data.goal)}</p>
-        <div class="hintline" style="margin:8px 0 10px;">
-          Каждый кейс строится как цепочка из нескольких ИИ‑сервисов. Используйте промпты как черновики и подставляйте свои данные
+        <div class="case-modal-badges-line">
+          <span class="badge ${statusBadgeClass}">${statusLabel}</span>
+          ${metaBadges}
         </div>
-        <div class="case-steps">
-          ${stepsHtml}
-        </div>
-      `;
+        ${toolBadges ? `<div class="case-modal-badges-line case-modal-badges-line--tools" aria-label="Инструменты по шагам">${toolBadges}</div>` : ""}`;
+      introEl.textContent = data.goal || "Введите свой запрос в промпт и пройдите шаги по порядку";
+
+      renderCaseModalSteps(data);
+      renderCaseModalStepState();
 
       overlay.classList.add("show");
       overlay.setAttribute("aria-hidden", "false");
-      // iOS-compatible scroll lock
       const sy = window.scrollY;
       document.body.dataset.scrollY = sy;
       document.body.style.position = "fixed";
@@ -1486,7 +2563,17 @@
       if (!overlay) return;
       overlay.classList.remove("show");
       overlay.setAttribute("aria-hidden", "true");
-      // restore scroll position
+      activeCaseId = null;
+      activeCaseSteps = [];
+      activeCaseStepIndex = 0;
+      const bodyEl = document.getElementById("caseModalBody");
+      const dotsEl = document.getElementById("caseModalDots");
+      const introEl = document.getElementById("caseModalIntro");
+      const badgesEl = document.getElementById("caseModalBadges");
+      if (bodyEl) bodyEl.innerHTML = "";
+      if (dotsEl) dotsEl.innerHTML = "";
+      if (introEl) introEl.textContent = "";
+      if (badgesEl) badgesEl.innerHTML = "";
       const sy = parseInt(document.body.dataset.scrollY || "0", 10);
       document.body.style.position = "";
       document.body.style.top = "";
@@ -1581,10 +2668,33 @@
         arr.push(payload);
         setJson(LS_FEEDBACK, arr);
 
+        // Send to server
+        try {
+          fetch('/api/analytics/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify([{
+              timestamp: payload.created_at,
+              event_type: 'feedback',
+              ticket_id: 'T-' + Math.random().toString(36).slice(2,7).toUpperCase(),
+              department: department === 'other' ? departmentOther : department,
+              type: type,
+              message: message,
+              rating: parseInt(rating) || 0,
+              fio: fio,
+              phone: phone,
+              telegram: tg,
+              email: email,
+              section: section,
+              link: link
+            }])
+          });
+        } catch(e) {}
+
         if (successEl) {
-          successEl.textContent = "Заявка сохранена локально. Для отправки можно выгрузить JSON и передать его команде.";
+          successEl.textContent = "Заявка отправлена и сохранена.";
         }
-        showToast("Заявка сохранена локально");
+        showToast("Заявка отправлена");
       });
 
       exportBtn?.addEventListener("click", () => {
@@ -1653,9 +2763,18 @@
         });
       })();
 
-      // Загружаем кейсы из API, потом инициализируем
-      loadCasesFromApi().then((ok) => {
-        initFilters();
+      // Инициализируем кастомные селекты ДО загрузки данных
+      csTask    = new CustomSelect(document.getElementById("caseTask"),    "Задачи");
+      csContext = new CustomSelect(document.getElementById("caseContext"), "Контекст");
+      csRole    = new CustomSelect(document.getElementById("caseRole"),    "Роль");
+      csTool    = new CustomSelect(document.getElementById("caseTool"),    "Инструменты");
+
+      // Загружаем кейсы, иконки инструментов и инструкции параллельно,
+      // рендерим каталог только после того как ВСЕ запросы завершены —
+      // иначе _aiToolsMap пуст в момент renderCases() (race condition)
+      loadInstructionsCache();
+      Promise.all([loadCasesFromApi(), loadAiToolsCache()]).then(([ok]) => {
+        initFilters();   // добавляет <option> + вызывает refresh() на кастомных селектах
         renderCases();
         if (!ok && casesData.length === 0) {
           const statusEl = document.getElementById("caseStatus");
@@ -1663,28 +2782,45 @@
         }
       });
       // Библиотека промптов — загрузка из БД
-      renderPrompts().then(() => { initTypingAnimations(); initPromptSliders(); });
+      renderPrompts();
       initFeedbackForm();
 
-      // события фильтров
+      // события фильтров (слушаем hidden <select> — кастомный компонент сам диспатчит change)
       document.getElementById("caseSearch")?.addEventListener("input", () => renderCases());
       document.getElementById("caseTask")?.addEventListener("change", () => renderCases());
       document.getElementById("caseContext")?.addEventListener("change", () => renderCases());
       document.getElementById("caseRole")?.addEventListener("change", () => renderCases());
+      document.getElementById("caseTool")?.addEventListener("change", () => renderCases());
       document.getElementById("caseReset")?.addEventListener("click", () => {
         const searchEl = document.getElementById("caseSearch");
-        const taskEl = document.getElementById("caseTask");
-        const contextEl = document.getElementById("caseContext");
-        const roleEl = document.getElementById("caseRole");
         if (searchEl) searchEl.value = "";
-        if (taskEl) taskEl.value = "all";
-        if (contextEl) contextEl.value = "all";
-        if (roleEl) roleEl.value = "all";
+        if (csTask)    csTask.reset();
+        if (csContext) csContext.reset();
+        if (csRole)    csRole.reset();
+        if (csTool)    csTool.reset();
         renderCases();
       });
 
-      // делегирование на карточках
+      // делегирование на карточках и в модалке
       document.addEventListener("click", (e) => {
+        const stepBtn = e.target.closest("[data-case-step]");
+        if (stepBtn) {
+          const idx = Number(stepBtn.getAttribute("data-case-step"));
+          if (!Number.isNaN(idx)) goToCaseStep(idx);
+          return;
+        }
+        const instructionBtn = e.target.closest("[data-open-instruction]");
+        if (instructionBtn) {
+          const detailsId = instructionBtn.getAttribute("data-open-instruction");
+          const detailsEl = detailsId ? document.getElementById(detailsId) : null;
+          if (detailsEl) {
+            const willOpen = detailsEl.hasAttribute("hidden");
+            if (willOpen) detailsEl.removeAttribute("hidden");
+            else detailsEl.setAttribute("hidden", "");
+            instructionBtn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+          }
+          return;
+        }
         const openBtn = e.target.closest("[data-open-case]");
         if (openBtn) {
           const id = openBtn.getAttribute("data-open-case");
@@ -1725,12 +2861,30 @@
           if (!el) return;
           const text = "value" in el ? el.value : el.innerText;
           copyText(text);
+          // If inside prompt library, show usage confirmation modal
+          if (copyBtn.closest('.prompt-card')) {
+            const card = copyBtn.closest('.prompt-card');
+            const title = card.querySelector('.prompt-card-title')?.textContent || '';
+            const pid = selector.replace('#prompt_', '');
+            showPromptUsageModal(pid, title);
+          }
           return;
         }
       });
 
       // модальное окно
       document.getElementById("caseModalClose")?.addEventListener("click", () => closeCaseModal());
+      document.getElementById("caseModalPrev")?.addEventListener("click", () => {
+        goToCaseStep(activeCaseStepIndex - 1);
+      });
+      document.getElementById("caseModalNext")?.addEventListener("click", () => {
+        if (!activeCaseSteps.length) return;
+        if (activeCaseStepIndex >= activeCaseSteps.length - 1) {
+          closeCaseModal();
+          return;
+        }
+        goToCaseStep(activeCaseStepIndex + 1);
+      });
       document.getElementById("caseOverlay")?.addEventListener("click", (e) => {
         if (e.target.id === "caseOverlay") closeCaseModal();
       });
@@ -1747,95 +2901,154 @@
       return null;
     }
 
-    // ── Render prompts accordion ───────────────────────────────────────────────
-    async function renderPrompts() {
-      const container = document.getElementById('promptsAccordion');
-      if (!container) return;
-      const prompts = await loadFromApi('/api/prompts');
-      if (!prompts || !Array.isArray(prompts)) {
-        container.innerHTML = `
-          <div class="acc-item open">
-            <div class="acc-head"><div class="acc-title"><b>Коммуникации (письма, записки, ответы)</b><span>Официальный стиль, лимит объёма, варианты формулировок</span></div><span class="muted2">▾</span></div>
-            <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Официальное письмо (универсальное)</div><div class="prompt-card-meta">Черновик официального письма по тезисам</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_1" readonly>Роль: ты специалист Центра.
-Цель: подготовить официальное письмо [кому] по теме: [тема].
-</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Письмо‑приглашение на встречу</div><div class="prompt-card-meta">Краткое приглашение с предложением слотов</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_2" readonly>Роль: организатор встречи.
-Цель: письмо‑приглашение на встречу по теме: [тема].
-Формат: официальный но живой тон.
-Структура: 1) повод; 2) три варианта слотов; 3) просьба подтвердить время</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_2">Копировать</button></div></div>
-            </div></div>
-          </div>
-          <div class="acc-item">
-            <div class="acc-head"><div class="acc-title"><b>Аналитика (справки, сравнения, выводы)</b><span>Таблицы, риски, допущения и проверяемость.</span></div><span class="muted2">▾</span></div>
-            <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Справка по документу</div><div class="prompt-card-meta">Короткая выжимка, требования, риски и вопросы.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_analytics_1" readonly>Роль: аналитик.
-Цель: краткая справка по документу.
-Контекст: вставь текст документа.
-Формат: 1) резюме; 2) требования; 3) риски и пробелы; 4) вопросы для уточнения.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_analytics_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Сравнительный анализ вариантов</div><div class="prompt-card-meta">Сравнение 2–4 вариантов по единым критериям.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_analytics_2" readonly>Роль: аналитик.
-Цель: сравнить варианты решения задачи.
-Контекст: опиши 2–4 варианта и критерии выбора.
-Формат: таблица (вариант / плюсы / риски / сроки) + выводы.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_analytics_2">Копировать</button></div></div>
-            </div></div>
-          </div>
-          <div class="acc-item">
-            <div class="acc-head"><div class="acc-title"><b>Проекты (протоколы, ТЗ, требования)</b><span>Протоколы, задачи, срок, критерии приёмки.</span></div><span class="muted2">▾</span></div>
-            <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Протокол встречи из заметок</div><div class="prompt-card-meta">Структурированный протокол по заметкам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_1" readonly>Роль: секретарь или PM встречи.
-Цель: оформить протокол по итогам встречи.
-Заметки: [вставь конспект].
-Формат: 1) участники; 2) повестка; 3) решения; 4) поручения (кто/что/срок); 5) вопросы.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Черновик ТЗ по задаче</div><div class="prompt-card-meta">Структурный черновик технического задания.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_2" readonly>Роль: постановщик задачи.
-Цель: черновик ТЗ по проекту.
-Контекст: кто заказчик, цель, ожидаемый результат.
-Формат: цель / требования / ограничения / критерии приёмки.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_2">Копировать</button></div></div>
-            </div></div>
-          </div>
-          <div class="acc-item">
-            <div class="acc-head"><div class="acc-title"><b>Отчётность и презентации</b><span>Еженедельные статусы, структура презентации.</span></div><span class="muted2">▾</span></div>
-            <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Еженедельный статус по проекту</div><div class="prompt-card-meta">Отчёт по прогрессу, рискам и следующим шагам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_report_1" readonly>Роль: руководитель проекта.
-Цель: статус за неделю.
-Контекст: что сделано, что в работе, какие блокеры.
-Формат: 1) общий статус; 2) таблица задач (задача/статус/владелец); 3) риски.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_report_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Структура презентации для решения</div><div class="prompt-card-meta">Список слайдов для презентации руководству.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_report_2" readonly>Роль: автор презентации.
-Цель: структура презентации по теме: [тема].
-Формат: список слайдов до 12 с описанием.
-Обязательно: проблема, цель, варианты, анализ, рекомендация, план, риски.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_report_2">Копировать</button></div></div>
-            </div></div>
-          </div>`;
-        container.querySelectorAll('.acc-item .acc-head').forEach(head => {
-          head.addEventListener('click', () => {
-            const item = head.closest('.acc-item');
-            const wasOpen = item.classList.contains('open');
-            container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
-            if (!wasOpen) item.classList.add('open');
-          });
+    var PROMPTS_SECTIONS_PER_PAGE = 5;
+    var CASES_CARDS_PER_PAGE = 6;
+
+    var PAGER_ARROW_PREV = '<svg width="10" height="16" viewBox="0 0 12 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M11 1L2 9.24242L11 17" stroke="currentColor" stroke-opacity="0.85" stroke-width="2" stroke-linecap="round"/></svg>';
+    var PAGER_ARROW_NEXT = '<svg width="10" height="16" viewBox="0 0 12 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1 1L10 9.24242L1 17" stroke="currentColor" stroke-opacity="0.85" stroke-width="2" stroke-linecap="round"/></svg>';
+
+    function scrollPaginatorSectionIntoView(sectionId) {
+      if (!sectionId) return;
+      var el = document.getElementById(sectionId);
+      if (!el) return;
+      try {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (_) {
+        el.scrollIntoView(true);
+      }
+    }
+
+    /**
+     * Общий пагинатор списка. Прокрутка к секции — только при клике по номеру страницы (не по стрелкам).
+     */
+    function initListPagination(opts) {
+      var listEl = opts.listEl;
+      var nav = opts.navEl;
+      if (!listEl || !nav) return;
+
+      var perPage = opts.perPage;
+      var hiddenClass = opts.hiddenClass;
+      var sel = opts.itemSelector || ':scope > *';
+      var scrollSectionId = opts.scrollSectionId || '';
+      var manageAccordion = !!opts.manageAccordionOpen;
+
+      var items = Array.from(listEl.querySelectorAll(sel));
+      items.forEach(function (el) { el.classList.remove(hiddenClass); });
+
+      if (items.length <= perPage) {
+        nav.hidden = true;
+        nav.innerHTML = '';
+        nav.onclick = null;
+        return;
+      }
+
+      var totalPages = Math.ceil(items.length / perPage);
+      var current = 0;
+
+      function applyPage(scrollToBlock) {
+        items.forEach(function (el, i) {
+          var p = Math.floor(i / perPage);
+          if (p === current) {
+            el.classList.remove(hiddenClass);
+          } else {
+            el.classList.add(hiddenClass);
+            if (manageAccordion) el.classList.remove('open');
+          }
         });
-        initPromptSliders();
-        return;
-      }
-
-      // Group by sectionTitle
-      const sections = [];
-      const sectionMap = {};
-      prompts.forEach(p => {
-        const key = p.sectionTitle || 'Другое';
-        if (!sectionMap[key]) {
-          sectionMap[key] = { title: key, subtitle: p.sectionSubtitle || '', items: [] };
-          sections.push(sectionMap[key]);
+        if (manageAccordion) {
+          var visible = items.filter(function (_, i) { return Math.floor(i / perPage) === current; });
+          if (visible.length && !visible.some(function (el) { return el.classList.contains('open'); })) {
+            visible[0].classList.add('open');
+          }
         }
-        sectionMap[key].items.push(p);
-      });
-
-      if (sections.length === 0) {
-        container.innerHTML = '<p class="muted" style="padding:12px 0;">Промптов пока нет. Добавьте их в <a href="/admin">админ-панели</a>.</p>';
-        return;
+        renderNav();
+        if (scrollToBlock && scrollSectionId) {
+          scrollPaginatorSectionIntoView(scrollSectionId);
+        }
       }
 
-      container.innerHTML = sections.map((sec, si) => `
-        <div class="acc-item${si === 0 ? ' open' : ''}">
+      function renderNav() {
+        var nums = '';
+        for (var p = 0; p < totalPages; p++) {
+          nums += '<button type="button" class="prompts-page-num' + (p === current ? ' active' : '') + '" data-mik-pager-page="' + p + '">' + (p + 1) + '</button>';
+        }
+        nav.innerHTML =
+          '<button type="button" class="prompts-page-arrow prompts-page-prev" aria-label="Предыдущая страница"' + (current <= 0 ? ' disabled' : '') + '>' + PAGER_ARROW_PREV + '</button>' +
+          '<div class="prompts-page-nums">' + nums + '</div>' +
+          '<button type="button" class="prompts-page-arrow prompts-page-next" aria-label="Следующая страница"' + (current >= totalPages - 1 ? ' disabled' : '') + '>' + PAGER_ARROW_NEXT + '</button>';
+        nav.hidden = false;
+      }
+
+      nav.onclick = function (e) {
+        var t = e.target;
+        if (t.closest('.prompts-page-prev') && current > 0) {
+          current--;
+          applyPage(false);
+          return;
+        }
+        if (t.closest('.prompts-page-next') && current < totalPages - 1) {
+          current++;
+          applyPage(false);
+          return;
+        }
+        var numBtn = t.closest('[data-mik-pager-page]');
+        if (numBtn) {
+          var p = parseInt(numBtn.getAttribute('data-mik-pager-page'), 10);
+          if (!Number.isNaN(p) && p !== current) {
+            current = p;
+            applyPage(true);
+          }
+        }
+      };
+
+      applyPage(false);
+    }
+
+    function initPromptsPagination() {
+      initListPagination({
+        listEl: document.getElementById('promptsAccordionInner'),
+        navEl: document.getElementById('promptsPagination'),
+        perPage: PROMPTS_SECTIONS_PER_PAGE,
+        hiddenClass: 'prompt-acc-hidden',
+        itemSelector: ':scope > .acc-item',
+        scrollSectionId: 'prompts',
+        manageAccordionOpen: true
+      });
+    }
+
+    function initCasesPagination() {
+      initListPagination({
+        listEl: document.getElementById('casesCards'),
+        navEl: document.getElementById('casesPagination'),
+        perPage: CASES_CARDS_PER_PAGE,
+        hiddenClass: 'case-page-hidden',
+        itemSelector: ':scope > .case-card',
+        scrollSectionId: 'cases',
+        manageAccordionOpen: false
+      });
+    }
+
+    // ── Render prompts accordion ───────────────────────────────────────────────
+    function buildPromptCard(p, idSuffix) {
+      const pid = 'prompt_' + safeId(idSuffix || p.id);
+      return `
+        <div class="prompt-card">
+          <div class="prompt-card-title">${escapeHtml(p.title)}</div>
+          <div class="prompt-card-meta">${escapeHtml(p.meta || p.description || '')}</div>
+          <div class="codebox" style="margin-top:10px;">
+            <textarea class="prompt-input" id="${pid}" readonly>${escapeHtml(p.text || p.prompt || '')}</textarea>
+          </div>
+          <div class="prompt-card-actions">
+            <button class="btn small" type="button" data-copy="#${pid}">Копировать</button>
+          </div>
+        </div>`;
+    }
+
+    function renderSections(container, sections) {
+      sections.forEach((sec, si) => {
+        const div = document.createElement('div');
+        div.className = 'acc-item';
+        div.innerHTML = `
           <div class="acc-head">
             <div class="acc-title">
               <b>${escapeHtml(sec.title)}</b>
@@ -1845,40 +3058,133 @@
           </div>
           <div class="acc-body">
             <div class="prompt-grid">
-              ${sec.items.map(p => `
-                <div class="prompt-card">
-                  <div class="prompt-card-head">
-                    <div>
-                      <div class="prompt-card-title">${escapeHtml(p.title)}</div>
-                      <div class="prompt-card-meta">${escapeHtml(p.meta||'')}</div>
-                    </div>
-                  </div>
-                  <div class="codebox" style="margin-top:10px;">
-                    <textarea class="prompt-input" id="prompt_${safeId(p.id)}" readonly>${escapeHtml(p.text||'')}</textarea>
-                  </div>
-                  <div class="prompt-card-actions">
-                    <button class="btn small" type="button" data-copy="#prompt_${safeId(p.id)}">Копировать</button>
-                  </div>
-                </div>
-              `).join('')}
+              ${sec.items.map((p, pi) => buildPromptCard(p, sec.title + '_' + si + '_' + pi)).join('')}
             </div>
-          </div>
-        </div>
-      `).join('');
-
-      // Re-bind accordion clicks
-      container.querySelectorAll('.acc-item .acc-head').forEach(head => {
-        head.addEventListener('click', () => {
-          const item = head.closest('.acc-item');
-          const wasOpen = item.classList.contains('open');
+          </div>`;
+        div.querySelector('.acc-head').addEventListener('click', () => {
+          const wasOpen = div.classList.contains('open');
           container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
-          if (!wasOpen) item.classList.add('open');
+          if (!wasOpen) div.classList.add('open');
         });
+        container.appendChild(div);
+      });
+    }
+
+    async function renderPrompts() {
+      const container = document.getElementById('promptsAccordion');
+      const showMoreWrap = document.getElementById('promptsShowMoreWrap');
+      const showMoreBtn  = document.getElementById('promptsShowMore');
+      if (!container) return;
+
+      let prompts = await loadFromApi('/api/prompts');
+
+      // Fallback: if API has fewer than 10, load from static JSON
+      if (!prompts || prompts.length < 10) {
+        try {
+          const resp = await fetch('/prompt-library.json');
+          if (resp.ok) {
+            const lib = await resp.json();
+            const flat = [];
+            (lib.categories || []).forEach(cat => {
+              (cat.prompts || []).forEach(p => {
+                flat.push({ id: cat.id + '_' + p.id, sectionTitle: cat.name, sectionSubtitle: (cat.description || '').replace(/\.$/, ''), title: p.title, meta: (p.description || '').replace(/\.$/, ''), text: p.prompt || '', result: (p.result || '').replace(/\.$/, '') });
+              });
+            });
+            if (flat.length > 0) prompts = flat;
+          }
+        } catch(e) {}
+      }
+
+      // Group by sectionTitle
+      const HIDDEN_SECTIONS = ['Госсектор и публичное управление'];
+      const sections = [];
+      const sectionMap = {};
+      (prompts || []).forEach(p => {
+        const key = p.sectionTitle || 'Другое';
+        if (HIDDEN_SECTIONS.includes(key)) return;
+        if (!sectionMap[key]) {
+          sectionMap[key] = { title: key, subtitle: p.sectionSubtitle || '', items: [] };
+          sections.push(sectionMap[key]);
+        }
+        sectionMap[key].items.push(p);
       });
 
-      // Re-attach typing observers after DOM rebuild
+      if (sections.length === 0) {
+        container.innerHTML = '<p class="muted" style="padding:12px 0;">Промптов пока нет. Добавьте их в <a href="/admin">админ-панели</a>.</p>';
+        if (showMoreWrap) showMoreWrap.style.display = 'none';
+        return;
+      }
+
+      const VISIBLE = 3;
+      container.innerHTML = '';
+
+      const visibleSections = sections.slice(0, VISIBLE);
+      const hiddenSections  = sections.slice(VISIBLE);
+
+      renderSections(container, visibleSections);
       initTypingAnimations();
       initPromptSliders();
+
+      if (showMoreWrap && showMoreBtn) {
+        if (hiddenSections.length > 0) {
+          showMoreWrap.style.display = 'flex';
+          showMoreBtn.textContent = 'Показать все';
+          let expanded = false;
+          let hiddenEls = [];
+          showMoreBtn.onclick = () => {
+            expanded = !expanded;
+            if (expanded) {
+              renderSections(container, hiddenSections);
+              hiddenEls = Array.from(container.querySelectorAll('.acc-item')).slice(VISIBLE);
+              initPromptSliders();
+              showMoreBtn.textContent = 'Свернуть';
+            } else {
+              hiddenEls.forEach(el => el.remove());
+              hiddenEls = [];
+              container.querySelectorAll('.acc-item.open').forEach(i => i.classList.remove('open'));
+              initPromptSliders();
+              showMoreBtn.textContent = 'Показать все';
+              container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          };
+        } else {
+          showMoreWrap.style.display = 'none';
+        }
+      }
+    }
+
+    // ─── Prompt usage confirmation ──────────────────────────────────────────
+    function showPromptUsageModal(promptId, promptTitle) {
+      const overlay = document.getElementById('puModal');
+      const closeBtn = document.getElementById('puModalClose');
+      const confirmBtn = document.getElementById('puModalConfirm');
+      const askEl = document.getElementById('puModalAsk');
+      const okEl = document.getElementById('puModalOk');
+      if (!overlay) return;
+
+      askEl.style.display = '';
+      okEl.style.display = 'none';
+      overlay.classList.add('open');
+
+      function close() { overlay.classList.remove('open'); }
+      closeBtn.onclick = close;
+      overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+      confirmBtn.onclick = async () => {
+        const auth = JSON.parse(localStorage.getItem('mikAuth') || '{}');
+        const login = auth.login || localStorage.getItem('auth_login') || 'anonymous';
+        const name = auth.full_name || localStorage.getItem('auth_full_name') || '';
+        try {
+          await fetch('/api/prompt-usages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_login: login, user_name: name, prompt_id: promptId, prompt_title: promptTitle })
+          });
+        } catch(e) {}
+        askEl.style.display = 'none';
+        okEl.style.display = '';
+        setTimeout(close, 1200);
+      };
     }
 
     // ─── Typewriter animation ───────────────────────────────────────────────

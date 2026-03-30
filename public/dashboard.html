@@ -930,66 +930,6 @@ function logout() {
   <section>
     <div class="wrap">
 
-      <div class="card pad" style="margin-top: var(--gap);">
-        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-          <div>
-            <h3 style="margin:0;">Обратная связь</h3>
-            <p class="muted" style="margin:10px 0 0;">Сигналы от пользователей: идеи, ошибки, запросы кейсов/промптов.</p>
-          </div>
-          <span class="badge" id="fbCountBadge">—</span>
-        </div>
-
-        <div class="table-tools" style="margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <input class="table-search" id="fbSearch" type="search" placeholder="Поиск по таблице..." aria-label="Поиск по обратной связи" />
-        </div>
-
-        <div class="table-scroll" style="margin-top:12px; max-height: 360px;">
-          <table aria-label="Таблица обратной связи">
-
-            <thead>
-              <tr>
-                <th role="button" tabindex="0" class="th-sort" data-sort="id">ID<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="department">Подразделение<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="created_at">Дата<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="type">Тип<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="message">Сообщение<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="score">Оценка<span class="th-ind" aria-hidden="true"></span></th>
-              </tr>
-            </thead>
-            <tbody id="tblFeedback"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card pad" style="margin-top: var(--gap);">
-        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-          <div>
-            <h3 style="margin:0;">Запросы доступа</h3>
-            <p class="muted" style="margin:10px 0 0;">Запросы на предоставление доступа к ИИ-инструментам.</p>
-          </div>
-          <span class="badge warn" id="arCountBadge">—</span>
-        </div>
-
-        <div class="table-tools" style="margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <input class="table-search" id="arSearch" type="search" placeholder="Поиск по таблице..." aria-label="Поиск по запросам доступа" />
-        </div>
-
-        <div class="table-scroll" style="margin-top:12px; max-height: 360px;">
-          <table aria-label="Таблица запросов доступа">
-
-            <thead>
-              <tr>
-                <th role="button" tabindex="0" class="th-sort" data-sort="id">ID<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="department">Подразделение<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="created_at">Дата<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="tool">Инструмент<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="reason">Причина<span class="th-ind" aria-hidden="true"></span></th>
-              </tr>
-            </thead>
-            <tbody id="tblAccess"></tbody>
-          </table>
-        </div>
-      </div>
 
     </div>
   </section>
@@ -2571,8 +2511,6 @@ document.getElementById("donutLegend").innerHTML = a.share.map(x => `
     renderTasks(ds);
 
     renderTopEmployees(ds);
-    renderFeedback(ds);
-    renderAccess(ds);
 
     renderTopList("topCases", base.topCases);
     renderTopList("topPrompts", base.topPrompts);

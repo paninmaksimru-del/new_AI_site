@@ -5,13 +5,22 @@
       "name": "dev",
       "runtimeExecutable": "node",
       "runtimeArgs": ["--watch", "server/index.js"],
-      "port": 19080
+      "port": 19080,
+      "autoPort": false
     },
     {
       "name": "start",
       "runtimeExecutable": "node",
       "runtimeArgs": ["server/index.js"],
-      "port": 19080
+      "port": 19080,
+      "autoPort": false
+    },
+    {
+      "name": "static",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "public", "-l", "8765", "--no-clipboard"],
+      "port": 8765,
+      "autoPort": false
     }
   ]
 }

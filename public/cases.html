@@ -1649,15 +1649,18 @@
     }
     /* ── Feedback widget ── */
     .fb-popup{
-      position:fixed; bottom:90px; right:24px; z-index:51;
-      width:380px; max-width:calc(100vw - 48px);
+      position:fixed; bottom:24px; right:24px; z-index:51;
+      width:420px; max-width:calc(100vw - 48px);
       padding:24px;
-      background: rgba(12,16,28,.82);
-      border:1px solid var(--stroke);
+      background:
+        radial-gradient(600px 300px at 15% 25%, rgba(0,190,110,.18), transparent 60%),
+        radial-gradient(600px 300px at 85% 10%, rgba(0,220,120,.14), transparent 60%),
+        rgba(10,14,24,.92);
+      border:1px solid rgba(255,255,255,.14);
       border-radius:var(--radius);
       backdrop-filter:var(--blur);
       -webkit-backdrop-filter:var(--blur);
-      box-shadow:var(--shadow);
+      box-shadow: 0 18px 60px rgba(0,0,0,.55);
       animation: fbSlideIn .3s ease-out;
     }
     .fb-popup[hidden]{ display:none; }
@@ -1680,16 +1683,17 @@
     .fb-step[hidden]{ display:none; }
 
     .fb-scores{
-      display:flex; gap:6px; justify-content:center;
-      margin-top:14px; flex-wrap:wrap;
+      display:flex; gap:5px; justify-content:center;
+      margin-top:14px; flex-wrap:nowrap;
     }
     .fb-score-btn{
-      width:36px; height:36px; border-radius:50%;
+      width:34px; height:34px; border-radius:50%;
       border:1px solid var(--stroke-2);
       background:rgba(255,255,255,.04);
       color:var(--muted); cursor:pointer;
       font-size:13px; font-weight:700;
       transition: all .15s ease;
+      flex-shrink:0;
     }
     .fb-score-btn:hover{
       background:rgba(78,135,255,.15);
@@ -1707,8 +1711,8 @@
       box-shadow: 0 0 12px rgba(255,96,96,.35);
     }
     .fb-score-btn.selected.sc-mid{
-      background:var(--warn); border-color:var(--warn); color:#1a1a1a;
-      box-shadow: 0 0 12px rgba(255,193,7,.35);
+      background:var(--ok); border-color:var(--ok); color:#fff;
+      box-shadow: 0 0 12px rgba(38,210,152,.35);
     }
     .fb-score-btn.selected.sc-high{
       background:var(--ok); border-color:var(--ok);
@@ -1743,7 +1747,9 @@
     .fb-submit:disabled{ opacity:.5; cursor:not-allowed; }
 
     @media(max-width:480px){
-      .fb-popup{ left:12px; right:12px; bottom:12px; width:auto; }
+      .fb-popup{ left:12px; right:12px; bottom:12px; width:auto; padding:18px; }
+      .fb-score-btn{ width:28px; height:28px; font-size:11px; }
+      .fb-scores{ gap:3px; }
     }
 
   </style>

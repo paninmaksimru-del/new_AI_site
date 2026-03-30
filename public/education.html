@@ -2217,23 +2217,71 @@
               <a href="${esc(m.link)}" target="_blank" rel="noopener" style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.85); font-size:13px; font-weight:500; text-decoration:none; transition:background .15s;">Перейти</a>
             </div>
           </article>`;
-        }
-        grid.innerHTML = materials.slice(0, VISIBLE).map(renderCard).join('');
+      }
 
-        if (showMoreWrap && showMoreBtn && materials.length > VISIBLE) {
-          showMoreWrap.style.display = 'block';
-          let expanded = false;
+      function renderDefault() {
+        grid.innerHTML = allMaterials.slice(0, expanded ? allMaterials.length : VISIBLE).map(m => renderCard(m, '')).join('');
+        if (showMoreWrap) showMoreWrap.style.display = allMaterials.length > VISIBLE ? 'block' : 'none';
+        if (showMoreBtn) showMoreBtn.textContent = expanded ? 'Свернуть' : 'Показать все';
+        if (searchCount) searchCount.style.display = 'none';
+      }
+
+      function applySearch(query) {
+        const q = query.trim().toLowerCase();
+        if (searchClear) searchClear.style.display = q ? 'flex' : 'none';
+
+        if (!q) { renderDefault(); return; }
+
+        const filtered = allMaterials.filter(m =>
+          (m.title || '').toLowerCase().includes(q) ||
+          (m.description || '').toLowerCase().includes(q)
+        );
+
+        if (showMoreWrap) showMoreWrap.style.display = 'none';
+
+        if (searchCount) {
+          searchCount.style.display = 'block';
+          searchCount.textContent = 'Найдено: ' + filtered.length + ' из ' + allMaterials.length;
+        }
+
+        if (!filtered.length) {
+          grid.innerHTML = '<p class="muted" style="padding:24px 0; text-align:center;">Ничего не найдено</p>';
+          return;
+        }
+
+        grid.innerHTML = filtered.map(m => renderCard(m, query.trim())).join('');
+      }
+
+      try {
+        const res = await fetch('/api/materials');
+        allMaterials = res.ok ? await res.json() : [];
+        if (!allMaterials.length) { grid.innerHTML = '<p class="muted">Материалов пока нет</p>'; return; }
+
+        renderDefault();
+
+        if (showMoreWrap && showMoreBtn && allMaterials.length > VISIBLE) {
           showMoreBtn.onclick = () => {
             expanded = !expanded;
-            if (expanded) {
-              grid.innerHTML = materials.map(renderCard).join('');
-              showMoreBtn.textContent = 'Свернуть';
-            } else {
-              grid.innerHTML = materials.slice(0, VISIBLE).map(renderCard).join('');
-              showMoreBtn.textContent = 'Показать все';
-              grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            renderDefault();
+            if (!expanded) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
           };
+        }
+
+        /* -- Search wiring -- */
+        if (searchInput) {
+          searchInput.addEventListener('input', () => applySearch(searchInput.value));
+          searchInput.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { searchInput.value = ''; expanded = false; renderDefault(); searchInput.blur(); }
+          });
+        }
+        if (searchClear && searchInput) {
+          searchClear.addEventListener('click', () => {
+            searchInput.value = '';
+            searchClear.style.display = 'none';
+            expanded = false;
+            renderDefault();
+            searchInput.focus();
+          });
         }
       } catch(e) { grid.innerHTML = '<p class="muted">Не удалось загрузить материалы</p>'; }
     }

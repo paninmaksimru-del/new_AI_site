@@ -187,7 +187,15 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 .heatmap-grid{ display:grid; grid-template-rows:repeat(7,11px); grid-auto-flow:column; gap:3px; overflow-x:auto; padding-bottom:4px; }
 .heatmap-grid::-webkit-scrollbar{height:4px} .heatmap-grid::-webkit-scrollbar-track{background:rgba(255,255,255,.04);border-radius:99px} .heatmap-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:99px}
 
-.chart-flex{ display: grid; grid-template-columns: 1.6fr 1fr; gap: var(--gap); align-items: start; }
+.chart-flex{ display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); align-items: start; }
+.stats-panel{ display:flex; flex-direction:column; gap:20px; justify-content:center; height:260px; }
+.stat-row{ display:flex; align-items:center; gap:12px; }
+.stat-dot{ width:12px; height:12px; border-radius:50%; flex:0 0 auto; }
+.stat-label{ font-size:14px; color:var(--muted); flex:1 1 auto; }
+.stat-value{ font-size:28px; font-weight:800; color:var(--text); flex:0 0 auto; }
+.stat-pct{ font-size:13px; color:var(--muted-2); margin-left:4px; }
+.level-breakdown{ font-size:13px; color:var(--muted-2); margin-top:8px; line-height:1.6; }
+.level-breakdown strong{ color:var(--text); }
 
 @media (max-width: 1050px){ .kpi-grid{ grid-template-columns: repeat(3, 1fr); } .likes-grid{ grid-template-columns: repeat(2, 1fr); } .chart-flex{ grid-template-columns: 1fr; } }
 @media (max-width: 768px){ nav{ display: none; } .burger{ display: flex; } .kpi-grid{ grid-template-columns: repeat(2, 1fr); } .kpi-card:last-child{ grid-column: span 2; } .likes-grid{ grid-template-columns: repeat(2, 1fr); } .level-row{ flex-direction: column !important; } .brand{ min-width: 0; } }
@@ -219,7 +227,7 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
       <a class="navlink" href="education">Обучение</a>
       <a class="navlink" href="cases">Кейсы</a>
       <a class="navlink" href="dashboard">Статистика</a>
-      <a class="navlink" href="cases#feedback">Обратная связь</a>
+      <!-- <a class="navlink" href="cases#feedback">Обратная связь</a> -->
       <button class="btn ghost small" id="logoutBtn" type="button">Выйти</button>
     </nav>
     <button class="burger" id="burger" aria-label="Меню"><i></i></button>
@@ -228,7 +236,7 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     <a class="navlink" href="education">Обучение</a>
     <a class="navlink" href="cases">Кейсы</a>
     <a class="navlink" href="dashboard">Статистика</a>
-    <a class="navlink" href="cases#feedback">Обратная связь</a>
+    <!-- <a class="navlink" href="cases#feedback">Обратная связь</a> -->
     <button class="btn ghost small" id="logoutBtnMobile" type="button" style="width:100%;margin-top:4px;">Выйти</button>
   </div>
 </header>
@@ -277,9 +285,9 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
           <div class="level-title" id="levelTitle">Практик</div>
         </div>
         <div style="flex:1 1 auto;">
-          <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">До уровня <strong style="color:var(--text);">Эксперт</strong></div>
+          <div style="font-size:13px; color:var(--muted); margin-bottom:8px;" id="levelNextLabel">До уровня <strong style="color:var(--text);">Эксперт</strong></div>
           <div class="level-bar-track"><div class="level-bar-fill" id="levelBar"></div></div>
-          <div style="font-size:13px; color:var(--muted-2); margin-top:8px;">Использовано <strong id="levelUsed" style="color:var(--text);">34</strong> из <strong style="color:var(--text);">50</strong> решений</div>
+          <div class="level-breakdown" id="levelBreakdown"></div>
         </div>
         <div style="flex:0 0 auto; text-align:center;">
           <div class="pips" id="pips"></div>
@@ -303,27 +311,28 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     <div class="card pad no-hover">
       <div class="chart-row">
         <h3 style="margin:0;">Моя активность</h3>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <div class="seg" id="segPeriod">
-            <button class="active" data-period="7">7д</button>
-            <button data-period="30">30д</button>
-            <button data-period="90">90д</button>
-          </div>
-          <div class="seg" id="segType">
-            <button class="active" data-chart="line">Линейный</button>
-            <button data-chart="bar">Столбчатый</button>
-          </div>
-        </div>
       </div>
       <div class="chart-flex">
         <div>
-          <div class="chart-canvas-wrap" style="position:relative; height:260px; width:100%;">
-            <canvas id="cPersonalActivity" style="transition: opacity .15s ease;"></canvas>
-          </div>
-          <div class="legend">
-            <div class="leg-item"><span class="dot" style="background:var(--ok);"></span> Кейсы</div>
-            <div class="leg-item"><span class="dot" style="background:var(--pilot);"></span> Промпты</div>
-            <div class="leg-item"><span class="dot" style="background:var(--warn);"></span> Инструменты</div>
+          <div class="stats-panel" id="statsPanel">
+            <div class="stat-row">
+              <span class="stat-dot" style="background:var(--ok);"></span>
+              <span class="stat-label">Кейсов</span>
+              <span class="stat-value" id="statCases">0</span>
+              <span class="stat-pct" id="statCasesPct"></span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-dot" style="background:var(--pilot);"></span>
+              <span class="stat-label">Промптов</span>
+              <span class="stat-value" id="statPrompts">0</span>
+              <span class="stat-pct" id="statPromptsPct"></span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-dot" style="background:var(--warn);"></span>
+              <span class="stat-label">Инструментов</span>
+              <span class="stat-value" id="statTools">0</span>
+              <span class="stat-pct" id="statToolsPct"></span>
+            </div>
           </div>
         </div>
         <div>
@@ -333,7 +342,7 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
         </div>
       </div>
 
-      <!-- HEATMAP — Активность за последний год -->
+      <!-- HEATMAP — HIDDEN (commented out, not deleted)
       <div style="margin-top:28px; border-top:1px solid rgba(255,255,255,.08); padding-top:20px;">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
           <h4 style="margin:0; font-size:15px; font-weight:600;">Активность за последний год</h4>
@@ -371,11 +380,14 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
           <div class="card" style="flex:1; min-width:120px; padding:14px 18px; text-align:center;">
             <div id="hmCases" style="font-size:26px; font-weight:900; color:var(--warn);">0</div>
             <div style="font-size:12px; color:var(--muted); margin-top:4px;">кейсов решено</div>
-            <!-- [DB] /api/user/stats -> cases_total -->
+          </div>
+          <div class="card" style="flex:1; min-width:120px; padding:14px 18px; text-align:center;">
+            <div id="hmPrompts" style="font-size:26px; font-weight:900; color:rgba(0,200,120,.9);">0</div>
+            <div style="font-size:12px; color:var(--muted); margin-top:4px;">промптов использовано</div>
           </div>
         </div>
       </div>
-      <!-- END HEATMAP -->
+      END HEATMAP -->
 
     </div>
   </div>
@@ -641,17 +653,125 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     requestAnimationFrame(tick);
   }
 
-  (function renderPips() {
+  /* ===== LEVEL THRESHOLDS (all 3 must be met) ===== */
+  var LEVEL_THRESHOLDS = [
+    { cases: 0,  prompts: 0,  activeDays: 0  }, // Level 1 — Новичок
+    { cases: 2,  prompts: 5,  activeDays: 2  }, // Level 2 — Исследователь
+    { cases: 5,  prompts: 15, activeDays: 5  }, // Level 3 — Практик
+    { cases: 10, prompts: 40, activeDays: 10 }, // Level 4 — Эксперт
+    { cases: 17, prompts: 80, activeDays: 20 }  // Level 5 — Лидер
+  ];
+
+  function computeLevel(metrics) {
+    var cases = metrics.cases || 0;
+    var prompts = metrics.prompts || 0;
+    var activeDays = metrics.activeDays || 0;
+
+    var level = 1;
+    for (var i = 1; i < LEVEL_THRESHOLDS.length; i++) {
+      var t = LEVEL_THRESHOLDS[i];
+      if (cases >= t.cases && prompts >= t.prompts && activeDays >= t.activeDays) {
+        level = i + 1;
+      } else {
+        break;
+      }
+    }
+
+    var progress = 100;
+    var nextThreshold = null;
+    if (level < 5) {
+      nextThreshold = LEVEL_THRESHOLDS[level];
+      var prevThreshold = LEVEL_THRESHOLDS[level - 1];
+      var rangeCases = nextThreshold.cases - prevThreshold.cases;
+      var rangePrompts = nextThreshold.prompts - prevThreshold.prompts;
+      var rangeDays = nextThreshold.activeDays - prevThreshold.activeDays;
+
+      var pctCases = rangeCases > 0 ? Math.min(((cases - prevThreshold.cases) / rangeCases) * 100, 100) : 100;
+      var pctPrompts = rangePrompts > 0 ? Math.min(((prompts - prevThreshold.prompts) / rangePrompts) * 100, 100) : 100;
+      var pctDays = rangeDays > 0 ? Math.min(((activeDays - prevThreshold.activeDays) / rangeDays) * 100, 100) : 100;
+
+      progress = Math.max(0, Math.min(Math.floor(Math.min(pctCases, pctPrompts, pctDays)), 99));
+    }
+
+    return {
+      level: level,
+      title: LEVELS[level - 1],
+      progress: progress,
+      nextTitle: level < 5 ? LEVELS[level] : null,
+      nextThreshold: nextThreshold,
+      currentValues: { cases: cases, prompts: prompts, activeDays: activeDays }
+    };
+  }
+
+  function renderLevelSection(info) {
+    document.getElementById('levelNum').textContent = info.level;
+    document.getElementById('levelTitle').textContent = info.title;
+
+    var nextLabel = document.getElementById('levelNextLabel');
+    if (nextLabel) {
+      if (info.level >= 5) {
+        nextLabel.innerHTML = '<strong style="color:var(--ok);">Максимальный уровень достигнут!</strong>';
+      } else {
+        nextLabel.innerHTML = 'До уровня <strong style="color:var(--text);">' + info.nextTitle + '</strong>';
+      }
+    }
+
+    var breakdown = document.getElementById('levelBreakdown');
+    if (breakdown) {
+      if (info.level >= 5) {
+        breakdown.innerHTML = 'Вы достигли высшего уровня ИИ-зрелости';
+      } else {
+        var nt = info.nextThreshold;
+        var cv = info.currentValues;
+        breakdown.innerHTML =
+          'Кейсов: <strong>' + cv.cases + '</strong> / ' + nt.cases +
+          ' &nbsp;&middot;&nbsp; Промптов: <strong>' + cv.prompts + '</strong> / ' + nt.prompts +
+          ' &nbsp;&middot;&nbsp; Дней: <strong>' + cv.activeDays + '</strong> / ' + nt.activeDays;
+      }
+    }
+
+    setTimeout(function() {
+      document.getElementById('levelBar').style.width = info.progress + '%';
+    }, 300);
+
     var pips = document.getElementById('pips'); pips.innerHTML = '';
     for (var i = 1; i <= 5; i++) {
       var pip = document.createElement('div'); pip.className = 'pip';
-      if (i < PROFILE.level) pip.classList.add('done');
-      if (i === PROFILE.level) pip.classList.add('current');
+      if (i < info.level) pip.classList.add('done');
+      if (i === info.level) pip.classList.add('current');
       pips.appendChild(pip);
     }
-  })();
 
-  setTimeout(function() { document.getElementById('levelBar').style.width = PROFILE.levelProgress + '%'; }, 300);
+    var badge = document.querySelector('.reco-card .badge');
+    if (badge) {
+      if (info.level >= 5) {
+        badge.textContent = 'Уровень 5: Лидер (максимум)';
+        badge.className = 'badge ok';
+      } else {
+        badge.textContent = 'Уровень ' + info.level + ' \u2192 ' + (info.level + 1) + ': ' + info.title + ' \u2192 ' + info.nextTitle;
+      }
+    }
+  }
+
+  var levelInfo = computeLevel(PROFILE.metrics);
+  PROFILE.level = levelInfo.level;
+  PROFILE.levelProgress = levelInfo.progress;
+  renderLevelSection(levelInfo);
+
+  /* ===== STATS PANEL ===== */
+  function renderStatsPanel() {
+    var m = PROFILE.metrics;
+    var total = (m.cases || 0) + (m.prompts || 0) + (m.tools || 0);
+    function pct(v) { return total > 0 ? ((v / total) * 100).toFixed(1) : '0.0'; }
+
+    animateCounter(document.getElementById('statCases'), m.cases, 800);
+    animateCounter(document.getElementById('statPrompts'), m.prompts, 800);
+    animateCounter(document.getElementById('statTools'), m.tools, 800);
+    document.getElementById('statCasesPct').textContent = '(' + pct(m.cases) + '%)';
+    document.getElementById('statPromptsPct').textContent = '(' + pct(m.prompts) + '%)';
+    document.getElementById('statToolsPct').textContent = '(' + pct(m.tools) + '%)';
+  }
+  renderStatsPanel();
 
   var KPI = [
     { key:'cases', label:'Решённых<br/>кейсов', delta:'+12% за месяц' },
@@ -805,40 +925,7 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   Chart.defaults.color = 'rgba(255,255,255,.68)';
   Chart.defaults.borderColor = 'rgba(255,255,255,.08)';
 
-  function genActivityData(days) {
-    var data = { labels: [], cases: [], prompts: [], tools: [] };
-    var now = new Date();
-    for (var i = days - 1; i >= 0; i--) {
-      var d = new Date(now); d.setDate(d.getDate() - i);
-      var label = days <= 7 ? d.toLocaleDateString('ru', { weekday: 'short' }) : d.toLocaleDateString('ru', { day: 'numeric', month: 'short' });
-      data.labels.push(label);
-      data.cases.push(Math.floor(Math.random() * 5 + 1));
-      data.prompts.push(Math.floor(Math.random() * 8 + 2));
-      data.tools.push(Math.floor(Math.random() * 3));
-    }
-    return data;
-  }
-
-  var activityChart = null, donutChart = null, currentPeriod = 7, currentChartType = 'line';
-
-  function buildActivityChart() {
-    var canvas = document.getElementById('cPersonalActivity');
-    var data = genActivityData(currentPeriod);
-    var isLine = currentChartType === 'line';
-    var datasets = [
-      { label: 'Кейсы', data: data.cases, borderColor: 'rgba(38, 210, 152, .95)', backgroundColor: 'rgba(38, 210, 152, .15)', fill: isLine, tension: 0.4, borderWidth: 2, pointRadius: isLine ? 3 : 0, pointHoverRadius: 5, borderRadius: isLine ? 0 : 6 },
-      { label: 'Промпты', data: data.prompts, borderColor: 'rgba(120, 140, 255, .95)', backgroundColor: 'rgba(120, 140, 255, .15)', fill: isLine, tension: 0.4, borderWidth: 2, pointRadius: isLine ? 3 : 0, pointHoverRadius: 5, borderRadius: isLine ? 0 : 6 },
-      { label: 'Инструменты', data: data.tools, borderColor: 'rgba(255, 193, 7, .95)', backgroundColor: 'rgba(255, 193, 7, .15)', fill: isLine, tension: 0.4, borderWidth: 2, pointRadius: isLine ? 3 : 0, pointHoverRadius: 5, borderRadius: isLine ? 0 : 6 }
-    ];
-    if (activityChart) activityChart.destroy();
-    activityChart = new Chart(canvas, {
-      type: currentChartType, data: { labels: data.labels, datasets: datasets },
-      options: { responsive: true, maintainAspectRatio: false, animation: { duration: 500, easing: 'easeInOutQuart' }, interaction: { intersect: false, mode: 'index' },
-        plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(10,12,18,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1, cornerRadius: 12, padding: 12, titleFont: { weight: 600 } } },
-        scales: { x: { grid: { display: false }, ticks: { font: { size: 11 } } }, y: { grid: { color: 'rgba(255,255,255,.06)' }, ticks: { font: { size: 11 } }, beginAtZero: true } }
-      }
-    });
-  }
+  var donutChart = null;
 
   function buildDonut() {
     var canvas = document.getElementById('cPersonalDonut');
@@ -854,28 +941,12 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     });
   }
 
-  function switchChart(period, type) {
-    var canvas = document.getElementById('cPersonalActivity');
-    canvas.style.opacity = '0';
-    setTimeout(function() { currentPeriod = period; currentChartType = type; buildActivityChart(); canvas.style.opacity = '1'; }, 150);
-  }
+  /* buildActivityChart, switchChart, segPeriod/segType listeners removed — replaced by stats panel */
 
-  document.getElementById('segPeriod').addEventListener('click', function(e) {
-    var btn = e.target.closest('button'); if (!btn) return;
-    document.querySelectorAll('#segPeriod button').forEach(function(b){ b.classList.remove('active'); });
-    btn.classList.add('active'); switchChart(parseInt(btn.dataset.period), currentChartType);
-  });
+  if (typeof Chart !== 'undefined') { buildDonut(); }
+  else { document.addEventListener('DOMContentLoaded', function() { buildDonut(); }); }
 
-  document.getElementById('segType').addEventListener('click', function(e) {
-    var btn = e.target.closest('button'); if (!btn) return;
-    document.querySelectorAll('#segType button').forEach(function(b){ b.classList.remove('active'); });
-    btn.classList.add('active'); switchChart(currentPeriod, btn.dataset.chart);
-  });
-
-  if (typeof Chart !== 'undefined') { buildActivityChart(); buildDonut(); }
-  else { document.addEventListener('DOMContentLoaded', function() { buildActivityChart(); buildDonut(); }); }
-
-  /* ===== HEATMAP ===== */
+  /* ===== HEATMAP — HIDDEN (commented out, not deleted) =====
   (function() {
     // [DB] Заменить на fetch('/api/user/activity-heatmap?userId=__USER_ID__&days=365')
     function genHeatmapData() {
@@ -1029,9 +1100,18 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
       animNum('hmStreak', s.streak);
       animNum('hmStreakMax', s.maxStreak);
       animNum('hmCases', PROFILE.metrics.cases);
+
+      // Load prompt usage count from API
+      var authLogin = localStorage.getItem('auth_login') || '';
+      if (authLogin) {
+        fetch('/api/prompt-usages/count/' + encodeURIComponent(authLogin))
+          .then(function(r) { return r.json(); })
+          .then(function(d) { if (d && typeof d.count === 'number') animNum('hmPrompts', d.count); })
+          .catch(function() {});
+      }
     }
   })();
-  /* ===== END HEATMAP ===== */
+  ===== END HEATMAP ===== */
 
   // ===== ВЫХОД ИЗ ЛИЧНОГО КАБИНЕТА =====
   var logoutButtons = [];

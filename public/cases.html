@@ -366,14 +366,14 @@
       border-color: rgba(255,255,255,.22);
     }
     .cs-trigger.is-open {
-      border-color: rgba(0,212,255,.45);
-      background: rgba(0,212,255,.07);
-      color: rgba(0,212,255,.9);
+      border-color: rgba(0,200,120,.45);
+      background: rgba(0,200,120,.07);
+      color: rgba(0,200,120,.9);
     }
     .cs-trigger.is-active {
-      border-color: rgba(0,212,255,.45);
-      background: rgba(0,212,255,.09);
-      color: rgba(0,212,255,.9);
+      border-color: rgba(0,200,120,.45);
+      background: rgba(0,200,120,.09);
+      color: rgba(0,200,120,.9);
     }
     .cs-chevron {
       display: inline-flex;
@@ -458,7 +458,7 @@
     }
     .cs-item:hover { background:rgba(255,255,255,.07); color:rgba(255,255,255,.95); }
     .cs-item.is-selected {
-      color:rgba(0,212,255,.9); background:rgba(0,212,255,.08); font-weight:500;
+      color:rgba(0,200,120,.9); background:rgba(0,200,120,.08); font-weight:500;
     }
 
     .statusline{
@@ -1537,6 +1537,53 @@
       margin-top: 8px;
     }
 
+    /* Prompt usage modal */
+    .pu-modal-overlay{
+      display:none; position:fixed; inset:0; z-index:9999;
+      background:rgba(0,0,0,.6); backdrop-filter:blur(6px);
+      justify-content:center; align-items:center;
+    }
+    .pu-modal-overlay.open{ display:flex; }
+    .pu-modal{
+      background: var(--card, rgba(14,18,28,.96));
+      border: 1px solid var(--stroke, rgba(255,255,255,.1));
+      border-radius: 18px;
+      padding: 28px 24px;
+      width: 100%; max-width: 360px;
+      position: relative;
+      text-align: center;
+    }
+    .pu-modal-close{
+      position:absolute; top:12px; right:14px; background:none; border:none;
+      color:var(--muted); font-size:20px; cursor:pointer; line-height:1;
+    }
+    .pu-modal-close:hover{ color:#fff; }
+    .pu-modal h3{ margin:0 0 18px; font-size:16px; }
+    .pu-modal-confirm{
+      padding:11px 28px; border-radius:12px; border:none;
+      background:linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
+      color:#fff; font:inherit; font-size:14px; cursor:pointer; transition:opacity .15s;
+    }
+    .pu-modal-confirm:hover{ opacity:.88; }
+    .pu-modal-ok{ color:rgba(0,210,120,.9); font-size:15px; margin-top:12px; display:none; }
+
+    .prompts-show-more{
+      display: flex;
+      justify-content: flex-start;
+      margin-top: 18px;
+    }
+    .prompts-show-more .btn{
+      background: linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
+      border-color: rgba(255,255,255,.18);
+      color: rgba(255,255,255,.97);
+      padding: 12px 32px;
+      font-size: 14px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .prompts-show-more .btn:hover{ opacity: .88; }
+
     .site-footer{
       margin-top:auto; border-top:1px solid var(--stroke);
       background:rgba(7,10,16,.94); backdrop-filter:var(--blur);
@@ -1600,6 +1647,111 @@
         transform: scale(1.25);
       }
     }
+    /* ── Feedback widget ── */
+    .fb-popup{
+      position:fixed; bottom:24px; right:24px; z-index:51;
+      width:420px; max-width:calc(100vw - 48px);
+      padding:24px;
+      background:
+        radial-gradient(600px 300px at 15% 25%, rgba(0,190,110,.18), transparent 60%),
+        radial-gradient(600px 300px at 85% 10%, rgba(0,220,120,.14), transparent 60%),
+        rgba(10,14,24,.92);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:var(--radius);
+      backdrop-filter:var(--blur);
+      -webkit-backdrop-filter:var(--blur);
+      box-shadow: 0 18px 60px rgba(0,0,0,.55);
+      animation: fbSlideIn .3s ease-out;
+    }
+    .fb-popup[hidden]{ display:none; }
+    .fb-popup.fb-closing{ animation: fbSlideOut .2s ease-in forwards; }
+
+    @keyframes fbSlideIn{ from{ opacity:0; transform:translateY(20px); } to{ opacity:1; transform:translateY(0); }}
+    @keyframes fbSlideOut{ from{ opacity:1; transform:translateY(0); } to{ opacity:0; transform:translateY(20px); }}
+
+    .fb-close{
+      position:absolute; top:12px; right:12px;
+      width:28px; height:28px; border-radius:50%;
+      border:1px solid var(--stroke); background:rgba(255,255,255,.05);
+      color:var(--muted); cursor:pointer; font-size:16px;
+      display:flex; align-items:center; justify-content:center;
+      transition: background .15s;
+    }
+    .fb-close:hover{ background:rgba(255,255,255,.12); }
+
+    .fb-step{ transition: opacity .2s ease; }
+    .fb-step[hidden]{ display:none; }
+
+    .fb-scores{
+      display:flex; gap:5px; justify-content:center;
+      margin-top:14px; flex-wrap:nowrap;
+    }
+    .fb-score-btn{
+      width:34px; height:34px; border-radius:50%;
+      border:1px solid var(--stroke-2);
+      background:rgba(255,255,255,.04);
+      color:var(--muted); cursor:pointer;
+      font-size:13px; font-weight:700;
+      transition: all .15s ease;
+      flex-shrink:0;
+    }
+    .fb-score-btn:hover{
+      background:rgba(78,135,255,.15);
+      border-color:rgba(78,135,255,.4);
+      color:var(--text);
+    }
+    .fb-score-btn.selected{
+      background:rgba(78,135,255,.95);
+      border-color:rgba(78,135,255,.95);
+      color:#fff;
+      box-shadow: 0 0 12px rgba(78,135,255,.4);
+    }
+    .fb-score-btn.selected.sc-low{
+      background:var(--danger); border-color:var(--danger);
+      box-shadow: 0 0 12px rgba(255,96,96,.35);
+    }
+    .fb-score-btn.selected.sc-mid{
+      background:var(--ok); border-color:var(--ok); color:#fff;
+      box-shadow: 0 0 12px rgba(38,210,152,.35);
+    }
+    .fb-score-btn.selected.sc-high{
+      background:var(--ok); border-color:var(--ok);
+      box-shadow: 0 0 12px rgba(38,210,152,.35);
+    }
+
+    .fb-labels{
+      display:flex; justify-content:space-between;
+      margin-top:16px;
+      font-size:12px; color:var(--muted-2);
+    }
+
+    .fb-textarea{
+      width:100%; margin-top:14px; padding:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.05);
+      border-radius:14px; color:var(--text);
+      resize:vertical; font-size:14px; line-height:1.4;
+      min-height:80px;
+    }
+    .fb-textarea::placeholder{ color:var(--muted-2); }
+    .fb-textarea:focus{ outline:none; border-color:rgba(78,135,255,.5); }
+
+    .fb-submit{
+      width:100%; margin-top:12px; padding:12px 20px;
+      background:rgba(78,135,255,.95); border:none;
+      border-radius:14px; color:#fff;
+      font-weight:700; font-size:14px;
+      cursor:pointer; transition: background .15s;
+    }
+    .fb-submit:hover{ background:rgba(78,135,255,1); }
+    .fb-submit:disabled{ opacity:.5; cursor:not-allowed; }
+
+    @media(max-width:480px){
+      .fb-popup{ left:12px; right:12px; bottom:12px; width:auto; padding:18px; }
+      .fb-score-btn{ width:28px; height:28px; font-size:11px; }
+      .fb-scores{ gap:3px; }
+    }
+
   </style>
 </head>
 <body>
@@ -1614,7 +1766,7 @@
         <a class="navlink" href="/education" data-section="training">Обучение</a>
         <a class="navlink active" href="/cases" data-section="cases">Кейсы</a>
         <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
-        <a class="navlink" href="#feedback" data-section="feedback">Обратная связь</a>
+        <!-- <a class="navlink" href="#feedback" data-section="feedback">Обратная связь</a> -->
         <a class="profile-btn" href="/profile" id="profileBtn">
           <span class="nowrap">Личный кабинет</span>
         </a>
@@ -1627,7 +1779,7 @@
       <a class="navlink" href="/education" data-section="training">Обучение</a>
       <a class="navlink active" href="/cases" data-section="cases">Кейсы</a>
       <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
-      <a class="navlink" href="#feedback" data-section="feedback">Обратная связь</a>
+      <!-- <a class="navlink" href="#feedback" data-section="feedback">Обратная связь</a> -->
       <a class="profile-btn" href="/profile">
         <span class="nowrap">Личный кабинет</span>
       </a>
@@ -1662,12 +1814,27 @@
           <h2 class="h2">Библиотека промптов</h2>
           <p class="lead">Раздел структурирован по направлениям — раскройте нужный, скопируйте промпт и подставьте значения в [квадратные скобки]</p>
           <div class="accordion" id="promptsAccordion" style="margin-top:18px;">
-            <div id="promptsAccordionInner" class="prompts-acc-inner">
-              <p class="muted" style="padding:12px 0;">Загрузка промптов…</p>
-            </div>
-            <nav class="prompts-pagination" id="promptsPagination" hidden aria-label="Страницы направлений"></nav>
+            <p class="muted" style="padding:12px 0;">Загрузка промптов…</p>
+          </div>
+          <div class="prompts-show-more" id="promptsShowMoreWrap" style="display:none;">
+            <button class="btn" id="promptsShowMore">Показать все</button>
           </div>
         </div>
+
+    <!-- Prompt usage confirmation modal -->
+    <div class="pu-modal-overlay" id="puModal">
+      <div class="pu-modal">
+        <button class="pu-modal-close" id="puModalClose">&times;</button>
+        <div id="puModalAsk">
+          <h3>Вы использовали этот промпт?</h3>
+          <button class="pu-modal-confirm" id="puModalConfirm">Да, использовал(а)</button>
+        </div>
+        <div id="puModalOk" style="display:none; padding:18px 0;">
+          <div style="font-size:28px; margin-bottom:10px;">✓</div>
+          <div style="font-size:15px; color:rgba(0,210,120,.9);">Принято, результат учтён в вашей статистике</div>
+        </div>
+      </div>
+    </div>
       </div>
     </section>
 
@@ -1680,7 +1847,6 @@
 
           <div class="controls" style="margin-top:18px;">
             <div class="field" style="flex:1; min-width: 180px;">
-              <span class="muted2">🔎</span>
               <input id="caseSearch" type="text" placeholder="Поиск по кейсам (например: презентация, видео, протокол)" />
             </div>
             <div class="field">
@@ -1715,7 +1881,8 @@
       </div>
     </section>
 
-    <!-- ОБРАТНАЯ СВЯЗЬ -->
+    <!-- ОБРАТНАЯ СВЯЗЬ (скрыто — заменено popup-виджетом на дашборде) -->
+    <!--
     <section id="feedback">
       <div class="wrap">
         <div class="panel pad">
@@ -1811,6 +1978,7 @@
         </div>
       </div>
     </section>
+    -->
   </main>
 
   <footer class="site-footer">
@@ -1833,7 +2001,7 @@
       <div>
         <p class="footer-col-title">Контакты</p>
         <ul class="footer-links">
-          <li><a href="#feedback">Написать нам</a></li>
+          <!-- <li><a href="#feedback">Написать нам</a></li> -->
           <li><a href="/">На главную</a></li>
         </ul>
       </div>
@@ -2607,10 +2775,33 @@
         arr.push(payload);
         setJson(LS_FEEDBACK, arr);
 
+        // Send to server
+        try {
+          fetch('/api/analytics/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify([{
+              timestamp: payload.created_at,
+              event_type: 'feedback',
+              ticket_id: 'T-' + Math.random().toString(36).slice(2,7).toUpperCase(),
+              department: department === 'other' ? departmentOther : department,
+              type: type,
+              message: message,
+              rating: parseInt(rating) || 0,
+              fio: fio,
+              phone: phone,
+              telegram: tg,
+              email: email,
+              section: section,
+              link: link
+            }])
+          });
+        } catch(e) {}
+
         if (successEl) {
-          successEl.textContent = "Заявка сохранена локально. Для отправки можно выгрузить JSON и передать его команде.";
+          successEl.textContent = "Заявка отправлена и сохранена.";
         }
-        showToast("Заявка сохранена локально");
+        showToast("Заявка отправлена");
       });
 
       exportBtn?.addEventListener("click", () => {
@@ -2698,7 +2889,7 @@
         }
       });
       // Библиотека промптов — загрузка из БД
-      renderPrompts().then(() => { initTypingAnimations(); initPromptSliders(); });
+      renderPrompts();
       initFeedbackForm();
 
       // события фильтров (слушаем hidden <select> — кастомный компонент сам диспатчит change)
@@ -2777,6 +2968,13 @@
           if (!el) return;
           const text = "value" in el ? el.value : el.innerText;
           copyText(text);
+          // If inside prompt library, show usage confirmation modal
+          if (copyBtn.closest('.prompt-card')) {
+            const card = copyBtn.closest('.prompt-card');
+            const title = card.querySelector('.prompt-card-title')?.textContent || '';
+            const pid = selector.replace('#prompt_', '');
+            showPromptUsageModal(pid, title);
+          }
           return;
         }
       });
@@ -2938,98 +3136,26 @@
     }
 
     // ── Render prompts accordion ───────────────────────────────────────────────
-    async function renderPrompts() {
-      var outer = document.getElementById('promptsAccordion');
-      var inner = document.getElementById('promptsAccordionInner');
-      if (!outer || !inner) return;
-      const prompts = await loadFromApi('/api/prompts');
-      if (!prompts || !Array.isArray(prompts)) {
-        inner.innerHTML = `
-          <div class="acc-item open">
-            <div class="acc-head"><div class="acc-title"><b>Коммуникации (письма, записки, ответы)</b><span>Официальный стиль, лимит объёма, варианты формулировок</span></div><span class="muted2">▾</span></div>
-            <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Официальное письмо (универсальное)</div><div class="prompt-card-meta">Черновик официального письма по тезисам</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_1" readonly>Роль: ты специалист Центра.
-Цель: подготовить официальное письмо [кому] по теме: [тема].
-</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Письмо‑приглашение на встречу</div><div class="prompt-card-meta">Краткое приглашение с предложением слотов</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_comm_2" readonly>Роль: организатор встречи.
-Цель: письмо‑приглашение на встречу по теме: [тема].
-Формат: официальный но живой тон.
-Структура: 1) повод; 2) три варианта слотов; 3) просьба подтвердить время</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_comm_2">Копировать</button></div></div>
-            </div></div>
+    function buildPromptCard(p, idSuffix) {
+      const pid = 'prompt_' + safeId(idSuffix || p.id);
+      return `
+        <div class="prompt-card">
+          <div class="prompt-card-title">${escapeHtml(p.title)}</div>
+          <div class="prompt-card-meta">${escapeHtml(p.meta || p.description || '')}</div>
+          <div class="codebox" style="margin-top:10px;">
+            <textarea class="prompt-input" id="${pid}" readonly>${escapeHtml(p.text || p.prompt || '')}</textarea>
           </div>
-          <div class="acc-item">
-            <div class="acc-head"><div class="acc-title"><b>Аналитика (справки, сравнения, выводы)</b><span>Таблицы, риски, допущения и проверяемость.</span></div><span class="muted2">▾</span></div>
-            <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Справка по документу</div><div class="prompt-card-meta">Короткая выжимка, требования, риски и вопросы.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_analytics_1" readonly>Роль: аналитик.
-Цель: краткая справка по документу.
-Контекст: вставь текст документа.
-Формат: 1) резюме; 2) требования; 3) риски и пробелы; 4) вопросы для уточнения.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_analytics_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Сравнительный анализ вариантов</div><div class="prompt-card-meta">Сравнение 2–4 вариантов по единым критериям.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_analytics_2" readonly>Роль: аналитик.
-Цель: сравнить варианты решения задачи.
-Контекст: опиши 2–4 варианта и критерии выбора.
-Формат: таблица (вариант / плюсы / риски / сроки) + выводы.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_analytics_2">Копировать</button></div></div>
-            </div></div>
+          <div class="prompt-card-actions">
+            <button class="btn small" type="button" data-copy="#${pid}">Копировать</button>
           </div>
-          <div class="acc-item">
-            <div class="acc-head"><div class="acc-title"><b>Проекты (протоколы, ТЗ, требования)</b><span>Протоколы, задачи, срок, критерии приёмки.</span></div><span class="muted2">▾</span></div>
-            <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Протокол встречи из заметок</div><div class="prompt-card-meta">Структурированный протокол по заметкам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_1" readonly>Роль: секретарь или PM встречи.
-Цель: оформить протокол по итогам встречи.
-Заметки: [вставь конспект].
-Формат: 1) участники; 2) повестка; 3) решения; 4) поручения (кто/что/срок); 5) вопросы.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Черновик ТЗ по задаче</div><div class="prompt-card-meta">Структурный черновик технического задания.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_projects_2" readonly>Роль: постановщик задачи.
-Цель: черновик ТЗ по проекту.
-Контекст: кто заказчик, цель, ожидаемый результат.
-Формат: цель / требования / ограничения / критерии приёмки.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_projects_2">Копировать</button></div></div>
-            </div></div>
-          </div>
-          <div class="acc-item">
-            <div class="acc-head"><div class="acc-title"><b>Отчётность и презентации</b><span>Еженедельные статусы, структура презентации.</span></div><span class="muted2">▾</span></div>
-            <div class="acc-body"><div class="prompt-grid">
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">1) Еженедельный статус по проекту</div><div class="prompt-card-meta">Отчёт по прогрессу, рискам и следующим шагам.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_report_1" readonly>Роль: руководитель проекта.
-Цель: статус за неделю.
-Контекст: что сделано, что в работе, какие блокеры.
-Формат: 1) общий статус; 2) таблица задач (задача/статус/владелец); 3) риски.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_report_1">Копировать</button></div></div>
-              <div class="prompt-card"><div class="prompt-card-head"><div><div class="prompt-card-title">2) Структура презентации для решения</div><div class="prompt-card-meta">Список слайдов для презентации руководству.</div></div></div><div class="codebox" style="margin-top:10px;"><textarea class="prompt-input" id="prompt_report_2" readonly>Роль: автор презентации.
-Цель: структура презентации по теме: [тема].
-Формат: список слайдов до 12 с описанием.
-Обязательно: проблема, цель, варианты, анализ, рекомендация, план, риски.</textarea></div><div class="prompt-card-actions"><button class="btn small" type="button" data-copy="#prompt_report_2">Копировать</button></div></div>
-            </div></div>
-          </div>`;
-        outer.querySelectorAll('.acc-item .acc-head').forEach(head => {
-          head.addEventListener('click', () => {
-            const item = head.closest('.acc-item');
-            const wasOpen = item.classList.contains('open');
-            inner.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
-            if (!wasOpen) item.classList.add('open');
-          });
-        });
-        initPromptsPagination();
-        initPromptSliders();
-        return;
-      }
+        </div>`;
+    }
 
-      // Group by sectionTitle
-      const sections = [];
-      const sectionMap = {};
-      prompts.forEach(p => {
-        const key = p.sectionTitle || 'Другое';
-        if (!sectionMap[key]) {
-          sectionMap[key] = { title: key, subtitle: p.sectionSubtitle || '', items: [] };
-          sections.push(sectionMap[key]);
-        }
-        sectionMap[key].items.push(p);
-      });
-
-      if (sections.length === 0) {
-        inner.innerHTML = '<p class="muted" style="padding:12px 0;">Промптов пока нет. Добавьте их в <a href="/admin">админ-панели</a>.</p>';
-        var emptyNav = document.getElementById('promptsPagination');
-        if (emptyNav) { emptyNav.hidden = true; emptyNav.innerHTML = ''; emptyNav.onclick = null; }
-        return;
-      }
-
-      inner.innerHTML = sections.map((sec, si) => `
-        <div class="acc-item${si === 0 ? ' open' : ''}">
+    function renderSections(container, sections) {
+      sections.forEach((sec, si) => {
+        const div = document.createElement('div');
+        div.className = 'acc-item';
+        div.innerHTML = `
           <div class="acc-head">
             <div class="acc-title">
               <b>${escapeHtml(sec.title)}</b>
@@ -3039,42 +3165,133 @@
           </div>
           <div class="acc-body">
             <div class="prompt-grid">
-              ${sec.items.map(p => `
-                <div class="prompt-card">
-                  <div class="prompt-card-head">
-                    <div>
-                      <div class="prompt-card-title">${escapeHtml(p.title)}</div>
-                      <div class="prompt-card-meta">${escapeHtml(p.meta||'')}</div>
-                    </div>
-                  </div>
-                  <div class="codebox" style="margin-top:10px;">
-                    <textarea class="prompt-input" id="prompt_${safeId(p.id)}" readonly>${escapeHtml(p.text||'')}</textarea>
-                  </div>
-                  <div class="prompt-card-actions">
-                    <button class="btn small" type="button" data-copy="#prompt_${safeId(p.id)}">Копировать</button>
-                  </div>
-                </div>
-              `).join('')}
+              ${sec.items.map((p, pi) => buildPromptCard(p, sec.title + '_' + si + '_' + pi)).join('')}
             </div>
-          </div>
-        </div>
-      `).join('');
-
-      // Re-bind accordion clicks
-      outer.querySelectorAll('.acc-item .acc-head').forEach(head => {
-        head.addEventListener('click', () => {
-          const item = head.closest('.acc-item');
-          const wasOpen = item.classList.contains('open');
-          inner.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
-          if (!wasOpen) item.classList.add('open');
+          </div>`;
+        div.querySelector('.acc-head').addEventListener('click', () => {
+          const wasOpen = div.classList.contains('open');
+          container.querySelectorAll('.acc-item').forEach(i => i.classList.remove('open'));
+          if (!wasOpen) div.classList.add('open');
         });
+        container.appendChild(div);
+      });
+    }
+
+    async function renderPrompts() {
+      const container = document.getElementById('promptsAccordion');
+      const showMoreWrap = document.getElementById('promptsShowMoreWrap');
+      const showMoreBtn  = document.getElementById('promptsShowMore');
+      if (!container) return;
+
+      let prompts = await loadFromApi('/api/prompts');
+
+      // Fallback: if API has fewer than 10, load from static JSON
+      if (!prompts || prompts.length < 10) {
+        try {
+          const resp = await fetch('/prompt-library.json');
+          if (resp.ok) {
+            const lib = await resp.json();
+            const flat = [];
+            (lib.categories || []).forEach(cat => {
+              (cat.prompts || []).forEach(p => {
+                flat.push({ id: cat.id + '_' + p.id, sectionTitle: cat.name, sectionSubtitle: (cat.description || '').replace(/\.$/, ''), title: p.title, meta: (p.description || '').replace(/\.$/, ''), text: p.prompt || '', result: (p.result || '').replace(/\.$/, '') });
+              });
+            });
+            if (flat.length > 0) prompts = flat;
+          }
+        } catch(e) {}
+      }
+
+      // Group by sectionTitle
+      const HIDDEN_SECTIONS = ['Госсектор и публичное управление'];
+      const sections = [];
+      const sectionMap = {};
+      (prompts || []).forEach(p => {
+        const key = p.sectionTitle || 'Другое';
+        if (HIDDEN_SECTIONS.includes(key)) return;
+        if (!sectionMap[key]) {
+          sectionMap[key] = { title: key, subtitle: p.sectionSubtitle || '', items: [] };
+          sections.push(sectionMap[key]);
+        }
+        sectionMap[key].items.push(p);
       });
 
-      initPromptsPagination();
+      if (sections.length === 0) {
+        container.innerHTML = '<p class="muted" style="padding:12px 0;">Промптов пока нет. Добавьте их в <a href="/admin">админ-панели</a>.</p>';
+        if (showMoreWrap) showMoreWrap.style.display = 'none';
+        return;
+      }
 
-      // Re-attach typing observers after DOM rebuild
+      const VISIBLE = 3;
+      container.innerHTML = '';
+
+      const visibleSections = sections.slice(0, VISIBLE);
+      const hiddenSections  = sections.slice(VISIBLE);
+
+      renderSections(container, visibleSections);
       initTypingAnimations();
       initPromptSliders();
+
+      if (showMoreWrap && showMoreBtn) {
+        if (hiddenSections.length > 0) {
+          showMoreWrap.style.display = 'flex';
+          showMoreBtn.textContent = 'Показать все';
+          let expanded = false;
+          let hiddenEls = [];
+          showMoreBtn.onclick = () => {
+            expanded = !expanded;
+            if (expanded) {
+              renderSections(container, hiddenSections);
+              hiddenEls = Array.from(container.querySelectorAll('.acc-item')).slice(VISIBLE);
+              initPromptSliders();
+              showMoreBtn.textContent = 'Свернуть';
+            } else {
+              hiddenEls.forEach(el => el.remove());
+              hiddenEls = [];
+              container.querySelectorAll('.acc-item.open').forEach(i => i.classList.remove('open'));
+              initPromptSliders();
+              showMoreBtn.textContent = 'Показать все';
+              container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          };
+        } else {
+          showMoreWrap.style.display = 'none';
+        }
+      }
+    }
+
+    // ─── Prompt usage confirmation ──────────────────────────────────────────
+    function showPromptUsageModal(promptId, promptTitle) {
+      const overlay = document.getElementById('puModal');
+      const closeBtn = document.getElementById('puModalClose');
+      const confirmBtn = document.getElementById('puModalConfirm');
+      const askEl = document.getElementById('puModalAsk');
+      const okEl = document.getElementById('puModalOk');
+      if (!overlay) return;
+
+      askEl.style.display = '';
+      okEl.style.display = 'none';
+      overlay.classList.add('open');
+
+      function close() { overlay.classList.remove('open'); }
+      closeBtn.onclick = close;
+      overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+      confirmBtn.onclick = async () => {
+        const auth = JSON.parse(localStorage.getItem('mikAuth') || '{}');
+        const login = auth.login || localStorage.getItem('auth_login') || 'anonymous';
+        const name = auth.full_name || localStorage.getItem('auth_full_name') || '';
+        try {
+          await fetch('/api/prompt-usages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_login: login, user_name: name, prompt_id: promptId, prompt_title: promptTitle })
+          });
+        } catch(e) {}
+        askEl.style.display = 'none';
+        okEl.style.display = '';
+        setTimeout(close, 1200);
+      };
     }
 
     // ─── Typewriter animation ───────────────────────────────────────────────
@@ -3184,6 +3401,134 @@
       });
     }
 
+</script>
+
+<!-- Feedback popup -->
+<div class="fb-popup" id="fbPopup" hidden>
+  <button class="fb-close" id="fbClose" type="button" aria-label="Закрыть">&times;</button>
+
+  <div class="fb-step" id="fbStep1">
+    <h4 style="margin:0 0 6px;">Обратная связь</h4>
+    <p class="muted" style="font-size:14px; margin:0 0 4px;">Насколько для вас полезна платформа?</p>
+    <div class="fb-labels"><span>Совсем не полезна</span><span>Очень полезна</span></div>
+    <div class="fb-scores" id="fbScores"></div>
+  </div>
+
+  <div class="fb-step" id="fbStep2" hidden>
+    <h4 style="margin:0 0 6px;">Спасибо за оценку!</h4>
+    <p class="muted" style="font-size:14px; margin:0;">Расскажите подробнее — что понравилось или что можно улучшить?</p>
+    <textarea class="fb-textarea" id="fbComment" rows="4" placeholder="Ваш комментарий (необязательно)..."></textarea>
+    <button class="fb-submit" id="fbSubmit" type="button">Отправить</button>
+  </div>
+
+  <div class="fb-step" id="fbStep3" hidden>
+    <div style="text-align:center; padding:20px 0;">
+      <span style="font-size:32px; color:var(--ok);">&#10003;</span>
+      <h4 style="margin:8px 0 4px;">Спасибо!</h4>
+      <p class="muted" style="font-size:13px; margin:0;">Ваш отзыв помогает нам стать лучше</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const popup   = document.getElementById("fbPopup");
+  const closeBtn= document.getElementById("fbClose");
+  const scoresEl= document.getElementById("fbScores");
+  const step1   = document.getElementById("fbStep1");
+  const step2   = document.getElementById("fbStep2");
+  const step3   = document.getElementById("fbStep3");
+  const submitBtn=document.getElementById("fbSubmit");
+  const commentEl=document.getElementById("fbComment");
+  if (!popup) return;
+
+  const submitted = localStorage.getItem("fb_dashboard_submitted");
+  if (submitted && Date.now() - Number(submitted) < 7 * 86400000) return;
+
+  let fbScore = null;
+
+  for (let i = 1; i <= 10; i++) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "fb-score-btn";
+    btn.textContent = i;
+    btn.addEventListener("click", () => {
+      fbScore = i;
+      scoresEl.querySelectorAll(".fb-score-btn").forEach(b => {
+        b.classList.remove("selected", "sc-low", "sc-mid", "sc-high");
+      });
+      btn.classList.add("selected");
+      if (i <= 4) btn.classList.add("sc-low");
+      else if (i <= 7) btn.classList.add("sc-mid");
+      else btn.classList.add("sc-high");
+      setTimeout(() => { step1.hidden = true; step2.hidden = false; commentEl.focus(); }, 400);
+    });
+    scoresEl.appendChild(btn);
+  }
+
+  function openPopup() { popup.hidden = false; popup.classList.remove("fb-closing"); }
+  function closePopup() {
+    popup.classList.add("fb-closing");
+    setTimeout(() => {
+      popup.hidden = true;
+      popup.classList.remove("fb-closing");
+      step1.hidden = false; step2.hidden = true; step3.hidden = true;
+      scoresEl.querySelectorAll(".fb-score-btn").forEach(b => b.classList.remove("selected","sc-low","sc-mid","sc-high"));
+      fbScore = null;
+      commentEl.value = "";
+    }, 200);
+  }
+
+  closeBtn.addEventListener("click", closePopup);
+
+  // Auto-show after 10 seconds
+  setTimeout(() => {
+    if (popup.hidden) openPopup();
+  }, 10000);
+
+  submitBtn.addEventListener("click", async () => {
+    if (!fbScore) return;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Отправляем...";
+    const comment = (commentEl.value || "").trim().slice(0, 2000);
+    const auth = (() => { try { return JSON.parse(localStorage.getItem("mikAuth") || "{}"); } catch { return {}; } })();
+    const payload = { score: fbScore, comment, login: auth.login || "", name: auth.name || "" };
+
+    try {
+      const r = await fetch("/api/dashboard-feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!r.ok) throw new Error("status " + r.status);
+    } catch (e) {
+      const pending = JSON.parse(localStorage.getItem("fb_dashboard_pending") || "[]");
+      pending.push({ ...payload, ts: Date.now() });
+      localStorage.setItem("fb_dashboard_pending", JSON.stringify(pending));
+    }
+
+    localStorage.setItem("fb_dashboard_submitted", String(Date.now()));
+    step2.hidden = true;
+    step3.hidden = false;
+    setTimeout(() => { closePopup(); }, 2000);
+  });
+
+  // Flush pending
+  (async () => {
+    const pending = JSON.parse(localStorage.getItem("fb_dashboard_pending") || "[]");
+    if (!pending.length) return;
+    const ok = [];
+    for (const item of pending) {
+      try {
+        const r = await fetch("/api/dashboard-feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) });
+        if (r.ok) ok.push(item);
+      } catch {}
+    }
+    const remaining = pending.filter(p => !ok.includes(p));
+    if (remaining.length) localStorage.setItem("fb_dashboard_pending", JSON.stringify(remaining));
+    else localStorage.removeItem("fb_dashboard_pending");
+  })();
+})();
 </script>
 </body>
 </html>

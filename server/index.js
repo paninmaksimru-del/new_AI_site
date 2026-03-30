@@ -446,6 +446,44 @@ async function start() {
     }
   });
 
+  // Materials
+  app.get('/api/materials', async (req, res) => {
+    try {
+      const { rows } = await query('SELECT id, data FROM materials ORDER BY id');
+      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.put('/api/materials', async (req, res) => {
+    try {
+      const list = Array.isArray(req.body) ? req.body : [];
+      await query('DELETE FROM materials');
+      for (const m of list) {
+        const id = (m.id || 'mat_' + Date.now()).toString().trim();
+        await query('INSERT INTO materials (id, data) VALUES ($1, $2)', [id, JSON.stringify(m)]);
+      }
+      const { rows } = await query('SELECT id, data FROM materials ORDER BY id');
+      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.post('/api/materials', async (req, res) => {
+    try {
+      const body = req.body || {};
+      const id = (body.id || 'mat_' + Date.now()).toString().trim();
+      await query('INSERT INTO materials (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2', [id, JSON.stringify(body)]);
+      const { rows } = await query('SELECT id, data FROM materials ORDER BY id');
+      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.delete('/api/materials/:id', async (req, res) => {
+    try {
+      await query('DELETE FROM materials WHERE id = $1', [req.params.id]);
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
   // Instructions
   app.get('/api/instructions', async (req, res) => {
     try {
@@ -563,6 +601,79 @@ async function start() {
     }
   });
 
+  // Prompt usages
+  app.post('/api/prompt-usages', async (req, res) => {
+    try {
+      const { user_login, user_name, prompt_id, prompt_title } = req.body || {};
+      if (!user_login || !prompt_id) return res.status(400).json({ error: 'user_login and prompt_id required' });
+      await query('INSERT INTO prompt_usages (user_login, user_name, prompt_id, prompt_title) VALUES ($1, $2, $3, $4)', [user_login, user_name || '', prompt_id, prompt_title || '']);
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.get('/api/prompt-usages', async (req, res) => {
+    try {
+      const { rows } = await query('SELECT * FROM prompt_usages ORDER BY created_at DESC');
+      res.json(rows);
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.get('/api/prompt-usages/count/:login', async (req, res) => {
+    try {
+      const { rows } = await query('SELECT COUNT(*) as c FROM prompt_usages WHERE user_login = $1', [req.params.login]);
+      res.json({ count: parseInt(rows[0].c) });
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  // Speaker questions
+  app.get('/api/speaker-questions', async (req, res) => {
+    try {
+      const { rows } = await query('SELECT * FROM speaker_questions ORDER BY created_at DESC');
+      res.json(rows);
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.post('/api/speaker-questions', async (req, res) => {
+    try {
+      const { speaker, first_name, last_name, telegram, question } = req.body || {};
+      if (!speaker || !first_name || !last_name || !telegram || !question) {
+        return res.status(400).json({ error: 'All fields are required' });
+      }
+      await query('INSERT INTO speaker_questions (speaker, first_name, last_name, telegram, question) VALUES ($1, $2, $3, $4, $5)', [speaker, first_name, last_name, telegram, question]);
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.delete('/api/speaker-questions/:id', async (req, res) => {
+    try {
+      await query('DELETE FROM speaker_questions WHERE id = $1', [req.params.id]);
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  // Dashboard feedback
+  app.post('/api/dashboard-feedback', async (req, res) => {
+    try {
+      const score = Number(req.body?.score);
+      if (!score || score < 1 || score > 10) return res.status(400).json({ error: 'score 1-10 required' });
+      const comment = (req.body?.comment || '').trim().slice(0, 2000);
+      const login = (req.body?.login || '').trim();
+      const name = (req.body?.name || '').trim();
+      await query(
+        'INSERT INTO dashboard_feedback (score, comment, user_login, user_name) VALUES ($1, $2, $3, $4)',
+        [score, comment || null, login || null, name || null]
+      );
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  app.get('/api/dashboard-feedback', async (req, res) => {
+    try {
+      const { rows } = await query('SELECT * FROM dashboard_feedback ORDER BY created_at DESC');
+      res.json(rows);
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
   // Health
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
@@ -573,8 +684,8 @@ async function start() {
   app.get('/admin.html', (req, res) => res.sendFile(join(publicDir, 'admin.html')));
   app.get('/profile.html', (req, res) => res.sendFile(join(publicDir, 'profile.html')));
 
-  app.listen(port, () => {
-    console.log(`MIK AI Platform listening on http://localhost:${port}`);
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`MIK AI Platform listening on http://0.0.0.0:${port}`);
   });
 }
 

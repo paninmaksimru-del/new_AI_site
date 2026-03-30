@@ -101,15 +101,19 @@
 
 <main class="wrap">
   <div class="tabs" role="tablist" style="margin-top:24px;">
-    <button class="tabbtn active" data-tab="users">👥 Пользователи</button>
-    <button class="tabbtn" data-tab="refs">📚 Справочники</button>
-    <button class="tabbtn" data-tab="cases">📋 Кейсы</button>
-    <button class="tabbtn" data-tab="prompts">💬 Промпты</button>
-    <button class="tabbtn" data-tab="tools">🔧 Инструменты</button>
-    <button class="tabbtn" data-tab="tasks">✅ Задачи</button>
-    <button class="tabbtn" data-tab="browser">🌐 Браузер</button>
+    <button class="tabbtn active" data-tab="users">Пользователи</button>
+    <button class="tabbtn" data-tab="refs">Справочники</button>
+    <button class="tabbtn" data-tab="cases">Кейсы</button>
+    <button class="tabbtn" data-tab="prompts">Промпты</button>
+    <button class="tabbtn" data-tab="tools">Инструменты</button>
+    <button class="tabbtn" data-tab="tasks">Задачи</button>
+    <button class="tabbtn" data-tab="browser">Браузер</button>
     <button class="tabbtn" data-tab="instructions">Инструкции</button>
     <button class="tabbtn" data-tab="videos">Видеоматериалы</button>
+    <button class="tabbtn" data-tab="spkq">Вопросы спикерам</button>
+    <button class="tabbtn" data-tab="pusage">Использование промптов</button>
+    <button class="tabbtn" data-tab="feedback">Обратная связь</button>
+    <button class="tabbtn" data-tab="accessreq">Запросы доступа</button>
   </div>
 
   <!-- USERS -->
@@ -202,7 +206,7 @@
         <div class="field-row">
           <div class="field"><label>Роли (через запятую)</label><input type="text" id="caseRole" placeholder="Руководитель, Проектный менеджер" /></div>
           <div class="field" style="max-width:200px;"><label>Зрелость</label>
-            <select id="caseMaturity"><option value="ready">✅ Готовый</option><option value="pilot">🔬 Пилот</option><option value="draft">📝 Черновик</option></select>
+            <select id="caseMaturity"><option value="ready">Готовый</option><option value="pilot">Пилот</option><option value="draft">Черновик</option></select>
           </div>
         </div>
         <div class="field"><label>Когда использовать / цель</label><input type="text" id="caseWhenToUse" /></div>
@@ -269,7 +273,7 @@
             </select>
           </div>
           <div class="field"><label>Оф. контур</label>
-            <select id="toolOfficial"><option value="ok">✅ ok</option><option value="limited">⚠️ limited</option><option value="no">❌ no</option></select>
+            <select id="toolOfficial"><option value="ok">ok</option><option value="limited">limited</option><option value="no">no</option></select>
           </div>
           <div class="field"><label>Доступ</label>
             <select id="toolAccess"><option value="ready">ready</option><option value="request">request</option></select>
@@ -471,6 +475,87 @@
     </div>
   </div>
 
+  <!-- SPEAKER QUESTIONS -->
+  <div id="tab_spkq" class="tabpane">
+    <div class="panel">
+      <h2>Вопросы спикерам</h2>
+      <p class="muted">Обращения пользователей к спикерам из раздела обучения.</p>
+      <table id="spkqTable" style="width:100%; border-collapse:collapse; margin-top:16px; font-size:13px;">
+        <thead>
+          <tr style="text-align:left; border-bottom:1px solid rgba(255,255,255,.12);">
+            <th style="padding:8px 6px;">Дата</th>
+            <th style="padding:8px 6px;">Спикер</th>
+            <th style="padding:8px 6px;">Имя</th>
+            <th style="padding:8px 6px;">Фамилия</th>
+            <th style="padding:8px 6px;">Telegram</th>
+            <th style="padding:8px 6px;">Вопрос</th>
+            <th style="padding:8px 6px;"></th>
+          </tr>
+        </thead>
+        <tbody id="spkqBody"><tr><td colspan="7" class="loading" style="padding:12px;">Загрузка...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PROMPT USAGES -->
+  <div id="tab_pusage" class="tabpane">
+    <div class="panel">
+      <h2>Использование промптов</h2>
+      <p class="muted">Подтверждённые использования промптов пользователями.</p>
+      <table style="width:100%; border-collapse:collapse; margin-top:16px; font-size:13px;">
+        <thead>
+          <tr style="text-align:left; border-bottom:1px solid rgba(255,255,255,.12);">
+            <th style="padding:8px 6px;">Дата</th>
+            <th style="padding:8px 6px;">Пользователь</th>
+            <th style="padding:8px 6px;">Логин</th>
+            <th style="padding:8px 6px;">Промпт</th>
+            <th style="padding:8px 6px;">ID промпта</th>
+          </tr>
+        </thead>
+        <tbody id="pusageBody"><tr><td colspan="5" class="loading" style="padding:12px;">Загрузка...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FEEDBACK -->
+  <div id="tab_feedback" class="tabpane">
+    <div class="panel">
+      <h2>Обратная связь</h2>
+      <p class="muted">Оценки и комментарии пользователей о полезности платформы.</p>
+      <table style="width:100%; border-collapse:collapse; margin-top:16px; font-size:13px;">
+        <thead>
+          <tr style="text-align:left; border-bottom:1px solid rgba(255,255,255,.12);">
+            <th style="padding:8px 6px;">ID</th>
+            <th style="padding:8px 6px;">Дата</th>
+            <th style="padding:8px 6px;">Пользователь</th>
+            <th style="padding:8px 6px;">Оценка</th>
+            <th style="padding:8px 6px;">Комментарий</th>
+          </tr>
+        </thead>
+        <tbody id="adminFbBody"><tr><td colspan="5" class="loading" style="padding:12px;">Загрузка...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ACCESS REQUESTS -->
+  <div id="tab_accessreq" class="tabpane">
+    <div class="panel">
+      <h2>Запросы доступа</h2>
+      <p class="muted">Запросы на предоставление доступа к ИИ-инструментам.</p>
+      <table style="width:100%; border-collapse:collapse; margin-top:16px; font-size:13px;">
+        <thead>
+          <tr style="text-align:left; border-bottom:1px solid rgba(255,255,255,.12);">
+            <th style="padding:8px 6px;">ID</th>
+            <th style="padding:8px 6px;">Подразделение</th>
+            <th style="padding:8px 6px;">Дата</th>
+            <th style="padding:8px 6px;">Инструмент</th>
+            <th style="padding:8px 6px;">Причина</th>
+          </tr>
+        </thead>
+        <tbody id="adminArBody"><tr><td colspan="5" class="loading" style="padding:12px;">Загрузка...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
 </main>
 
 <div class="toast-bar" id="toast"></div>
@@ -483,7 +568,7 @@
     if (!auth || auth.isAuthorized !== true) { window.location.replace('/login'); return; }
     if (auth.role !== 'admin') { window.location.replace('/profile'); return; }
     var el = document.getElementById('userName');
-    if (el) el.textContent = '👤 ' + (auth.full_name || auth.login || 'admin');
+    if (el) el.textContent = (auth.full_name || auth.login || 'admin');
   } catch(e) { window.location.replace('/login'); }
 })();
 
@@ -905,7 +990,7 @@ function renderCaseList() {
       <span style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">
         <span class="badge">${esc(c.id)}</span>
         <span class="badge ${c.maturity==='ready'?'ok':c.maturity==='pilot'?'warn':''}">${esc(c.maturity||'')}</span>
-        ${c.maturity==='draft'?'<span class="badge" style="border-color:rgba(255,96,96,.5);color:rgba(255,96,96,.9);background:rgba(255,96,96,.08)">🔒</span>':''}
+        ${c.maturity==='draft'?'<span class="badge" style="border-color:rgba(255,96,96,.5);color:rgba(255,96,96,.9);background:rgba(255,96,96,.08)">Скрыт</span>':''}
       </span>
       <div class="list-actions">
         <button class="btn small" onclick="openCase('${esc(c.id)}')">Изменить</button>
@@ -1601,6 +1686,90 @@ async function deleteVideo(id) {
 }
 
 document.querySelector('[data-tab="videos"]').addEventListener('click', function() { loadVideoCats(); loadVideos(); });
+
+// ── SPEAKER QUESTIONS ────────────────────────────────────────────────────────
+async function loadSpeakerQuestions() {
+  const tbody = document.getElementById('spkqBody');
+  try {
+    const rows = await api('/api/speaker-questions');
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" style="padding:12px; color:rgba(255,255,255,.5);">Обращений пока нет</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+        <td style="padding:8px 6px; white-space:nowrap;">${esc(String(r.created_at || '').slice(0,16))}</td>
+        <td style="padding:8px 6px; font-weight:600;">${esc(r.speaker)}</td>
+        <td style="padding:8px 6px;">${esc(r.first_name)}</td>
+        <td style="padding:8px 6px;">${esc(r.last_name)}</td>
+        <td style="padding:8px 6px;">${esc(r.telegram)}</td>
+        <td style="padding:8px 6px; max-width:280px; overflow:hidden; text-overflow:ellipsis;">${esc(r.question)}</td>
+        <td style="padding:8px 6px;"><button class="btn small" onclick="deleteSQ(${r.id})">✕</button></td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="7" style="padding:12px; color:red;">Ошибка загрузки</td></tr>'; }
+}
+async function deleteSQ(id) {
+  if (!confirm('Удалить обращение?')) return;
+  try { await api('/api/speaker-questions/' + id, { method:'DELETE' }); loadSpeakerQuestions(); } catch(e) { toast('Ошибка: '+e.message,'err'); }
+}
+document.querySelector('[data-tab="spkq"]').addEventListener('click', function() { loadSpeakerQuestions(); });
+
+// ── PROMPT USAGES ────────────────────────────────────────────────────────
+async function loadPromptUsages() {
+  const tbody = document.getElementById('pusageBody');
+  try {
+    const rows = await api('/api/prompt-usages');
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5" style="padding:12px; color:rgba(255,255,255,.5);">Данных пока нет</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+        <td style="padding:8px 6px; white-space:nowrap;">${esc(String(r.created_at || '').slice(0,16))}</td>
+        <td style="padding:8px 6px;">${esc(r.user_name || '')}</td>
+        <td style="padding:8px 6px;">${esc(r.user_login)}</td>
+        <td style="padding:8px 6px;">${esc(r.prompt_title || '')}</td>
+        <td style="padding:8px 6px;">${esc(r.prompt_id)}</td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="5" style="padding:12px; color:red;">Ошибка загрузки</td></tr>'; }
+}
+document.querySelector('[data-tab="pusage"]').addEventListener('click', function() { loadPromptUsages(); });
+
+// ── FEEDBACK (from dashboard_feedback table) ────────────────────────────
+async function loadAdminFeedback() {
+  const tbody = document.getElementById('adminFbBody');
+  try {
+    const rows = await api('/api/dashboard-feedback');
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5" style="padding:12px; color:rgba(255,255,255,.5);">Нет данных</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => {
+      const date = r.created_at ? new Date(r.created_at).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+      const name = r.user_name || r.user_login || '—';
+      const scoreBg = r.score <= 4 ? 'rgba(255,96,96,.25)' : r.score <= 7 ? 'rgba(255,193,7,.25)' : 'rgba(38,210,152,.25)';
+      const scoreColor = r.score <= 4 ? '#ff6060' : r.score <= 7 ? '#ffc107' : '#26d298';
+      return `<tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+        <td style="padding:8px 6px;"><b>${esc(String(r.id))}</b></td>
+        <td style="padding:8px 6px;">${esc(date)}</td>
+        <td style="padding:8px 6px;">${esc(name)}</td>
+        <td style="padding:8px 6px;"><span style="display:inline-block;padding:2px 10px;border-radius:8px;background:${scoreBg};color:${scoreColor};font-weight:700;">${r.score}/10</span></td>
+        <td style="padding:8px 6px; max-width:320px; overflow:hidden; text-overflow:ellipsis;">${esc(r.comment || '—')}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="5" style="padding:12px; color:red;">Ошибка загрузки</td></tr>'; }
+}
+document.querySelector('[data-tab="feedback"]').addEventListener('click', function() { loadAdminFeedback(); });
+
+// ── ACCESS REQUESTS (from analytics dataset) ─────────────────────────────
+async function loadAdminAccess() {
+  const tbody = document.getElementById('adminArBody');
+  try {
+    const ds = await api('/api/analytics/dataset');
+    const rows = (ds.ui || []).filter(e => e.event_type === 'access_request').sort((a,b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5" style="padding:12px; color:rgba(255,255,255,.5);">Нет данных</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+        <td style="padding:8px 6px;"><b>${esc(r.id || '-')}</b></td>
+        <td style="padding:8px 6px;">${esc(r.dept || r.department || '-')}</td>
+        <td style="padding:8px 6px;">${esc(String(r.timestamp||'').slice(0,10))}</td>
+        <td style="padding:8px 6px;">${esc(r.tool_name || r.tool_id || '-')}</td>
+        <td style="padding:8px 6px; max-width:280px;">${esc((r.reason||'').slice(0,90))}</td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="5" style="padding:12px; color:red;">Ошибка загрузки</td></tr>'; }
+}
+document.querySelector('[data-tab="accessreq"]').addEventListener('click', function() { loadAdminAccess(); });
 
 </script>
 </body>

@@ -1234,6 +1234,73 @@
       }
     }
 
+    /* -- MATERIALS SEARCH -- */
+    .materials-search-wrap {
+      max-width: 480px;
+      margin: 18px auto 0;
+      padding: 0 16px;
+    }
+    .materials-search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .materials-search-icon {
+      position: absolute;
+      left: 14px;
+      width: 16px;
+      height: 16px;
+      color: var(--muted-2);
+      pointer-events: none;
+    }
+    .materials-search-input {
+      width: 100%;
+      padding: 11px 38px 11px 40px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: rgba(0,0,0,.22);
+      color: rgba(255,255,255,.90);
+      font-size: 14px;
+      outline: none;
+      min-height: 44px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .materials-search-input::placeholder { color: var(--muted-2); }
+    .materials-search-input:focus {
+      border-color: rgba(0,200,110,.5);
+      box-shadow: 0 0 0 3px rgba(0,200,110,.12);
+    }
+    .materials-search-clear {
+      position: absolute;
+      right: 10px;
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: rgba(255,255,255,.08);
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s;
+    }
+    .materials-search-clear:hover { background: rgba(255,255,255,.15); }
+    .materials-search-count {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted-2);
+      margin: 10px 0 0;
+    }
+    .materials-highlight {
+      background: rgba(0,200,110,.25);
+      color: rgba(255,255,255,.95);
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+
   </style>
 </head>
 <body>
@@ -1249,7 +1316,7 @@
       <a class="navlink active" href="/education" data-section="training">Обучение</a>
         <a class="navlink" href="/cases" data-section="cases">Кейсы</a>
         <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
-        <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a>
+        <!-- <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a> -->
         <a class="profile-btn" href="/profile">
           <span class="nowrap">Личный кабинет</span>
         </a>
@@ -1263,7 +1330,7 @@
       <a class="navlink active" href="/education" data-section="training">Обучение</a>
       <a class="navlink" href="/cases" data-section="cases">Кейсы</a>
       <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
-      <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a>
+      <!-- <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a> -->
       <a class="profile-btn" href="/profile">
         <span class="nowrap">Личный кабинет</span>
       </a>
@@ -1647,48 +1714,46 @@
         <h2 class="h2">Спикеры и наставники</h2>
         <p class="lead">Команда, которая ведет лекции, воркшопы и индивидуальные консультации по ИИ</p>
 
-        <div class="carousel-wrap" style="margin-top:16px;" data-carousel="speakers">
-          <button class="carousel-btn prev hidden" aria-label="Назад"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="10,2 4,8 10,14"/></svg></button>
-          <div class="carousel-stage">
+        <div class="speaker-grid">
           <article class="card speaker-card">
             <div class="speaker-top">
-              <div class="speaker-photo" style="background:none; overflow:hidden;">
-                <img src="/speakers/alexei-voronov.jpg" alt="Алексей Воронов" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
+              <div class="speaker-photo">
+                <img src="/speakers/alexei-voronov.jpg" alt="Алексей Воронов" />
               </div>
               <div>
                 <div class="speaker-name">Алексей Воронов</div>
                 <div class="speaker-role">Ведущий методист · Отдел обучения</div>
               </div>
             </div>
-            <p>Сферы экспертизы: Документы, деловая переписка, регламенты, внутренняя коммуникация</p>
+            <p class="speaker-expertise">Сферы экспертизы: Документы, деловая переписка, регламенты, внутренняя коммуникация</p>
+            <button class="speaker-contact-btn" data-speaker="Алексей Воронов">Связаться</button>
           </article>
           <article class="card speaker-card">
             <div class="speaker-top">
-              <div class="speaker-photo" style="background:none; overflow:hidden;">
-                <img src="/speakers/marina-sokolova.jpg" alt="Марина Соколова" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
+              <div class="speaker-photo">
+                <img src="/speakers/marina-sokolova.jpg" alt="Марина Соколова" />
               </div>
               <div>
                 <div class="speaker-name">Марина Соколова</div>
                 <div class="speaker-role">Аналитик данных · Департамент развития</div>
               </div>
             </div>
-            <p>Сферы экспертизы: Аналитика, отчетность, визуализация данных, работа с таблицами</p>
+            <p class="speaker-expertise">Сферы экспертизы: Аналитика, отчетность, визуализация данных, работа с таблицами</p>
+            <button class="speaker-contact-btn" data-speaker="Марина Соколова">Связаться</button>
           </article>
           <article class="card speaker-card">
             <div class="speaker-top">
-              <div class="speaker-photo" style="background:none; overflow:hidden;">
-                <img src="/speakers/dmitry-lebedev.jpg" alt="Дмитрий Лебедев" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" />
+              <div class="speaker-photo">
+                <img src="/speakers/dmitry-lebedev.jpg" alt="Дмитрий Лебедев" />
               </div>
               <div>
                 <div class="speaker-name">Дмитрий Лебедев</div>
                 <div class="speaker-role">Руководитель проектов · Управление ИТ</div>
               </div>
             </div>
-            <p>Сферы экспертизы: Управление командами, внедрение ИИ в процессы подразделений</p>
+            <p class="speaker-expertise">Сферы экспертизы: Управление командами, внедрение ИИ в процессы подразделений</p>
+            <button class="speaker-contact-btn" data-speaker="Дмитрий Лебедев">Связаться</button>
           </article>
-          </div>
-          <button class="carousel-btn next" aria-label="Вперед"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6,2 12,8 6,14"/></svg></button>
-          <div class="carousel-dots"></div>
         </div>
       </div>
     </section>
@@ -2121,18 +2186,32 @@
       const grid = document.getElementById("articlesGrid");
       const showMoreWrap = document.getElementById("materialsShowMoreWrap");
       const showMoreBtn = document.getElementById("materialsShowMore");
+      const searchInput = document.getElementById("materialsSearchInput");
+      const searchClear = document.getElementById("materialsSearchClear");
+      const searchCount = document.getElementById("materialsSearchCount");
       if (!grid) return;
       const VISIBLE = 6;
-      try {
-        const res = await fetch('/api/materials');
-        const materials = res.ok ? await res.json() : [];
-        if (!materials.length) { grid.innerHTML = '<p class="muted">Материалов пока нет</p>'; return; }
-        const esc = s => String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-        function renderCard(m) {
-          return `<article class="card" style="display:flex; flex-direction:column; gap:10px;">
+      let allMaterials = [];
+      let expanded = false;
+
+      const esc = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+
+      function highlightText(text, query) {
+        if (!query) return esc(text);
+        const escaped = esc(text);
+        const qEsc = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const qEscHtml = qEsc.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+        const re = new RegExp('(' + qEscHtml + ')', 'gi');
+        return escaped.replace(re, '<mark class="materials-highlight">$1</mark>');
+      }
+
+      function renderCard(m, query) {
+        const titleHtml = query ? highlightText(m.title, query) : esc(m.title);
+        const descHtml  = query ? highlightText(m.description || '', query) : esc(m.description || '');
+        return `<article class="card" style="display:flex; flex-direction:column; gap:10px;">
             <div>
-              <h3 style="font-size:15px; line-height:1.4; margin-bottom:6px;">${esc(m.title)}</h3>
-              <p class="muted" style="font-size:13px;">${esc(m.description || '')}</p>
+              <h3 style="font-size:15px; line-height:1.4; margin-bottom:6px;">${titleHtml}</h3>
+              <p class="muted" style="font-size:13px;">${descHtml}</p>
             </div>
             <div style="display:flex; align-items:center; justify-content:flex-end; margin-top:auto; padding-top:8px; border-top:1px solid rgba(255,255,255,.06);">
               <a href="${esc(m.link)}" target="_blank" rel="noopener" style="padding:6px 16px; border-radius:8px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.85); font-size:13px; font-weight:500; text-decoration:none; transition:background .15s;">Перейти</a>

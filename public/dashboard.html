@@ -600,9 +600,47 @@
     .top-kpi-card > div[id^="top"]{ flex: 1 1 auto; display:flex; align-items:center; justify-content:center; min-height: 84px; }
     .top-kpi-card > div[id^="top"] .kpi{ width: 100%; max-width: 360px; }
 
+    /* Top entity cards with color accent */
+    .top-entity-card {
+      padding: 16px 18px;
+      background: rgba(0,0,0,.12);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.06);
+      border-left: 3px solid var(--accent-color, rgba(255,255,255,.2));
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .top-entity-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--accent-color, var(--muted-2));
+      margin-bottom: 8px;
+    }
+    .top-entity-title {
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1.35;
+      word-break: break-word;
+      color: rgba(255,255,255,.92);
+    }
+    .top-entity-count {
+      font-size: 12px;
+      color: var(--muted-2);
+      margin-top: 8px;
+    }
+    .top-entity-count strong {
+      color: rgba(255,255,255,.75);
+      font-weight: 700;
+    }
+
     /* Top-5 table: force stable center alignment */
     .table-scroll table{ width:100%; border-collapse: collapse; }
     .table-scroll thead th, .table-scroll tbody td{ text-align:center !important; vertical-align: middle; }
+
 
 </style>
 </head>
@@ -646,7 +684,7 @@ function logout() {
       <a class="navlink" href="training">Обучение</a>
       <a class="navlink" href="cases">Кейсы</a>
       <a class="navlink active" href="dashboard">Статистика</a>
-      <a class="navlink" href="cases#feedback">Обратная связь</a>
+      <!-- <a class="navlink" href="cases#feedback">Обратная связь</a> -->
       <a class="navlink" href="profile">Личный кабинет</a>
     </nav>
   </div>
@@ -675,22 +713,12 @@ function logout() {
             </select>
           </div>
 
-          <button class="btn small" id="btnDemo" type="button" title="Сгенерировать шумовые данные (demo)">
-            Сгенерировать demo
-          </button>
-
-          <button class="btn ghost small" id="btnClearDemo" type="button" title="Очистить демо-данные">
-            Обнулить demo
-          </button>
-          <button class="btn small" id="btnRegenerateDemo" type="button" title="Очистить и сгенерировать демо-данные заново">
-            Demo заново
-          </button>
 </div>
       </div>
     </div>
   </section>
 
-  <!-- 0.5) Leader + Top entities -->
+  <!-- 1) Leader + Top entities -->
   <section>
     <div class="wrap">
       <div class="grid four-col top-entities top-entities-eq">
@@ -710,63 +738,25 @@ function logout() {
         </div>
 
         <div class="card pad top-kpi-card">
-          <h3 style="margin-top:0;">Топ кейс</h3>
-<div id="topCases"></div>
+          <div id="topCases"></div>
         </div>
 
         <div class="card pad top-kpi-card">
-          <h3 style="margin-top:0;">Топ промпт</h3>
-<div id="topPrompts"></div>
+          <div id="topPrompts"></div>
         </div>
 
         <div class="card pad top-kpi-card">
-          <h3 style="margin-top:0;">Топ инструмент</h3>
-<div id="topTools"></div>
+          <div id="topTools"></div>
         </div>
-      </div>
-    </div>
-  
-  <!-- 0.6) Top employees -->
-  <section>
-    <div class="wrap">
-      <div class="card pad">
-        <h3 style="margin:0;">Топ - 5 работников, использующих ИИ</h3>
-
-        <div class="table-scroll" style="margin-top:14px;">
-  <table aria-label="Топ сотрудников, использующих ИИ">
-    <thead>
-      <tr>
-        <th role="button" tabindex="0" class="th-sort" data-sort="fio">ФИО <span class="th-ind" aria-hidden="true"></span></th>
-        <th role="button" tabindex="0" class="th-sort" data-sort="cases">Решенные кейсы <span class="th-ind" aria-hidden="true"></span></th>
-        <th role="button" tabindex="0" class="th-sort" data-sort="prompts">Использованные промпты <span class="th-ind" aria-hidden="true"></span></th>
-        <th role="button" tabindex="0" class="th-sort" data-sort="tools">Задействованные инструменты <span class="th-ind" aria-hidden="true"></span></th>
-      </tr>
-    </thead>
-    <tbody id="tblTopEmployees"></tbody>
-  </table>
-</div>
-
-<div id="topEmpPager" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:12px;">
-  <span class="muted2" id="topEmpMeta">—</span>
-  <div style="display:flex; gap:10px; align-items:center;">
-    <button class="btn ghost small" id="topEmpPrev" type="button">Назад</button>
-    <span class="badge" id="topEmpPage">1/1</span>
-    <button class="btn ghost small" id="topEmpNext" type="button">Вперёд</button>
-  </div>
-</div>
       </div>
     </div>
   </section>
 
-
-</section>
-
-
-  <!-- 1) KPI row -->
+  <!-- 2) KPI row -->
   <section>
     <div class="wrap">
       <div class="card pad">
-        <h3 style="margin:0 0 14px;">KPI. Ключевые показатели</h3>
+        <h3 style="margin:0 0 14px;">Ключевые показатели</h3>
         <div class="grid kpi-grid" id="kpiGrid"></div>
       </div>
     </div>
@@ -851,55 +841,39 @@ function logout() {
     </div>
   </section>
 
-  
-
-<!-- 2) Base charts -->
+  <!-- 4) Top employees -->
   <section>
     <div class="wrap">
-      <div class="grid two-col equal-cols">
-    <div class="card chart">
-  <div class="row">
-    <div>
-      <h3 style="margin:0;">Активность (ключевые действия) по дням </h3>
-    </div>
-    <!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-<!-- Пустой spacer для выравнивания -->
-    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
-    <span class="badge pilot" id="kpiActiveHint">—</span>
+      <div class="card pad">
+        <h3 style="margin:0;">Топ - 5 работников, использующих ИИ</h3>
+
+        <div class="table-scroll" style="margin-top:14px;">
+  <table aria-label="Топ сотрудников, использующих ИИ">
+    <thead>
+      <tr>
+        <th role="button" tabindex="0" class="th-sort" data-sort="fio">ФИО <span class="th-ind" aria-hidden="true"></span></th>
+        <th role="button" tabindex="0" class="th-sort" data-sort="cases">Решенные кейсы <span class="th-ind" aria-hidden="true"></span></th>
+        <th role="button" tabindex="0" class="th-sort" data-sort="prompts">Использованные промпты <span class="th-ind" aria-hidden="true"></span></th>
+        <th role="button" tabindex="0" class="th-sort" data-sort="tools">Задействованные инструменты <span class="th-ind" aria-hidden="true"></span></th>
+      </tr>
+    </thead>
+    <tbody id="tblTopEmployees"></tbody>
+  </table>
+</div>
+
+<div id="topEmpPager" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:12px;">
+  <span class="muted2" id="topEmpMeta">—</span>
+  <div style="display:flex; gap:10px; align-items:center;">
+    <button class="btn ghost small" id="topEmpPrev" type="button">Назад</button>
+    <span class="badge" id="topEmpPage">1/1</span>
+    <button class="btn ghost small" id="topEmpNext" type="button">Вперёд</button>
   </div>
-  <canvas id="cActive"></canvas>
 </div>
-        <div class="card chart">
-          <div class="row">
-            <div>
-                     <h3 style="margin:0;">Оценочная экономия времени</h3>
-</div>
-            <span class="badge ok" id="kpiSavedHint">—</span>
-            
-<span class="muted2" style="display:inline-flex; align-items:center;">FTE <span class="info-icon" tabindex="0" role="button" aria-label="Что такое FTE" data-tip="FTE (Full-Time Equivalent) — это эквивалент полной занятости одного сотрудника.&#10;1 FTE ≈ 160 раб. ч/мес.">!</span></span>
-          </div>
-          <canvas id="cSaved"></canvas>
-        </div>
       </div>
     </div>
   </section>
 
-  <!-- 4) Top tasks (bars) -->
+  <!-- 5) Top tasks (bars) -->
   <section>
     <div class="wrap">
       <div class="card pad">
@@ -926,70 +900,40 @@ function logout() {
     </div>
   </section>
 
-  <!-- 5) Operational blocks: Onboarding → Feedback → Access (stacked) -->
+  <!-- Base charts (hidden) -->
+  <!--
+  <section>
+    <div class="wrap">
+      <div class="grid two-col equal-cols">
+    <div class="card chart">
+  <div class="row">
+    <div>
+      <h3 style="margin:0;">Активность (ключевые действия) по дням </h3>
+    </div>
+    <span style="display:inline-flex; align-items:center; visibility:hidden; white-space:nowrap;">FTE</span>
+    <span class="badge pilot" id="kpiActiveHint">—</span>
+  </div>
+  <canvas id="cActive"></canvas>
+</div>
+        <div class="card chart">
+          <div class="row">
+            <div>
+                     <h3 style="margin:0;">Оценочная экономия времени</h3>
+</div>
+            <span class="badge ok" id="kpiSavedHint">—</span>
+<span class="muted2" style="display:inline-flex; align-items:center;">FTE <span class="info-icon" tabindex="0" role="button" aria-label="Что такое FTE" data-tip="FTE (Full-Time Equivalent) — это эквивалент полной занятости одного сотрудника.&#10;1 FTE ≈ 160 раб. ч/мес.">!</span></span>
+          </div>
+          <canvas id="cSaved"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+  -->
+
+  <!-- 6) Operational blocks: Onboarding → Feedback → Access (stacked) -->
   <section>
     <div class="wrap">
 
-      <div class="card pad" style="margin-top: var(--gap);">
-        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-          <div>
-            <h3 style="margin:0;">Обратная связь</h3>
-            <p class="muted" style="margin:10px 0 0;">Сигналы от пользователей: идеи, ошибки, запросы кейсов/промптов.</p>
-          </div>
-          <span class="badge" id="fbCountBadge">—</span>
-        </div>
-
-        <div class="table-tools" style="margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <input class="table-search" id="fbSearch" type="search" placeholder="Поиск по таблице..." aria-label="Поиск по обратной связи" />
-        </div>
-
-        <div class="table-scroll" style="margin-top:12px; max-height: 360px;">
-          <table aria-label="Таблица обратной связи">
-
-            <thead>
-              <tr>
-                <th role="button" tabindex="0" class="th-sort" data-sort="id">ID<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="department">Подразделение<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="created_at">Дата<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="type">Тип<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="message">Сообщение<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="score">Оценка<span class="th-ind" aria-hidden="true"></span></th>
-              </tr>
-            </thead>
-            <tbody id="tblFeedback"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card pad" style="margin-top: var(--gap);">
-        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-          <div>
-            <h3 style="margin:0;">Запросы доступа</h3>
-            <p class="muted" style="margin:10px 0 0;">Запросы на предоставление доступа к ИИ-инструментам.</p>
-          </div>
-          <span class="badge warn" id="arCountBadge">—</span>
-        </div>
-
-        <div class="table-tools" style="margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <input class="table-search" id="arSearch" type="search" placeholder="Поиск по таблице..." aria-label="Поиск по запросам доступа" />
-        </div>
-
-        <div class="table-scroll" style="margin-top:12px; max-height: 360px;">
-          <table aria-label="Таблица запросов доступа">
-
-            <thead>
-              <tr>
-                <th role="button" tabindex="0" class="th-sort" data-sort="id">ID<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="department">Подразделение<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="created_at">Дата<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="tool">Инструмент<span class="th-ind" aria-hidden="true"></span></th>
-                <th role="button" tabindex="0" class="th-sort" data-sort="reason">Причина<span class="th-ind" aria-hidden="true"></span></th>
-              </tr>
-            </thead>
-            <tbody id="tblAccess"></tbody>
-          </table>
-        </div>
-      </div>
 
     </div>
   </section>
@@ -1045,12 +989,48 @@ function logout() {
   const TOOL_LABELS = {
     tool_chatgpt: "ChatGPT",
     tool_yandexgpt: "YandexGPT",
-    tool_copilot: "Copilot",
+    tool_copilot: "Копилот",
     tool_notebooklm: "NotebookLM",
     tool_python: "Python"
   };
 
+  const CASE_LABELS = {
+    case_protocol: "Протокол встречи за 15 минут",
+    case_letter: "Черновик официального письма",
+    case_summary_doc: "Сводка по документу",
+    case_project_plan: "План проекта",
+    case_data_insights: "Аналитика данных",
+    case_decision_note: "Записка для принятия решения"
+  };
+
+  const PROMPT_LABELS = {
+    prompt_comm_1: "Официальное письмо (универсальное)",
+    prompt_comm_2: "Письмо-приглашение на встречу",
+    p_official_letter: "Официальное письмо",
+    p_meeting_invite: "Приглашение на встречу",
+    p_project_wbs: "WBS структура проекта",
+    p_action_items: "Список поручений",
+    p_risk_register: "Реестр рисков",
+    p_summary_note: "Сводная записка"
+  };
+
   const KEY_EVENTS = new Set(["case_used_click","prompt_used_click","tool_used_click"]);
+
+  /* ===== Entity metadata cache (for resolving IDs to titles) ===== */
+  const ENTITY_META = { cases: {}, prompts: {}, tools: {} };
+
+  async function loadEntityMeta() {
+    try {
+      const [cases, prompts, tools] = await Promise.all([
+        fetch('/api/cases').then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch('/api/prompts').then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch('/api/tools').then(r => r.ok ? r.json() : []).catch(() => [])
+      ]);
+      cases.forEach(c => { ENTITY_META.cases[c.id] = c; });
+      prompts.forEach(p => { ENTITY_META.prompts[p.id] = p; });
+      tools.forEach(t => { ENTITY_META.tools[t.id] = t; });
+    } catch(e) { /* fallback: cards will show raw ID or TOOL_LABELS */ }
+  }
 
   // ====== Minimal “impact model” (demo, can be tuned later) ======
   // minutes saved per "use"
@@ -1831,6 +1811,7 @@ for (let day = new Date(start); day <= today; day.setDate(day.getDate()+1)) {
 
   function drawBarLine(canvasId, labels, values, opts) {
     const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
     const { ctx, W, H } = fitCanvas(canvas);
 
     ctx.clearRect(0,0,W,H);
@@ -2380,17 +2361,28 @@ function drawDonut(canvasId, items, opts) {
     }
 
     const top = items[0];
+
+    // Config per type: label, color, resolver
+    const config = {
+      topCases:   { label: 'Топ кейс',       color: 'rgba(38, 210, 152, .85)',  resolve: () => { const m = ENTITY_META.cases[top.id]; return m ? m.title : (CASE_LABELS[top.id] || top.id); } },
+      topPrompts: { label: 'Топ промпт',      color: 'rgba(120, 140, 255, .85)', resolve: () => { const m = ENTITY_META.prompts[top.id]; return m ? m.title : (PROMPT_LABELS[top.id] || top.id); } },
+      topTools:   { label: 'Топ инструмент',   color: 'rgba(255, 193, 7, .85)',   resolve: () => { const m = ENTITY_META.tools[top.id]; return m ? m.name : (TOOL_LABELS[top.id] || top.id); } }
+    };
+
+    const cfg = config[containerId] || { label: 'Топ', color: 'rgba(255,255,255,.3)', resolve: () => top.id };
+    const title = cfg.resolve();
+
     box.innerHTML = `
-      <div class="kpi" style="padding: 14px 16px; background: rgba(0,0,0,.10);">
-        <div class="muted2" style="font-size:12px;">Топ</div>
-        <div class="value" style="font-size: 18px; margin-top: 8px; font-weight: 800; letter-spacing:.2px; word-break: break-word;">
-          ${escapeHtml(String(top.id))}
-        </div>
+      <div class="top-entity-card" style="--accent-color: ${cfg.color};">
+        <div class="top-entity-label">${cfg.label}</div>
+        <div class="top-entity-title">${escapeHtml(String(title))}</div>
+        <div class="top-entity-count"><strong>${top.count}</strong> использований</div>
       </div>
     `;
   }
 
   function renderBaseCharts(base) {
+    if (!document.getElementById("cActive")) return;
     const labels = base.days.map(d => d.date.slice(5));
     const keyActions = base.days.map(d => d.key_actions);
     const savedHours = base.days.map(d => Math.round((d.saved_min/60)*10)/10);
@@ -2571,8 +2563,6 @@ document.getElementById("donutLegend").innerHTML = a.share.map(x => `
     renderTasks(ds);
 
     renderTopEmployees(ds);
-    renderFeedback(ds);
-    renderAccess(ds);
 
     renderTopList("topCases", base.topCases);
     renderTopList("topPrompts", base.topPrompts);
@@ -2744,7 +2734,7 @@ document.querySelectorAll('.seg button[data-period]').forEach(b => {
     window.addEventListener("resize", () => renderAll(), { passive:true });
   }
 
-  function init() {
+  async function init() {
     setupUI();
     initAdoptionBuilder();
 
@@ -2755,6 +2745,7 @@ document.querySelectorAll('.seg button[data-period]').forEach(b => {
     }
 
     state.adoptionGrain = "weeks";
+    await loadEntityMeta();
     renderAll();
   }
 

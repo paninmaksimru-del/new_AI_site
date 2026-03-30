@@ -59,9 +59,30 @@ export async function initSchema() {
       event_type TEXT,
       payload TEXT
     );
+    CREATE TABLE IF NOT EXISTS speaker_questions (
+      id SERIAL PRIMARY KEY,
+      speaker TEXT NOT NULL,
+      first_name TEXT NOT NULL,
+      last_name TEXT NOT NULL,
+      telegram TEXT NOT NULL,
+      question TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS prompt_usages (
+      id SERIAL PRIMARY KEY,
+      user_login TEXT NOT NULL,
+      user_name TEXT,
+      prompt_id TEXT NOT NULL,
+      prompt_title TEXT,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
     CREATE TABLE IF NOT EXISTS kv (
       key TEXT PRIMARY KEY,
       value TEXT
+    );
+    CREATE TABLE IF NOT EXISTS materials (
+      id TEXT PRIMARY KEY,
+      data TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS instructions (
       id TEXT PRIMARY KEY,
@@ -75,6 +96,14 @@ export async function initSchema() {
       id SERIAL PRIMARY KEY,
       name TEXT UNIQUE NOT NULL,
       color TEXT NOT NULL DEFAULT '#6B9FFF'
+    );
+    CREATE TABLE IF NOT EXISTS dashboard_feedback (
+      id SERIAL PRIMARY KEY,
+      score SMALLINT NOT NULL CHECK (score BETWEEN 1 AND 10),
+      comment TEXT,
+      user_login TEXT,
+      user_name TEXT,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_ui_events_ts ON ui_events(timestamp);
     CREATE INDEX IF NOT EXISTS idx_ui_events_type ON ui_events(event_type);

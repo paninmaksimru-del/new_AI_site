@@ -10,6 +10,7 @@ RUN npm ci --omit=dev
 # код сервера и статика
 COPY server ./server
 COPY public ./public
+COPY prompt-library.json ./
 
 # данные SQLite будут в volume; нестандартный порт для ограниченной инфраструктуры
 ENV NODE_ENV=production

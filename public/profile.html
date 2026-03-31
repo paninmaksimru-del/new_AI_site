@@ -188,17 +188,24 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 .heatmap-grid::-webkit-scrollbar{height:4px} .heatmap-grid::-webkit-scrollbar-track{background:rgba(255,255,255,.04);border-radius:99px} .heatmap-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:99px}
 
 .chart-flex{ display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); align-items: start; }
-.stats-panel{ display:flex; flex-direction:column; gap:20px; justify-content:center; height:260px; }
-.stat-row{ display:flex; align-items:center; gap:12px; }
-.stat-dot{ width:12px; height:12px; border-radius:50%; flex:0 0 auto; }
-.stat-label{ font-size:14px; color:var(--muted); flex:1 1 auto; }
-.stat-value{ font-size:28px; font-weight:800; color:var(--text); flex:0 0 auto; }
-.stat-pct{ font-size:13px; color:var(--muted-2); margin-left:4px; }
+
+/* Activity cards */
+.activity-grid{ grid-template-columns: repeat(3, 1fr); }
+.activity-card{ border-top: 3px solid var(--ac-color, var(--mik-stroke)); transition: border-color .2s, box-shadow .2s; }
+.activity-card:hover{ box-shadow: 0 12px 36px rgba(0,0,0,.4), 0 0 0 1px color-mix(in srgb, var(--ac-color) 25%, transparent) !important; }
+.ac-header{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.ac-icon{ display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:10px; flex:0 0 auto; }
+.ac-label{ font-size:14px; color:var(--muted); font-weight:500; }
+.ac-value-row{ display:flex; align-items:baseline; gap:8px; margin-bottom:12px; }
+.ac-value{ font-size:clamp(32px, 3.5vw, 44px); font-weight:900; letter-spacing:.2px; line-height:1; }
+.ac-pct{ font-size:13px; color:var(--muted-2); }
+.ac-bar-track{ height:6px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden; }
+.ac-bar-fill{ height:100%; border-radius:99px; background:var(--ac-color); width:0%; transition:width 1s cubic-bezier(.4,0,.2,1); }
 .level-breakdown{ font-size:13px; color:var(--muted-2); margin-top:8px; line-height:1.6; }
 .level-breakdown strong{ color:var(--text); }
 
 @media (max-width: 1050px){ .kpi-grid{ grid-template-columns: repeat(3, 1fr); } .likes-grid{ grid-template-columns: repeat(2, 1fr); } .chart-flex{ grid-template-columns: 1fr; } }
-@media (max-width: 768px){ nav{ display: none; } .burger{ display: flex; } .kpi-grid{ grid-template-columns: repeat(2, 1fr); } .kpi-card:last-child{ grid-column: span 2; } .likes-grid{ grid-template-columns: repeat(2, 1fr); } .level-row{ flex-direction: column !important; } .brand{ min-width: 0; } }
+@media (max-width: 768px){ nav{ display: none; } .burger{ display: flex; } .kpi-grid{ grid-template-columns: repeat(2, 1fr); } .kpi-card:last-child{ grid-column: span 2; } .likes-grid{ grid-template-columns: repeat(2, 1fr); } .level-row{ flex-direction: column !important; } .brand{ min-width: 0; } .activity-grid{ grid-template-columns: 1fr; } }
 @media (max-width: 640px){ .hero-inner{ flex-direction: column !important; } .hero-right{ align-items: flex-start !important; } .kpi-grid{ grid-template-columns: repeat(2, 1fr); } .likes-grid{ grid-template-columns: 1fr; } .chart-canvas-wrap, .chart-donut-wrap { height: 220px; } }
 </style>
 </head>
@@ -305,42 +312,51 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   </div>
 </section>
 
-<!-- СЕКЦИЯ 3 — График личной активности -->
+<!-- СЕКЦИЯ 3 — Моя активность (карточки) -->
 <section>
   <div class="wrap">
-    <div class="card pad no-hover">
-      <div class="chart-row">
-        <h3 style="margin:0;">Моя активность</h3>
-      </div>
-      <div class="chart-flex">
-        <div>
-          <div class="stats-panel" id="statsPanel">
-            <div class="stat-row">
-              <span class="stat-dot" style="background:var(--ok);"></span>
-              <span class="stat-label">Кейсов</span>
-              <span class="stat-value" id="statCases">0</span>
-              <span class="stat-pct" id="statCasesPct"></span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-dot" style="background:var(--pilot);"></span>
-              <span class="stat-label">Промптов</span>
-              <span class="stat-value" id="statPrompts">0</span>
-              <span class="stat-pct" id="statPromptsPct"></span>
-            </div>
-            <div class="stat-row">
-              <span class="stat-dot" style="background:var(--warn);"></span>
-              <span class="stat-label">Инструментов</span>
-              <span class="stat-value" id="statTools">0</span>
-              <span class="stat-pct" id="statToolsPct"></span>
-            </div>
-          </div>
+    <h3 style="margin:0 0 14px; font-size:18px;">Моя активность</h3>
+    <div class="grid activity-grid">
+      <div class="card pad no-hover activity-card" style="--ac-color: var(--ok);">
+        <div class="ac-header">
+          <span class="ac-icon" style="background: rgba(38,210,152,.12); color: var(--ok);">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="ac-label">Кейсов</span>
         </div>
-        <div>
-          <div class="chart-donut-wrap" style="position:relative; height:260px; width:100%;">
-            <canvas id="cPersonalDonut"></canvas>
-          </div>
+        <div class="ac-value-row">
+          <span class="ac-value" id="statCases">0</span>
+          <span class="ac-pct" id="statCasesPct"></span>
         </div>
+        <div class="ac-bar-track"><div class="ac-bar-fill" id="acBarCases" style="--ac-color: var(--ok);"></div></div>
       </div>
+      <div class="card pad no-hover activity-card" style="--ac-color: var(--pilot);">
+        <div class="ac-header">
+          <span class="ac-icon" style="background: rgba(120,140,255,.12); color: var(--pilot);">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="3" stroke="currentColor" stroke-width="1.6"/><path d="M7 7h6M7 10h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </span>
+          <span class="ac-label">Промптов</span>
+        </div>
+        <div class="ac-value-row">
+          <span class="ac-value" id="statPrompts">0</span>
+          <span class="ac-pct" id="statPromptsPct"></span>
+        </div>
+        <div class="ac-bar-track"><div class="ac-bar-fill" id="acBarPrompts" style="--ac-color: var(--pilot);"></div></div>
+      </div>
+      <div class="card pad no-hover activity-card" style="--ac-color: var(--warn);">
+        <div class="ac-header">
+          <span class="ac-icon" style="background: rgba(255,193,7,.12); color: var(--warn);">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M10 7v3.5l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="ac-label">Инструментов</span>
+        </div>
+        <div class="ac-value-row">
+          <span class="ac-value" id="statTools">0</span>
+          <span class="ac-pct" id="statToolsPct"></span>
+        </div>
+        <div class="ac-bar-track"><div class="ac-bar-fill" id="acBarTools" style="--ac-color: var(--warn);"></div></div>
+      </div>
+    </div>
 
       <!-- HEATMAP — HIDDEN (commented out, not deleted)
       <div style="margin-top:28px; border-top:1px solid rgba(255,255,255,.08); padding-top:20px;">
@@ -758,7 +774,7 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   PROFILE.levelProgress = levelInfo.progress;
   renderLevelSection(levelInfo);
 
-  /* ===== STATS PANEL ===== */
+  /* ===== STATS PANEL (activity cards) ===== */
   function renderStatsPanel() {
     var m = PROFILE.metrics;
     var total = (m.cases || 0) + (m.prompts || 0) + (m.tools || 0);
@@ -770,6 +786,17 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     document.getElementById('statCasesPct').textContent = '(' + pct(m.cases) + '%)';
     document.getElementById('statPromptsPct').textContent = '(' + pct(m.prompts) + '%)';
     document.getElementById('statToolsPct').textContent = '(' + pct(m.tools) + '%)';
+
+    // Animate progress bars
+    var maxVal = Math.max(m.cases || 0, m.prompts || 0, m.tools || 0, 1);
+    setTimeout(function() {
+      var bc = document.getElementById('acBarCases');
+      var bp = document.getElementById('acBarPrompts');
+      var bt = document.getElementById('acBarTools');
+      if (bc) bc.style.width = Math.round(((m.cases || 0) / maxVal) * 100) + '%';
+      if (bp) bp.style.width = Math.round(((m.prompts || 0) / maxVal) * 100) + '%';
+      if (bt) bt.style.width = Math.round(((m.tools || 0) / maxVal) * 100) + '%';
+    }, 300);
   }
   renderStatsPanel();
 
@@ -921,30 +948,7 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     });
   }
 
-  /* ===== CHART.JS ===== */
-  Chart.defaults.color = 'rgba(255,255,255,.68)';
-  Chart.defaults.borderColor = 'rgba(255,255,255,.08)';
-
-  var donutChart = null;
-
-  function buildDonut() {
-    var canvas = document.getElementById('cPersonalDonut');
-    if (donutChart) donutChart.destroy();
-    donutChart = new Chart(canvas, {
-      type: 'doughnut',
-      data: { labels: ['Кейсы', 'Промпты', 'Инструменты'], datasets: [{ data: [PROFILE.metrics.cases, PROFILE.metrics.prompts, PROFILE.metrics.tools], backgroundColor: ['rgba(38, 210, 152, .85)', 'rgba(120, 140, 255, .85)', 'rgba(255, 193, 7, .85)'], borderColor: 'rgba(7,10,16,.6)', borderWidth: 3, hoverOffset: 8 }] },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '62%', animation: { duration: 600 },
-        plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(10,12,18,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1, cornerRadius: 12, padding: 12,
-          callbacks: { label: function(ctx) { var total = ctx.dataset.data.reduce(function(s,v){ return s+v; }, 0); return ctx.label + ': ' + ctx.parsed + ' (' + ((ctx.parsed / total) * 100).toFixed(1) + '%)'; } }
-        } }
-      }
-    });
-  }
-
-  /* buildActivityChart, switchChart, segPeriod/segType listeners removed — replaced by stats panel */
-
-  if (typeof Chart !== 'undefined') { buildDonut(); }
-  else { document.addEventListener('DOMContentLoaded', function() { buildDonut(); }); }
+  /* Donut chart removed — replaced by activity cards */
 
   /* ===== HEATMAP — HIDDEN (commented out, not deleted) =====
   (function() {

@@ -840,52 +840,311 @@
     }
 
     /* Forms */
+    /* CustomSelect — inside form */
+    .cs-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+    .cs-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 7px;
+      width: 100%;
+      padding: 22px 14px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 14px;
+      color: rgba(255,255,255,.92);
+      transition: background .2s, border-color .2s, box-shadow .2s;
+      user-select: none;
+      -webkit-user-select: none;
+      min-height: 52px;
+    }
+    .cs-trigger:hover {
+      border-color: rgba(255,255,255,.22);
+    }
+    .cs-trigger.is-open {
+      border-color: rgba(0,210,120,.45);
+      box-shadow: 0 0 0 3px rgba(0,210,120,.12);
+    }
+    .cs-chevron {
+      display: inline-flex;
+      align-items: center;
+      opacity: .55;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .2s;
+      flex-shrink: 0;
+    }
+    .cs-trigger.is-open .cs-chevron { transform: rotate(180deg); opacity: .8; }
+
+    .cs-panel-wrap {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 850;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(9,13,22,.97);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 24px 60px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.04);
+      overflow: hidden;
+      transform-origin: top left;
+      animation: cs-open .32s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+    .cs-panel-wrap.is-closing {
+      animation: cs-close .22s ease forwards !important;
+    }
+    @keyframes cs-open {
+      from { opacity:0; transform:scale(.96) translateY(-4px); }
+      to   { opacity:1; transform:scale(1) translateY(0); }
+    }
+    @keyframes cs-close {
+      from { opacity:1; transform:scale(1); }
+      to   { opacity:0; transform:scale(.96) translateY(-4px); }
+    }
+
+    .cs-panel-head {
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 13px 14px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      animation: cs-head-in .22s ease .07s both;
+    }
+    @keyframes cs-head-in {
+      from { opacity:0; transform:translateY(-5px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .cs-panel-head strong {
+      font-size: 13px; font-weight: 600;
+      color: rgba(255,255,255,.88);
+    }
+    .cs-close-btn {
+      display:flex; align-items:center; justify-content:center;
+      width:22px; height:22px; border-radius:50%;
+      border:none; background:rgba(255,255,255,.1);
+      color:rgba(255,255,255,.65); cursor:pointer; font-size:11px;
+      transition: background .18s, color .18s; padding:0; line-height:1;
+    }
+    .cs-close-btn:hover { background:rgba(255,255,255,.18); color:rgba(255,255,255,.95); }
+
+    .cs-panel-list {
+      padding: 5px 0; max-height: 260px; overflow-y: auto;
+    }
+    .cs-panel-list::-webkit-scrollbar { width: 3px; }
+    .cs-panel-list::-webkit-scrollbar-track { background: transparent; }
+    .cs-panel-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:2px; }
+
+    .cs-item {
+      padding: 10px 14px; font-size: 14px;
+      color: rgba(255,255,255,.78); cursor: pointer;
+      transition: background .14s, color .14s;
+      opacity: 0;
+      animation: cs-item-in .28s ease forwards;
+      animation-delay: calc(var(--idx, 0) * 0.04s + 0.1s);
+    }
+    @keyframes cs-item-in {
+      from { opacity:0; transform:translateY(6px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .cs-item:hover { background:rgba(255,255,255,.07); color:rgba(255,255,255,.95); }
+    .cs-item.is-selected {
+      color:rgba(0,210,120,.9); background:rgba(0,200,120,.08); font-weight:500;
+    }
+
     .form-grid{
       display:grid;
       grid-template-columns: 1.2fr .9fr;
       gap: var(--gap);
       margin-top: 16px;
+      align-items: start;
     }
     .form-card{
       padding: var(--pad);
       border-radius: var(--radius);
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.04);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: border-color .3s ease, box-shadow .3s ease;
+    }
+    .form-card:focus-within{
+      border-color: rgba(0,210,120,.30);
+      box-shadow: 0 0 40px rgba(0,210,120,.08), 0 0 0 1px rgba(0,210,120,.15);
     }
     .form-card h3{
-      margin: 0 0 10px;
-      font-size: 16px;
-      color: rgba(255,255,255,.90);
+      margin: 0 0 18px;
+      font-size: 17px;
+      font-weight: 700;
+      color: rgba(255,255,255,.92);
     }
-    label{
-      display:block;
-      margin: 10px 0 6px;
-      color: rgba(255,255,255,.76);
-      font-size: 13px;
+
+    /* Floating label fields */
+    .fl-field{
+      position: relative;
+      margin-bottom: 14px;
     }
-    input[type="text"],
-    input[type="email"],
-    textarea,
-    select{
+    .fl-field input,
+    .fl-field textarea,
+    .fl-field select{
       width: 100%;
       border-radius: 14px;
       border: 1px solid rgba(255,255,255,.12);
       background: rgba(0,0,0,.22);
-      padding: 11px 12px;
-      color: rgba(255,255,255,.90);
+      padding: 22px 14px 10px;
+      color: rgba(255,255,255,.92);
       outline: none;
-      min-height: 44px;
+      min-height: 52px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color .2s ease, box-shadow .2s ease;
     }
-    textarea{
-      min-height: 120px;
+    .fl-field textarea{
+      min-height: 110px;
       resize: vertical;
+      padding-top: 26px;
+    }
+    .fl-field input:focus,
+    .fl-field textarea:focus{
+      border-color: rgba(0,210,120,.45);
+      box-shadow: 0 0 0 3px rgba(0,210,120,.12);
+    }
+    .fl-field label{
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,.45);
+      font-size: 14px;
+      pointer-events: none;
+      transition: all .2s cubic-bezier(.4,0,.2,1);
+      margin: 0;
+      line-height: 1;
+    }
+    .fl-field textarea ~ label{
+      top: 18px;
+      transform: translateY(0);
+    }
+    .fl-field .cs-wrap ~ label{
+      top: 8px;
+      transform: translateY(0);
+      font-size: 11px;
+      color: rgba(255,255,255,.50);
+    }
+    .fl-field input:focus ~ label,
+    .fl-field input:not(:placeholder-shown) ~ label,
+    .fl-field textarea:focus ~ label,
+    .fl-field textarea:not(:placeholder-shown) ~ label{
+      top: 8px;
+      transform: translateY(0);
+      font-size: 11px;
+      color: rgba(0,210,120,.7);
+    }
+
+    /* Right panel — process steps */
+    .consult-info{
+      padding: var(--pad);
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(160deg, rgba(0,60,40,.25), rgba(255,255,255,.03));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .consult-info h3{
+      margin: 0 0 22px;
+      font-size: 17px;
+      font-weight: 700;
+      color: rgba(255,255,255,.92);
+    }
+    .process-steps{
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .process-step{
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      position: relative;
+      padding-bottom: 24px;
+    }
+    .process-step:last-child{
+      padding-bottom: 0;
+    }
+    .process-step:not(:last-child)::after{
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 42px;
+      bottom: 0;
+      width: 1.5px;
+      background: linear-gradient(to bottom, rgba(0,210,120,.35), rgba(0,210,120,.08));
+    }
+    .step-icon{
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(0,210,120,.12);
+      border: 1px solid rgba(0,210,120,.20);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .step-content{
+      flex: 1;
+      min-width: 0;
+    }
+    .step-content h4{
+      margin: 0 0 4px;
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,.90);
+    }
+    .step-content p{
+      margin: 0;
+      font-size: 13px;
+      color: rgba(255,255,255,.55);
+      line-height: 1.4;
     }
 
     .hintline{
       margin-top: 8px;
-      color: rgba(255,255,255,.62);
+      color: rgba(255,255,255,.55);
       font-size: 13px;
     }
+
+    /* Submit button */
+    .consult-submit{
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .consult-submit .btn.primary{
+      position: relative;
+      overflow: hidden;
+    }
+    .consult-submit .btn.primary::after{
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent);
+      transform: translateX(-100%);
+      transition: none;
+    }
+    .consult-submit .btn.primary:hover::after{
+      animation: btnShimmer .6s ease forwards;
+    }
+    @keyframes btnShimmer{
+      to{ transform: translateX(100%); }
+    }
+
     .success{
       padding: 12px 14px;
       border-radius: 16px;
@@ -1248,6 +1507,8 @@
     .materials-search-icon {
       position: absolute;
       left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
       width: 16px;
       height: 16px;
       color: var(--muted-2);
@@ -1255,7 +1516,7 @@
     }
     .materials-search-input {
       width: 100%;
-      padding: 11px 38px 11px 40px;
+      padding: 11px 38px 11px 42px;
       border-radius: 14px;
       border: 1px solid var(--stroke);
       background: rgba(0,0,0,.22);
@@ -2045,38 +2306,75 @@
           <form class="form-card" id="consultForm">
             <h3>Форма заявки</h3>
 
-            <label for="consultType">Формат консультации</label>
-            <select id="consultType" name="consultType" required>
-              <option value="individual">Индивидуально</option>
-              <option value="group">Групповой воркшоп</option>
-              <option value="intensive">Интенсив (5–8 часов)</option>
-            </select>
-
-            <label for="fio">ФИО</label>
-            <input type="text" id="fio" name="fio" placeholder="Имя Фамилия" required />
-
-            <label for="dept">Подразделение</label>
-            <input type="text" id="dept" name="dept" placeholder="Например: Департамент ... " />
-
-            <label for="contact">Контакт (почта или телефон)</label>
-            <input type="text" id="contact" name="contact" placeholder="example@fond.ru, +7 ..." required />
-
-            <label for="comment">Комментарий</label>
-            <textarea id="comment" name="comment" placeholder="Кратко опишите задачу или ожидания от консультации."></textarea>
-
-            <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
-              <button type="submit" class="btn primary">Отправить заявку</button>
-              <span class="hintline">После отправки с вами свяжется команда Фонда МИК для уточнения деталей.</span>
+            <div class="fl-field">
+              <select id="consultType" name="consultType" required>
+                <option value="individual">Индивидуально</option>
+                <option value="group">Групповой воркшоп</option>
+                <option value="intensive">Интенсив (5–8 часов)</option>
+              </select>
+              <label for="consultType">Формат консультации</label>
             </div>
 
-            <div class="success" id="consultSuccess">Заявка отправлена (демо‑режим). Вы можете скорректировать текст и интеграцию с формой позже.</div>
+            <div class="fl-field">
+              <input type="text" id="fio" name="fio" placeholder=" " required />
+              <label for="fio">ФИО</label>
+            </div>
+
+            <div class="fl-field">
+              <input type="text" id="dept" name="dept" placeholder=" " />
+              <label for="dept">Подразделение</label>
+            </div>
+
+            <div class="fl-field">
+              <input type="text" id="contact" name="contact" placeholder=" " required />
+              <label for="contact">Почта или телефон</label>
+            </div>
+
+            <div class="fl-field">
+              <textarea id="comment" name="comment" placeholder=" "></textarea>
+              <label for="comment">Комментарий к заявке</label>
+            </div>
+
+            <div class="consult-submit">
+              <button type="submit" class="btn primary">Отправить заявку</button>
+              <span class="hintline">Свяжемся в течение дня</span>
+            </div>
+
+            <div class="success" id="consultSuccess">Заявка принята. Команда проектного офиса по ИИ скоро свяжется с вами.</div>
           </form>
 
-          <div class="form-card">
-            <h3>Как используются заявки</h3>
-            <p>По заявкам мы подбираем формат и время, формируем группы и планируем нагрузку спикеров.</p>
-            <p>На основе запросов сотрудников обновляем треки обучения, добавляем новые воркшопы и материалы.</p>
-            <p class="hintline">При внедрении в проде форму можно связать с корпоративной почтой, Service Desk или внутренней CRM.</p>
+          <div class="consult-info">
+            <h3>Как это работает</h3>
+            <div class="process-steps">
+              <div class="process-step">
+                <div class="step-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,210,120,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+                <div class="step-content">
+                  <h4>Оставляете заявку</h4>
+                  <p>Выберите формат и опишите задачу — мы поймём, что вам нужно</p>
+                </div>
+              </div>
+              <div class="process-step">
+                <div class="step-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,210,120,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg></div>
+                <div class="step-content">
+                  <h4>Подбираем формат и время</h4>
+                  <p>Формируем группы, планируем спикеров и согласовываем расписание</p>
+                </div>
+              </div>
+              <div class="process-step">
+                <div class="step-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,210,120,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                <div class="step-content">
+                  <h4>Проводим обучение</h4>
+                  <p>Воркшоп, консультация или интенсив — в удобном для вас формате</p>
+                </div>
+              </div>
+              <div class="process-step">
+                <div class="step-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,210,120,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+                <div class="step-content">
+                  <h4>Обновляем программу</h4>
+                  <p>На основе ваших запросов добавляем новые треки и материалы</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2716,6 +3014,94 @@
         })
         .catch(() => {});
 
+      // CustomSelect for consult form
+      class CustomSelect {
+        constructor(selectEl, title) {
+          this.select = selectEl;
+          this.title = title;
+          this.panelEl = null;
+          this._docClick = this._onDocClick.bind(this);
+          this._build();
+          document.addEventListener('click', this._docClick, true);
+        }
+        _build() {
+          this.wrapper = document.createElement('div');
+          this.wrapper.className = 'cs-wrap';
+          this.trigger = document.createElement('div');
+          this.trigger.className = 'cs-trigger';
+          this.trigger.setAttribute('role', 'button');
+          this.trigger.setAttribute('tabindex', '0');
+          this.trigger.innerHTML = `
+            <span class="cs-trigger-label">${this._selectedLabel()}</span>
+            <svg class="cs-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>`;
+          this.trigger.addEventListener('click', e => { e.stopPropagation(); this._toggle(); });
+          this.trigger.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._toggle(); }
+            if (e.key === 'Escape') this._close();
+          });
+          this.select.parentNode.insertBefore(this.wrapper, this.select);
+          this.select.style.display = 'none';
+          this.wrapper.appendChild(this.trigger);
+          this.wrapper.appendChild(this.select);
+        }
+        _selectedLabel() {
+          const opt = Array.from(this.select.options).find(o => o.value === this.select.value);
+          return opt ? opt.textContent : this.title;
+        }
+        _toggle() { this.panelEl ? this._close() : this._open(); }
+        _open() {
+          document.querySelectorAll('.cs-panel-wrap').forEach(p => {
+            if (!this.wrapper.contains(p)) { p.classList.add('is-closing'); setTimeout(() => p.remove(), 220); }
+          });
+          document.querySelectorAll('.cs-trigger').forEach(t => {
+            if (t !== this.trigger) t.classList.remove('is-open');
+          });
+          this.trigger.classList.add('is-open');
+          this.panelEl = document.createElement('div');
+          this.panelEl.className = 'cs-panel-wrap';
+          this.panelEl.innerHTML = `
+            <div class="cs-panel-head">
+              <strong>${this.title}</strong>
+              <button class="cs-close-btn" type="button">&#x2715;</button>
+            </div>
+            <div class="cs-panel-list">
+              ${Array.from(this.select.options).map((o, i) => `
+                <div class="cs-item${o.value === this.select.value ? ' is-selected' : ''}"
+                     data-value="${o.value}" style="--idx:${i}">${o.textContent}</div>`
+              ).join('')}
+            </div>`;
+          this.wrapper.appendChild(this.panelEl);
+          this.panelEl.querySelector('.cs-close-btn').addEventListener('click', e => {
+            e.stopPropagation(); this._close();
+          });
+          this.panelEl.querySelectorAll('.cs-item').forEach(el => {
+            el.addEventListener('click', e => { e.stopPropagation(); this._pick(el.dataset.value); });
+          });
+        }
+        _close() {
+          if (!this.panelEl) return;
+          this.trigger.classList.remove('is-open');
+          const p = this.panelEl; this.panelEl = null;
+          p.classList.add('is-closing');
+          setTimeout(() => p.remove(), 220);
+        }
+        _pick(value) {
+          this.select.value = value;
+          this.trigger.querySelector('.cs-trigger-label').textContent = this._selectedLabel();
+          this._close();
+          this.select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        _onDocClick(e) {
+          if (this.panelEl && !this.wrapper.contains(e.target)) this._close();
+        }
+      }
+
+      const consultTypeEl = document.getElementById("consultType");
+      if (consultTypeEl) new CustomSelect(consultTypeEl, "Формат консультации");
+
       // Отправка формы консультации
       const form = document.getElementById("consultForm");
       const success = document.getElementById("consultSuccess");
@@ -2723,7 +3109,7 @@
         form.addEventListener("submit", (e) => {
           e.preventDefault();
           if (success) success.classList.add("show");
-          showToast("Заявка отправлена (демо)");
+          showToast("Заявка принята. Команда проектного офиса по ИИ скоро свяжется с вами.");
         });
       }
     });

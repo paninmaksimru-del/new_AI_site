@@ -803,6 +803,8 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   renderLevelSection(levelInfo);
 
   /* ===== STATS PANEL (activity rings legend) ===== */
+  var RING_LIMITS = { prompts: 100, cases: 17, tools: 8 };
+
   function renderStatsPanel() {
     var m = PROFILE.metrics;
     var limits = RING_LIMITS;
@@ -971,8 +973,6 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   }
 
   /* ===== ACTIVITY RINGS (Apple Watch style) ===== */
-  var RING_LIMITS = { prompts: 100, cases: 17, tools: 8 };
-
   var hoveredRing = -1;
   var legendItems = document.querySelectorAll('.ac-legend-item');
 

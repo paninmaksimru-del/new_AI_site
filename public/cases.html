@@ -3442,8 +3442,7 @@
   const commentEl=document.getElementById("fbComment");
   if (!popup) return;
 
-  const submitted = localStorage.getItem("fb_dashboard_submitted");
-  if (submitted && Date.now() - Number(submitted) < 7 * 86400000) return;
+  // Показываем попап при каждом посещении раздела
 
   let fbScore = null;
 

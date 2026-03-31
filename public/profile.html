@@ -192,24 +192,23 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 /* Activity chart card */
 .activity-chart-card{ position:relative; overflow:hidden; }
 .ac-top-bar{ position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--ok), var(--pilot), var(--warn)); border-radius:var(--radius) var(--radius) 0 0; }
-.ac-layout{ display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); align-items:center; }
-.ac-metrics{ display:flex; flex-direction:column; gap:22px; }
-.ac-metric-row{ display:flex; align-items:flex-start; gap:12px; }
-.ac-icon{ display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:10px; flex:0 0 auto; }
-.ac-metric-info{ flex:1 1 auto; min-width:0; }
-.ac-metric-label{ font-size:13px; color:var(--muted); display:block; margin-bottom:4px; }
-.ac-metric-nums{ display:flex; align-items:baseline; gap:8px; margin-bottom:8px; }
-.ac-metric-value{ font-size:clamp(28px, 3vw, 38px); font-weight:900; line-height:1; }
-.ac-metric-pct{ font-size:13px; color:var(--muted-2); }
-.ac-bar-track{ height:5px; border-radius:99px; background:rgba(255,255,255,.08); overflow:hidden; }
-.ac-bar-fill{ height:100%; border-radius:99px; background:var(--ac-color); width:0%; transition:width 1s cubic-bezier(.4,0,.2,1); }
-.ac-donut-wrap{ position:relative; height:240px; display:flex; align-items:center; justify-content:center; }
-.ac-donut-wrap canvas{ width:100%; height:100%; border:none; background:transparent; border-radius:0; }
+.ac-layout{ display:grid; grid-template-columns:auto 1fr; gap:clamp(24px, 4vw, 48px); align-items:center; }
+.ac-rings-wrap{ width:clamp(200px, 22vw, 260px); height:clamp(200px, 22vw, 260px); position:relative; flex:0 0 auto; }
+.ac-rings-wrap canvas{ width:100%; height:100%; border:none; background:transparent; border-radius:0; }
+.ac-legend{ display:flex; flex-direction:column; gap:24px; }
+.ac-legend-item{ display:flex; align-items:flex-start; gap:12px; }
+.ac-legend-dot{ width:12px; height:12px; border-radius:50%; flex:0 0 auto; margin-top:4px; }
+.ac-legend-info{ flex:1 1 auto; }
+.ac-legend-label{ font-size:13px; color:var(--muted); display:block; margin-bottom:2px; }
+.ac-legend-nums{ display:flex; align-items:baseline; gap:6px; }
+.ac-legend-value{ font-size:clamp(26px, 2.8vw, 36px); font-weight:900; line-height:1; }
+.ac-legend-max{ font-size:14px; color:var(--muted-2); font-weight:500; }
+.ac-legend-pct{ font-size:13px; color:var(--muted-2); }
 .level-breakdown{ font-size:13px; color:var(--muted-2); margin-top:8px; line-height:1.6; }
 .level-breakdown strong{ color:var(--text); }
 
 @media (max-width: 1050px){ .kpi-grid{ grid-template-columns: repeat(3, 1fr); } .likes-grid{ grid-template-columns: repeat(2, 1fr); } .chart-flex{ grid-template-columns: 1fr; } }
-@media (max-width: 768px){ nav{ display: none; } .burger{ display: flex; } .kpi-grid{ grid-template-columns: repeat(2, 1fr); } .kpi-card:last-child{ grid-column: span 2; } .likes-grid{ grid-template-columns: repeat(2, 1fr); } .level-row{ flex-direction: column !important; } .brand{ min-width: 0; } .ac-layout{ grid-template-columns:1fr; } .ac-donut-wrap{ height:200px; } }
+@media (max-width: 768px){ nav{ display: none; } .burger{ display: flex; } .kpi-grid{ grid-template-columns: repeat(2, 1fr); } .kpi-card:last-child{ grid-column: span 2; } .likes-grid{ grid-template-columns: repeat(2, 1fr); } .level-row{ flex-direction: column !important; } .brand{ min-width: 0; } .ac-layout{ grid-template-columns:1fr; justify-items:center; } .ac-rings-wrap{ width:200px; height:200px; } .ac-legend{ width:100%; } }
 @media (max-width: 640px){ .hero-inner{ flex-direction: column !important; } .hero-right{ align-items: flex-start !important; } .kpi-grid{ grid-template-columns: repeat(2, 1fr); } .likes-grid{ grid-template-columns: 1fr; } .chart-canvas-wrap, .chart-donut-wrap { height: 220px; } }
 </style>
 </head>
@@ -323,51 +322,45 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
       <div class="ac-top-bar"></div>
       <h3 style="margin:0 0 18px; font-size:18px;">Моя активность</h3>
       <div class="ac-layout">
-        <!-- Left: metrics -->
-        <div class="ac-metrics">
-          <div class="ac-metric-row">
-            <span class="ac-icon" style="background:rgba(38,210,152,.12); color:var(--ok);">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
-            <div class="ac-metric-info">
-              <span class="ac-metric-label">Кейсов</span>
-              <div class="ac-metric-nums">
-                <span class="ac-metric-value" id="statCases">0</span>
-                <span class="ac-metric-pct" id="statCasesPct"></span>
-              </div>
-              <div class="ac-bar-track"><div class="ac-bar-fill" id="acBarCases" style="--ac-color:var(--ok);"></div></div>
-            </div>
-          </div>
-          <div class="ac-metric-row">
-            <span class="ac-icon" style="background:rgba(120,140,255,.12); color:var(--pilot);">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="3" stroke="currentColor" stroke-width="1.6"/><path d="M7 7h6M7 10h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            </span>
-            <div class="ac-metric-info">
-              <span class="ac-metric-label">Промптов</span>
-              <div class="ac-metric-nums">
-                <span class="ac-metric-value" id="statPrompts">0</span>
-                <span class="ac-metric-pct" id="statPromptsPct"></span>
-              </div>
-              <div class="ac-bar-track"><div class="ac-bar-fill" id="acBarPrompts" style="--ac-color:var(--pilot);"></div></div>
-            </div>
-          </div>
-          <div class="ac-metric-row">
-            <span class="ac-icon" style="background:rgba(255,193,7,.12); color:var(--warn);">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="6.5" stroke="currentColor" stroke-width="1.6"/><path d="M10 7v3.5l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
-            <div class="ac-metric-info">
-              <span class="ac-metric-label">Инструментов</span>
-              <div class="ac-metric-nums">
-                <span class="ac-metric-value" id="statTools">0</span>
-                <span class="ac-metric-pct" id="statToolsPct"></span>
-              </div>
-              <div class="ac-bar-track"><div class="ac-bar-fill" id="acBarTools" style="--ac-color:var(--warn);"></div></div>
-            </div>
-          </div>
-        </div>
-        <!-- Right: donut -->
-        <div class="ac-donut-wrap">
+        <!-- Left: rings chart -->
+        <div class="ac-rings-wrap">
           <canvas id="cPersonalDonut"></canvas>
+        </div>
+        <!-- Right: legend -->
+        <div class="ac-legend">
+          <div class="ac-legend-item">
+            <span class="ac-legend-dot" style="background:var(--pilot);"></span>
+            <div class="ac-legend-info">
+              <span class="ac-legend-label">Промптов</span>
+              <div class="ac-legend-nums">
+                <span class="ac-legend-value" id="statPrompts">0</span>
+                <span class="ac-legend-max">/ 100</span>
+                <span class="ac-legend-pct" id="statPromptsPct"></span>
+              </div>
+            </div>
+          </div>
+          <div class="ac-legend-item">
+            <span class="ac-legend-dot" style="background:var(--ok);"></span>
+            <div class="ac-legend-info">
+              <span class="ac-legend-label">Кейсов</span>
+              <div class="ac-legend-nums">
+                <span class="ac-legend-value" id="statCases">0</span>
+                <span class="ac-legend-max">/ 17</span>
+                <span class="ac-legend-pct" id="statCasesPct"></span>
+              </div>
+            </div>
+          </div>
+          <div class="ac-legend-item">
+            <span class="ac-legend-dot" style="background:var(--warn);"></span>
+            <div class="ac-legend-info">
+              <span class="ac-legend-label">Инструментов</span>
+              <div class="ac-legend-nums">
+                <span class="ac-legend-value" id="statTools">0</span>
+                <span class="ac-legend-max">/ 8</span>
+                <span class="ac-legend-pct" id="statToolsPct"></span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -809,29 +802,22 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   PROFILE.levelProgress = levelInfo.progress;
   renderLevelSection(levelInfo);
 
-  /* ===== STATS PANEL (activity cards) ===== */
+  /* ===== STATS PANEL (activity rings legend) ===== */
   function renderStatsPanel() {
     var m = PROFILE.metrics;
-    var total = (m.cases || 0) + (m.prompts || 0) + (m.tools || 0);
-    function pct(v) { return total > 0 ? ((v / total) * 100).toFixed(1) : '0.0'; }
+    var limits = RING_LIMITS;
 
     animateCounter(document.getElementById('statCases'), m.cases, 800);
     animateCounter(document.getElementById('statPrompts'), m.prompts, 800);
     animateCounter(document.getElementById('statTools'), m.tools, 800);
-    document.getElementById('statCasesPct').textContent = '(' + pct(m.cases) + '%)';
-    document.getElementById('statPromptsPct').textContent = '(' + pct(m.prompts) + '%)';
-    document.getElementById('statToolsPct').textContent = '(' + pct(m.tools) + '%)';
 
-    // Animate progress bars
-    var maxVal = Math.max(m.cases || 0, m.prompts || 0, m.tools || 0, 1);
-    setTimeout(function() {
-      var bc = document.getElementById('acBarCases');
-      var bp = document.getElementById('acBarPrompts');
-      var bt = document.getElementById('acBarTools');
-      if (bc) bc.style.width = Math.round(((m.cases || 0) / maxVal) * 100) + '%';
-      if (bp) bp.style.width = Math.round(((m.prompts || 0) / maxVal) * 100) + '%';
-      if (bt) bt.style.width = Math.round(((m.tools || 0) / maxVal) * 100) + '%';
-    }, 300);
+    var pctCases = limits.cases > 0 ? Math.round((m.cases / limits.cases) * 100) : 0;
+    var pctPrompts = limits.prompts > 0 ? Math.round((m.prompts / limits.prompts) * 100) : 0;
+    var pctTools = limits.tools > 0 ? Math.round((m.tools / limits.tools) * 100) : 0;
+
+    document.getElementById('statCasesPct').textContent = pctCases + '%';
+    document.getElementById('statPromptsPct').textContent = pctPrompts + '%';
+    document.getElementById('statToolsPct').textContent = pctTools + '%';
   }
   renderStatsPanel();
 
@@ -984,8 +970,10 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     });
   }
 
-  /* ===== DONUT CHART (canvas, no Chart.js) ===== */
-  function drawProfileDonut() {
+  /* ===== ACTIVITY RINGS (Apple Watch style) ===== */
+  var RING_LIMITS = { prompts: 100, cases: 17, tools: 8 };
+
+  function drawActivityRings() {
     var canvas = document.getElementById('cPersonalDonut');
     if (!canvas) return;
     var rect = canvas.getBoundingClientRect();
@@ -998,44 +986,57 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     ctx.clearRect(0, 0, W, H);
 
     var m = PROFILE.metrics;
-    var slices = [
-      { value: m.cases || 0, color: 'rgba(38,210,152,.85)' },
-      { value: m.prompts || 0, color: 'rgba(120,140,255,.85)' },
-      { value: m.tools || 0, color: 'rgba(255,193,7,.85)' }
-    ];
-    var total = slices.reduce(function(s, sl) { return s + sl.value; }, 0);
-    if (total === 0) { slices.forEach(function(sl) { sl.value = 1; }); total = 3; }
-
     var cx = W / 2, cy = H / 2;
-    var R = Math.min(cx, cy) - 8;
-    var innerR = R * 0.62;
-    var gap = 0.03; // gap between slices in radians
+    var maxR = Math.min(cx, cy) - 4;
+    var lineW = Math.max(12, maxR * 0.16);
+    var ringGap = lineW * 0.35;
+
+    // Rings: outer → inner: prompts, cases, tools
+    var rings = [
+      { value: m.prompts || 0, max: RING_LIMITS.prompts, color: 'rgba(120,140,255,.9)', bg: 'rgba(120,140,255,.12)' },
+      { value: m.cases || 0,   max: RING_LIMITS.cases,   color: 'rgba(38,210,152,.9)',  bg: 'rgba(38,210,152,.12)' },
+      { value: m.tools || 0,   max: RING_LIMITS.tools,   color: 'rgba(255,193,7,.9)',   bg: 'rgba(255,193,7,.12)' }
+    ];
+
+    ctx.lineCap = 'round';
     var startAngle = -Math.PI / 2;
 
-    slices.forEach(function(sl) {
-      var sweep = (sl.value / total) * (Math.PI * 2 - gap * slices.length);
-      ctx.beginPath();
-      ctx.arc(cx, cy, R, startAngle + gap / 2, startAngle + sweep, false);
-      ctx.arc(cx, cy, innerR, startAngle + sweep, startAngle + gap / 2, true);
-      ctx.closePath();
-      ctx.fillStyle = sl.color;
-      ctx.fill();
-      startAngle += sweep + gap;
-    });
+    rings.forEach(function(ring, i) {
+      var r = maxR - i * (lineW + ringGap);
+      var pct = Math.min(ring.value / ring.max, 1);
 
-    // Center text
-    ctx.fillStyle = 'rgba(255,255,255,.92)';
-    ctx.font = '800 ' + Math.round(R * 0.32) + 'px ui-sans-serif, system-ui';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    var realTotal = (m.cases || 0) + (m.prompts || 0) + (m.tools || 0);
-    ctx.fillText(String(realTotal), cx, cy - 6);
-    ctx.fillStyle = 'rgba(255,255,255,.5)';
-    ctx.font = '500 ' + Math.round(R * 0.13) + 'px ui-sans-serif, system-ui';
-    ctx.fillText('всего', cx, cy + R * 0.2);
+      // Background track
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = ring.bg;
+      ctx.lineWidth = lineW;
+      ctx.stroke();
+
+      // Filled arc
+      if (pct > 0) {
+        var endAngle = startAngle + pct * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, startAngle, endAngle);
+        ctx.strokeStyle = ring.color;
+        ctx.lineWidth = lineW;
+        ctx.stroke();
+
+        // Glow effect on tip
+        var tipX = cx + Math.cos(endAngle) * r;
+        var tipY = cy + Math.sin(endAngle) * r;
+        var glow = ctx.createRadialGradient(tipX, tipY, 0, tipX, tipY, lineW * 1.2);
+        glow.addColorStop(0, ring.color.replace(/[\d.]+\)$/, '0.4)'));
+        glow.addColorStop(1, 'transparent');
+        ctx.beginPath();
+        ctx.arc(tipX, tipY, lineW * 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = glow;
+        ctx.fill();
+      }
+    });
   }
-  drawProfileDonut();
-  window.addEventListener('resize', drawProfileDonut);
+
+  drawActivityRings();
+  window.addEventListener('resize', drawActivityRings);
 
   /* ===== HEATMAP — HIDDEN (commented out, not deleted) =====
   (function() {

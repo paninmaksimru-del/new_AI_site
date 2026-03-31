@@ -193,8 +193,8 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 .activity-chart-card{ position:relative; overflow:visible !important; }
 .ac-top-bar{ position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--ok), var(--pilot), var(--warn)); border-radius:var(--radius) var(--radius) 0 0; }
 .ac-layout{ display:grid; grid-template-columns:240px 1fr; gap:clamp(24px, 4vw, 48px); align-items:center; }
-.ac-rings-wrap{ width:240px; height:240px; position:relative; }
-.ac-rings-wrap canvas{ width:100% !important; height:100% !important; border:none !important; background:transparent !important; border-radius:0 !important; display:block; }
+.ac-rings-wrap{ width:240px; height:240px; position:relative; flex:0 0 auto; }
+.ac-rings-wrap svg{ width:100%; height:100%; display:block; }
 .ac-legend{ display:flex; flex-direction:column; gap:24px; }
 .ac-legend-item{ display:flex; align-items:flex-start; gap:12px; }
 .ac-legend-dot{ width:12px; height:12px; border-radius:50%; flex:0 0 auto; margin-top:4px; }
@@ -322,9 +322,9 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
       <div class="ac-top-bar"></div>
       <h3 style="margin:0 0 18px; font-size:18px;">Моя активность</h3>
       <div class="ac-layout">
-        <!-- Left: rings chart -->
+        <!-- Left: rings chart (SVG) -->
         <div class="ac-rings-wrap">
-          <canvas id="cPersonalDonut" width="480" height="480"></canvas>
+          <svg id="activityRingsSvg" viewBox="0 0 240 240" width="240" height="240" style="display:block;"></svg>
         </div>
         <!-- Right: legend -->
         <div class="ac-legend">
@@ -974,31 +974,22 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   var RING_LIMITS = { prompts: 100, cases: 17, tools: 8 };
 
   var hoveredRing = -1;
-  var ringGeo = [];
-  var ringsData = [
-    { key:'prompts', color: 'rgba(120,140,255,{a})', bg: 'rgba(120,140,255,.12)' },
-    { key:'cases',   color: 'rgba(38,210,152,{a})',  bg: 'rgba(38,210,152,.12)' },
-    { key:'tools',   color: 'rgba(255,193,7,{a})',   bg: 'rgba(255,193,7,.12)' }
-  ];
   var legendItems = document.querySelectorAll('.ac-legend-item');
 
-  function drawActivityRings() {
-    var canvas = document.getElementById('cPersonalDonut');
-    if (!canvas) return;
-    var W = 240, H = 240;
-    var dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
-    var ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, W, H);
+  var RINGS_CFG = [
+    { key:'prompts', color:'120,140,255', label:'Промпты' },
+    { key:'cases',   color:'38,210,152',  label:'Кейсы' },
+    { key:'tools',   color:'255,193,7',   label:'Инструменты' }
+  ];
 
+  function buildRingsSvg() {
+    var svg = document.getElementById('activityRingsSvg');
+    if (!svg) return;
     var m = PROFILE.metrics;
-    var cx = W / 2, cy = H / 2;
-    var lineW = Math.max(12, Math.min(cx, cy) * 0.18);
-    var maxR = Math.min(cx, cy) - lineW / 2 - 2;
-    var ringGap = lineW * 0.4;
-    var startAngle = -Math.PI / 2;
+    var cx = 120, cy = 120;
+    var lineW = 20;
+    var gap = 8;
+    var maxR = 108;
 
     var vals = [
       { value: m.prompts || 0, max: RING_LIMITS.prompts },
@@ -1006,51 +997,33 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
       { value: m.tools || 0,   max: RING_LIMITS.tools }
     ];
 
-    ctx.lineCap = 'round';
-    ringGeo = [];
-
-    ringsData.forEach(function(ring, i) {
+    var html = '';
+    RINGS_CFG.forEach(function(cfg, i) {
+      var r = maxR - i * (lineW + gap);
+      var pct = Math.min(vals[i].value / vals[i].max, 1);
+      var circumference = 2 * Math.PI * r;
+      var dashLen = pct * circumference;
       var isHovered = hoveredRing === i;
       var isDimmed = hoveredRing >= 0 && !isHovered;
       var lw = isHovered ? lineW + 4 : lineW;
-      var alpha = isDimmed ? 0.3 : 0.9;
-      var bgAlpha = isDimmed ? 0.06 : 0.12;
-      var r = maxR - i * (lineW + ringGap);
-      var pct = Math.min(vals[i].value / vals[i].max, 1);
-
-      ringGeo.push({ r: r, lineW: lineW, cx: cx, cy: cy });
+      var alpha = isDimmed ? 0.25 : 0.9;
+      var bgAlpha = isDimmed ? 0.05 : 0.1;
 
       // Background track
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.strokeStyle = ring.bg.replace(/[\d.]+\)$/, bgAlpha + ')');
-      ctx.lineWidth = lw;
-      ctx.stroke();
+      html += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba('+cfg.color+','+bgAlpha+')" stroke-width="'+lw+'" />';
 
       // Filled arc
       if (pct > 0) {
-        var endAngle = startAngle + pct * Math.PI * 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, startAngle, endAngle);
-        ctx.strokeStyle = ring.color.replace('{a}', String(alpha));
-        ctx.lineWidth = lw;
-        ctx.stroke();
-
-        // Glow on tip
-        if (!isDimmed) {
-          var tipX = cx + Math.cos(endAngle) * r;
-          var tipY = cy + Math.sin(endAngle) * r;
-          var glowR = lw * (isHovered ? 1.6 : 1.2);
-          var glow = ctx.createRadialGradient(tipX, tipY, 0, tipX, tipY, glowR);
-          glow.addColorStop(0, ring.color.replace('{a}', isHovered ? '0.6' : '0.4'));
-          glow.addColorStop(1, 'transparent');
-          ctx.beginPath();
-          ctx.arc(tipX, tipY, glowR, 0, Math.PI * 2);
-          ctx.fillStyle = glow;
-          ctx.fill();
-        }
+        html += '<circle class="ring-fill" data-ring="'+i+'" cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" '
+          + 'stroke="rgba('+cfg.color+','+alpha+')" stroke-width="'+lw+'" '
+          + 'stroke-linecap="round" '
+          + 'stroke-dasharray="'+dashLen+' '+circumference+'" '
+          + 'transform="rotate(-90 '+cx+' '+cy+')" '
+          + 'style="cursor:pointer; transition: stroke-width .2s, stroke-opacity .2s; filter:'+(isHovered ? 'drop-shadow(0 0 6px rgba('+cfg.color+',.5))' : 'none')+';" />';
       }
     });
+
+    svg.innerHTML = html;
 
     // Highlight legend
     legendItems.forEach(function(el, i) {
@@ -1060,29 +1033,17 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     });
   }
 
-  function ringHitTest(e) {
-    var canvas = document.getElementById('cPersonalDonut');
-    var rect = canvas.getBoundingClientRect();
-    var mx = e.clientX - rect.left;
-    var my = e.clientY - rect.top;
-    for (var i = 0; i < ringGeo.length; i++) {
-      var g = ringGeo[i];
-      var dist = Math.sqrt((mx - g.cx) * (mx - g.cx) + (my - g.cy) * (my - g.cy));
-      if (Math.abs(dist - g.r) <= g.lineW / 2 + 4) return i;
-    }
-    return -1;
-  }
-
-  // Canvas hover events
+  // SVG ring hover
   (function() {
-    var canvas = document.getElementById('cPersonalDonut');
-    if (!canvas) return;
-    canvas.addEventListener('mousemove', function(e) {
-      var idx = ringHitTest(e);
-      if (idx !== hoveredRing) { hoveredRing = idx; drawActivityRings(); canvas.style.cursor = idx >= 0 ? 'pointer' : 'default'; }
+    var svg = document.getElementById('activityRingsSvg');
+    if (!svg) return;
+    svg.addEventListener('mouseover', function(e) {
+      var ring = e.target.closest('[data-ring]');
+      var idx = ring ? parseInt(ring.getAttribute('data-ring')) : -1;
+      if (idx !== hoveredRing) { hoveredRing = idx; buildRingsSvg(); }
     });
-    canvas.addEventListener('mouseleave', function() {
-      if (hoveredRing !== -1) { hoveredRing = -1; drawActivityRings(); canvas.style.cursor = 'default'; }
+    svg.addEventListener('mouseleave', function() {
+      if (hoveredRing !== -1) { hoveredRing = -1; buildRingsSvg(); }
     });
   })();
 
@@ -1090,12 +1051,11 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   legendItems.forEach(function(el, i) {
     el.style.transition = 'opacity .2s, transform .2s';
     el.style.cursor = 'pointer';
-    el.addEventListener('mouseenter', function() { hoveredRing = i; drawActivityRings(); });
-    el.addEventListener('mouseleave', function() { hoveredRing = -1; drawActivityRings(); });
+    el.addEventListener('mouseenter', function() { hoveredRing = i; buildRingsSvg(); });
+    el.addEventListener('mouseleave', function() { hoveredRing = -1; buildRingsSvg(); });
   });
 
-  drawActivityRings();
-  window.addEventListener('resize', function() { ringGeo = []; drawActivityRings(); });
+  buildRingsSvg();
 
   /* ===== HEATMAP — HIDDEN (commented out, not deleted) =====
   (function() {

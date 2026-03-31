@@ -263,6 +263,49 @@
       pointer-events:none;
       font-size: 12px;
     }
+    /* ── CustomSelect (same as cases.html) ──────────────── */
+    .cs-field { padding:0!important; background:none!important; border:none!important; min-height:0!important; }
+    .cs-field:after { display:none!important; }
+    .cs-wrap { position:relative; display:inline-flex; align-items:center; }
+    .cs-trigger {
+      display:inline-flex; align-items:center; gap:7px;
+      padding:8px 12px 8px 14px; border-radius:30px;
+      border:1px solid rgba(255,255,255,.14); background:rgba(5,7,14,.8);
+      cursor:pointer; white-space:nowrap; font-size:14px;
+      color:rgba(255,255,255,.82); transition:background .2s, border-color .2s, color .2s;
+      user-select:none; min-height:40px;
+    }
+    .cs-trigger:hover { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.22); }
+    .cs-trigger.is-open { border-color:rgba(0,200,120,.45); background:rgba(0,200,120,.07); color:rgba(0,200,120,.9); }
+    .cs-trigger.is-active { border-color:rgba(0,200,120,.45); background:rgba(0,200,120,.09); color:rgba(0,200,120,.9); }
+    .cs-chevron { display:inline-flex; align-items:center; opacity:.55; transition:transform .3s cubic-bezier(.34,1.56,.64,1), opacity .2s; flex-shrink:0; }
+    .cs-trigger.is-open .cs-chevron { transform:rotate(180deg); opacity:.8; }
+    .cs-trigger.is-active .cs-chevron { opacity:.8; }
+    .cs-panel-wrap {
+      position:absolute; top:0; left:0; z-index:850; min-width:220px;
+      border-radius:20px; border:1px solid rgba(255,255,255,.14);
+      background:rgba(9,13,22,.97); backdrop-filter:blur(20px);
+      box-shadow:0 24px 60px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.04);
+      overflow:hidden; transform-origin:top left;
+      animation:cs-open .32s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+    .cs-panel-wrap.is-closing { animation:cs-close .22s ease forwards!important; }
+    @keyframes cs-open { from{opacity:0;transform:scale(.88);border-radius:30px} to{opacity:1;transform:scale(1);border-radius:20px} }
+    @keyframes cs-close { from{opacity:1;transform:scale(1)} to{opacity:0;transform:scale(.88);border-radius:30px} }
+    .cs-panel-head { display:flex; align-items:center; justify-content:space-between; padding:13px 14px 10px; border-bottom:1px solid rgba(255,255,255,.07); animation:cs-head-in .22s ease .07s both; }
+    @keyframes cs-head-in { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
+    .cs-panel-head strong { font-size:13px; font-weight:600; color:rgba(255,255,255,.88); }
+    .cs-close-btn { display:flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; border:none; background:rgba(255,255,255,.1); color:rgba(255,255,255,.65); cursor:pointer; font-size:11px; transition:background .18s, color .18s; padding:0; }
+    .cs-close-btn:hover { background:rgba(255,255,255,.18); color:rgba(255,255,255,.95); }
+    .cs-panel-list { padding:5px 0; max-height:260px; overflow-y:auto; }
+    .cs-panel-list::-webkit-scrollbar { width:3px; }
+    .cs-panel-list::-webkit-scrollbar-track { background:transparent; }
+    .cs-panel-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:2px; }
+    .cs-item { padding:9px 14px; font-size:14px; color:rgba(255,255,255,.78); cursor:pointer; transition:background .14s, color .14s; opacity:0; animation:cs-item-in .28s ease forwards; animation-delay:calc(var(--idx,0)*.04s + .1s); }
+    @keyframes cs-item-in { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .cs-item:hover { background:rgba(255,255,255,.07); color:rgba(255,255,255,.95); }
+    .cs-item.is-selected { color:rgba(0,200,120,.9); background:rgba(0,200,120,.08); font-weight:500; }
+
     .seg{
       display:inline-flex;
       border: 1px solid rgba(255,255,255,.12);
@@ -836,13 +879,13 @@ function logout() {
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
           <div>
             <h3 style="margin:0;">Топ кейсов, которые используют сотрудники</h3>
-            <small style="color:var(--muted);">Кейсы → количество применений на практике</small>
+            <small style="color:var(--muted);">Слева — название кейса. Внутри бара — количество использований</small>
           </div>
           <span class="badge pilot" id="casesPeriodBadge">—</span>
         </div>
         <div style="margin-top:14px;">
           <div class="card chart" style="padding: var(--pad); background: rgba(255,255,255,.035); box-shadow:none;">
-            <canvas id="cTopCases" style="height: 360px;"></canvas>
+            <canvas id="cTopCases" style="height: auto;"></canvas>
             <p class="muted" id="topCasesEmpty" style="padding:12px 0; display:none;">Пока нет отметок использования кейсов</p>
           </div>
         </div>
@@ -1737,6 +1780,7 @@ for (let day = new Date(start); day <= today; day.setDate(day.getDate()+1)) {
     const allowed = new Set(["all", ...DEPARTMENTS]);
     sel.value = allowed.has(state.dept) ? state.dept : "all";
     state.dept = sel.value;
+    if (csDept) csDept.refresh();
   }
 
   function setPeriodButtons() {
@@ -2203,9 +2247,10 @@ function drawDonut(canvasId, items, opts) {
     const totalH = padT + padB + rowHeights.reduce((s, h) => s + h, 0);
 
     const rect = canvas.getBoundingClientRect();
+    const cssH = totalH / dpr;
+    canvas.style.height = cssH + "px";
     canvas.width = Math.floor(rect.width * dpr);
-    canvas.height = Math.max(Math.floor(rect.height * dpr), totalH);
-    canvas.style.height = Math.max(rect.height, totalH / dpr) + "px";
+    canvas.height = totalH;
 
     const ctx = canvas.getContext("2d");
     ctx.scale(dpr, dpr);
@@ -2750,6 +2795,54 @@ document.querySelectorAll('.seg button[data-period]').forEach(b => {
     } catch (_) {}
   }
 
+  // ── CustomSelect (same widget as cases.html) ──────────────────────────────
+  class CustomSelect {
+    constructor(selectEl, title) {
+      this.select = selectEl; this.title = title; this.panelEl = null;
+      this._docClick = this._onDocClick.bind(this);
+      this._build();
+      document.addEventListener('click', this._docClick, true);
+    }
+    _build() {
+      this.wrapper = document.createElement('div');
+      this.wrapper.className = 'cs-wrap';
+      this.trigger = document.createElement('div');
+      this.trigger.className = 'cs-trigger';
+      this.trigger.setAttribute('role','button');
+      this.trigger.setAttribute('tabindex','0');
+      this.trigger.innerHTML = `<span class="cs-trigger-label">${this._selectedLabel()}</span><svg class="cs-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      this.trigger.addEventListener('click', e => { e.stopPropagation(); this._toggle(); });
+      this.trigger.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){e.preventDefault();this._toggle();} if(e.key==='Escape')this._close(); });
+      const field = this.select.closest('.field');
+      if (field) field.classList.add('cs-field');
+      this.select.parentNode.insertBefore(this.wrapper, this.select);
+      this.select.style.display = 'none';
+      this.wrapper.appendChild(this.trigger);
+      this.wrapper.appendChild(this.select);
+      this._updateState();
+    }
+    _selectedLabel() { const o = Array.from(this.select.options).find(o => o.value === this.select.value); return o ? o.textContent : this.title; }
+    _updateState() { this.trigger.classList.toggle('is-active', this.select.value !== 'all'); }
+    _toggle() { this.panelEl ? this._close() : this._open(); }
+    _open() {
+      document.querySelectorAll('.cs-panel-wrap').forEach(p => { if(!this.wrapper.contains(p)){p.classList.add('is-closing');setTimeout(()=>p.remove(),220);} });
+      document.querySelectorAll('.cs-trigger').forEach(t => { if(t!==this.trigger)t.classList.remove('is-open'); });
+      this.trigger.classList.add('is-open');
+      this.panelEl = document.createElement('div');
+      this.panelEl.className = 'cs-panel-wrap';
+      this.panelEl.innerHTML = `<div class="cs-panel-head"><strong>${this.title}</strong><button class="cs-close-btn" type="button">&#x2715;</button></div><div class="cs-panel-list">${Array.from(this.select.options).map((o,i)=>`<div class="cs-item${o.value===this.select.value?' is-selected':''}" data-value="${o.value}" style="--idx:${i}">${o.textContent}</div>`).join('')}</div>`;
+      this.wrapper.appendChild(this.panelEl);
+      this.panelEl.querySelector('.cs-close-btn').addEventListener('click', e => { e.stopPropagation(); this._close(); });
+      this.panelEl.querySelectorAll('.cs-item').forEach(el => { el.addEventListener('click', e => { e.stopPropagation(); this._pick(el.dataset.value); }); });
+    }
+    _close() { if(!this.panelEl)return; this.trigger.classList.remove('is-open'); const p=this.panelEl; this.panelEl=null; p.classList.add('is-closing'); setTimeout(()=>p.remove(),220); }
+    _pick(value) { this.select.value=value; this.trigger.querySelector('.cs-trigger-label').textContent=this._selectedLabel(); this._updateState(); this._close(); this.select.dispatchEvent(new Event('change',{bubbles:true})); }
+    refresh() { this.trigger.querySelector('.cs-trigger-label').textContent = this._selectedLabel(); }
+    _onDocClick(e) { if(this.panelEl && !this.wrapper.contains(e.target)) this._close(); }
+  }
+
+  let csDept;
+
   async function init() {
     syncAuthProfile();
     setupUI();
@@ -2759,6 +2852,12 @@ document.querySelectorAll('.seg button[data-period]').forEach(b => {
     state.adoptionGrain = "weeks";
     await loadEntityMeta();
     renderAll();
+
+    // Init CustomSelect for department filter (after fillDeptSelector populated options)
+    const deptEl = document.getElementById("fDept");
+    if (deptEl) {
+      csDept = new CustomSelect(deptEl, "Подразделения");
+    }
   }
 
   document.addEventListener("DOMContentLoaded", init);

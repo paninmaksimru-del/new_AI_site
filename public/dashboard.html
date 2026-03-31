@@ -838,9 +838,15 @@ function logout() {
             <h3 style="margin:0;">Топ кейсов, которые используют сотрудники</h3>
             <small style="color:var(--muted);">На основе отметок «Я использовал этот кейс» на странице кейсов</small>
           </div>
-          <span class="badge ok" id="caseUsageCount">0 отметок</span>
+          <span class="badge ok" id="caseUsageHint">—</span>
+          <span class="badge pilot" id="casesPeriodBadge">—</span>
         </div>
-        <div class="list" id="topCasesList" style="margin-top:14px;"></div>
+        <div style="margin-top:14px;">
+          <div class="card chart" style="padding: var(--pad); background: rgba(255,255,255,.035); box-shadow:none;">
+            <canvas id="cTopCases" style="height: 360px;"></canvas>
+            <p class="muted" id="topCasesEmpty" style="padding:12px 0; display:none;">Пока нет отметок использования кейсов</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -2361,40 +2367,43 @@ function drawDonut(canvasId, items, opts) {
     `).join("");
   }
 
+  const MONTH_NAMES_RU = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+
   function renderTopCases(ds) {
-    const container = document.getElementById("topCasesList");
-    const badge = document.getElementById("caseUsageCount");
-    if (!container) return;
+    const canvas = document.getElementById("cTopCases");
+    const emptyEl = document.getElementById("topCasesEmpty");
+    const hintEl = document.getElementById("caseUsageHint");
+
+    const now = new Date();
+    setBadge("casesPeriodBadge", `Период: ${MONTH_NAMES_RU[now.getMonth()]} ${now.getFullYear()}`, "pilot");
 
     const usedMap = ds.usedCases || {};
     const entries = Object.entries(usedMap)
       .map(([id, count]) => ({ id, count: typeof count === "number" ? count : 1 }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
-
-    const totalMarks = entries.reduce((s, e) => s + e.count, 0);
-    if (badge) badge.textContent = `${totalMarks} отмет${totalMarks === 1 ? "ка" : totalMarks < 5 ? "ки" : "ок"}`;
+      .slice(0, 5);
 
     if (!entries.length) {
-      container.innerHTML = `<p class="muted" style="padding:12px 0;">Пока нет отметок использования кейсов</p>`;
+      if (canvas) canvas.style.display = "none";
+      if (emptyEl) emptyEl.style.display = "block";
+      if (hintEl) hintEl.textContent = "0 отметок";
       return;
     }
 
-    const maxCount = entries[0].count;
-    container.innerHTML = entries.map((e, i) => {
+    if (canvas) canvas.style.display = "";
+    if (emptyEl) emptyEl.style.display = "none";
+
+    const lead = entries[0];
+    const leadMeta = ENTITY_META.cases[lead.id];
+    const leadName = leadMeta ? leadMeta.title : lead.id;
+    if (hintEl) setBadge("caseUsageHint", `лидер: ${leadName} (${lead.count})`, "ok");
+
+    const rows = entries.map(e => {
       const meta = ENTITY_META.cases[e.id];
-      const name = meta ? escapeHtml(meta.title) : escapeHtml(e.id);
-      const pct = maxCount > 0 ? Math.round((e.count / maxCount) * 100) : 0;
-      return `<div class="list-row" style="flex-direction:column; align-items:stretch; gap:6px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <b>${i + 1}. ${name}</b>
-          <span class="pill">${e.count}</span>
-        </div>
-        <div style="height:6px; border-radius:3px; background:rgba(255,255,255,.06); overflow:hidden;">
-          <div style="height:100%; width:${pct}%; border-radius:3px; background:linear-gradient(90deg, rgba(78,135,255,.7), rgba(60,230,180,.6)); transition:width .3s;"></div>
-        </div>
-      </div>`;
-    }).join("");
+      return { name: meta ? meta.title : e.id, tools: "", count: e.count };
+    });
+
+    drawTaskBars("cTopCases", rows);
   }
 
   

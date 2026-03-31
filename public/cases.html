@@ -2947,12 +2947,23 @@
             delete map[id];
             setJson(LS_CASE_USED, map);
             showToast("Отметка снята");
+            markBtn.classList.remove("used");
+            markBtn.textContent = "Я использовал этот кейс";
           } else {
             map[id] = 1;
             setJson(LS_CASE_USED, map);
             showToast("Отметили кейс как использованный");
+            markBtn.classList.add("used");
+            markBtn.textContent = "Отменить выбор";
           }
-          renderCases();
+          // Update usage counter on the same card
+          const card = markBtn.closest(".case-card");
+          if (card) {
+            const caseObj = casesData.find(c => c.id === id);
+            const total = (caseObj?.used || 0) + (map[id] || 0);
+            const usageEl = card.querySelector(".case-usage");
+            if (usageEl) usageEl.textContent = "Использован: " + total;
+          }
           return;
         }
         const markUnauthedBtn = e.target.closest("[data-mark-used-unauthed]");

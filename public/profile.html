@@ -194,7 +194,7 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 .ac-top-bar{ position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--ok), var(--pilot), var(--warn)); border-radius:var(--radius) var(--radius) 0 0; }
 .ac-layout{ display:grid; grid-template-columns:auto 1fr; gap:clamp(24px, 4vw, 48px); align-items:center; }
 .ac-rings-wrap{ width:clamp(200px, 22vw, 260px); height:clamp(200px, 22vw, 260px); position:relative; flex:0 0 auto; }
-.ac-rings-wrap canvas{ width:100%; height:100%; border:none; background:transparent; border-radius:0; }
+.ac-rings-wrap canvas{ width:100% !important; height:100% !important; border:none !important; background:transparent !important; border-radius:0 !important; display:block; }
 .ac-legend{ display:flex; flex-direction:column; gap:24px; }
 .ac-legend-item{ display:flex; align-items:flex-start; gap:12px; }
 .ac-legend-dot{ width:12px; height:12px; border-radius:50%; flex:0 0 auto; margin-top:4px; }
@@ -1035,7 +1035,15 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     });
   }
 
-  drawActivityRings();
+  // Draw with retry — canvas may not have layout dimensions immediately
+  function tryDrawRings() {
+    var c = document.getElementById('cPersonalDonut');
+    if (!c) return;
+    var r = c.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) { drawActivityRings(); }
+    else { setTimeout(tryDrawRings, 100); }
+  }
+  tryDrawRings();
   window.addEventListener('resize', drawActivityRings);
 
   /* ===== HEATMAP — HIDDEN (commented out, not deleted) =====

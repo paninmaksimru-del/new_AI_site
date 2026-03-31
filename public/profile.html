@@ -177,6 +177,38 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 .like-card-body p{ margin: 10px 0 12px; font-size: 13px; color: var(--muted); line-height: 1.5; }
 .like-card-body .btn{ font-size: 13px; }
 
+/* Used tabs */
+.used-tabs{ display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+.used-tab{
+  padding:8px 16px; border-radius:99px; font-size:14px; font-weight:500;
+  border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04);
+  color:var(--muted); cursor:pointer; user-select:none;
+  transition:all .2s; display:flex; align-items:center; gap:8px;
+}
+.used-tab:hover{ background:rgba(255,255,255,.07); color:var(--text); }
+.used-tab.active{ border-color:rgba(120,140,255,.4); background:rgba(120,140,255,.1); color:var(--text); }
+.used-tab-dot{ width:8px; height:8px; border-radius:50%; }
+.used-tab-count{ font-size:12px; color:var(--muted-2); }
+.used-panel{ display:none; }
+.used-panel.active{ display:block; }
+.used-list-item{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:10px 14px; margin:0 -14px; border-radius:10px;
+  text-decoration:none; color:inherit; transition:background .12s;
+}
+.used-list-item:hover{ background:rgba(255,255,255,.04); }
+.used-list-item-title{ font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.used-list-item-arrow{ color:var(--muted-2); font-size:13px; flex:0 0 auto; transition:transform .12s; }
+.used-list-item:hover .used-list-item-arrow{ transform:translateX(3px); color:var(--text); }
+.used-show-all{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:8px 14px; margin-top:8px; border-radius:10px;
+  border:none; background:rgba(255,255,255,.04);
+  color:var(--muted); font-size:13px; cursor:pointer;
+  transition:background .12s, color .12s; font:inherit;
+}
+.used-show-all:hover{ background:rgba(255,255,255,.07); color:var(--text); }
+
 .reco-card{ border-left: 3px solid var(--pilot); }
 .reco-item{ padding: 12px 14px; border-radius: 10px; cursor: pointer; transition: background .15s ease; font-size: 14px; color: var(--muted); display: flex; gap: 10px; align-items: flex-start; }
 .reco-item:hover{ background: rgba(120,140,255,.08); }
@@ -420,11 +452,9 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 <section>
   <div class="wrap">
     <div class="card pad no-hover">
-      <h3 style="margin:0 0 16px;">Вы использовали</h3>
-      <div class="likes-grid" id="usedGrid"></div>
-      <div style="margin-top:16px;">
-        <a href="/cases" class="btn ghost small">Все кейсы →</a>
-      </div>
+      <h3 style="margin:0 0 14px;">Вы использовали</h3>
+      <div class="used-tabs" id="usedTabs"></div>
+      <div id="usedContent"></div>
     </div>
   </div>
 </section>
@@ -813,62 +843,107 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     setTimeout(function() { animateCounter(card.querySelector('.value'), val, 800, k.suffix || ''); }, 200 + i * 100);
   });
 
-  /* ===== ВЫ ИСПОЛЬЗОВАЛИ ===== */
+  /* ===== ВЫ ИСПОЛЬЗОВАЛИ (tabs) ===== */
   (function() {
-    var grid = document.getElementById('usedGrid');
-    if (!grid) return;
+    var tabsEl = document.getElementById('usedTabs');
+    var contentEl = document.getElementById('usedContent');
+    if (!tabsEl || !contentEl) return;
 
-    var usedCases = {};
-    var usedPrompts = {};
-    var usedTools = {};
+    var USED_VISIBLE = 4;
+    var usedCases = {}, usedPrompts = {}, usedTools = {};
     try { usedCases = JSON.parse(localStorage.getItem('cases_used_map') || '{}'); } catch(_) {}
     try { usedPrompts = JSON.parse(localStorage.getItem('prompt_used_map') || '{}'); } catch(_) {}
     try { usedTools = JSON.parse(localStorage.getItem('tool_used_map') || '{}'); } catch(_) {}
 
-    var usedCaseIds = Object.keys(usedCases);
-    var usedPromptIds = Object.keys(usedPrompts);
-    var usedToolIds = Object.keys(usedTools);
+    var groups = [
+      { key:'cases', label:'Кейсы', dot:'var(--ok)', ids: Object.keys(usedCases), href:'/cases', items:[] },
+      { key:'prompts', label:'Промпты', dot:'var(--pilot)', ids: Object.keys(usedPrompts), href:'/cases#prompts', items:[] },
+      { key:'tools', label:'Инструменты', dot:'var(--warn)', ids: Object.keys(usedTools), href:'/', items:[] }
+    ];
 
-    if (!usedCaseIds.length && !usedPromptIds.length && !usedToolIds.length) {
-      grid.innerHTML =
-        '<div style="grid-column:1/-1;text-align:center;padding:32px 0;color:var(--muted);">' +
+    // Filter to groups that have items
+    var activeGroups = groups.filter(function(g) { return g.ids.length > 0; });
+
+    if (!activeGroups.length) {
+      contentEl.innerHTML =
+        '<div style="text-align:center;padding:24px 0;color:var(--muted);">' +
           '<div style="font-size:14px;">Вы пока не отмечали кейсы и промпты</div>' +
           '<a href="/cases" class="btn ghost small" style="margin-top:14px;display:inline-flex;">Перейти в каталог \u2192</a>' +
         '</div>';
       return;
     }
 
-    // Build items immediately with IDs, then enrich with titles from API
-    var items = [];
-    usedCaseIds.forEach(function(id) { items.push({ id: id, title: id, desc: '', type: 'Кейс', href: '/cases', color: 'ok', src: 'case' }); });
-    usedPromptIds.forEach(function(id) { items.push({ id: id, title: id, desc: '', type: 'Промпт', href: '/cases#prompts', color: 'pilot', src: 'prompt' }); });
-    usedToolIds.forEach(function(id) { items.push({ id: id, title: id, desc: '', type: 'Инструмент', href: '/#tools', color: 'warn', src: 'tool' }); });
+    // Init items with IDs
+    groups.forEach(function(g) {
+      g.items = g.ids.map(function(id) { return { id:id, title:id, href:g.href }; });
+    });
 
-    function renderUsedGrid() {
-      grid.innerHTML = '';
-      items.forEach(function(item) {
-        var card = document.createElement('a');
-        card.href = item.href;
-        card.className = 'like-card';
-        card.style.textDecoration = 'none';
-        card.style.color = 'inherit';
-        card.innerHTML =
-          '<div class="like-card-header">' +
-            '<span class="like-card-title">' + esc(item.title) + '</span>' +
-            '<span style="font-size:14px; opacity:.5;">\u2192</span>' +
-          '</div>' +
-          '<div class="like-card-badges">' +
-            '<span class="badge ' + item.color + '" style="font-size:11px;padding:3px 8px;">' + item.type + '</span>' +
-          '</div>' +
-          (item.desc ? '<p style="margin:8px 0 0;font-size:13px;color:var(--muted);line-height:1.5;">' + esc(item.desc).slice(0, 120) + '</p>' : '');
-        grid.appendChild(card);
+    var activeTab = activeGroups[0].key;
+
+    function renderTabs() {
+      tabsEl.innerHTML = activeGroups.map(function(g) {
+        return '<div class="used-tab' + (g.key === activeTab ? ' active' : '') + '" data-used-tab="' + g.key + '">' +
+          '<span class="used-tab-dot" style="background:' + g.dot + ';"></span>' +
+          esc(g.label) +
+          '<span class="used-tab-count">' + g.ids.length + '</span>' +
+        '</div>';
+      }).join('');
+
+      tabsEl.querySelectorAll('.used-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+          activeTab = tab.getAttribute('data-used-tab');
+          renderTabs();
+          renderPanel();
+        });
       });
     }
 
-    // Render immediately with IDs
-    renderUsedGrid();
+    function renderPanel() {
+      var g = groups.find(function(x) { return x.key === activeTab; });
+      if (!g) { contentEl.innerHTML = ''; return; }
 
-    // Then enrich with real titles from API
+      var visible = g.items.slice(0, USED_VISIBLE);
+      var hidden = g.items.slice(USED_VISIBLE);
+      var panelId = 'usedPanel_' + g.key;
+
+      var html = '<div class="used-panel active">';
+      visible.forEach(function(item) {
+        html += '<a href="' + esc(item.href) + '" class="used-list-item">' +
+          '<span class="used-list-item-title">' + esc(item.title) + '</span>' +
+          '<span class="used-list-item-arrow">\u2192</span></a>';
+      });
+
+      if (hidden.length) {
+        html += '<div id="' + panelId + '_more" style="display:none;">';
+        hidden.forEach(function(item) {
+          html += '<a href="' + esc(item.href) + '" class="used-list-item">' +
+            '<span class="used-list-item-title">' + esc(item.title) + '</span>' +
+            '<span class="used-list-item-arrow">\u2192</span></a>';
+        });
+        html += '</div>';
+        html += '<button class="used-show-all" id="' + panelId + '_btn">Показать все ' + g.ids.length + '</button>';
+      }
+
+      html += '</div>';
+      contentEl.innerHTML = html;
+
+      if (hidden.length) {
+        var btn = document.getElementById(panelId + '_btn');
+        var more = document.getElementById(panelId + '_more');
+        if (btn && more) {
+          btn.addEventListener('click', function() {
+            var shown = more.style.display !== 'none';
+            more.style.display = shown ? 'none' : 'block';
+            btn.textContent = shown ? 'Показать все ' + g.ids.length : 'Скрыть';
+          });
+        }
+      }
+    }
+
+    renderTabs();
+    renderPanel();
+
+    // Enrich with real titles from API
     Promise.all([
       fetch('/api/cases').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; }),
       fetch('/api/prompts').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; }),
@@ -878,12 +953,10 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
       var prompts = Array.isArray(results[1]) ? results[1] : (results[1].data || []);
       var tools = Array.isArray(results[2]) ? results[2] : (results[2].data || []);
       var changed = false;
-      items.forEach(function(item) {
-        if (item.src === 'case') { var c = cases.find(function(x) { return x.id === item.id; }); if (c) { item.title = c.title || item.id; item.desc = c.goal || ''; changed = true; } }
-        if (item.src === 'prompt') { var p = prompts.find(function(x) { return x.id === item.id; }); if (p) { item.title = p.title || p.sectionTitle || item.id; item.desc = p.meta || p.description || ''; changed = true; } }
-        if (item.src === 'tool') { var t = tools.find(function(x) { return x.id === item.id; }); if (t) { item.title = t.name || item.id; item.desc = t.description || ''; changed = true; } }
-      });
-      if (changed) renderUsedGrid();
+      groups[0].items.forEach(function(item) { var c = cases.find(function(x){return x.id===item.id;}); if(c){item.title=c.title||item.id;changed=true;} });
+      groups[1].items.forEach(function(item) { var p = prompts.find(function(x){return x.id===item.id;}); if(p){item.title=p.title||p.sectionTitle||item.id;changed=true;} });
+      groups[2].items.forEach(function(item) { var t = tools.find(function(x){return x.id===item.id;}); if(t){item.title=t.name||item.id;changed=true;} });
+      if (changed) renderPanel();
     }).catch(function() {});
   })();
 

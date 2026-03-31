@@ -192,8 +192,8 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 /* Activity chart card */
 .activity-chart-card{ position:relative; overflow:hidden; }
 .ac-top-bar{ position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--ok), var(--pilot), var(--warn)); border-radius:var(--radius) var(--radius) 0 0; }
-.ac-layout{ display:grid; grid-template-columns:auto 1fr; gap:clamp(24px, 4vw, 48px); align-items:center; }
-.ac-rings-wrap{ width:clamp(200px, 22vw, 260px); height:clamp(200px, 22vw, 260px); position:relative; flex:0 0 auto; }
+.ac-layout{ display:grid; grid-template-columns:240px 1fr; gap:clamp(24px, 4vw, 48px); align-items:center; }
+.ac-rings-wrap{ width:240px; height:240px; position:relative; }
 .ac-rings-wrap canvas{ width:100% !important; height:100% !important; border:none !important; background:transparent !important; border-radius:0 !important; display:block; }
 .ac-legend{ display:flex; flex-direction:column; gap:24px; }
 .ac-legend-item{ display:flex; align-items:flex-start; gap:12px; }

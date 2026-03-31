@@ -248,6 +248,16 @@
       };
       localStorage.setItem('mikAuth', JSON.stringify(mikAuth));
       if (data.full_name) localStorage.setItem('auth_full_name', data.full_name);
+
+      // Save profile for dashboard name resolution
+      try {
+        const profiles = JSON.parse(localStorage.getItem('user_profiles') || '{}');
+        profiles[data.login] = {
+          name: data.full_name || data.login,
+          department: data.department || ''
+        };
+        localStorage.setItem('user_profiles', JSON.stringify(profiles));
+      } catch(_) {}
     }
 
     async function doLogin() {

@@ -836,9 +836,8 @@ function logout() {
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
           <div>
             <h3 style="margin:0;">Топ кейсов, которые используют сотрудники</h3>
-            <small style="color:var(--muted);">На основе отметок «Я использовал этот кейс» на странице кейсов</small>
+            <small style="color:var(--muted);">Кейсы → количество применений на практике</small>
           </div>
-          <span class="badge ok" id="caseUsageHint">—</span>
           <span class="badge pilot" id="casesPeriodBadge">—</span>
         </div>
         <div style="margin-top:14px;">
@@ -2169,50 +2168,98 @@ function drawDonut(canvasId, items, opts) {
 
   function drawTaskBars(canvasId, rows) {
     const canvas = document.getElementById(canvasId);
-    const { ctx, W, H } = fitCanvas(canvas);
+    const dpr = window.devicePixelRatio || 1;
+    const fontSize = Math.round(12 * dpr);
+    const lineH = Math.round(fontSize * 1.45);
+    const maxLabelW = Math.min(Math.floor(canvas.getBoundingClientRect().width * dpr * 0.42), 460 * dpr);
 
-    ctx.clearRect(0,0,W,H);
+    // Pre-measure: figure out how many lines each label needs
+    const tmpCtx = canvas.getContext("2d");
+    tmpCtx.font = `700 ${fontSize}px ui-sans-serif, system-ui`;
 
-    const padL = 320, padR = 18, padT = 16, padB = 18;
-    const iw = W - padL - padR;
-    const ih = H - padT - padB;
+    function wrapText(text, maxW) {
+      const words = text.split(/\s+/);
+      const lines = [];
+      let cur = "";
+      for (const w of words) {
+        const test = cur ? cur + " " + w : w;
+        if (tmpCtx.measureText(test).width > maxW && cur) {
+          lines.push(cur);
+          cur = w;
+        } else {
+          cur = test;
+        }
+      }
+      if (cur) lines.push(cur);
+      return lines.length ? lines : [text];
+    }
+
+    const rowLines = rows.map(r => wrapText(r.name, maxLabelW - 12 * dpr));
+    const rowHeights = rowLines.map(lines => Math.max(50 * dpr, lines.length * lineH + 24 * dpr));
+
+    // Resize canvas to fit content
+    const padL = maxLabelW + 20 * dpr;
+    const padR = 18 * dpr, padT = 16 * dpr, padB = 18 * dpr;
+    const totalH = padT + padB + rowHeights.reduce((s, h) => s + h, 0);
+
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.max(Math.floor(rect.height * dpr), totalH);
+    canvas.style.height = Math.max(rect.height, totalH / dpr) + "px";
+
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    // Work in CSS pixels from here
+    const W = canvas.width / dpr, H = canvas.height / dpr;
+    const pL = padL / dpr, pR = padR / dpr, pT = padT / dpr, pB = padB / dpr;
+    const fs = fontSize / dpr, lh = lineH / dpr;
+    const iw = W - pL - pR;
+    const ih = H - pT - pB;
+    const labelMaxW = (maxLabelW - 12 * dpr) / dpr;
+
+    ctx.clearRect(0, 0, W, H);
 
     const max = Math.max(1, ...rows.map(r => r.count));
-    const n = rows.length;
-    const rowH = Math.max(34, ih / Math.max(1, n));
 
     ctx.strokeStyle = "rgba(255,255,255,.08)";
     ctx.lineWidth = 1;
-    for (let i=0;i<=4;i++){
-      const x = padL + (iw * i/4);
+    for (let i = 0; i <= 4; i++) {
+      const x = pL + (iw * i / 4);
       ctx.beginPath();
-      ctx.moveTo(x, padT);
-      ctx.lineTo(x, padT+ih);
+      ctx.moveTo(x, pT);
+      ctx.lineTo(x, pT + ih);
       ctx.stroke();
     }
 
-    for (let i=0;i<n;i++){
+    let yOff = pT;
+    for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
-      const y = padT + i*rowH + 8;
-      const barH = rowH - 14;
+      const rh = rowHeights[i] / dpr;
+      const lines = rowLines[i];
+      const barH = rh - 14;
+      const y = yOff + 4;
 
+      // Label lines — vertically centered in row
       ctx.fillStyle = "rgba(255,255,255,.90)";
-      ctx.font = "700 12px ui-sans-serif, system-ui";
+      ctx.font = `700 ${fs}px ui-sans-serif, system-ui`;
       ctx.textAlign = "left";
-      ctx.fillText(r.name, 12, y + 14);
+      const textBlockH = lines.length * lh;
+      const textStartY = y + (barH - textBlockH) / 2 + fs;
+      for (let li = 0; li < lines.length; li++) {
+        ctx.fillText(lines[li], 12, textStartY + li * lh);
+      }
 
-      ctx.fillStyle = "rgba(255,255,255,.58)";
-      ctx.font = "12px ui-sans-serif, system-ui";
-      ctx.fillText(r.tools, 12, y + 30);
-
+      // Bar
       const w = (r.count / max) * iw;
       ctx.fillStyle = "rgba(78,135,255,.32)";
-      ctx.fillRect(padL, y, w, barH);
+      ctx.fillRect(pL, y, w, barH);
 
+      // Count inside bar
       ctx.fillStyle = "rgba(255,255,255,.86)";
-      ctx.font = "700 12px ui-sans-serif, system-ui";
-      const txt = String(r.count);
-      ctx.fillText(txt, padL + Math.min(10, Math.max(6, w - 24)), y + barH/2 + 4);
+      ctx.font = `700 ${fs}px ui-sans-serif, system-ui`;
+      ctx.fillText(String(r.count), pL + Math.min(10, Math.max(6, w - 24)), y + barH / 2 + fs * 0.35);
+
+      yOff += rh;
     }
   }
 
@@ -2372,7 +2419,6 @@ function drawDonut(canvasId, items, opts) {
   function renderTopCases(ds) {
     const canvas = document.getElementById("cTopCases");
     const emptyEl = document.getElementById("topCasesEmpty");
-    const hintEl = document.getElementById("caseUsageHint");
 
     const now = new Date();
     setBadge("casesPeriodBadge", `Период: ${MONTH_NAMES_RU[now.getMonth()]} ${now.getFullYear()}`, "pilot");
@@ -2386,17 +2432,11 @@ function drawDonut(canvasId, items, opts) {
     if (!entries.length) {
       if (canvas) canvas.style.display = "none";
       if (emptyEl) emptyEl.style.display = "block";
-      if (hintEl) hintEl.textContent = "0 отметок";
       return;
     }
 
     if (canvas) canvas.style.display = "";
     if (emptyEl) emptyEl.style.display = "none";
-
-    const lead = entries[0];
-    const leadMeta = ENTITY_META.cases[lead.id];
-    const leadName = leadMeta ? leadMeta.title : lead.id;
-    if (hintEl) setBadge("caseUsageHint", `лидер: ${leadName} (${lead.count})`, "ok");
 
     const rows = entries.map(e => {
       const meta = ENTITY_META.cases[e.id];
@@ -2453,14 +2493,15 @@ function drawDonut(canvasId, items, opts) {
     const all = sortTopEmployees(computeUserUsage(ds));
     const rows = all.slice(0, 5);
 
-    tb.innerHTML = rows.map(r => `
-      <tr>
-        <td><b>${escapeHtml(r.fio)}</b></td>
+    tb.innerHTML = rows.map(r => {
+      const name = resolveUserDisplayName(r.client_id || "");
+      return `<tr>
+        <td><b>${escapeHtml(name)}</b></td>
         <td>${escapeHtml(String(r.cases))}</td>
         <td>${escapeHtml(String(r.prompts))}</td>
         <td>${escapeHtml(String(r.tools))}</td>
-      </tr>
-    `).join("");
+      </tr>`;
+    }).join("");
 
     
   }
@@ -2693,7 +2734,24 @@ document.querySelectorAll('.seg button[data-period]').forEach(b => {
     window.addEventListener("resize", () => renderAll(), { passive:true });
   }
 
+  // Sync current user's mikAuth profile into user_profiles so names resolve
+  function syncAuthProfile() {
+    try {
+      const auth = JSON.parse(localStorage.getItem("mikAuth") || "{}");
+      if (!auth.login) return;
+      const profiles = getJson(LS.USER_PROFILES, {}) || {};
+      if (!profiles[auth.login] || profiles[auth.login].name !== auth.full_name) {
+        profiles[auth.login] = {
+          name: auth.full_name || auth.login,
+          department: auth.department || ""
+        };
+        setJson(LS.USER_PROFILES, profiles);
+      }
+    } catch (_) {}
+  }
+
   async function init() {
+    syncAuthProfile();
     setupUI();
 
     let ds = loadDataset();

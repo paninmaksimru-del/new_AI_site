@@ -2955,6 +2955,20 @@
             showToast("Отметили кейс как использованный");
             markBtn.classList.add("used");
             markBtn.textContent = "Отменить выбор";
+            // Record UI event for dashboard analytics
+            try {
+              const auth = JSON.parse(localStorage.getItem("mikAuth") || "{}");
+              const events = JSON.parse(localStorage.getItem("ui_events") || "[]");
+              events.push({
+                timestamp: new Date().toISOString(),
+                event_type: "case_used_click",
+                target: id,
+                label: "case_used",
+                client_id: auth.login || "",
+                department: auth.department || ""
+              });
+              localStorage.setItem("ui_events", JSON.stringify(events));
+            } catch(_) {}
           }
           // Update usage counter on the same card
           const card = markBtn.closest(".case-card");

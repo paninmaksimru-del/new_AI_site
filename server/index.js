@@ -10,15 +10,29 @@ const port = Number(process.env.PORT) || 19080;
 
 const app = express();
 app.use(express.json({ limit: '2mb' }));
+
+// ----- Smart Cache-Control -----
+// Static assets: cache 1 day; HTML: revalidate; API reads: 60s; mutations: no-store
 app.use((req, res, next) => {
-  res.set('Cache-Control', 'no-store');
+  if (req.method !== 'GET') {
+    res.set('Cache-Control', 'no-store');
+  }
   next();
 });
 
-// ----- Static files -----
-app.use(express.static(publicDir, { index: false }));
+// ----- Static files (cached 1 day) -----
+app.use(express.static(publicDir, {
+  index: false,
+  setHeaders(res, filePath) {
+    if (/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot)$/i.test(filePath)) {
+      res.set('Cache-Control', 'public, max-age=86400');
+    } else if (/\.html$/i.test(filePath)) {
+      res.set('Cache-Control', 'no-cache');
+    }
+  }
+}));
 app.get('/logo.png', (req, res) => {
-  res.set('Cache-Control', 'no-store');
+  res.set('Cache-Control', 'public, max-age=86400');
   res.sendFile(join(publicDir, 'logo.png'));
 });
 
@@ -40,11 +54,28 @@ async function start() {
   app.get('/cases', (req, res) => res.sendFile(join(publicDir, 'cases.html')));
   app.get('/chat', (req, res) => res.sendFile(join(publicDir, 'chat.html')));
 
+  // ----- API helpers -----
+
+  // Pagination: ?limit=N&offset=N — optional, returns plain array if omitted (backwards-compatible)
+  // With limit: returns { data: [...], total, limit, offset }
+  function paginate(rows, req, res) {
+    const limit = parseInt(req.query.limit);
+    const offset = parseInt(req.query.offset) || 0;
+    if (!limit || limit <= 0) { res.json(rows); return; }
+    res.json({ data: rows.slice(offset, offset + limit), total: rows.length, limit, offset });
+  }
+
+  // Cache header for read-only content APIs (60s)
+  function cacheRead(res) {
+    res.set('Cache-Control', 'public, max-age=60');
+  }
+
   // ----- API -----
 
   // Departments
   app.get('/api/departments', async (req, res) => {
     try {
+      cacheRead(res);
       const { rows } = await query('SELECT name FROM departments ORDER BY id');
       res.json(rows.map(r => r.name));
     } catch (e) {
@@ -139,14 +170,12 @@ async function start() {
   // Cases
   app.get('/api/cases', async (req, res) => {
     try {
+      cacheRead(res);
       const { rows } = await query('SELECT id, data FROM cases ORDER BY id');
       const all = rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') }));
       // ?all=true is reserved for admin — without it drafts are hidden from public
-      if (req.query.all === 'true') {
-        res.json(all);
-      } else {
-        res.json(all.filter(c => c.maturity !== 'draft'));
-      }
+      const filtered = req.query.all === 'true' ? all : all.filter(c => c.maturity !== 'draft');
+      paginate(filtered, req, res);
     } catch (e) {
       res.status(500).json({ error: String(e.message) });
     }
@@ -206,8 +235,9 @@ async function start() {
   // Prompts
   app.get('/api/prompts', async (req, res) => {
     try {
+      cacheRead(res);
       const { rows } = await query('SELECT id, data FROM prompts ORDER BY id');
-      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+      paginate(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })), req, res);
     } catch (e) {
       res.status(500).json({ error: String(e.message) });
     }
@@ -267,8 +297,9 @@ async function start() {
   // Tools
   app.get('/api/tools', async (req, res) => {
     try {
+      cacheRead(res);
       const { rows } = await query('SELECT id, data FROM tools ORDER BY id');
-      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+      paginate(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })), req, res);
     } catch (e) {
       res.status(500).json({ error: String(e.message) });
     }
@@ -328,8 +359,9 @@ async function start() {
   // Tasks
   app.get('/api/tasks', async (req, res) => {
     try {
+      cacheRead(res);
       const { rows } = await query('SELECT id, data FROM tasks ORDER BY id');
-      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+      paginate(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })), req, res);
     } catch (e) {
       res.status(500).json({ error: String(e.message) });
     }
@@ -429,6 +461,7 @@ async function start() {
   // Browser config
   app.get('/api/browser-config', async (req, res) => {
     try {
+      cacheRead(res);
       const { rows } = await query("SELECT value FROM kv WHERE key = 'browser_config'");
       res.json(rows.length ? JSON.parse(rows[0].value) : {});
     } catch (e) {
@@ -449,8 +482,9 @@ async function start() {
   // Materials
   app.get('/api/materials', async (req, res) => {
     try {
+      cacheRead(res);
       const { rows } = await query('SELECT id, data FROM materials ORDER BY id');
-      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+      paginate(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })), req, res);
     } catch (e) { res.status(500).json({ error: String(e.message) }); }
   });
 
@@ -487,9 +521,9 @@ async function start() {
   // Instructions
   app.get('/api/instructions', async (req, res) => {
     try {
+      cacheRead(res);
       const { rows } = await query('SELECT id, data FROM instructions ORDER BY id');
-      const all = rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') }));
-      res.json(all);
+      paginate(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })), req, res);
     } catch (e) {
       res.status(500).json({ error: String(e.message) });
     }
@@ -523,6 +557,7 @@ async function start() {
   // Video Categories
   app.get('/api/video-categories', async (req, res) => {
     try {
+      cacheRead(res);
       const { rows } = await query('SELECT name, color FROM video_categories ORDER BY id');
       res.json(rows);
     } catch (e) {
@@ -557,8 +592,9 @@ async function start() {
   // Videos (education page)
   app.get('/api/videos', async (req, res) => {
     try {
+      cacheRead(res);
       const { rows } = await query('SELECT id, data FROM videos ORDER BY id');
-      res.json(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })));
+      paginate(rows.map(r => ({ id: r.id, ...JSON.parse(r.data || '{}') })), req, res);
     } catch (e) {
       res.status(500).json({ error: String(e.message) });
     }
@@ -613,8 +649,9 @@ async function start() {
 
   app.get('/api/prompt-usages', async (req, res) => {
     try {
+      cacheRead(res);
       const { rows } = await query('SELECT * FROM prompt_usages ORDER BY created_at DESC');
-      res.json(rows);
+      paginate(rows, req, res);
     } catch (e) { res.status(500).json({ error: String(e.message) }); }
   });
 
@@ -628,8 +665,9 @@ async function start() {
   // Speaker questions
   app.get('/api/speaker-questions', async (req, res) => {
     try {
+      cacheRead(res);
       const { rows } = await query('SELECT * FROM speaker_questions ORDER BY created_at DESC');
-      res.json(rows);
+      paginate(rows, req, res);
     } catch (e) { res.status(500).json({ error: String(e.message) }); }
   });
 
@@ -669,8 +707,9 @@ async function start() {
 
   app.get('/api/dashboard-feedback', async (req, res) => {
     try {
+      cacheRead(res);
       const { rows } = await query('SELECT * FROM dashboard_feedback ORDER BY created_at DESC');
-      res.json(rows);
+      paginate(rows, req, res);
     } catch (e) { res.status(500).json({ error: String(e.message) }); }
   });
 

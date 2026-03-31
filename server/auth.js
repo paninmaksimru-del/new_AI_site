@@ -11,6 +11,9 @@ function generateToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
+// Session TTL: 30 days
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
 // ── setup ─────────────────────────────────────────────────────────────────────
 export async function setupAuth(app) {
   // Создать таблицы если нет
@@ -40,6 +43,15 @@ export async function setupAuth(app) {
   // Добавить колонки в существующую таблицу (если БД уже была создана без них)
   await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
   await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`);
+  await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ`);
+
+  // Clean up expired sessions on startup and every hour
+  async function cleanExpiredSessions() {
+    try { await query(`DELETE FROM sessions WHERE expires_at IS NOT NULL AND expires_at < NOW()`); }
+    catch (_) {}
+  }
+  await cleanExpiredSessions();
+  setInterval(cleanExpiredSessions, 60 * 60 * 1000);
 
   // Создать дефолтных пользователей если таблица пустая
   const { rows } = await query('SELECT COUNT(*) as c FROM users');
@@ -68,8 +80,9 @@ export async function setupAuth(app) {
       }
 
       const token = generateToken();
-      await query('INSERT INTO sessions (token, user_id, created_at) VALUES ($1, $2, $3)', [
-        token, user.id, new Date().toISOString()
+      const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+      await query('INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES ($1, $2, $3, $4)', [
+        token, user.id, new Date().toISOString(), expiresAt
       ]);
       await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
@@ -110,8 +123,9 @@ export async function setupAuth(app) {
       const { rows } = await query('SELECT * FROM users WHERE login = $1', [login]);
       const user = rows[0];
       const token = generateToken();
-      await query('INSERT INTO sessions (token, user_id, created_at) VALUES ($1, $2, $3)', [
-        token, user.id, new Date().toISOString()
+      const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+      await query('INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES ($1, $2, $3, $4)', [
+        token, user.id, new Date().toISOString(), expiresAt
       ]);
 
       res.json({
@@ -227,15 +241,26 @@ export async function setupAuth(app) {
 }
 
 // ── middleware ────────────────────────────────────────────────────────────────
+// Check token validity including expiry
+async function resolveSession(token) {
+  if (!token) return null;
+  const { rows: sessions } = await query('SELECT * FROM sessions WHERE token = $1', [token]);
+  const session = sessions[0];
+  if (!session) return null;
+  if (session.expires_at && new Date(session.expires_at) < new Date()) {
+    await query('DELETE FROM sessions WHERE token = $1', [token]);
+    return null;
+  }
+  const { rows: users } = await query('SELECT * FROM users WHERE id = $1', [session.user_id]);
+  return users[0] || null;
+}
+
 export function requireAuth() {
   return async (req, res, next) => {
     const token = req.headers['x-auth-token'] || req.query.token;
-    if (!token) return res.redirect('/login');
-    const { rows: sessions } = await query('SELECT * FROM sessions WHERE token = $1', [token]);
-    if (!sessions[0]) return res.redirect('/login');
-    const { rows: users } = await query('SELECT * FROM users WHERE id = $1', [sessions[0].user_id]);
-    if (!users[0]) return res.redirect('/login');
-    req.user = users[0];
+    const user = await resolveSession(token);
+    if (!user) return res.redirect('/login');
+    req.user = user;
     next();
   };
 }
@@ -243,12 +268,10 @@ export function requireAuth() {
 export function requireAdmin() {
   return async (req, res, next) => {
     const token = req.headers['x-auth-token'] || req.query.token;
-    if (!token) return res.status(401).json({ error: 'Не авторизован' });
-    const { rows: sessions } = await query('SELECT * FROM sessions WHERE token = $1', [token]);
-    if (!sessions[0]) return res.status(401).json({ error: 'Не авторизован' });
-    const { rows: users } = await query('SELECT * FROM users WHERE id = $1', [sessions[0].user_id]);
-    if (!users[0] || users[0].role !== 'admin') return res.status(403).json({ error: 'Нет доступа' });
-    req.user = users[0];
+    const user = await resolveSession(token);
+    if (!user) return res.status(401).json({ error: 'Не авторизован' });
+    if (user.role !== 'admin') return res.status(403).json({ error: 'Нет доступа' });
+    req.user = user;
     next();
   };
 }

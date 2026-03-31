@@ -1622,14 +1622,21 @@ function renderVideoList() {
     if (v.embedUrl) s += '<br><span style="font-size:11px; color:rgba(78,135,255,.8);">' + escH(v.embedUrl) + '</span>';
     s += '</div>';
     s += '<div style="display:flex; gap:6px; flex-shrink:0;">';
-    s += '<button class="btn small" onclick="editVideo(\'' + v.id + '\')">Ред.</button>';
-    s += '<button class="btn small" style="border-color:rgba(255,96,96,.4); color:rgba(255,96,96,.9);" onclick="deleteVideo(\'' + v.id + '\')">Удалить</button>';
+    s += '<button class="btn small" data-edit-video="' + escH(v.id) + '">Ред.</button>';
+    s += '<button class="btn small" style="border-color:rgba(255,96,96,.4); color:rgba(255,96,96,.9);" data-delete-video="' + escH(v.id) + '">Удалить</button>';
     s += '</div></li>';
     return s;
   }).join('');
 }
 
 function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;'); }
+
+document.getElementById('videoList').addEventListener('click', function(e) {
+  var editBtn = e.target.closest('[data-edit-video]');
+  if (editBtn) { editVideo(editBtn.getAttribute('data-edit-video')); return; }
+  var delBtn = e.target.closest('[data-delete-video]');
+  if (delBtn) { deleteVideo(delBtn.getAttribute('data-delete-video')); return; }
+});
 
 document.getElementById('btnSaveVideo').addEventListener('click', async function() {
   var id = document.getElementById('videoId').value.trim() || ('vid_' + Date.now());

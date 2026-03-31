@@ -766,55 +766,11 @@ function logout() {
   <section>
     <div class="wrap">
       <div class="card pad">
-        <div style="display:flex; flex-direction:column; align-items:flex-start; gap:10px;">
-          <div>
-            <h3 style="margin:0;">Использование ИИ-инструментов в структуре Фонда МИК</h3>
-</div>
-
-          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-            <div class="seg" role="tablist" aria-label="Период для adoption">
-              <button class="active" data-grain="years">Годы</button>
-              <button data-grain="months">Месяцы</button>
-              <button data-grain="weeks">Недели</button>
-              <button data-grain="days">Дни</button>
-            </div>
-            <span class="badge pilot" id="adoptionRangeBadge">—</span>
-          </div>
+        <div>
+          <h3 style="margin:0;">Использование ИИ-инструментов в структуре Фонда МИК</h3>
         </div>
 
-        <div style="margin-top:14px;">
-          <div class="card chart" style="padding: var(--pad); background: rgba(255,255,255,.035); box-shadow:none;">
-            <div class="row">
-              <div>
-                <h3 style="margin:0;">% пользователей по подразделениям</h3>
-                <small>Наведите курсор на точку для подсказки</small>
-              </div>
-            </div>
-
-            <div class="adoption-builder" id="adoptionBuilder">
-              <div class="adoption-builder__row">
-                <div class="dept-picker">
-                  <button class="btn" type="button" id="deptPickerBtn" aria-haspopup="listbox" aria-expanded="false">Подразделения ▾</button>
-                  <div class="dept-menu" id="deptMenu" role="listbox" aria-multiselectable="true" hidden></div>
-                </div>
-
-                <div class="seg" role="tablist" aria-label="Тип графика">
-                  <button class="active" type="button" data-adopt-chart="line">Линейный график</button>
-                  <button type="button" data-adopt-chart="bar">Столбчатая диаграмма</button>
-                </div>
-
-                <button class="btn" type="button" id="applyDeptBtn">Построить график</button>
-              </div>
-
-              <div class="dept-tags" id="deptTags" aria-label="Выбранные подразделения"></div>
-            </div>
-
-            <canvas id="cAdoption"></canvas>
-            <div class="legend" id="adoptionLegend"></div>
-          </div>
-        </div>
-
-        <div class="grid two-col equal-cols ai-usage-split" style="margin-top: var(--gap);">
+        <div class="grid two-col equal-cols ai-usage-split" style="margin-top: 14px;">
           <div class="card chart" style="padding: var(--pad); background: rgba(255,255,255,.035); box-shadow:none;">
             <div class="row">
               <div>
@@ -879,23 +835,12 @@ function logout() {
       <div class="card pad">
         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
           <div>
-            <h3 style="margin:0;">Топ задач, где сотрудники используют ИИ</h3>
+            <h3 style="margin:0;">Топ кейсов, которые используют сотрудники</h3>
+            <small style="color:var(--muted);">На основе отметок «Я использовал этот кейс» на странице кейсов</small>
           </div>
-          <span class="badge pilot" id="taskRangeBadge">—</span>
+          <span class="badge ok" id="caseUsageCount">0 отметок</span>
         </div>
-
-        <div style="margin-top:14px;">
-          <div class="card chart" style="padding: var(--pad); background: rgba(255,255,255,.035); box-shadow:none;">
-            <div class="row">
-              <div>
-                <h3 style="margin:0;">Задачи → объём использования (за выбранный период)</h3>
-                <small>Слева у задачи — рекомендуемые инструменты из чек-листа. Внутри бара — количество использований.</small>
-              </div>
-              <span class="badge" id="taskHint">—</span>
-            </div>
-            <canvas id="cTasks" style="height: 360px;"></canvas>
-          </div>
-        </div>
+        <div class="list" id="topCasesList" style="margin-top:14px;"></div>
       </div>
     </div>
   </section>
@@ -948,7 +893,7 @@ function logout() {
     UI_EVENTS: "ui_events",
     CLIENT_ID: "client_id",
     ABOUT_HITS: "about_task_hits",
-    CASE_USED: "case_used_map",
+    CASE_USED: "cases_used_map",
     CASE_USED_TS: "case_used_ts",
     PROMPT_USED: "prompt_used_map",
     TOOL_USED: "tool_used_map",
@@ -2393,31 +2338,10 @@ function drawDonut(canvasId, items, opts) {
 
   function renderAdoption(ds) {
     const a = computeAdoption(ds);
-    const grainInfo = GRAIN[state.adoptionGrain];
-    setBadge("adoptionRangeBadge", `Период: ${grainInfo.note}`, "pilot");
-
-    const labels = a.buckets.map(b => b.label);
-
-    const chosenDepts = (adoptionSelectedApplied && adoptionSelectedApplied.size)
-      ? [...adoptionSelectedApplied]
-      : DEPARTMENTS;
-
-    const seriesMap = {};
-    for (const dept of chosenDepts) {
-      seriesMap[dept] = a.series[dept] || labels.map(_ => ({pct:0}));
-    }
-
-    if (adoptionChartType === "bar") {
-      drawGroupedBars("cAdoption", labels, seriesMap, setTooltip);
-    } else {
-      drawMultiLine("cAdoption", labels, seriesMap, setTooltip);
-    }
-
-    renderLegend("adoptionLegend", chosenDepts);
 
     drawDonut("cDonut", a.share, {});
 
-document.getElementById("donutLegend").innerHTML = a.share.map(x => `
+    document.getElementById("donutLegend").innerHTML = a.share.map(x => `
       <div class="leg-item" title="${escapeHtml(x.dept)}">
         <span class="dot" style="background:${DEPT_COLORS[x.dept] || 'rgba(255,255,255,.7)'}"></span>
         <span>${escapeHtml(x.dept)} — <b>${x.pct.toFixed(1)}%</b></span>
@@ -2430,21 +2354,47 @@ document.getElementById("donutLegend").innerHTML = a.share.map(x => `
           <span class="dot" style="background:${DEPT_COLORS[x.dept]}; width:12px; height:12px;"></span>
           <div>
             <b>${i+1}. ${escapeHtml(x.dept)}</b>
-            </div>
+          </div>
         </div>
         <span class="pill">${x.pct.toFixed(1)}%</span>
       </div>
     `).join("");
-}
+  }
 
-  function renderTasks(ds) {
-    const t = computeTasks(ds);
-    const grainInfo = GRAIN[state.adoptionGrain];
-    setBadge("taskRangeBadge", `Период: ${grainInfo.note}`, "pilot");
+  function renderTopCases(ds) {
+    const container = document.getElementById("topCasesList");
+    const badge = document.getElementById("caseUsageCount");
+    if (!container) return;
 
-    drawTaskBars("cTasks", t.rows);
-    const lead = t.rows[0];
-    setBadge("taskHint", `лидер: ${lead?.name || "—"} (${lead?.count || 0})`, "ok");
+    const usedMap = ds.usedCases || {};
+    const entries = Object.entries(usedMap)
+      .map(([id, count]) => ({ id, count: typeof count === "number" ? count : 1 }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    const totalMarks = entries.reduce((s, e) => s + e.count, 0);
+    if (badge) badge.textContent = `${totalMarks} отмет${totalMarks === 1 ? "ка" : totalMarks < 5 ? "ки" : "ок"}`;
+
+    if (!entries.length) {
+      container.innerHTML = `<p class="muted" style="padding:12px 0;">Пока нет отметок использования кейсов</p>`;
+      return;
+    }
+
+    const maxCount = entries[0].count;
+    container.innerHTML = entries.map((e, i) => {
+      const meta = ENTITY_META.cases[e.id];
+      const name = meta ? escapeHtml(meta.title) : escapeHtml(e.id);
+      const pct = maxCount > 0 ? Math.round((e.count / maxCount) * 100) : 0;
+      return `<div class="list-row" style="flex-direction:column; align-items:stretch; gap:6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <b>${i + 1}. ${name}</b>
+          <span class="pill">${e.count}</span>
+        </div>
+        <div style="height:6px; border-radius:3px; background:rgba(255,255,255,.06); overflow:hidden;">
+          <div style="height:100%; width:${pct}%; border-radius:3px; background:linear-gradient(90deg, rgba(78,135,255,.7), rgba(60,230,180,.6)); transition:width .3s;"></div>
+        </div>
+      </div>`;
+    }).join("");
   }
 
   
@@ -2560,7 +2510,7 @@ document.getElementById("donutLegend").innerHTML = a.share.map(x => `
     renderKpi(base);
     renderBaseCharts(base);
     renderAdoption(ds);
-    renderTasks(ds);
+    renderTopCases(ds);
 
     renderTopEmployees(ds);
 
@@ -2736,13 +2686,8 @@ document.querySelectorAll('.seg button[data-period]').forEach(b => {
 
   async function init() {
     setupUI();
-    initAdoptionBuilder();
 
     let ds = loadDataset();
-    if (datasetLooksEmpty(ds)) {
-      // no local data => seed demo (noise) for local offline preview
-      ds = genDemo(4242);
-    }
 
     state.adoptionGrain = "weeks";
     await loadEntityMeta();
@@ -2750,6 +2695,11 @@ document.querySelectorAll('.seg button[data-period]').forEach(b => {
   }
 
   document.addEventListener("DOMContentLoaded", init);
+
+  // Auto-refresh when user returns to this tab (picks up new case marks etc.)
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) renderAll();
+  });
 </script>
 </body>
 </html>

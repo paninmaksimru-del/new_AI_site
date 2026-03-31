@@ -973,6 +973,15 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   /* ===== ACTIVITY RINGS (Apple Watch style) ===== */
   var RING_LIMITS = { prompts: 100, cases: 17, tools: 8 };
 
+  var hoveredRing = -1;
+  var ringGeo = [];
+  var ringsData = [
+    { key:'prompts', color: 'rgba(120,140,255,{a})', bg: 'rgba(120,140,255,.12)' },
+    { key:'cases',   color: 'rgba(38,210,152,{a})',  bg: 'rgba(38,210,152,.12)' },
+    { key:'tools',   color: 'rgba(255,193,7,{a})',   bg: 'rgba(255,193,7,.12)' }
+  ];
+  var legendItems = document.querySelectorAll('.ac-legend-item');
+
   function drawActivityRings() {
     var canvas = document.getElementById('cPersonalDonut');
     if (!canvas) return;
@@ -987,29 +996,36 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 
     var m = PROFILE.metrics;
     var cx = W / 2, cy = H / 2;
-    var maxR = Math.min(cx, cy) - 4;
-    var lineW = Math.max(12, maxR * 0.16);
-    var ringGap = lineW * 0.35;
+    var lineW = Math.max(12, Math.min(cx, cy) * 0.18);
+    var maxR = Math.min(cx, cy) - lineW / 2 - 2;
+    var ringGap = lineW * 0.4;
+    var startAngle = -Math.PI / 2;
 
-    // Rings: outer → inner: prompts, cases, tools
-    var rings = [
-      { value: m.prompts || 0, max: RING_LIMITS.prompts, color: 'rgba(120,140,255,.9)', bg: 'rgba(120,140,255,.12)' },
-      { value: m.cases || 0,   max: RING_LIMITS.cases,   color: 'rgba(38,210,152,.9)',  bg: 'rgba(38,210,152,.12)' },
-      { value: m.tools || 0,   max: RING_LIMITS.tools,   color: 'rgba(255,193,7,.9)',   bg: 'rgba(255,193,7,.12)' }
+    var vals = [
+      { value: m.prompts || 0, max: RING_LIMITS.prompts },
+      { value: m.cases || 0,   max: RING_LIMITS.cases },
+      { value: m.tools || 0,   max: RING_LIMITS.tools }
     ];
 
     ctx.lineCap = 'round';
-    var startAngle = -Math.PI / 2;
+    ringGeo = [];
 
-    rings.forEach(function(ring, i) {
+    ringsData.forEach(function(ring, i) {
+      var isHovered = hoveredRing === i;
+      var isDimmed = hoveredRing >= 0 && !isHovered;
+      var lw = isHovered ? lineW + 4 : lineW;
+      var alpha = isDimmed ? 0.3 : 0.9;
+      var bgAlpha = isDimmed ? 0.06 : 0.12;
       var r = maxR - i * (lineW + ringGap);
-      var pct = Math.min(ring.value / ring.max, 1);
+      var pct = Math.min(vals[i].value / vals[i].max, 1);
+
+      ringGeo.push({ r: r, lineW: lineW, cx: cx, cy: cy });
 
       // Background track
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.strokeStyle = ring.bg;
-      ctx.lineWidth = lineW;
+      ctx.strokeStyle = ring.bg.replace(/[\d.]+\)$/, bgAlpha + ')');
+      ctx.lineWidth = lw;
       ctx.stroke();
 
       // Filled arc
@@ -1017,23 +1033,67 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
         var endAngle = startAngle + pct * Math.PI * 2;
         ctx.beginPath();
         ctx.arc(cx, cy, r, startAngle, endAngle);
-        ctx.strokeStyle = ring.color;
-        ctx.lineWidth = lineW;
+        ctx.strokeStyle = ring.color.replace('{a}', String(alpha));
+        ctx.lineWidth = lw;
         ctx.stroke();
 
-        // Glow effect on tip
-        var tipX = cx + Math.cos(endAngle) * r;
-        var tipY = cy + Math.sin(endAngle) * r;
-        var glow = ctx.createRadialGradient(tipX, tipY, 0, tipX, tipY, lineW * 1.2);
-        glow.addColorStop(0, ring.color.replace(/[\d.]+\)$/, '0.4)'));
-        glow.addColorStop(1, 'transparent');
-        ctx.beginPath();
-        ctx.arc(tipX, tipY, lineW * 1.2, 0, Math.PI * 2);
-        ctx.fillStyle = glow;
-        ctx.fill();
+        // Glow on tip
+        if (!isDimmed) {
+          var tipX = cx + Math.cos(endAngle) * r;
+          var tipY = cy + Math.sin(endAngle) * r;
+          var glowR = lw * (isHovered ? 1.6 : 1.2);
+          var glow = ctx.createRadialGradient(tipX, tipY, 0, tipX, tipY, glowR);
+          glow.addColorStop(0, ring.color.replace('{a}', isHovered ? '0.6' : '0.4'));
+          glow.addColorStop(1, 'transparent');
+          ctx.beginPath();
+          ctx.arc(tipX, tipY, glowR, 0, Math.PI * 2);
+          ctx.fillStyle = glow;
+          ctx.fill();
+        }
       }
     });
+
+    // Highlight legend
+    legendItems.forEach(function(el, i) {
+      if (hoveredRing < 0) { el.style.opacity = '1'; el.style.transform = 'none'; }
+      else if (i === hoveredRing) { el.style.opacity = '1'; el.style.transform = 'translateX(4px)'; }
+      else { el.style.opacity = '0.35'; el.style.transform = 'none'; }
+    });
   }
+
+  function ringHitTest(e) {
+    var canvas = document.getElementById('cPersonalDonut');
+    var rect = canvas.getBoundingClientRect();
+    var mx = e.clientX - rect.left;
+    var my = e.clientY - rect.top;
+    for (var i = 0; i < ringGeo.length; i++) {
+      var g = ringGeo[i];
+      var dist = Math.sqrt((mx - g.cx) * (mx - g.cx) + (my - g.cy) * (my - g.cy));
+      if (Math.abs(dist - g.r) <= g.lineW / 2 + 4) return i;
+    }
+    return -1;
+  }
+
+  // Canvas hover events
+  (function() {
+    var canvas = document.getElementById('cPersonalDonut');
+    if (!canvas) return;
+    canvas.addEventListener('mousemove', function(e) {
+      var idx = ringHitTest(e);
+      if (idx !== hoveredRing) { hoveredRing = idx; drawActivityRings(); canvas.style.cursor = idx >= 0 ? 'pointer' : 'default'; }
+    });
+    canvas.addEventListener('mouseleave', function() {
+      if (hoveredRing !== -1) { hoveredRing = -1; drawActivityRings(); canvas.style.cursor = 'default'; }
+    });
+  })();
+
+  // Legend hover → highlight ring
+  legendItems.forEach(function(el, i) {
+    el.style.transition = 'opacity .2s, transform .2s';
+    el.style.cursor = 'pointer';
+    el.addEventListener('mouseenter', function() { hoveredRing = i; drawActivityRings(); });
+    el.addEventListener('mouseleave', function() { hoveredRing = -1; drawActivityRings(); });
+  });
 
   // Draw with retry — canvas may not have layout dimensions immediately
   function tryDrawRings() {
@@ -1044,7 +1104,7 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     else { setTimeout(tryDrawRings, 100); }
   }
   tryDrawRings();
-  window.addEventListener('resize', drawActivityRings);
+  window.addEventListener('resize', function() { ringGeo = []; drawActivityRings(); });
 
   /* ===== HEATMAP — HIDDEN (commented out, not deleted) =====
   (function() {

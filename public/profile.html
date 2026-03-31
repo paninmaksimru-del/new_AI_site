@@ -429,31 +429,15 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   </div>
 </section>
 
-<!-- СЕКЦИЯ 5 — Персональные рекомендации -->
-<!-- [ИЗМЕНЕНИЕ 2] Привязка к обучению по уровню зрелости -->
+<!-- СЕКЦИЯ 5 — Ваш следующий шаг -->
 <section>
   <div class="wrap">
-    <div class="card pad no-hover reco-card">
-
-      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:18px;">
+    <div class="card pad no-hover">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
         <h3 style="margin:0;">Ваш следующий шаг</h3>
         <span class="badge pilot" id="recoLevelBadge"></span>
       </div>
-
-      <!-- Прогресс до следующего уровня -->
-      <div id="recoProgressList" style="margin-bottom:14px;"></div>
-
-      <!-- Кейсы которые ещё не пробовали -->
-      <div id="recoUntriedBlock" style="background: rgba(120,140,255,.07); border: 1px solid rgba(120,140,255,.18); border-radius: var(--radius-sm); padding: 14px 16px; display:none;">
-        <div style="font-size:13px; color:var(--muted); margin-bottom:10px; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">
-          Кейсы, которые стоит попробовать
-        </div>
-        <div id="recoUntriedList"></div>
-        <a href="/cases" class="btn ghost small" style="margin-top:12px; font-size:13px;">
-          Все кейсы →
-        </a>
-      </div>
-
+      <div class="likes-grid" id="recoGrid"></div>
       <p style="margin:14px 0 0; font-size:12px; color:var(--muted-2);">
         Рекомендации обновляются автоматически на основе вашей активности
       </p>
@@ -926,9 +910,8 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   (function() {
     var levelInfo = computeLevel(PROFILE.metrics);
     var badge = document.getElementById('recoLevelBadge');
-    var progressList = document.getElementById('recoProgressList');
-    var untriedBlock = document.getElementById('recoUntriedBlock');
-    var untriedList = document.getElementById('recoUntriedList');
+    var grid = document.getElementById('recoGrid');
+    if (!grid) return;
 
     // 1. Level badge
     if (badge) {
@@ -936,56 +919,59 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
         badge.textContent = 'Лидер — максимальный уровень';
         badge.className = 'badge ok';
       } else {
-        badge.textContent = 'Уровень ' + levelInfo.level + ' → ' + (levelInfo.level + 1) + ': ' + levelInfo.title + ' → ' + levelInfo.nextTitle;
+        badge.textContent = 'Уровень ' + levelInfo.level + ' \u2192 ' + (levelInfo.level + 1) + ': ' + levelInfo.title + ' \u2192 ' + levelInfo.nextTitle;
       }
     }
 
-    // 2. Progress steps to next level
-    if (progressList && levelInfo.level < 5) {
+    // 2. Collect cards: progress steps + untried cases
+    var cards = [];
+
+    if (levelInfo.level < 5) {
       var nt = levelInfo.nextThreshold;
       var cv = levelInfo.currentValues;
-      var steps = [];
-      if (cv.cases < nt.cases) steps.push({ text: 'Используйте ещё ' + (nt.cases - cv.cases) + ' кейс' + pluralRu(nt.cases - cv.cases, '', 'а', 'ов'), href: '/cases', icon: '📋' });
-      if (cv.prompts < nt.prompts) steps.push({ text: 'Скопируйте ещё ' + (nt.prompts - cv.prompts) + ' промпт' + pluralRu(nt.prompts - cv.prompts, '', 'а', 'ов'), href: '/cases#prompts', icon: '📝' });
-      if (cv.activeDays < nt.activeDays) steps.push({ text: 'Зайдите ещё ' + (nt.activeDays - cv.activeDays) + ' д' + pluralRu(nt.activeDays - cv.activeDays, 'ень', 'ня', 'ней'), href: '/', icon: '📅' });
-
-      if (steps.length === 0) {
-        progressList.innerHTML = '<div class="reco-item"><span class="arrow" style="color:var(--ok);">✓</span><span>Все условия выполнены!</span></div>';
-      } else {
-        progressList.innerHTML = steps.map(function(s) {
-          return '<a href="' + s.href + '" class="reco-item" style="text-decoration:none; color:inherit;"><span class="arrow">' + s.icon + '</span><span>' + s.text + '</span></a>';
-        }).join('');
-      }
-    } else if (progressList && levelInfo.level >= 5) {
-      progressList.innerHTML = '<div class="reco-item"><span class="arrow" style="color:var(--ok);">✓</span><span>Вы достигли максимального уровня — продолжайте помогать коллегам!</span></div>';
+      if (cv.cases < nt.cases) cards.push({ title: 'Используйте ещё ' + (nt.cases - cv.cases) + ' кейс' + pluralRu(nt.cases - cv.cases, '', 'а', 'ов'), desc: 'До уровня ' + levelInfo.nextTitle + ': ' + cv.cases + ' / ' + nt.cases + ' кейсов', type: 'Прогресс', color: 'ok', href: '/cases' });
+      if (cv.prompts < nt.prompts) cards.push({ title: 'Скопируйте ещё ' + (nt.prompts - cv.prompts) + ' промпт' + pluralRu(nt.prompts - cv.prompts, '', 'а', 'ов'), desc: 'До уровня ' + levelInfo.nextTitle + ': ' + cv.prompts + ' / ' + nt.prompts + ' промптов', type: 'Прогресс', color: 'pilot', href: '/cases#prompts' });
+      if (cv.activeDays < nt.activeDays) cards.push({ title: 'Зайдите ещё ' + (nt.activeDays - cv.activeDays) + ' д' + pluralRu(nt.activeDays - cv.activeDays, 'ень', 'ня', 'ней'), desc: 'До уровня ' + levelInfo.nextTitle + ': ' + cv.activeDays + ' / ' + nt.activeDays + ' дней', type: 'Прогресс', color: 'warn', href: '/' });
     }
 
-    // 3. Untried cases from API
+    function renderGrid() {
+      grid.innerHTML = '';
+      if (!cards.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px 0;color:var(--muted);font-size:14px;">Все цели достигнуты — вы на максимуме!</div>';
+        return;
+      }
+      cards.forEach(function(item) {
+        var card = document.createElement('a');
+        card.href = item.href;
+        card.className = 'like-card';
+        card.style.textDecoration = 'none';
+        card.style.color = 'inherit';
+        card.innerHTML =
+          '<div class="like-card-header">' +
+            '<span class="like-card-title">' + esc(item.title) + '</span>' +
+            '<span style="font-size:14px; opacity:.5;">\u2192</span>' +
+          '</div>' +
+          '<div class="like-card-badges">' +
+            '<span class="badge ' + item.color + '" style="font-size:11px;padding:3px 8px;">' + item.type + '</span>' +
+          '</div>' +
+          (item.desc ? '<p style="margin:8px 0 0;font-size:13px;color:var(--muted);line-height:1.5;">' + esc(item.desc) + '</p>' : '');
+        grid.appendChild(card);
+      });
+    }
+
+    // 3. Untried cases from API — add as cards
     var usedCases = {};
     try { usedCases = JSON.parse(localStorage.getItem('cases_used_map') || '{}'); } catch(_) {}
 
     fetch('/api/cases').then(function(r) { return r.ok ? r.json() : []; }).then(function(cases) {
       if (!Array.isArray(cases)) cases = cases.data || [];
       var untried = cases.filter(function(c) { return !usedCases[c.id] && c.maturity !== 'draft'; });
-
-      if (!untried.length || !untriedBlock || !untriedList) return;
-
-      // Show up to 3 random untried cases
       untried.sort(function() { return 0.5 - Math.random(); });
-      var show = untried.slice(0, 3);
-
-      untriedList.innerHTML = show.map(function(c) {
-        return '<a href="/cases" class="reco-item" style="text-decoration:none; color:inherit; cursor:pointer;">' +
-          '<span class="arrow">\u2192</span>' +
-          '<div style="flex:1; min-width:0;">' +
-            '<div style="font-size:14px;">' + esc(c.title) + '</div>' +
-            (c.goal ? '<div style="font-size:12px; color:var(--muted-2); margin-top:2px;">' + esc(c.goal) + '</div>' : '') +
-          '</div>' +
-        '</a>';
-      }).join('');
-
-      untriedBlock.style.display = 'block';
-    }).catch(function() {});
+      untried.slice(0, 3).forEach(function(c) {
+        cards.push({ title: c.title, desc: c.goal || '', type: 'Попробуйте кейс', color: 'pilot', href: '/cases' });
+      });
+      renderGrid();
+    }).catch(function() { renderGrid(); });
   })();
 
   function pluralRu(n, one, few, many) {

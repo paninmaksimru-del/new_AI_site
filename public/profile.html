@@ -438,27 +438,25 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 
       <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:18px;">
         <h3 style="margin:0;">Ваш следующий шаг</h3>
-        <span class="badge pilot">Уровень 3 → 4: Практик → Эксперт</span>
+        <span class="badge pilot" id="recoLevelBadge"></span>
       </div>
 
-      <!-- Блок обучения по уровню -->
-      <div class="reco-learn-block" style="background: rgba(120,140,255,.07); border: 1px solid rgba(120,140,255,.18); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 14px;">
+      <!-- Прогресс до следующего уровня -->
+      <div id="recoProgressList" style="margin-bottom:14px;"></div>
+
+      <!-- Кейсы которые ещё не пробовали -->
+      <div id="recoUntriedBlock" style="background: rgba(120,140,255,.07); border: 1px solid rgba(120,140,255,.18); border-radius: var(--radius-sm); padding: 14px 16px; display:none;">
         <div style="font-size:13px; color:var(--muted); margin-bottom:10px; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">
-          Рекомендованное обучение для вашего уровня
+          Кейсы, которые стоит попробовать
         </div>
-        <div id="recoLearnList"></div>
-        <!-- [NAV] Ссылки ведут на страницу /learning#advanced -->
-        <!-- [DB] Треки подбираются на сервере по уровню зрелости /api/user/learning-recommendations -->
-        <a href="#" class="btn ghost small" style="margin-top:12px; font-size:13px;">
-          Перейти на страницу обучения →
+        <div id="recoUntriedList"></div>
+        <a href="/cases" class="btn ghost small" style="margin-top:12px; font-size:13px;">
+          Все кейсы →
         </a>
       </div>
 
-      <!-- Список действий-рекомендаций -->
-      <div id="recoList"></div>
-
       <p style="margin:14px 0 0; font-size:12px; color:var(--muted-2);">
-        Рекомендации обновляются еженедельно на основе вашей активности
+        Рекомендации обновляются автоматически на основе вашей активности
       </p>
     </div>
   </div>
@@ -578,16 +576,8 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
       { id:"s5", title:"Прогнозирование загрузки команды", type:"Кейс", category:"Управление", desc:"ИИ-модель прогнозирует нагрузку проектных команд на основании исторических данных.", likedBy:["М. Смирнова"] },
       { id:"s6", title:"Автоматический перевод документации", type:"Промпт", category:"Локализация", desc:"Перевод технической документации с сохранением терминологии и форматирования.", likedBy:[] }
     ],
-    learningTracks: [
-      { title: "Продвинутый промптинг для аналитиков", type: "Интенсив", duration: "2 ч", href: "#" },
-      { title: "Автоматизация отчётности с AI", type: "Воркшоп", duration: "1.5 ч", href: "#" },
-      { title: "RAG и работа с базами знаний", type: "Видеокурс", duration: "3 ч", href: "#" }
-    ],
-    recommendations: [
-      { text: "Попробуйте промпт «Анализ данных с ChatGPT» — подходит вашей роли", action: "#" },
-      { text: "Освойте инструмент Notion AI — ещё 1 инструмент до нового уровня", action: "#" },
-      { text: "Поделитесь кейсом этой недели — +5 очков к прогрессу", action: "#" }
-    ]
+    learningTracks: [],
+    recommendations: []
   };
 
   var LEVELS = ["Новичок","Исследователь","Практик","Эксперт","Лидер"];
@@ -911,35 +901,80 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   }
   renderLikes();
 
-  /* ===== LEARNING TRACKS ===== */
-  var learnList = document.getElementById('recoLearnList');
-  if (learnList) {
-    PROFILE.learningTracks.forEach(function(track) {
-      var el = document.createElement('div');
-      el.className = 'reco-item';
-      el.style.cssText = 'cursor:pointer;';
-      el.innerHTML =
-        '<span class="arrow">\u2192</span>' +
-        '<div style="flex:1; min-width:0;">' +
-          '<div style="font-size:14px;">' + track.title + '</div>' +
-          '<div style="font-size:12px; color:var(--muted-2); margin-top:2px;">' +
-            '<span class="badge" style="font-size:11px; padding:2px 7px;">' + track.type + '</span>' +
-            ' \u00B7 ' + track.duration +
-          '</div>' +
-        '</div>';
-      el.addEventListener('click', function() { window.location.href = track.href; });
-      learnList.appendChild(el);
-    });
-  }
+  /* ===== NEXT STEP — dynamic recommendations ===== */
+  (function() {
+    var levelInfo = computeLevel(PROFILE.metrics);
+    var badge = document.getElementById('recoLevelBadge');
+    var progressList = document.getElementById('recoProgressList');
+    var untriedBlock = document.getElementById('recoUntriedBlock');
+    var untriedList = document.getElementById('recoUntriedList');
 
-  /* ===== RECOMMENDATIONS ===== */
-  var recoList = document.getElementById('recoList');
-  PROFILE.recommendations.forEach(function(r) {
-    var item = document.createElement('div');
-    item.className = 'reco-item';
-    item.innerHTML = '<span class="arrow">\u2192</span><span>' + r.text + '</span>';
-    recoList.appendChild(item);
-  });
+    // 1. Level badge
+    if (badge) {
+      if (levelInfo.level >= 5) {
+        badge.textContent = 'Лидер — максимальный уровень';
+        badge.className = 'badge ok';
+      } else {
+        badge.textContent = 'Уровень ' + levelInfo.level + ' → ' + (levelInfo.level + 1) + ': ' + levelInfo.title + ' → ' + levelInfo.nextTitle;
+      }
+    }
+
+    // 2. Progress steps to next level
+    if (progressList && levelInfo.level < 5) {
+      var nt = levelInfo.nextThreshold;
+      var cv = levelInfo.currentValues;
+      var steps = [];
+      if (cv.cases < nt.cases) steps.push({ text: 'Используйте ещё ' + (nt.cases - cv.cases) + ' кейс' + pluralRu(nt.cases - cv.cases, '', 'а', 'ов'), href: '/cases', icon: '📋' });
+      if (cv.prompts < nt.prompts) steps.push({ text: 'Скопируйте ещё ' + (nt.prompts - cv.prompts) + ' промпт' + pluralRu(nt.prompts - cv.prompts, '', 'а', 'ов'), href: '/cases#prompts', icon: '📝' });
+      if (cv.activeDays < nt.activeDays) steps.push({ text: 'Зайдите ещё ' + (nt.activeDays - cv.activeDays) + ' д' + pluralRu(nt.activeDays - cv.activeDays, 'ень', 'ня', 'ней'), href: '/', icon: '📅' });
+
+      if (steps.length === 0) {
+        progressList.innerHTML = '<div class="reco-item"><span class="arrow" style="color:var(--ok);">✓</span><span>Все условия выполнены!</span></div>';
+      } else {
+        progressList.innerHTML = steps.map(function(s) {
+          return '<a href="' + s.href + '" class="reco-item" style="text-decoration:none; color:inherit;"><span class="arrow">' + s.icon + '</span><span>' + s.text + '</span></a>';
+        }).join('');
+      }
+    } else if (progressList && levelInfo.level >= 5) {
+      progressList.innerHTML = '<div class="reco-item"><span class="arrow" style="color:var(--ok);">✓</span><span>Вы достигли максимального уровня — продолжайте помогать коллегам!</span></div>';
+    }
+
+    // 3. Untried cases from API
+    var usedCases = {};
+    try { usedCases = JSON.parse(localStorage.getItem('cases_used_map') || '{}'); } catch(_) {}
+
+    fetch('/api/cases').then(function(r) { return r.ok ? r.json() : []; }).then(function(cases) {
+      if (!Array.isArray(cases)) cases = cases.data || [];
+      var untried = cases.filter(function(c) { return !usedCases[c.id] && c.maturity !== 'draft'; });
+
+      if (!untried.length || !untriedBlock || !untriedList) return;
+
+      // Show up to 3 random untried cases
+      untried.sort(function() { return 0.5 - Math.random(); });
+      var show = untried.slice(0, 3);
+
+      untriedList.innerHTML = show.map(function(c) {
+        return '<a href="/cases" class="reco-item" style="text-decoration:none; color:inherit; cursor:pointer;">' +
+          '<span class="arrow">\u2192</span>' +
+          '<div style="flex:1; min-width:0;">' +
+            '<div style="font-size:14px;">' + esc(c.title) + '</div>' +
+            (c.goal ? '<div style="font-size:12px; color:var(--muted-2); margin-top:2px;">' + esc(c.goal) + '</div>' : '') +
+          '</div>' +
+        '</a>';
+      }).join('');
+
+      untriedBlock.style.display = 'block';
+    }).catch(function() {});
+  })();
+
+  function pluralRu(n, one, few, many) {
+    var abs = Math.abs(n) % 100;
+    var last = abs % 10;
+    if (abs > 10 && abs < 20) return many;
+    if (last > 1 && last < 5) return few;
+    if (last === 1) return one;
+    return many;
+  }
 
   /* ===== FEEDBACK FORM ===== */
   var feedbackForm = document.getElementById('feedbackForm');

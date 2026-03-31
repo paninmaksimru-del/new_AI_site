@@ -830,61 +830,19 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     if (!usedCaseIds.length && !usedPromptIds.length && !usedToolIds.length) {
       grid.innerHTML =
         '<div style="grid-column:1/-1;text-align:center;padding:32px 0;color:var(--muted);">' +
-          '<div style="font-size:32px;margin-bottom:10px;">📋</div>' +
           '<div style="font-size:14px;">Вы пока не отмечали кейсы и промпты</div>' +
-          '<a href="/cases" class="btn ghost small" style="margin-top:14px;display:inline-flex;">Перейти в каталог →</a>' +
+          '<a href="/cases" class="btn ghost small" style="margin-top:14px;display:inline-flex;">Перейти в каталог \u2192</a>' +
         '</div>';
       return;
     }
 
-    // Fetch cases and prompts to get titles
-    Promise.all([
-      fetch('/api/cases').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; }),
-      fetch('/api/prompts').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; }),
-      fetch('/api/tools').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; })
-    ]).then(function(results) {
-      var cases = Array.isArray(results[0]) ? results[0] : (results[0].data || []);
-      var prompts = Array.isArray(results[1]) ? results[1] : (results[1].data || []);
-      var tools = Array.isArray(results[2]) ? results[2] : (results[2].data || []);
+    // Build items immediately with IDs, then enrich with titles from API
+    var items = [];
+    usedCaseIds.forEach(function(id) { items.push({ id: id, title: id, desc: '', type: 'Кейс', href: '/cases', color: 'ok', src: 'case' }); });
+    usedPromptIds.forEach(function(id) { items.push({ id: id, title: id, desc: '', type: 'Промпт', href: '/cases#prompts', color: 'pilot', src: 'prompt' }); });
+    usedToolIds.forEach(function(id) { items.push({ id: id, title: id, desc: '', type: 'Инструмент', href: '/#tools', color: 'warn', src: 'tool' }); });
 
-      var items = [];
-
-      // Used cases
-      usedCaseIds.forEach(function(id) {
-        var c = cases.find(function(x) { return x.id === id; });
-        items.push({
-          title: c ? c.title : id,
-          desc: c ? (c.goal || '') : '',
-          type: 'Кейс',
-          href: '/cases',
-          color: 'ok'
-        });
-      });
-
-      // Used prompts
-      usedPromptIds.forEach(function(id) {
-        var p = prompts.find(function(x) { return x.id === id; });
-        items.push({
-          title: p ? (p.title || p.sectionTitle || id) : id,
-          desc: p ? (p.meta || p.description || '') : '',
-          type: 'Промпт',
-          href: '/cases#prompts',
-          color: 'pilot'
-        });
-      });
-
-      // Used tools
-      usedToolIds.forEach(function(id) {
-        var t = tools.find(function(x) { return x.id === id; });
-        items.push({
-          title: t ? (t.name || id) : id,
-          desc: t ? (t.description || '') : '',
-          type: 'Инструмент',
-          href: '/#tools',
-          color: 'warn'
-        });
-      });
-
+    function renderUsedGrid() {
       grid.innerHTML = '';
       items.forEach(function(item) {
         var card = document.createElement('a');
@@ -895,7 +853,7 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
         card.innerHTML =
           '<div class="like-card-header">' +
             '<span class="like-card-title">' + esc(item.title) + '</span>' +
-            '<span style="font-size:14px; opacity:.5;">→</span>' +
+            '<span style="font-size:14px; opacity:.5;">\u2192</span>' +
           '</div>' +
           '<div class="like-card-badges">' +
             '<span class="badge ' + item.color + '" style="font-size:11px;padding:3px 8px;">' + item.type + '</span>' +
@@ -903,7 +861,28 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
           (item.desc ? '<p style="margin:8px 0 0;font-size:13px;color:var(--muted);line-height:1.5;">' + esc(item.desc).slice(0, 120) + '</p>' : '');
         grid.appendChild(card);
       });
-    });
+    }
+
+    // Render immediately with IDs
+    renderUsedGrid();
+
+    // Then enrich with real titles from API
+    Promise.all([
+      fetch('/api/cases').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; }),
+      fetch('/api/prompts').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; }),
+      fetch('/api/tools').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; })
+    ]).then(function(results) {
+      var cases = Array.isArray(results[0]) ? results[0] : (results[0].data || []);
+      var prompts = Array.isArray(results[1]) ? results[1] : (results[1].data || []);
+      var tools = Array.isArray(results[2]) ? results[2] : (results[2].data || []);
+      var changed = false;
+      items.forEach(function(item) {
+        if (item.src === 'case') { var c = cases.find(function(x) { return x.id === item.id; }); if (c) { item.title = c.title || item.id; item.desc = c.goal || ''; changed = true; } }
+        if (item.src === 'prompt') { var p = prompts.find(function(x) { return x.id === item.id; }); if (p) { item.title = p.title || p.sectionTitle || item.id; item.desc = p.meta || p.description || ''; changed = true; } }
+        if (item.src === 'tool') { var t = tools.find(function(x) { return x.id === item.id; }); if (t) { item.title = t.name || item.id; item.desc = t.description || ''; changed = true; } }
+      });
+      if (changed) renderUsedGrid();
+    }).catch(function() {});
   })();
 
   /* ===== NEXT STEP — dynamic recommendations ===== */

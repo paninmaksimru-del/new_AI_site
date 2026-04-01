@@ -1024,9 +1024,22 @@ function logout() {
         fetch('/api/prompts').then(r => r.ok ? r.json() : []).catch(() => []),
         fetch('/api/tools').then(r => r.ok ? r.json() : []).catch(() => [])
       ]);
-      cases.forEach(c => { ENTITY_META.cases[c.id] = c; });
-      prompts.forEach(p => { ENTITY_META.prompts[p.id] = p; });
-      tools.forEach(t => { ENTITY_META.tools[t.id] = t; });
+      cases.forEach(c => {
+        ENTITY_META.cases[c.id] = c;
+        // Also index by safeId variant (e.g. "2.1" → "2_1")
+        const safe = String(c.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+        if (safe !== c.id) ENTITY_META.cases[safe] = c;
+      });
+      prompts.forEach(p => {
+        ENTITY_META.prompts[p.id] = p;
+        const safe = String(p.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+        if (safe !== p.id) ENTITY_META.prompts[safe] = p;
+      });
+      tools.forEach(t => {
+        ENTITY_META.tools[t.id] = t;
+        const safe = String(t.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+        if (safe !== t.id) ENTITY_META.tools[safe] = t;
+      });
     } catch(e) { /* fallback: cards will show raw ID or TOOL_LABELS */ }
   }
 

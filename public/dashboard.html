@@ -1248,21 +1248,26 @@ function logout() {
       if (!res.ok) throw new Error('fetch failed');
       const data = await res.json();
       const ui = data.ui || [];
-      // Aggregate used maps from server events
+      // Aggregate used maps from server events + collect human-readable names
       const usedCases = {};
       const usedPrompts = {};
       const usedTools = {};
+      const entityNames = {};
       const taskEvents = [];
       for (const e of ui) {
         if (e.event_type === 'case_used_click' && e.target) usedCases[e.target] = (usedCases[e.target] || 0) + 1;
         if (e.event_type === 'prompt_used_click' && e.target) usedPrompts[e.target] = (usedPrompts[e.target] || 0) + 1;
         if (e.event_type === 'tool_used_click' && e.target) usedTools[e.target] = (usedTools[e.target] || 0) + 1;
+        // Store human-readable name from event payload if available
+        if (e.target && e.tool_name) entityNames[e.target] = e.tool_name;
+        if (e.target && e.prompt_title) entityNames[e.target] = e.prompt_title;
+        if (e.target && e.case_title) entityNames[e.target] = e.case_title;
       }
       const tickets = (data.ui || []).filter(e => e.event_type === 'feedback');
       const access = (data.ui || []).filter(e => e.event_type === 'access_request_save');
       const onboarding = data.onboarding || getJson(LS.ONBOARDING, {});
       const headcount = data.headcount || getJson(LS.HEADCOUNT, null);
-      _dsCache = { ui, usedCases, usedPrompts, usedTools, onboarding, tickets, access, taskEvents, headcount };
+      _dsCache = { ui, usedCases, usedPrompts, usedTools, onboarding, tickets, access, taskEvents, headcount, entityNames };
       return _dsCache;
     } catch (_) {
       // Fallback to localStorage if server unavailable
@@ -2437,10 +2442,11 @@ function drawDonut(canvasId, items, opts) {
     const top = items[0];
 
     // Config per type: label, color, resolver
+    const names = (_dsCache && _dsCache.entityNames) || {};
     const config = {
-      topCases:   { label: 'Топ кейс',       color: 'rgba(38, 210, 152, .85)',  resolve: () => { const m = ENTITY_META.cases[top.id]; return m ? m.title : (CASE_LABELS[top.id] || top.id); } },
-      topPrompts: { label: 'Топ промпт',      color: 'rgba(120, 140, 255, .85)', resolve: () => { const m = ENTITY_META.prompts[top.id]; return m ? m.title : (PROMPT_LABELS[top.id] || top.id); } },
-      topTools:   { label: 'Топ инструмент',   color: 'rgba(255, 193, 7, .85)',   resolve: () => { const m = ENTITY_META.tools[top.id]; return m ? m.name : (TOOL_LABELS[top.id] || top.id); } }
+      topCases:   { label: 'Топ кейс',       color: 'rgba(38, 210, 152, .85)',  resolve: () => { const m = ENTITY_META.cases[top.id]; return m ? m.title : (names[top.id] || CASE_LABELS[top.id] || top.id); } },
+      topPrompts: { label: 'Топ промпт',      color: 'rgba(120, 140, 255, .85)', resolve: () => { const m = ENTITY_META.prompts[top.id]; return m ? m.title : (names[top.id] || PROMPT_LABELS[top.id] || top.id); } },
+      topTools:   { label: 'Топ инструмент',   color: 'rgba(255, 193, 7, .85)',   resolve: () => { const m = ENTITY_META.tools[top.id]; return m ? m.name : (names[top.id] || TOOL_LABELS[top.id] || top.id); } }
     };
 
     const cfg = config[containerId] || { label: 'Топ', color: 'rgba(255,255,255,.3)', resolve: () => top.id };
@@ -2514,9 +2520,10 @@ function drawDonut(canvasId, items, opts) {
     if (canvas) canvas.style.display = "";
     if (emptyEl) emptyEl.style.display = "none";
 
+    const names = (_dsCache && _dsCache.entityNames) || {};
     const rows = entries.map(e => {
       const meta = ENTITY_META.cases[e.id];
-      return { name: meta ? meta.title : e.id, tools: "", count: e.count };
+      return { name: meta ? meta.title : (names[e.id] || CASE_LABELS[e.id] || e.id), tools: "", count: e.count };
     });
 
     drawTaskBars("cTopCases", rows);

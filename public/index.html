@@ -1626,6 +1626,39 @@
       }
     });
   </script>
+<script>
+// Track tool clicks (mik-card + public-card) as tool_used_click events
+(function(){
+  document.addEventListener('click', function(e) {
+    var card = e.target.closest('a.mik-card, a.public-card');
+    if (!card) return;
+    var toolName = (card.querySelector('h5') || {}).textContent || '';
+    var toolHref = card.href || '';
+    if (!toolName) return;
+    try {
+      var auth = JSON.parse(localStorage.getItem('mikAuth') || '{}');
+      var ev = {
+        timestamp: new Date().toISOString(),
+        event_type: 'tool_used_click',
+        target: toolName.trim().toLowerCase().replace(/\s+/g,'_'),
+        label: 'tool_used',
+        client_id: auth.login || '',
+        department: auth.department || '',
+        tool_name: toolName.trim(),
+        tool_href: toolHref
+      };
+      var events = JSON.parse(localStorage.getItem('ui_events') || '[]');
+      events.push(ev);
+      localStorage.setItem('ui_events', JSON.stringify(events));
+      fetch('/api/analytics/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([ev])
+      }).catch(function(){});
+    } catch(_) {}
+  });
+})();
+</script>
 <button id="scrollTopBtn" aria-label="Наверх">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
 </button>

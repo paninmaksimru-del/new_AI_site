@@ -1559,13 +1559,34 @@
     }
     .pu-modal-close:hover{ color:#fff; }
     .pu-modal h3{ margin:0 0 18px; font-size:16px; }
+    .pu-modal-btns{ display:flex; gap:10px; justify-content:center; }
     .pu-modal-confirm{
       padding:11px 28px; border-radius:12px; border:none;
       background:linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
       color:#fff; font:inherit; font-size:14px; cursor:pointer; transition:opacity .15s;
     }
     .pu-modal-confirm:hover{ opacity:.88; }
+    .pu-modal-decline{
+      padding:11px 28px; border-radius:12px;
+      border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06);
+      color:rgba(255,255,255,.82); font:inherit; font-size:14px; cursor:pointer; transition:opacity .15s, background .15s;
+    }
+    .pu-modal-decline:hover{ background:rgba(255,255,255,.12); }
     .pu-modal-ok{ color:rgba(0,210,120,.9); font-size:15px; margin-top:12px; display:none; }
+    .pu-modal-feedback{ display:none; text-align:left; margin-top:4px; }
+    .pu-modal-feedback h3{ text-align:center; }
+    .pu-modal-feedback textarea{
+      width:100%; padding:12px 14px; min-height:80px; resize:vertical;
+      background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);
+      border-radius:12px; color:rgba(255,255,255,.9); font:inherit; font-size:14px;
+    }
+    .pu-modal-feedback textarea:focus{ border-color:rgba(0,200,120,.5); outline:none; }
+    .pu-modal-feedback-send{
+      margin-top:12px; padding:10px 24px; border-radius:12px; border:none;
+      background:linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
+      color:#fff; font:inherit; font-size:14px; cursor:pointer; transition:opacity .15s;
+    }
+    .pu-modal-feedback-send:hover{ opacity:.88; }
 
     .prompts-show-more{
       display: flex;
@@ -1830,11 +1851,21 @@
         <button class="pu-modal-close" id="puModalClose">&times;</button>
         <div id="puModalAsk">
           <h3>Вы использовали этот промпт?</h3>
-          <button class="pu-modal-confirm" id="puModalConfirm">Да, использовал(а)</button>
+          <div class="pu-modal-btns">
+            <button class="pu-modal-confirm" id="puModalConfirm">Да, использовал(а)</button>
+            <button class="pu-modal-decline" id="puModalDecline">Нет, не использовал(а)</button>
+          </div>
+        </div>
+        <div id="puModalFeedback" class="pu-modal-feedback">
+          <h3>Почему не использовали? Расскажите, чего не хватило</h3>
+          <textarea id="puModalFeedbackText" placeholder="Например: не подошёл формат, не та задача, сложно адаптировать..."></textarea>
+          <div style="display:flex; justify-content:center;">
+            <button class="pu-modal-feedback-send" id="puModalFeedbackSend">Отправить</button>
+          </div>
         </div>
         <div id="puModalOk" style="display:none; padding:18px 0;">
-          <div style="font-size:28px; margin-bottom:10px;">✓</div>
-          <div style="font-size:15px; color:rgba(0,210,120,.9);">Принято, результат учтён в вашей статистике</div>
+          <div style="font-size:28px; margin-bottom:10px;">&#10003;</div>
+          <div style="font-size:15px; color:rgba(0,210,120,.9);">Принято, спасибо за обратную связь</div>
         </div>
       </div>
     </div>
@@ -3301,12 +3332,18 @@
       const overlay = document.getElementById('puModal');
       const closeBtn = document.getElementById('puModalClose');
       const confirmBtn = document.getElementById('puModalConfirm');
+      const declineBtn = document.getElementById('puModalDecline');
       const askEl = document.getElementById('puModalAsk');
+      const feedbackEl = document.getElementById('puModalFeedback');
+      const feedbackText = document.getElementById('puModalFeedbackText');
+      const feedbackSend = document.getElementById('puModalFeedbackSend');
       const okEl = document.getElementById('puModalOk');
       if (!overlay) return;
 
       askEl.style.display = '';
+      feedbackEl.style.display = 'none';
       okEl.style.display = 'none';
+      if (feedbackText) feedbackText.value = '';
       overlay.classList.add('open');
 
       function close() { overlay.classList.remove('open'); }
@@ -3324,7 +3361,47 @@
             body: JSON.stringify({ user_login: login, user_name: name, prompt_id: promptId, prompt_title: promptTitle })
           });
         } catch(e) {}
+        try {
+          const ev = {
+            timestamp: new Date().toISOString(),
+            event_type: "prompt_used_click",
+            target: promptId,
+            label: "prompt_used",
+            client_id: login,
+            department: auth.department || ""
+          };
+          const events = JSON.parse(localStorage.getItem("ui_events") || "[]");
+          events.push(ev);
+          localStorage.setItem("ui_events", JSON.stringify(events));
+          fetch('/api/analytics/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify([ev])
+          }).catch(() => {});
+        } catch(_) {}
         askEl.style.display = 'none';
+        okEl.style.display = '';
+        setTimeout(close, 1200);
+      };
+
+      declineBtn.onclick = () => {
+        askEl.style.display = 'none';
+        feedbackEl.style.display = '';
+      };
+
+      feedbackSend.onclick = async () => {
+        const msg = (feedbackText.value || '').trim();
+        if (!msg) return;
+        feedbackSend.disabled = true;
+        feedbackSend.textContent = 'Отправка\u2026';
+        const auth = JSON.parse(localStorage.getItem('mikAuth') || '{}');
+        const login = auth.login || localStorage.getItem('auth_login') || 'anonymous';
+        const name = auth.full_name || localStorage.getItem('auth_full_name') || '';
+        // TODO: подключить отправку фидбека когда будет готов эндпоинт
+        console.log('Prompt feedback:', { promptId, promptTitle, reason: msg, user: name || login });
+        feedbackSend.disabled = false;
+        feedbackSend.textContent = 'Отправить';
+        feedbackEl.style.display = 'none';
         okEl.style.display = '';
         setTimeout(close, 1200);
       };

@@ -2992,13 +2992,15 @@
             // Record UI event for dashboard analytics
             try {
               const auth = JSON.parse(localStorage.getItem("mikAuth") || "{}");
+              const caseObj = casesData.find(c => c.id === id);
               const ev = {
                 timestamp: new Date().toISOString(),
                 event_type: "case_used_click",
                 target: id,
                 label: "case_used",
                 client_id: auth.login || "",
-                department: auth.department || ""
+                department: auth.department || "",
+                case_title: caseObj ? caseObj.title : id
               };
               // Save to localStorage (fallback)
               const events = JSON.parse(localStorage.getItem("ui_events") || "[]");
@@ -3368,7 +3370,8 @@
             target: promptId,
             label: "prompt_used",
             client_id: login,
-            department: auth.department || ""
+            department: auth.department || "",
+            prompt_title: promptTitle || promptId
           };
           const events = JSON.parse(localStorage.getItem("ui_events") || "[]");
           events.push(ev);
@@ -3386,7 +3389,7 @@
 
       declineBtn.onclick = () => {
         askEl.style.display = 'none';
-        feedbackEl.style.display = '';
+        feedbackEl.style.display = 'block';
       };
 
       feedbackSend.onclick = async () => {

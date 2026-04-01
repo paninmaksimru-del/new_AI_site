@@ -180,7 +180,7 @@ export async function setupAuth(app) {
       let i = 1;
       if (login !== undefined) { updates.push(`login = $${i++}`); values.push(login.trim()); }
       if (password !== undefined && String(password).length > 0) { updates.push(`password_hash = $${i++}`); values.push(hashPassword(password)); }
-      if (role !== undefined) { updates.push(`role = $${i++}`); values.push(role === 'admin' ? 'admin' : 'user'); }
+      if (role !== undefined) { updates.push(`role = $${i++}`); values.push(['admin','user','viewer'].includes(role) ? role : 'user'); }
       if (full_name !== undefined) { updates.push(`full_name = $${i++}`); values.push(full_name ? String(full_name).trim() : null); }
       if (department !== undefined) { updates.push(`department = $${i++}`); values.push(department ? String(department).trim() : null); }
       if (contacts !== undefined) { updates.push(`contacts = $${i++}`); values.push(contacts ? String(contacts).trim() : null); }
@@ -200,7 +200,7 @@ export async function setupAuth(app) {
     try {
       const { login, password, role, full_name, department, contacts } = req.body || {};
       if (!login || !password) return res.status(400).json({ error: 'login и password обязательны' });
-      const validRole = role === 'admin' ? 'admin' : 'user';
+      const validRole = ['admin','user','viewer'].includes(role) ? role : 'user';
       await query(
         'INSERT INTO users (login, password_hash, role, full_name, department, contacts) VALUES ($1, $2, $3, $4, $5, $6)',
         [login.trim(), hashPassword(password), validRole,
@@ -251,4 +251,39 @@ export function requireAdmin() {
     req.user = users[0];
     next();
   };
+}
+
+// ── KB-specific auth ──────────────────────────────────────────────────────────
+
+/** Middleware: any authenticated user (admin|user|viewer). Returns JSON 401 on failure. */
+export function requireKbAuth() {
+  return async (req, res, next) => {
+    const token = req.headers['x-auth-token'] || req.query.token;
+    if (!token) return res.status(401).json({ error: 'Не авторизован' });
+    const { rows: sessions } = await query('SELECT * FROM sessions WHERE token = $1', [token]);
+    if (!sessions[0]) return res.status(401).json({ error: 'Не авторизован' });
+    const { rows: users } = await query('SELECT * FROM users WHERE id = $1', [sessions[0].user_id]);
+    if (!users[0]) return res.status(401).json({ error: 'Не авторизован' });
+    req.user = users[0];
+    next();
+  };
+}
+
+/** Returns true if the user can read the file (admin, owner, or has explicit permission). */
+export async function canReadFile(userId, userRole, fileId) {
+  if (userRole === 'admin') return true;
+  const { rows } = await query(`
+    SELECT 1 FROM kb_files WHERE id = $1 AND owner_id = $2
+    UNION
+    SELECT 1 FROM kb_file_permissions WHERE file_id = $1 AND user_id = $2
+    LIMIT 1
+  `, [fileId, userId]);
+  return rows.length > 0;
+}
+
+/** Returns true if the user can modify/delete the file (admin or owner, never viewer). */
+export function canWriteFile(userRole, file, userId) {
+  if (userRole === 'viewer') return false;
+  if (userRole === 'admin') return true;
+  return file.owner_id === userId;
 }

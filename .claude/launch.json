@@ -18,8 +18,8 @@
     {
       "name": "static",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "public", "-l", "8765", "--no-clipboard"],
-      "port": 8765,
+      "runtimeArgs": ["serve", "public", "-l", "8766", "--no-clipboard"],
+      "port": 8766,
       "autoPort": false
     }
   ]

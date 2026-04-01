@@ -3,6 +3,8 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { initSchema, query } from './db.js';
 import { setupAuth, requireAuth, requireAdmin } from './auth.js';
+import { setupKbRoutes } from './kb-routes.js';
+import { startPipelineWorker } from './kb-pipeline.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, '..', 'public');
@@ -28,6 +30,10 @@ async function start() {
   await setupAuth(app);
   await import('./seed.js');
 
+  // Knowledge Base routes + background pipeline worker
+  setupKbRoutes(app);
+  startPipelineWorker();
+
   // Pretty URLs
   app.get('/', (req, res) => res.sendFile(join(publicDir, 'index.html')));
   app.get('/index_new', (req, res) => res.sendFile(join(publicDir, 'index_new.html')));
@@ -39,6 +45,7 @@ async function start() {
   app.get('/education', (req, res) => res.sendFile(join(publicDir, 'education.html')));
   app.get('/cases', (req, res) => res.sendFile(join(publicDir, 'cases.html')));
   app.get('/chat', (req, res) => res.sendFile(join(publicDir, 'chat.html')));
+  app.get('/knowledge', (req, res) => res.sendFile(join(publicDir, 'knowledge.html')));
 
   // ----- API -----
 

@@ -1030,7 +1030,6 @@ function logout() {
         const safe = String(c.id).replace(/[^a-zA-Z0-9_-]/g, '_');
         if (safe !== c.id) ENTITY_META.cases[safe] = c;
       });
-      console.log('[META] prompts from API:', prompts.length, prompts.slice(0,3).map(p => ({id:p.id,title:p.title})));
       prompts.forEach(p => {
         ENTITY_META.prompts[p.id] = p;
         ENTITY_META.prompts[String(p.id)] = p;
@@ -1295,7 +1294,14 @@ function logout() {
       const access = getJson(LS.ACCESS_REQUESTS, []);
       const taskEvents = getJson(LS.TASK_EVENTS, []);
       const headcount = getJson(LS.HEADCOUNT, null);
-      _dsCache = { ui, usedCases, usedPrompts, usedTools, onboarding, tickets, access, taskEvents, headcount };
+      // Build entityNames from localStorage events too
+      const entityNames = {};
+      for (const e of ui) {
+        if (e.target && e.prompt_title) entityNames[e.target] = e.prompt_title;
+        if (e.target && e.case_title) entityNames[e.target] = e.case_title;
+        if (e.target && e.tool_name) entityNames[e.target] = e.tool_name;
+      }
+      _dsCache = { ui, usedCases, usedPrompts, usedTools, onboarding, tickets, access, taskEvents, headcount, entityNames };
       return _dsCache;
     }
   }
@@ -2460,14 +2466,22 @@ function drawDonut(canvasId, items, opts) {
     const names = (_dsCache && _dsCache.entityNames) || {};
     const config = {
       topCases:   { label: 'Топ кейс',       color: 'rgba(38, 210, 152, .85)',  resolve: () => { const m = ENTITY_META.cases[top.id]; return m ? m.title : (names[top.id] || CASE_LABELS[top.id] || top.id); } },
-      topPrompts: { label: 'Топ промпт',      color: 'rgba(120, 140, 255, .85)', resolve: () => { const m = ENTITY_META.prompts[top.id]; return m ? m.title : (names[top.id] || PROMPT_LABELS[top.id] || top.id); } },
+      topPrompts: { label: 'Топ промпт',      color: 'rgba(120, 140, 255, .85)', resolve: () => {
+        const m = ENTITY_META.prompts[top.id]; if (m) return m.title;
+        if (names[top.id]) return names[top.id];
+        if (PROMPT_LABELS[top.id]) return PROMPT_LABELS[top.id];
+        // Fallback: find prompt whose safeId matches event target
+        for (const v of Object.values(ENTITY_META.prompts)) {
+          const safe = String(v.id || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+          if (safe === top.id) return v.title || v.name || safe;
+        }
+        // Last resort: strip leading underscores for display
+        return top.id.replace(/^_+/, '') || top.id;
+      } },
       topTools:   { label: 'Топ инструмент',   color: 'rgba(255, 193, 7, .85)',   resolve: () => { const m = ENTITY_META.tools[top.id]; return m ? m.name : (names[top.id] || TOOL_LABELS[top.id] || top.id); } }
     };
 
     const cfg = config[containerId] || { label: 'Топ', color: 'rgba(255,255,255,.3)', resolve: () => top.id };
-    if (containerId === 'topPrompts') {
-      console.log('[TOP] prompt id:', top.id, 'META lookup:', ENTITY_META.prompts[top.id], 'names:', names[top.id]);
-    }
     const title = cfg.resolve();
 
     box.innerHTML = `

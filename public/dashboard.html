@@ -2470,12 +2470,19 @@ function drawDonut(canvasId, items, opts) {
         const m = ENTITY_META.prompts[top.id]; if (m) return m.title;
         if (names[top.id]) return names[top.id];
         if (PROMPT_LABELS[top.id]) return PROMPT_LABELS[top.id];
+        // Search server events for prompt_title matching this target
+        const evts = (_dsCache && _dsCache.ui) || [];
+        for (const e of evts) {
+          if (e.event_type === 'prompt_used_click' && e.target === top.id && e.prompt_title) return e.prompt_title;
+        }
         // Fallback: find prompt whose safeId matches event target
         for (const v of Object.values(ENTITY_META.prompts)) {
           const safe = String(v.id || '').replace(/[^a-zA-Z0-9_-]/g, '_');
           if (safe === top.id) return v.title || v.name || safe;
         }
-        // Last resort: strip leading underscores for display
+        // Last resort: show as "Промпт #N" from trailing digits
+        const numMatch = top.id.replace(/^_+/, '').match(/^(\d+)[_.](\d+)$/);
+        if (numMatch) return 'Промпт ' + numMatch[1] + '.' + numMatch[2];
         return top.id.replace(/^_+/, '') || top.id;
       } },
       topTools:   { label: 'Топ инструмент',   color: 'rgba(255, 193, 7, .85)',   resolve: () => { const m = ENTITY_META.tools[top.id]; return m ? m.name : (names[top.id] || TOOL_LABELS[top.id] || top.id); } }

@@ -1063,12 +1063,20 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
       feedbackForm.style.maxHeight = '0';
       btnOpen.style.display = '';
     });
-    btnSend.addEventListener('click', function() {
+    btnSend.addEventListener('click', async function() {
       var msg = document.getElementById('feedbackText').value.trim();
       if (!msg) return;
-      // [DB] здесь будет fetch('/api/feedback', { method:'POST', body: JSON.stringify({message: msg}) })
-      btnSend.textContent = '\u2713 Заявка отправлена';
       btnSend.disabled = true;
+      btnSend.textContent = 'Отправка\u2026';
+      try {
+        var userName = (document.querySelector('.profile-name') || {}).textContent || 'Без имени';
+        await fetch('https://hoshoyufag.beget.app/webhook/mik-consultation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: userName, comment: msg, source: 'profile' }),
+        });
+      } catch(e) { console.error(e); }
+      btnSend.textContent = '\u2713 Заявка отправлена';
       setTimeout(function() {
         feedbackForm.style.maxHeight = '0';
         btnOpen.style.display = '';

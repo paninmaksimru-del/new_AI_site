@@ -3144,8 +3144,27 @@
       const form = document.getElementById("consultForm");
       const success = document.getElementById("consultSuccess");
       if (form) {
-        form.addEventListener("submit", (e) => {
+        form.addEventListener("submit", async (e) => {
           e.preventDefault();
+          const btn = form.querySelector('button[type="submit"]');
+          btn.disabled = true;
+          btn.textContent = 'Отправка\u2026';
+          try {
+            await fetch('https://hoshoyufag.beget.app/webhook/mik-consultation', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: (document.getElementById('consultType') || {}).value || '',
+                name: (document.getElementById('fio') || {}).value || '',
+                dept: (document.getElementById('dept') || {}).value || '',
+                contact: (document.getElementById('contact') || {}).value || '',
+                comment: (document.getElementById('comment') || {}).value || '',
+                source: 'education'
+              }),
+            });
+          } catch (err) { console.error(err); }
+          btn.disabled = false;
+          btn.textContent = 'Отправить заявку';
           if (success) success.classList.add("show");
           showToast("Заявка принята. Команда проектного офиса по ИИ скоро свяжется с вами.");
         });

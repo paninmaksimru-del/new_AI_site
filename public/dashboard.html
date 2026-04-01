@@ -1240,18 +1240,44 @@ function logout() {
   }
 
   // ====== Load dataset ======
-  function loadDataset() {
-    const ui = getJson(LS.UI_EVENTS, []);
-    const usedCases = getJson(LS.CASE_USED, {});
-    const usedPrompts = getJson(LS.PROMPT_USED, {});
-    const usedTools = getJson(LS.TOOL_USED, {});
-    const onboarding = getJson(LS.ONBOARDING, {});
-    const tickets = getJson(LS.FEEDBACK_TICKETS, []);
-    const access = getJson(LS.ACCESS_REQUESTS, []);
-    const taskEvents = getJson(LS.TASK_EVENTS, []);
-    const headcount = getJson(LS.HEADCOUNT, null);
-
-    return { ui, usedCases, usedPrompts, usedTools, onboarding, tickets, access, taskEvents, headcount };
+  let _dsCache = null;
+  async function loadDataset(forceRefresh) {
+    if (_dsCache && !forceRefresh) return _dsCache;
+    try {
+      const res = await fetch('/api/analytics/dataset');
+      if (!res.ok) throw new Error('fetch failed');
+      const data = await res.json();
+      const ui = data.ui || [];
+      // Aggregate used maps from server events
+      const usedCases = {};
+      const usedPrompts = {};
+      const usedTools = {};
+      const taskEvents = [];
+      for (const e of ui) {
+        if (e.event_type === 'case_used_click' && e.target) usedCases[e.target] = (usedCases[e.target] || 0) + 1;
+        if (e.event_type === 'prompt_used_click' && e.target) usedPrompts[e.target] = (usedPrompts[e.target] || 0) + 1;
+        if (e.event_type === 'tool_used_click' && e.target) usedTools[e.target] = (usedTools[e.target] || 0) + 1;
+      }
+      const tickets = (data.ui || []).filter(e => e.event_type === 'feedback');
+      const access = (data.ui || []).filter(e => e.event_type === 'access_request_save');
+      const onboarding = data.onboarding || getJson(LS.ONBOARDING, {});
+      const headcount = data.headcount || getJson(LS.HEADCOUNT, null);
+      _dsCache = { ui, usedCases, usedPrompts, usedTools, onboarding, tickets, access, taskEvents, headcount };
+      return _dsCache;
+    } catch (_) {
+      // Fallback to localStorage if server unavailable
+      const ui = getJson(LS.UI_EVENTS, []);
+      const usedCases = getJson(LS.CASE_USED, {});
+      const usedPrompts = getJson(LS.PROMPT_USED, {});
+      const usedTools = getJson(LS.TOOL_USED, {});
+      const onboarding = getJson(LS.ONBOARDING, {});
+      const tickets = getJson(LS.FEEDBACK_TICKETS, []);
+      const access = getJson(LS.ACCESS_REQUESTS, []);
+      const taskEvents = getJson(LS.TASK_EVENTS, []);
+      const headcount = getJson(LS.HEADCOUNT, null);
+      _dsCache = { ui, usedCases, usedPrompts, usedTools, onboarding, tickets, access, taskEvents, headcount };
+      return _dsCache;
+    }
   }
 
   function datasetLooksEmpty(ds) {
@@ -2599,8 +2625,8 @@ function drawDonut(canvasId, items, opts) {
 }
 
   // ====== Master render ======
-  function renderAll() {
-    const ds = loadDataset();
+  async function renderAll() {
+    const ds = await loadDataset();
     fillDeptSelector(ds);
     setPeriodButtons();
 
@@ -2852,11 +2878,11 @@ document.querySelectorAll('.seg button[data-period]').forEach(b => {
     syncAuthProfile();
     setupUI();
 
-    let ds = loadDataset();
+    let ds = await loadDataset(true);
 
     state.adoptionGrain = "weeks";
     await loadEntityMeta();
-    renderAll();
+    await renderAll();
 
     // Init CustomSelect for department filter (after fillDeptSelector populated options)
     const deptEl = document.getElementById("fDept");

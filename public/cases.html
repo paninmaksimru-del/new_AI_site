@@ -2961,16 +2961,24 @@
             // Record UI event for dashboard analytics
             try {
               const auth = JSON.parse(localStorage.getItem("mikAuth") || "{}");
-              const events = JSON.parse(localStorage.getItem("ui_events") || "[]");
-              events.push({
+              const ev = {
                 timestamp: new Date().toISOString(),
                 event_type: "case_used_click",
                 target: id,
                 label: "case_used",
                 client_id: auth.login || "",
                 department: auth.department || ""
-              });
+              };
+              // Save to localStorage (fallback)
+              const events = JSON.parse(localStorage.getItem("ui_events") || "[]");
+              events.push(ev);
               localStorage.setItem("ui_events", JSON.stringify(events));
+              // Send to server
+              fetch('/api/analytics/events', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify([ev])
+              }).catch(() => {});
             } catch(_) {}
           }
           // Update usage counter on the same card

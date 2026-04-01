@@ -475,7 +475,7 @@
           </div>
         </div>
         <div class="chat-topbar-right">
-          <button class="history-btn" id="historyBtn" type="button">🕐 История</button>
+          <button class="history-btn" id="historyBtn" type="button">История</button>
         </div>
       </div>
 
@@ -502,8 +502,8 @@
           <div class="input-inner">
             <textarea id="userInput" rows="1" placeholder="Что вас интересует?"></textarea>
             <div class="input-tools">
-              <button class="tool-btn" type="button" id="attachBtn" title="Прикрепить изображение">📎</button>
-              <button class="send-btn" type="button" id="sendBtn" disabled>➤</button>
+              <button class="tool-btn" type="button" id="attachBtn" title="Прикрепить изображение">+</button>
+              <button class="send-btn" type="button" id="sendBtn" disabled>&rarr;</button>
             </div>
           </div>
           <div class="input-footer">
@@ -522,9 +522,9 @@
 
 <!-- Context menu -->
 <div class="ctx-menu" id="ctxMenu">
-  <div class="ctx-item" id="ctxRename">✏️ Переименовать</div>
-  <div class="ctx-item" id="ctxMove">📁 В проект</div>
-  <div class="ctx-item danger" id="ctxDelete">🗑 Удалить</div>
+  <div class="ctx-item" id="ctxRename">Переименовать</div>
+  <div class="ctx-item" id="ctxMove">В проект</div>
+  <div class="ctx-item danger" id="ctxDelete">Удалить</div>
 </div>
 
 <!-- New project modal -->
@@ -783,7 +783,7 @@ function doCreateProject() {
   state.projects.push({ id: 'proj_' + Date.now(), name, open: true });
   saveState(); renderSidebar();
   document.getElementById('projectModal').classList.remove('open');
-  showToast(`📁 Проект «${name}» создан`);
+  showToast(`Проект «${name}» создан`);
 }
 
 // ── TEXTAREA ───────────────────────────────────────────────
@@ -820,14 +820,14 @@ document.getElementById('fileInput').addEventListener('change', function() {
       }
       renderPills(); sendBtn.disabled = false;
     };
-    r.onerror = () => { showToast('⚠️ Не удалось прочитать файл'); };
+    r.onerror = () => { showToast('Не удалось прочитать файл'); };
     r.readAsDataURL(f);
   });
   this.value = '';
 });
 function renderPills() {
   const fb = document.getElementById('filePreviewBar');
-  fb.innerHTML = state.pendingFiles.map((f,i) => `<div class="file-pill"><span>🖼</span><span class="file-pill-name" title="${escHtml(f.name)}">${escHtml(f.name)}</span><span class="file-pill-rm" data-idx="${i}">✕</span></div>`).join('');
+  fb.innerHTML = state.pendingFiles.map((f,i) => `<div class="file-pill"><span></span><span class="file-pill-name" title="${escHtml(f.name)}">${escHtml(f.name)}</span><span class="file-pill-rm" data-idx="${i}">✕</span></div>`).join('');
   fb.classList.toggle('has-files', state.pendingFiles.length > 0);
 }
 document.getElementById('filePreviewBar').addEventListener('click', e => {
@@ -880,7 +880,7 @@ async function sendMessage() {
     if (chat) { chat.messages = [...state.messages]; saveState(); }
   } catch(err) {
     removeTyping(tid); setProgress(0);
-    showToast('⚠️ ' + (err.message || 'Ошибка'));
+    showToast('' + (err.message || 'Ошибка'));
   } finally {
     state.isLoading = false;
     setTimeout(() => setProgress(0), 600);
@@ -948,10 +948,10 @@ document.getElementById('messagesArea')?.addEventListener('click', e => {
   const b = document.getElementById(btn.dataset.cpmsg)?.querySelector('.msg-bubble');
   if (!b) return;
   if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(b.innerText).then(() => showToast('✅ Скопировано')).catch(() => showToast('Не удалось скопировать'));
+    navigator.clipboard.writeText(b.innerText).then(() => showToast('Скопировано')).catch(() => showToast('Не удалось скопировать'));
   } else showToast('Не удалось скопировать');
 });
-document.getElementById('historyBtn').addEventListener('click', () => showToast('📋 История будет доступна после подключения базы данных'));
+document.getElementById('historyBtn').addEventListener('click', () => showToast('История будет доступна после подключения базы данных'));
 document.getElementById('burgerBtn').addEventListener('click', () => {
   const m = document.getElementById('mobileMenu');
   const burger = document.getElementById('burgerBtn');

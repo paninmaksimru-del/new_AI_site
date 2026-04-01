@@ -1030,21 +1030,12 @@ function logout() {
         const safe = String(c.id).replace(/[^a-zA-Z0-9_-]/g, '_');
         if (safe !== c.id) ENTITY_META.cases[safe] = c;
       });
+      console.log('[META] prompts from API:', prompts.length, prompts.slice(0,3).map(p => ({id:p.id,title:p.title})));
       prompts.forEach(p => {
         ENTITY_META.prompts[p.id] = p;
+        ENTITY_META.prompts[String(p.id)] = p;
         const safe = String(p.id).replace(/[^a-zA-Z0-9_-]/g, '_');
-        if (safe !== p.id) ENTITY_META.prompts[safe] = p;
-        // Index by composite cat_id + '_' + prompt_id (used in events from cases.html)
-        if (p.categories) {
-          p.categories.forEach(cat => {
-            (cat.prompts || []).forEach(cp => {
-              const compositeId = cat.id + '_' + cp.id;
-              ENTITY_META.prompts[compositeId] = { id: compositeId, title: cp.title || compositeId };
-              const safeCid = String(compositeId).replace(/[^a-zA-Z0-9_-]/g, '_');
-              if (safeCid !== compositeId) ENTITY_META.prompts[safeCid] = ENTITY_META.prompts[compositeId];
-            });
-          });
-        }
+        if (safe !== String(p.id)) ENTITY_META.prompts[safe] = p;
       });
       tools.forEach(t => {
         ENTITY_META.tools[t.id] = t;
@@ -2474,6 +2465,9 @@ function drawDonut(canvasId, items, opts) {
     };
 
     const cfg = config[containerId] || { label: 'Топ', color: 'rgba(255,255,255,.3)', resolve: () => top.id };
+    if (containerId === 'topPrompts') {
+      console.log('[TOP] prompt id:', top.id, 'META lookup:', ENTITY_META.prompts[top.id], 'names:', names[top.id]);
+    }
     const title = cfg.resolve();
 
     box.innerHTML = `

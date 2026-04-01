@@ -1422,8 +1422,8 @@
       gap: 16px;
       padding: 22px 0 48px;
       margin-top: -6px;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,.18) transparent;
       -webkit-overflow-scrolling: touch;
       cursor: grab;
       user-select: none;
@@ -1431,7 +1431,10 @@
     .articles-grid:active {
       cursor: grabbing;
     }
-    .articles-grid::-webkit-scrollbar { display: none; }
+    .articles-grid::-webkit-scrollbar { height: 6px; }
+    .articles-grid::-webkit-scrollbar-track { background: transparent; }
+    .articles-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 3px; }
+    .articles-grid::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.3); }
     .articles-grid > article,
     .articles-grid .card {
       /* Desktop: smooth scaling with calc, cap at 340px for soft scroll */

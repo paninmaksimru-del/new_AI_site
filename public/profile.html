@@ -50,10 +50,10 @@ body{
   margin:0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
   background:
-    radial-gradient(1000px 450px at 20% 10%, rgba(120,140,255,.12), transparent 60%),
-    radial-gradient(900px 450px at 85% 25%, rgba(38,210,152,.10), transparent 60%),
-    radial-gradient(900px 450px at 20% 80%, rgba(255,193,7,.08), transparent 65%),
-    var(--bg);
+    radial-gradient(1200px 700px at 15% 85%, rgba(0,90,55,.9), transparent 58%),
+    radial-gradient(900px 600px at 85% 15%, rgba(0,70,45,.7), transparent 55%),
+    radial-gradient(700px 500px at 50% 50%, rgba(0,50,35,.4), transparent 65%),
+    linear-gradient(160deg, #021510 0%, #031a12 40%, #042018 70%, #021408 100%);
   color: var(--text); line-height: 1.45; overflow-x: hidden;
 }
 a{ color: inherit; text-decoration: none; }
@@ -243,6 +243,9 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 @media (max-width: 1050px){ .kpi-grid{ grid-template-columns: repeat(3, 1fr); } .likes-grid{ grid-template-columns: repeat(2, 1fr); } .chart-flex{ grid-template-columns: 1fr; } }
 @media (max-width: 768px){ nav{ display: none; } .burger{ display: flex; } .kpi-grid{ grid-template-columns: repeat(2, 1fr); } .kpi-card:last-child{ grid-column: span 2; } .likes-grid{ grid-template-columns: repeat(2, 1fr); } .level-row{ flex-direction: column !important; } .brand{ min-width: 0; } .ac-layout{ grid-template-columns:1fr; justify-items:center; } .ac-rings-wrap{ width:200px; height:200px; } .ac-legend{ width:100%; } }
 @media (max-width: 640px){ .hero-inner{ flex-direction: column !important; } .hero-right{ align-items: flex-start !important; } .kpi-grid{ grid-template-columns: repeat(2, 1fr); } .likes-grid{ grid-template-columns: 1fr; } .chart-canvas-wrap, .chart-donut-wrap { height: 220px; } }
+    #scrollTopBtn{position:fixed;bottom:32px;right:32px;z-index:9999;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(7,10,16,.75);backdrop-filter:blur(8px);color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .25s ease,background .15s,border-color .15s}
+    #scrollTopBtn.visible{opacity:1;pointer-events:auto}
+    #scrollTopBtn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35)}
 </style>
 </head>
 <body data-user-id="__USER_ID__">
@@ -1347,6 +1350,16 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     });
   }
 
+})();
+</script>
+<button id="scrollTopBtn" aria-label="Наверх">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+<script>
+(function(){
+  var b=document.getElementById('scrollTopBtn');
+  window.addEventListener('scroll',function(){b.classList.toggle('visible',window.scrollY>300)});
+  b.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
 })();
 </script>
 </body>

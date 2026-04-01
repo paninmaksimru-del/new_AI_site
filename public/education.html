@@ -565,16 +565,16 @@
       margin: 0;
     }
     .speaker-contact-btn{
-      margin-top: auto;
+      margin-top: 14px;
       align-self: flex-start;
-      padding: 10px 24px;
-      border-radius: 14px;
+      padding: 8px 18px;
+      border-radius: 12px;
       border: 1px solid rgba(255,255,255,.18);
       background: linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
       color: rgba(255,255,255,.97);
       font: inherit;
-      font-size: 14px;
-      min-height: 40px;
+      font-size: 13px;
+      min-height: 34px;
       cursor: pointer;
       transition: transform .12s ease, opacity .15s;
     }
@@ -1420,7 +1420,7 @@
       scroll-snap-type: x proximity;
       scroll-behavior: smooth;
       gap: 16px;
-      padding: 22px 16px 48px;
+      padding: 22px 0 48px;
       margin-top: -6px;
       scrollbar-width: none;
       -ms-overflow-style: none;
@@ -1561,6 +1561,30 @@
       border-radius: 2px;
       padding: 0 1px;
     }
+    .mat-filter {
+      padding: 7px 16px;
+      border-radius: 30px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(5,7,14,.8);
+      color: rgba(255,255,255,.72);
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background .2s, border-color .2s, color .2s;
+      white-space: nowrap;
+    }
+    .mat-filter:hover {
+      background: rgba(255,255,255,.08);
+      border-color: rgba(255,255,255,.22);
+    }
+    .mat-filter.active {
+      border-color: rgba(0,200,120,.45);
+      background: rgba(0,200,120,.09);
+      color: rgba(0,200,120,.9);
+    }
+    #scrollTopBtn{position:fixed;bottom:32px;right:32px;z-index:9999;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(7,10,16,.75);backdrop-filter:blur(8px);color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .25s ease,background .15s,border-color .15s}
+    #scrollTopBtn.visible{opacity:1;pointer-events:auto}
+    #scrollTopBtn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35)}
 
   </style>
 </head>
@@ -2275,23 +2299,31 @@
         <h2 class="h2">Полезные материалы</h2>
         <p class="lead">Статьи для самостоятельного изучения — от базовых понятий до практических советов</p>
 
-        <div class="materials-search-wrap">
-          <div class="materials-search-box">
-            <svg class="materials-search-icon" viewBox="0 0 16 16" fill="none">
-              <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/>
-              <path d="M11 11L14.5 14.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            </svg>
-            <input class="materials-search-input" id="materialsSearchInput" type="text" placeholder="Поиск по материалам…" autocomplete="off" />
-            <button class="materials-search-clear" id="materialsSearchClear" type="button" style="display:none;" aria-label="Очистить">&times;</button>
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-top:18px;">
+          <div class="materials-search-wrap" style="margin:0; flex:0 1 380px;">
+            <div class="materials-search-box">
+              <svg class="materials-search-icon" viewBox="0 0 16 16" fill="none">
+                <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M11 11L14.5 14.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+              <input class="materials-search-input" id="materialsSearchInput" type="text" placeholder="Поиск по материалам…" autocomplete="off" />
+              <button class="materials-search-clear" id="materialsSearchClear" type="button" style="display:none;" aria-label="Очистить">&times;</button>
+            </div>
+            <div class="materials-search-count" id="materialsSearchCount" style="display:none;"></div>
           </div>
-          <div class="materials-search-count" id="materialsSearchCount" style="display:none;"></div>
+          <div class="materials-filters" style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="mat-filter active" data-cat="all">Все</button>
+            <button class="mat-filter" data-cat="chatgpt">ChatGPT</button>
+            <button class="mat-filter" data-cat="claude">Claude</button>
+            <button class="mat-filter" data-cat="google">Google</button>
+            <button class="mat-filter" data-cat="prompting">Промптинг</button>
+            <button class="mat-filter" data-cat="video">Видео</button>
+            <button class="mat-filter" data-cat="courses">Курсы</button>
+          </div>
         </div>
 
-        <div class="articles-grid" id="articlesGrid" style="flex-wrap:wrap;">
+        <div class="articles-grid" id="articlesGrid">
           <p class="muted" style="padding:12px 0;">Загрузка материалов…</p>
-        </div>
-        <div id="materialsShowMoreWrap" style="display:none; margin-top:18px;">
-          <button class="btn" id="materialsShowMore" style="background:linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78)); border-color:rgba(255,255,255,.18); color:rgba(255,255,255,.97); padding:12px 32px; font-size:14px; border-radius:14px; cursor:pointer; transition:opacity .15s;">Показать все</button>
         </div>
       </div>
     </section>
@@ -2349,29 +2381,29 @@
               <div class="process-step">
                 <div class="step-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,210,120,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
                 <div class="step-content">
-                  <h4>Оставляете заявку</h4>
-                  <p>Выберите формат и опишите задачу — мы поймём, что вам нужно</p>
+                  <h4>Расскажите о задаче</h4>
+                  <p>Опишите, что хотите автоматизировать или ускорить — мы подберём решение</p>
                 </div>
               </div>
               <div class="process-step">
                 <div class="step-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,210,120,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg></div>
                 <div class="step-content">
-                  <h4>Подбираем формат и время</h4>
-                  <p>Формируем группы, планируем спикеров и согласовываем расписание</p>
+                  <h4>Получите план внедрения</h4>
+                  <p>Конкретные инструменты, сценарии и шаги — под вашу задачу</p>
                 </div>
               </div>
               <div class="process-step">
                 <div class="step-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,210,120,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
                 <div class="step-content">
-                  <h4>Проводим обучение</h4>
-                  <p>Воркшоп, консультация или интенсив — в удобном для вас формате</p>
+                  <h4>Разберёте на практике</h4>
+                  <p>На воркшопе или интенсиве решите реальную задачу вашей команды с помощью ИИ</p>
                 </div>
               </div>
               <div class="process-step">
                 <div class="step-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(0,210,120,.85)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
                 <div class="step-content">
-                  <h4>Обновляем программу</h4>
-                  <p>На основе ваших запросов добавляем новые треки и материалы</p>
+                  <h4>Заберёте результат</h4>
+                  <p>Настроенный промпт, автоматизация или шаблон для использования</p>
                 </div>
               </div>
             </div>
@@ -2494,15 +2526,12 @@
 
     async function loadMaterials() {
       const grid = document.getElementById("articlesGrid");
-      const showMoreWrap = document.getElementById("materialsShowMoreWrap");
-      const showMoreBtn = document.getElementById("materialsShowMore");
       const searchInput = document.getElementById("materialsSearchInput");
       const searchClear = document.getElementById("materialsSearchClear");
       const searchCount = document.getElementById("materialsSearchCount");
       if (!grid) return;
-      const VISIBLE = 6;
       let allMaterials = [];
-      let expanded = false;
+      let activeCat = 'all';
 
       const esc = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 
@@ -2529,37 +2558,42 @@
           </article>`;
       }
 
-      function renderDefault() {
-        grid.innerHTML = allMaterials.slice(0, expanded ? allMaterials.length : VISIBLE).map(m => renderCard(m, '')).join('');
-        if (showMoreWrap) showMoreWrap.style.display = allMaterials.length > VISIBLE ? 'block' : 'none';
-        if (showMoreBtn) showMoreBtn.textContent = expanded ? 'Свернуть' : 'Показать все';
-        if (searchCount) searchCount.style.display = 'none';
+      function categorize(m) {
+        const cats = [];
+        const t = (m.title || '').toLowerCase();
+        const l = (m.link || '').toLowerCase();
+        if (/chatgpt|gpt|openai/.test(t)) cats.push('chatgpt');
+        if (/claude|anthropic/.test(t)) cats.push('claude');
+        if (/google|gemini|notebooklm/.test(t)) cats.push('google');
+        if (/промпт|prompt/.test(t)) cats.push('prompting');
+        if (/youtube\.com|youtu\.be/.test(l)) cats.push('video');
+        if (/learn\.microsoft|academy|cloudskillsboost|сколково/i.test(t + ' ' + l) || /курс/i.test(t)) cats.push('courses');
+        return cats;
       }
 
-      function applySearch(query) {
-        const q = query.trim().toLowerCase();
+      function applyFilters() {
+        let filtered = allMaterials;
+        if (activeCat !== 'all') {
+          filtered = filtered.filter(m => categorize(m).includes(activeCat));
+        }
+        const q = searchInput ? searchInput.value.trim() : '';
+        const ql = q.toLowerCase();
         if (searchClear) searchClear.style.display = q ? 'flex' : 'none';
-
-        if (!q) { renderDefault(); return; }
-
-        const filtered = allMaterials.filter(m =>
-          (m.title || '').toLowerCase().includes(q) ||
-          (m.description || '').toLowerCase().includes(q)
-        );
-
-        if (showMoreWrap) showMoreWrap.style.display = 'none';
-
+        if (q) {
+          filtered = filtered.filter(m =>
+            (m.title || '').toLowerCase().includes(ql) ||
+            (m.description || '').toLowerCase().includes(ql)
+          );
+        }
         if (searchCount) {
-          searchCount.style.display = 'block';
-          searchCount.textContent = 'Найдено: ' + filtered.length + ' из ' + allMaterials.length;
+          searchCount.style.display = q ? 'block' : 'none';
+          searchCount.textContent = 'Найдено: ' + filtered.length;
         }
-
         if (!filtered.length) {
-          grid.innerHTML = '<p class="muted" style="padding:24px 0; text-align:center;">Ничего не найдено</p>';
-          return;
+          grid.innerHTML = '<p class="muted" style="padding:24px 0;">Ничего не найдено</p>';
+        } else {
+          grid.innerHTML = filtered.map(m => renderCard(m, q)).join('');
         }
-
-        grid.innerHTML = filtered.map(m => renderCard(m, query.trim())).join('');
       }
 
       try {
@@ -2567,29 +2601,30 @@
         allMaterials = res.ok ? await res.json() : [];
         if (!allMaterials.length) { grid.innerHTML = '<p class="muted">Материалов пока нет</p>'; return; }
 
-        renderDefault();
+        applyFilters();
 
-        if (showMoreWrap && showMoreBtn && allMaterials.length > VISIBLE) {
-          showMoreBtn.onclick = () => {
-            expanded = !expanded;
-            renderDefault();
-            if (!expanded) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          };
-        }
+        /* -- Filter pills -- */
+        document.querySelectorAll('.mat-filter').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.mat-filter').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeCat = btn.dataset.cat;
+            applyFilters();
+          });
+        });
 
         /* -- Search wiring -- */
         if (searchInput) {
-          searchInput.addEventListener('input', () => applySearch(searchInput.value));
+          searchInput.addEventListener('input', () => applyFilters());
           searchInput.addEventListener('keydown', e => {
-            if (e.key === 'Escape') { searchInput.value = ''; expanded = false; renderDefault(); searchInput.blur(); }
+            if (e.key === 'Escape') { searchInput.value = ''; applyFilters(); searchInput.blur(); }
           });
         }
         if (searchClear && searchInput) {
           searchClear.addEventListener('click', () => {
             searchInput.value = '';
             searchClear.style.display = 'none';
-            expanded = false;
-            renderDefault();
+            applyFilters();
             searchInput.focus();
           });
         }
@@ -3295,5 +3330,15 @@
       });
     })();
   </script>
+<button id="scrollTopBtn" aria-label="Наверх">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+<script>
+(function(){
+  var b=document.getElementById('scrollTopBtn');
+  window.addEventListener('scroll',function(){b.classList.toggle('visible',window.scrollY>300)});
+  b.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
+})();
+</script>
 </body>
 </html>

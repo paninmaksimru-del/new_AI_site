@@ -42,10 +42,10 @@
       margin:0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
       background:
-        radial-gradient(1100px 520px at 18% 10%, rgba(0,170,100,.14), transparent 60%),
-        radial-gradient(1000px 520px at 82% 18%, rgba(0,220,130,.10), transparent 62%),
-        radial-gradient(1000px 520px at 28% 82%, rgba(255,255,255,.06), transparent 66%),
-        linear-gradient(180deg, #070b14, #05070d);
+        radial-gradient(1200px 700px at 15% 85%, rgba(0,90,55,.9), transparent 58%),
+        radial-gradient(900px 600px at 85% 15%, rgba(0,70,45,.7), transparent 55%),
+        radial-gradient(700px 500px at 50% 50%, rgba(0,50,35,.4), transparent 65%),
+        linear-gradient(160deg, #021510 0%, #031a12 40%, #042018 70%, #021408 100%);
       color: var(--text);
       line-height: 1.45;
       overflow-x: hidden;
@@ -1751,6 +1751,9 @@
       .fb-score-btn{ width:28px; height:28px; font-size:11px; }
       .fb-scores{ gap:3px; }
     }
+    #scrollTopBtn{position:fixed;bottom:32px;right:32px;z-index:9999;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(7,10,16,.75);backdrop-filter:blur(8px);color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .25s ease,background .15s,border-color .15s}
+    #scrollTopBtn.visible{opacity:1;pointer-events:auto}
+    #scrollTopBtn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35)}
 
   </style>
 </head>
@@ -3552,6 +3555,16 @@
     if (remaining.length) localStorage.setItem("fb_dashboard_pending", JSON.stringify(remaining));
     else localStorage.removeItem("fb_dashboard_pending");
   })();
+})();
+</script>
+<button id="scrollTopBtn" aria-label="Наверх">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+<script>
+(function(){
+  var b=document.getElementById('scrollTopBtn');
+  window.addEventListener('scroll',function(){b.classList.toggle('visible',window.scrollY>300)});
+  b.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
 })();
 </script>
 </body>

@@ -370,6 +370,9 @@
       .input-footer { padding: 2px 8px 5px; font-size: 10px; }
       .toast { bottom: max(12px, env(safe-area-inset-bottom)); }
     }
+    #scrollTopBtn{position:fixed;bottom:32px;right:32px;z-index:9999;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(7,10,16,.75);backdrop-filter:blur(8px);color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .25s ease,background .15s,border-color .15s}
+    #scrollTopBtn.visible{opacity:1;pointer-events:auto}
+    #scrollTopBtn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35)}
   </style>
 </head>
 <body>
@@ -417,8 +420,8 @@
     </div>
     <div class="sb-scroll" id="sbScroll"></div>
     <div class="sb-footer">
-      <div class="sb-footer-item" id="addProjectBtn">📁 Новый проект</div>
-      <a href="/" class="sb-footer-item">🧰 Все инструменты</a>
+      <div class="sb-footer-item" id="addProjectBtn">Новый проект</div>
+      <a href="/" class="sb-footer-item">Все инструменты</a>
     </div>
   </aside>
 
@@ -987,6 +990,16 @@ function showToast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 function escHtml(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+<button id="scrollTopBtn" aria-label="Наверх">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+<script>
+(function(){
+  var b=document.getElementById('scrollTopBtn');
+  window.addEventListener('scroll',function(){b.classList.toggle('visible',window.scrollY>300)});
+  b.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
+})();
 </script>
 </body>
 </html>

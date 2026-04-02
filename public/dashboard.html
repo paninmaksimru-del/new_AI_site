@@ -1573,10 +1573,20 @@ for (let day = new Date(start); day <= today; day.setDate(day.getDate()+1)) {
     const savedHours = (days.reduce((s,x)=>s+x.saved_min,0) / 60);
     const fte = savedHours / 160;
 
-    const topN = (m, n=7) => Object.entries(m || {})
-      .sort((a,b) => (b[1]||0) - (a[1]||0))
-      .slice(0,n)
-      .map(([id, count]) => ({ id, count }));
+    const topN = (m, n=7) => {
+      const names = (_dsCache && _dsCache.entityNames) || {};
+      return Object.entries(m || {})
+        .sort((a,b) => {
+          const diff = (b[1]||0) - (a[1]||0);
+          if (diff !== 0) return diff;
+          // Equal count: prefer entries with a known name
+          const aName = names[a[0]] || ENTITY_META.prompts[a[0]]?.title || ENTITY_META.cases[a[0]]?.title || ENTITY_META.tools[a[0]]?.name;
+          const bName = names[b[0]] || ENTITY_META.prompts[b[0]]?.title || ENTITY_META.cases[b[0]]?.title || ENTITY_META.tools[b[0]]?.name;
+          return (bName ? 1 : 0) - (aName ? 1 : 0);
+        })
+        .slice(0,n)
+        .map(([id, count]) => ({ id, count }));
+    };
 
     return { start, end, days, activeUsers, visitors, totalKey, savedHours, fte,
       topCases: topN(ds.usedCases, 7),

@@ -641,6 +641,265 @@
       .kv2-topbar { flex-wrap: wrap; height: auto; padding: 12px; gap: 12px; }
       .kv2-search-wrap { max-width: none; order: 3; width: 100%; }
     }
+
+    /* ── AI Chat Widget ───────────────────────────────────────────────── */
+
+    /* Split view: shrink main panel when sidebar opens */
+    .kv2-main { transition: margin-right .32s cubic-bezier(.4,0,.2,1); }
+    body.ai-split .kv2-main { margin-right: 420px; }
+
+    /* Widget floating button */
+    .ai-widget-btn {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #613dff 0%, #9b6bff 100%);
+      box-shadow: 0 4px 16px rgba(97,61,255,.45), 0 1px 4px rgba(0,0,0,.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+      cursor: pointer;
+      border: none;
+      color: #fff;
+      transition: transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .2s, background .2s;
+      overflow: hidden;
+    }
+    .ai-widget-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 28px rgba(97,61,255,.6), 0 2px 8px rgba(0,0,0,.3);
+    }
+    .ai-widget-btn.open { background: linear-gradient(135deg, #4a2ecc 0%, #7a50e0 100%); }
+    .ai-widget-btn svg { position: absolute; transition: opacity .18s, transform .18s; }
+    .ai-widget-btn .ai-btn-icon-chat { opacity: 1; transform: scale(1) rotate(0deg); }
+    .ai-widget-btn .ai-btn-icon-close { opacity: 0; transform: scale(.5) rotate(-90deg); }
+    .ai-widget-btn.open .ai-btn-icon-chat { opacity: 0; transform: scale(.5) rotate(90deg); }
+    .ai-widget-btn.open .ai-btn-icon-close { opacity: 1; transform: scale(1) rotate(0deg); }
+
+    /* Sidebar panel */
+    .ai-sidebar {
+      position: fixed;
+      top: var(--header-h);
+      right: -420px;
+      bottom: 0;
+      width: 420px;
+      max-width: 100vw;
+      background: #16181c;
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      box-shadow: none;
+    }
+
+    .ai-sidebar-head {
+      flex-shrink: 0;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      gap: 10px;
+    }
+    .ai-sidebar-head-icon {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, #613dff, #9b6bff);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .ai-sidebar-title { font-size: 15px; font-weight: 600; color: rgba(255,255,255,.92); flex: 1; }
+    .ai-sidebar-close {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 8px; color: rgba(255,255,255,.45);
+      border: none; background: transparent; cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .ai-sidebar-close:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.9); }
+
+    /* Messages area */
+    .ai-messages {
+      flex: 1; overflow-y: auto;
+      padding: 20px 14px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .ai-messages::-webkit-scrollbar { width: 4px; }
+    .ai-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
+
+    .ai-welcome-msg {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 12px; margin: auto; text-align: center; padding: 28px 20px;
+    }
+    .ai-welcome-msg h3 { font-size: 16px; font-weight: 600; color: rgba(255,255,255,.72); margin: 0; }
+    .ai-welcome-msg p { font-size: 13px; line-height: 1.55; color: rgba(255,255,255,.38); margin: 0; max-width: 260px; }
+
+    .ai-msg { display: flex; flex-direction: column; max-width: 86%; }
+    .ai-msg.user { align-self: flex-end; align-items: flex-end; }
+    .ai-msg.assistant { align-self: flex-start; align-items: flex-start; }
+    .ai-msg-bubble { padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.55; }
+    .ai-msg.user .ai-msg-bubble { background: #613dff; color: #fff; border-bottom-right-radius: 5px; }
+    .ai-msg.assistant .ai-msg-bubble {
+      background: #1F2023; color: rgba(255,255,255,.85);
+      border-bottom-left-radius: 5px; border: 1px solid rgba(255,255,255,.08);
+    }
+    .ai-msg-time { font-size: 11px; color: rgba(255,255,255,.25); margin-top: 4px; padding: 0 4px; }
+
+    .ai-typing {
+      align-self: flex-start; display: none; align-items: center; gap: 5px;
+      padding: 12px 16px; background: #1F2023;
+      border-radius: 18px; border-bottom-left-radius: 5px; border: 1px solid rgba(255,255,255,.08);
+    }
+    .ai-typing.visible { display: flex; }
+    .ai-typing-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(155,135,245,.6); animation: ai-bounce .9s infinite; }
+    .ai-typing-dot:nth-child(2) { animation-delay: .16s; }
+    .ai-typing-dot:nth-child(3) { animation-delay: .32s; }
+    @keyframes ai-bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-7px); } }
+
+    /* Input area wrapper */
+    .ai-input-area {
+      flex-shrink: 0;
+      padding: 10px 12px 16px;
+      border-top: 1px solid rgba(255,255,255,.05);
+    }
+
+    /* File preview strip */
+    .ai-files-strip {
+      display: flex; flex-wrap: nowrap; gap: 8px;
+      padding: 0 4px 8px; overflow-x: auto;
+    }
+    .ai-files-strip::-webkit-scrollbar { height: 3px; }
+    .ai-files-strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
+    .ai-file-thumb {
+      position: relative; flex-shrink: 0;
+      width: 60px; height: 60px; border-radius: 12px; overflow: hidden;
+      background: rgba(255,255,255,.07); cursor: pointer;
+    }
+    .ai-file-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .ai-file-thumb-doc {
+      width: 60px; height: 60px; border-radius: 12px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border: 1px solid rgba(255,255,255,.12);
+      font-size: 9px; font-weight: 700; letter-spacing: .04em;
+      text-transform: uppercase; color: rgba(255,255,255,.55);
+      padding: 4px; text-align: center; gap: 4px;
+    }
+    .ai-file-thumb-doc svg { width: 20px; height: 20px; opacity: .6; }
+    .ai-file-remove {
+      position: absolute; top: 2px; right: 2px;
+      width: 16px; height: 16px;
+      background: rgba(0,0,0,.75); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border: none; color: #fff;
+    }
+
+    /* Voice recorder */
+    .ai-voice-rec {
+      padding: 6px 4px 10px;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .ai-voice-rec-top { display: flex; align-items: center; gap: 8px; }
+    .ai-voice-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: ai-pulse-dot .9s infinite; }
+    @keyframes ai-pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+    .ai-voice-time { font-family: monospace; font-size: 13px; color: rgba(255,255,255,.7); }
+    .ai-voice-bars { display: flex; align-items: center; gap: 2px; height: 36px; width: 100%; }
+    .ai-voice-bar {
+      flex: 1; border-radius: 2px; background: rgba(155,135,245,.55);
+      transform-origin: center bottom;
+      animation: ai-bar-pulse .65s infinite alternate ease-in-out;
+    }
+    @keyframes ai-bar-pulse { from { transform: scaleY(.15); } to { transform: scaleY(1); } }
+
+    /* Prompt box */
+    .ai-prompt-box {
+      border-radius: 24px;
+      border: 1px solid #3d3d3d;
+      background: #1F2023;
+      padding: 8px 8px 6px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.24);
+      transition: border-color .2s;
+    }
+    .ai-prompt-box:focus-within { border-color: rgba(97,61,255,.55); }
+    .ai-prompt-textarea {
+      width: 100%; background: transparent; border: none; outline: none;
+      color: rgba(255,255,255,.9);
+      font-family: 'Inter', ui-sans-serif, sans-serif;
+      font-size: 14px; line-height: 1.5;
+      resize: none; padding: 4px 8px;
+      min-height: 38px; max-height: 130px; overflow-y: auto;
+    }
+    .ai-prompt-textarea::placeholder { color: rgba(255,255,255,.28); }
+    .ai-prompt-textarea::-webkit-scrollbar { width: 4px; }
+    .ai-prompt-textarea::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+    .ai-prompt-actions {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 4px; margin-top: 4px; padding: 0 2px;
+    }
+    .ai-prompt-left { display: flex; align-items: center; gap: 1px; }
+
+    /* Toggle action buttons */
+    .ai-action-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      height: 30px; padding: 0 7px;
+      border-radius: 999px; font-size: 12px; font-weight: 500;
+      color: rgba(255,255,255,.4);
+      border: 1px solid transparent; background: transparent; cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .ai-action-btn:hover { background: rgba(255,255,255,.06); color: rgba(255,255,255,.78); }
+    .ai-action-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    /* Sliding label inside toggles */
+    .ai-toggle-label {
+      display: inline-block; overflow: hidden; white-space: nowrap;
+      max-width: 0; opacity: 0;
+      transition: max-width .2s ease, opacity .2s ease;
+    }
+    .ai-action-btn.active-search .ai-toggle-label,
+    .ai-action-btn.active-think  .ai-toggle-label,
+    .ai-action-btn.active-canvas .ai-toggle-label { max-width: 60px; opacity: 1; }
+
+    /* Active colour states */
+    .ai-action-btn.active-search { background: rgba(30,174,219,.12); border-color: #1EAEDB; color: #1EAEDB; }
+    .ai-action-btn.active-think  { background: rgba(139,92,246,.12); border-color: #8B5CF6; color: #8B5CF6; }
+    .ai-action-btn.active-canvas { background: rgba(249,115,22,.12); border-color: #F97316; color: #F97316; }
+
+    /* Diamond gradient divider */
+    .ai-diamond-div {
+      flex-shrink: 0;
+      width: 1.5px; height: 22px; margin: 0 1px;
+      background: linear-gradient(to bottom, transparent 0%, rgba(155,135,245,.5) 50%, transparent 100%);
+      border-radius: 1px;
+    }
+
+    /* Send / Mic / Stop button */
+    .ai-send-btn {
+      position: relative;
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: none; cursor: pointer; flex-shrink: 0;
+      transition: background .15s, color .15s, transform .12s;
+      overflow: hidden;
+    }
+    .ai-send-btn:active { transform: scale(.88); }
+    .ai-send-btn.idle { background: transparent; color: rgba(255,255,255,.35); }
+    .ai-send-btn.idle:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.7); }
+    .ai-send-btn.ready { background: #fff; color: #1F2023; }
+    .ai-send-btn.ready:hover { background: rgba(255,255,255,.85); }
+    .ai-send-btn.rec { background: transparent; color: #ef4444; }
+    .ai-send-btn.rec:hover { background: rgba(255,255,255,.06); }
+    /* overlapping icons inside the button */
+    .ai-send-btn .ai-si {
+      position: absolute;
+      transition: opacity .15s, transform .15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    @media (max-width: 640px) {
+      .ai-sidebar { width: 100vw; right: -100vw; }
+      body.ai-split .kv2-main { margin-right: 0; }
+    }
   </style>
 </head>
 <body>
@@ -686,7 +945,8 @@
         </div>
       </div>
       <div class="kv2-topbar-right">
-        <button type="button" class="kv2-btn-upload">
+        <input type="file" id="kv2UploadInput" multiple accept=".pdf,.docx,.txt,.jpg,.jpeg,.png,.webp,.tiff" style="display:none">
+        <button type="button" class="kv2-btn-upload" id="kv2UploadBtn">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path fill="#ffffff" d="M12.41 14.5H3.59C3.31488 14.4993 3.04258 14.4445 2.78866 14.3386C2.53473 14.2327 2.30415 14.0779 2.11007 13.8829C1.916 13.6879 1.76223 13.4565 1.65756 13.2021C1.55288 12.9477 1.49934 12.6751 1.5 12.4V9.615C1.5 9.54343 1.5141 9.47256 1.54149 9.40644C1.56887 9.34032 1.60902 9.28023 1.65963 9.22963C1.71023 9.17902 1.77032 9.13887 1.83644 9.11149C1.90256 9.0841 1.97343 9.07 2.045 9.07C2.11657 9.07 2.18744 9.0841 2.25356 9.11149C2.31968 9.13887 2.37977 9.17902 2.43037 9.22963C2.48098 9.28023 2.52113 9.34032 2.54851 9.40644C2.5759 9.47256 2.59 9.54343 2.59 9.615V12.4C2.59 12.6652 2.69536 12.9196 2.88289 13.1071C3.07043 13.2946 3.32478 13.4 3.59 13.4H12.41C12.6752 13.4 12.9296 13.2946 13.1171 13.1071C13.3046 12.9196 13.41 12.6652 13.41 12.4V9.615C13.41 9.47046 13.4674 9.33183 13.5696 9.22963C13.6718 9.12742 13.8105 9.07 13.955 9.07C14.0995 9.07 14.2382 9.12742 14.3404 9.22963C14.4426 9.33183 14.5 9.47046 14.5 9.615V12.4C14.5007 12.6751 14.4471 12.9477 14.3424 13.2021C14.2378 13.4565 14.084 13.6879 13.8899 13.8829C13.6959 14.0779 13.4653 14.2327 13.2113 14.3386C12.9574 14.4445 12.6851 14.4993 12.41 14.5ZM8.545 10.29V3.385L10.5 5.355C10.5494 5.40956 10.6092 5.45356 10.6761 5.48435C10.7429 5.51514 10.8152 5.53208 10.8888 5.53416C10.9623 5.53624 11.0355 5.52341 11.1039 5.49644C11.1724 5.46947 11.2347 5.42893 11.287 5.37725C11.3394 5.32557 11.3807 5.26382 11.4086 5.19573C11.4364 5.12764 11.4502 5.05461 11.4491 4.98106C11.448 4.9075 11.432 4.83493 11.402 4.76772C11.3721 4.70051 11.3289 4.64006 11.275 4.59L8.395 1.675C8.2914 1.5671 8.14953 1.50424 8 1.5C7.8533 1.50129 7.71308 1.56062 7.61 1.665L4.735 4.595C4.65735 4.70022 4.62013 4.82985 4.63012 4.96024C4.64011 5.09063 4.69665 5.21308 4.78942 5.30524C4.88219 5.39741 5.005 5.45314 5.13545 5.46228C5.2659 5.47141 5.39529 5.43334 5.5 5.355L7.44 3.355V10.29C7.44 10.4345 7.49742 10.5732 7.59963 10.6754C7.70183 10.7776 7.84046 10.835 7.985 10.835C8.12954 10.835 8.26817 10.7776 8.37037 10.6754C8.47258 10.5732 8.53 10.4345 8.53 10.29H8.545Z"/></svg>
           Загрузить
         </button>
@@ -727,6 +987,18 @@
           <div class="kv2-board-row">
             <span class="kv2-board-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="#666666" d="M4.54 6.81C4.57751 6.71869 4.64121 6.64053 4.72307 6.58536C4.80493 6.53019 4.90129 6.50049 5 6.5H11C11.0987 6.50049 11.1951 6.53019 11.2769 6.58536C11.3588 6.64053 11.4225 6.71869 11.46 6.81C11.4983 6.90106 11.5088 7.00141 11.4901 7.09841C11.4714 7.1954 11.4244 7.28469 11.355 7.355L8.355 10.355C8.30852 10.4019 8.25322 10.4391 8.19229 10.4644C8.13136 10.4898 8.06601 10.5029 8 10.5029C7.93399 10.5029 7.86864 10.4898 7.80771 10.4644C7.74678 10.4391 7.69148 10.4019 7.645 10.355L4.645 7.355C4.57562 7.28469 4.52862 7.1954 4.50994 7.09841C4.49125 7.00141 4.50171 6.90106 4.54 6.81Z"/></svg></span>
             <span>Моя доска</span>
+          </div>
+          <div class="kv2-board-row">
+            <span class="kv2-board-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="#666666" d="M4.54 6.81C4.57751 6.71869 4.64121 6.64053 4.72307 6.58536C4.80493 6.53019 4.90129 6.50049 5 6.5H11C11.0987 6.50049 11.1951 6.53019 11.2769 6.58536C11.3588 6.64053 11.4225 6.71869 11.46 6.81C11.4983 6.90106 11.5088 7.00141 11.4901 7.09841C11.4714 7.1954 11.4244 7.28469 11.355 7.355L8.355 10.355C8.30852 10.4019 8.25322 10.4391 8.19229 10.4644C8.13136 10.4898 8.06601 10.5029 8 10.5029C7.93399 10.5029 7.86864 10.4898 7.80771 10.4644C7.74678 10.4391 7.69148 10.4019 7.645 10.355L4.645 7.355C4.57562 7.28469 4.52862 7.1954 4.50994 7.09841C4.49125 7.00141 4.50171 6.90106 4.54 6.81Z"/></svg></span>
+            <span>Фонд</span>
+          </div>
+          <div class="kv2-board-row">
+            <span class="kv2-board-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="#666666" d="M4.54 6.81C4.57751 6.71869 4.64121 6.64053 4.72307 6.58536C4.80493 6.53019 4.90129 6.50049 5 6.5H11C11.0987 6.50049 11.1951 6.53019 11.2769 6.58536C11.3588 6.64053 11.4225 6.71869 11.46 6.81C11.4983 6.90106 11.5088 7.00141 11.4901 7.09841C11.4714 7.1954 11.4244 7.28469 11.355 7.355L8.355 10.355C8.30852 10.4019 8.25322 10.4391 8.19229 10.4644C8.13136 10.4898 8.06601 10.5029 8 10.5029C7.93399 10.5029 7.86864 10.4898 7.80771 10.4644C7.74678 10.4391 7.69148 10.4019 7.645 10.355L4.645 7.355C4.57562 7.28469 4.52862 7.1954 4.50994 7.09841C4.49125 7.00141 4.50171 6.90106 4.54 6.81Z"/></svg></span>
+            <span>Полезное</span>
+          </div>
+          <div class="kv2-board-row">
+            <span class="kv2-board-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="#666666" d="M4.54 6.81C4.57751 6.71869 4.64121 6.64053 4.72307 6.58536C4.80493 6.53019 4.90129 6.50049 5 6.5H11C11.0987 6.50049 11.1951 6.53019 11.2769 6.58536C11.3588 6.64053 11.4225 6.71869 11.46 6.81C11.4983 6.90106 11.5088 7.00141 11.4901 7.09841C11.4714 7.1954 11.4244 7.28469 11.355 7.355L8.355 10.355C8.30852 10.4019 8.25322 10.4391 8.19229 10.4644C8.13136 10.4898 8.06601 10.5029 8 10.5029C7.93399 10.5029 7.86864 10.4898 7.80771 10.4644C7.74678 10.4391 7.69148 10.4019 7.645 10.355L4.645 7.355C4.57562 7.28469 4.52862 7.1954 4.50994 7.09841C4.49125 7.00141 4.50171 6.90106 4.54 6.81Z"/></svg></span>
+            <span>Моя папка</span>
           </div>
         </div>
       </aside>
@@ -828,20 +1100,432 @@
   </div>
 </div>
 
+<!-- ── AI Chat Widget ────────────────────────────────────────────── -->
+<button class="ai-widget-btn" id="aiWidgetBtn" aria-label="ИИ-ассистент">
+  <svg class="ai-btn-icon-chat" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+  </svg>
+  <svg class="ai-btn-icon-close" width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+  </svg>
+</button>
+
+<!-- AI Chat Sidebar (no overlay — split view) -->
+<div class="ai-sidebar" id="aiSidebar" role="dialog" aria-label="ИИ-чат">
+  <div class="ai-sidebar-head">
+    <div class="ai-sidebar-head-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+      </svg>
+    </div>
+    <span class="ai-sidebar-title">ИИ-ассистент МИК</span>
+    <button class="ai-sidebar-close" id="aiSidebarClose" aria-label="Закрыть">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="ai-messages" id="aiMessages">
+    <div class="ai-welcome-msg" id="aiWelcome">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="rgba(155,135,245,.5)">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+      </svg>
+      <h3>Чем могу помочь?</h3>
+      <p>Задайте вопрос по базе знаний или попросите помочь найти нужный файл</p>
+    </div>
+    <div class="ai-typing" id="aiTyping">
+      <div class="ai-typing-dot"></div>
+      <div class="ai-typing-dot"></div>
+      <div class="ai-typing-dot"></div>
+    </div>
+  </div>
+
+  <div class="ai-input-area">
+    <!-- Hidden file input -->
+    <input type="file" id="aiFileInput" multiple accept="*/*" style="display:none">
+
+    <!-- Attached file previews -->
+    <div class="ai-files-strip" id="aiFilesStrip" style="display:none"></div>
+
+    <!-- Voice recorder UI -->
+    <div class="ai-voice-rec" id="aiVoiceRec" style="display:none">
+      <div class="ai-voice-rec-top">
+        <span class="ai-voice-dot"></span>
+        <span class="ai-voice-time" id="aiVoiceTime">00:00</span>
+      </div>
+      <div class="ai-voice-bars" id="aiVoiceBars"></div>
+    </div>
+
+    <div class="ai-prompt-box">
+      <textarea class="ai-prompt-textarea" id="aiTextarea" placeholder="Спросите что-нибудь..." rows="1"></textarea>
+
+      <div class="ai-prompt-actions">
+        <div class="ai-prompt-left">
+
+          <!-- Attach -->
+          <button class="ai-action-btn" id="aiAttachBtn" style="padding:0 8px" title="Прикрепить файл">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+            </svg>
+          </button>
+
+          <div class="ai-diamond-div"></div>
+
+          <!-- Search (Globe) -->
+          <button class="ai-action-btn" id="aiSearchBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              <path d="M2 12h20"/>
+            </svg>
+            <span class="ai-toggle-label">Поиск</span>
+          </button>
+
+          <div class="ai-diamond-div"></div>
+
+          <!-- Think (Sparkles) -->
+          <button class="ai-action-btn" id="aiThinkBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+            </svg>
+            <span class="ai-toggle-label">Think</span>
+          </button>
+
+          <div class="ai-diamond-div"></div>
+
+          <!-- Canvas (FolderCode) -->
+          <button class="ai-action-btn" id="aiCanvasBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 10.5 8 13l2 2.5"/>
+              <path d="m14 10.5 2 2.5-2 2.5"/>
+              <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+            </svg>
+            <span class="ai-toggle-label">Canvas</span>
+          </button>
+
+        </div>
+
+        <!-- Mic / Send / Stop button -->
+        <button class="ai-send-btn idle" id="aiSendBtn" aria-label="Отправить или голосовой ввод">
+          <!-- Mic (default) -->
+          <span class="ai-si" id="aiIconMic">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" x2="12" y1="19" y2="22"/>
+            </svg>
+          </span>
+          <!-- Send (when text present) -->
+          <span class="ai-si" id="aiIconSend" style="opacity:0;transform:scale(.5)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>
+            </svg>
+          </span>
+          <!-- Stop recording -->
+          <span class="ai-si" id="aiIconStop" style="opacity:0;transform:scale(.5)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <rect width="6" height="6" x="9" y="9" rx="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </span>
+        </button>
+
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function () {
-  var STORAGE_KEY = 'kv2_welcome_dismissed';
-  var modal = document.getElementById('welcomeModal');
-  var close = function () {
-    modal.classList.remove('open');
-    try { localStorage.setItem(STORAGE_KEY, '1'); } catch (e) {}
-  };
-  if (localStorage.getItem(STORAGE_KEY)) {
-    modal.classList.remove('open');
+  /* ── AI Chat Widget ─────────────────────────────────────────────── */
+  var wrap        = document.body;
+  var widgetBtn   = document.getElementById('aiWidgetBtn');
+  var sidebar     = document.getElementById('aiSidebar');
+  var closeBtn    = document.getElementById('aiSidebarClose');
+  var textarea    = document.getElementById('aiTextarea');
+  var sendBtn     = document.getElementById('aiSendBtn');
+  var msgContainer= document.getElementById('aiMessages');
+  var typingEl    = document.getElementById('aiTyping');
+  var welcomeEl   = document.getElementById('aiWelcome');
+  var searchBtn   = document.getElementById('aiSearchBtn');
+  var thinkBtn    = document.getElementById('aiThinkBtn');
+  var canvasBtn   = document.getElementById('aiCanvasBtn');
+  var attachBtn   = document.getElementById('aiAttachBtn');
+  var fileInput   = document.getElementById('aiFileInput');
+  var filesStrip  = document.getElementById('aiFilesStrip');
+  var voiceRec    = document.getElementById('aiVoiceRec');
+  var voiceTime   = document.getElementById('aiVoiceTime');
+  var voiceBars   = document.getElementById('aiVoiceBars');
+  var iconMic     = document.getElementById('aiIconMic');
+  var iconSend    = document.getElementById('aiIconSend');
+  var iconStop    = document.getElementById('aiIconStop');
+
+  var isOpen = false;
+  var isSearch = false, isThink = false, isCanvas = false;
+  var isRecording = false;
+  var recTimer = null, recSeconds = 0;
+  var attachedFiles = [];
+
+  /* ── Generate voice bars ── */
+  for (var b = 0; b < 28; b++) {
+    var bar = document.createElement('div');
+    bar.className = 'ai-voice-bar';
+    bar.style.animationDelay = (b * 0.038) + 's';
+    bar.style.animationDuration = (0.4 + Math.random() * 0.45) + 's';
+    voiceBars.appendChild(bar);
   }
-  document.getElementById('welcomeClose').addEventListener('click', close);
-  document.getElementById('welcomeLater').addEventListener('click', close);
-  document.getElementById('welcomeTry').addEventListener('click', close);
+
+  /* ── Open / close (JS-driven animation to avoid CSS transition quirks) ── */
+  var SIDEBAR_W = 420;
+  var EASE = 'cubic-bezier(.4,0,.2,1)';
+  var DUR  = '320ms';
+
+  function openSidebar() {
+    isOpen = true;
+    widgetBtn.classList.add('open');
+    sidebar.style.transition = 'none';
+    sidebar.style.right = '-' + SIDEBAR_W + 'px';
+    void sidebar.offsetWidth; // force reflow
+    sidebar.style.transition = 'right ' + DUR + ' ' + EASE + ', box-shadow ' + DUR;
+    sidebar.style.right = '0px';
+    sidebar.style.boxShadow = '-4px 0 24px rgba(0,0,0,.22)';
+    wrap.classList.add('ai-split');
+    setTimeout(function () { textarea.focus(); }, 340);
+  }
+
+  function closeSidebar() {
+    isOpen = false;
+    widgetBtn.classList.remove('open');
+    sidebar.style.transition = 'right ' + DUR + ' ' + EASE + ', box-shadow ' + DUR;
+    sidebar.style.right = '-' + SIDEBAR_W + 'px';
+    sidebar.style.boxShadow = 'none';
+    wrap.classList.remove('ai-split');
+  }
+  widgetBtn.addEventListener('click', function () { isOpen ? closeSidebar() : openSidebar(); });
+  closeBtn.addEventListener('click', closeSidebar);
+
+  /* ── Textarea auto-resize ── */
+  textarea.addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 130) + 'px';
+    refreshSendBtn();
+  });
+
+  /* ── Send button icon state ── */
+  function refreshSendBtn() {
+    var hasText = textarea.value.trim() !== '' || attachedFiles.length > 0;
+    if (isRecording) {
+      sendBtn.className = 'ai-send-btn rec';
+      setIcon(iconMic, false); setIcon(iconSend, false); setIcon(iconStop, true);
+    } else if (hasText) {
+      sendBtn.className = 'ai-send-btn ready';
+      setIcon(iconMic, false); setIcon(iconSend, true); setIcon(iconStop, false);
+    } else {
+      sendBtn.className = 'ai-send-btn idle';
+      setIcon(iconMic, true); setIcon(iconSend, false); setIcon(iconStop, false);
+    }
+  }
+  function setIcon(el, on) {
+    el.style.opacity = on ? '1' : '0';
+    el.style.transform = on ? 'scale(1)' : 'scale(.5)';
+  }
+
+  /* ── Toggle helpers ── */
+  function deactivateAll() {
+    searchBtn.classList.remove('active-search');
+    thinkBtn.classList.remove('active-think');
+    canvasBtn.classList.remove('active-canvas');
+    isSearch = isThink = isCanvas = false;
+  }
+  function makePlaceholder() {
+    if (isSearch)      return 'Поиск в интернете...';
+    if (isThink)       return 'Подумать глубже...';
+    if (isCanvas)      return 'Создать на канвасе...';
+    return 'Спросите что-нибудь...';
+  }
+  function applyPlaceholder() { textarea.placeholder = makePlaceholder(); }
+
+  searchBtn.addEventListener('click', function () {
+    var was = isSearch;
+    deactivateAll();
+    if (!was) { isSearch = true; searchBtn.classList.add('active-search'); }
+    applyPlaceholder();
+  });
+  thinkBtn.addEventListener('click', function () {
+    var was = isThink;
+    deactivateAll();
+    if (!was) { isThink = true; thinkBtn.classList.add('active-think'); }
+    applyPlaceholder();
+  });
+  canvasBtn.addEventListener('click', function () {
+    var was = isCanvas;
+    deactivateAll();
+    if (!was) { isCanvas = true; canvasBtn.classList.add('active-canvas'); }
+    applyPlaceholder();
+  });
+
+  /* ── File attach ── */
+  attachBtn.addEventListener('click', function () { fileInput.click(); });
+  fileInput.addEventListener('change', function () {
+    Array.from(this.files).forEach(addFile);
+    this.value = '';
+  });
+
+  function addFile(file) {
+    if (attachedFiles.length >= 5) return;
+    attachedFiles.push(file);
+    renderFileStrip();
+    refreshSendBtn();
+  }
+
+  function removeFile(idx) {
+    attachedFiles.splice(idx, 1);
+    renderFileStrip();
+    refreshSendBtn();
+  }
+
+  function renderFileStrip() {
+    filesStrip.innerHTML = '';
+    if (attachedFiles.length === 0) { filesStrip.style.display = 'none'; return; }
+    filesStrip.style.display = 'flex';
+    attachedFiles.forEach(function (f, i) {
+      var wrap = document.createElement('div');
+      wrap.className = 'ai-file-thumb';
+      if (f.type.startsWith('image/')) {
+        var img = document.createElement('img');
+        var url = URL.createObjectURL(f);
+        img.src = url;
+        img.onload = function () { URL.revokeObjectURL(url); };
+        wrap.appendChild(img);
+      } else {
+        var doc = document.createElement('div');
+        doc.className = 'ai-file-thumb-doc';
+        doc.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>' + escHtml(f.name.split('.').pop().toUpperCase()) + '</span>';
+        wrap.appendChild(doc);
+      }
+      var rm = document.createElement('button');
+      rm.className = 'ai-file-remove';
+      rm.innerHTML = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+      rm.addEventListener('click', function () { removeFile(i); });
+      wrap.appendChild(rm);
+      filesStrip.appendChild(wrap);
+    });
+  }
+
+  /* ── Voice recording ── */
+  function startRecording() {
+    isRecording = true;
+    recSeconds = 0;
+    voiceRec.style.display = 'flex';
+    textarea.style.display = 'none';
+    updateVoiceTimer();
+    recTimer = setInterval(function () {
+      recSeconds++;
+      updateVoiceTimer();
+    }, 1000);
+    refreshSendBtn();
+  }
+  function stopRecording(send) {
+    isRecording = false;
+    clearInterval(recTimer);
+    voiceRec.style.display = 'none';
+    textarea.style.display = '';
+    if (send) {
+      var dur = recSeconds;
+      postMessage('[🎤 Голосовое сообщение — ' + formatSecs(dur) + ']', []);
+    }
+    recSeconds = 0;
+    refreshSendBtn();
+  }
+  function updateVoiceTimer() {
+    voiceTime.textContent = formatSecs(recSeconds);
+  }
+  function formatSecs(s) {
+    return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  }
+
+  /* ── Send button click ── */
+  sendBtn.addEventListener('click', function () {
+    if (isRecording) { stopRecording(true); return; }
+    var hasContent = textarea.value.trim() !== '' || attachedFiles.length > 0;
+    if (hasContent) { sendMessage(); return; }
+    startRecording();
+  });
+
+  /* ── Enter to send ── */
+  textarea.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  /* ── Send message ── */
+  function sendMessage() {
+    var text = textarea.value.trim();
+    var files = attachedFiles.slice();
+    if (!text && files.length === 0) return;
+
+    var prefix = isSearch ? '[Поиск] ' : isThink ? '[Think] ' : isCanvas ? '[Canvas] ' : '';
+    postMessage(prefix + text, files);
+
+    textarea.value = '';
+    textarea.style.height = 'auto';
+    attachedFiles = [];
+    renderFileStrip();
+    refreshSendBtn();
+  }
+
+  function postMessage(text, files) {
+    if (welcomeEl) welcomeEl.style.display = 'none';
+    var time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    var userMsg = document.createElement('div');
+    userMsg.className = 'ai-msg user';
+    var content = escHtml(text);
+    if (files && files.length) {
+      content += ' <span style="opacity:.6;font-size:12px">(' + files.length + ' файл' + (files.length > 1 ? 'а' : '') + ')</span>';
+    }
+    userMsg.innerHTML = '<div class="ai-msg-bubble">' + content + '</div><div class="ai-msg-time">' + time + '</div>';
+    msgContainer.insertBefore(userMsg, typingEl);
+    msgContainer.scrollTop = msgContainer.scrollHeight;
+
+    typingEl.classList.add('visible');
+    setTimeout(function () {
+      typingEl.classList.remove('visible');
+      var rt = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      var aiMsg = document.createElement('div');
+      aiMsg.className = 'ai-msg assistant';
+      aiMsg.innerHTML = '<div class="ai-msg-bubble">' + escHtml(pickReply()) + '</div><div class="ai-msg-time">' + rt + '</div>';
+      msgContainer.insertBefore(aiMsg, typingEl);
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+    }, 1100 + Math.random() * 900);
+  }
+
+  var replies = [
+    'Понял ваш запрос! В базе знаний МИК есть несколько релевантных документов по этой теме.',
+    'Отличный вопрос. Могу предложить несколько материалов из базы знаний — давайте разберём вместе.',
+    'Конечно! Найду для вас наиболее подходящие файлы по вашему запросу.',
+    'В нашей базе знаний есть материалы, которые помогут ответить на ваш вопрос.',
+    'Попробуйте поиск по ключевым словам — я помогу сузить выборку.',
+  ];
+  function pickReply() { return replies[Math.floor(Math.random() * replies.length)]; }
+  function escHtml(t) {
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(t));
+    return d.innerHTML;
+  }
+
+  refreshSendBtn();
+})();
+</script>
+
+<script>
+(function () {
+  /* Welcome modal — always show on page load */
+  var modal = document.getElementById('welcomeModal');
+  modal.classList.add('open');
+  var closeModal = function () { modal.classList.remove('open'); };
+  document.getElementById('welcomeClose').addEventListener('click', closeModal);
+  document.getElementById('welcomeLater').addEventListener('click', closeModal);
+  document.getElementById('welcomeTry').addEventListener('click', closeModal);
 
   function toggle(el, on) {
     if (on) el.classList.add('open'); else el.classList.remove('open');
@@ -897,6 +1581,45 @@
   viewMenuWrap.addEventListener('click', function (e) { e.stopPropagation(); });
 
   document.getElementById('tagsInput').addEventListener('click', function (e) { e.stopPropagation(); });
+
+  /* ── "Загрузить" button — upload to /api/kb/files ── */
+  var uploadBtn   = document.getElementById('kv2UploadBtn');
+  var uploadInput = document.getElementById('kv2UploadInput');
+
+  uploadBtn.addEventListener('click', function () { uploadInput.click(); });
+
+  uploadInput.addEventListener('change', function () {
+    var files = Array.from(this.files);
+    if (!files.length) return;
+    uploadInput.value = '';
+
+    var originalLabel = uploadBtn.querySelector('span') ? uploadBtn.querySelector('span').textContent : 'Загрузить';
+    uploadBtn.disabled = true;
+    uploadBtn.style.opacity = '.6';
+
+    var done = 0, failed = 0;
+    files.forEach(function (file) {
+      var fd = new FormData();
+      fd.append('file', file);
+      fetch('/api/kb/files', { method: 'POST', body: fd })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function () { done++; })
+        .catch(function () { failed++; })
+        .finally(function () {
+          if (done + failed === files.length) {
+            uploadBtn.disabled = false;
+            uploadBtn.style.opacity = '';
+            var msg = done + ' файл' + (done !== 1 ? 'а' : '') + ' загружен' + (done !== 1 ? 'о' : '');
+            if (failed) msg += ', ' + failed + ' ошибок';
+            var toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:90px;right:32px;z-index:400;background:#1F2023;color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 16px;font-size:13px;font-family:Inter,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,.35);transition:opacity .4s';
+            toast.textContent = failed === 0 ? '✓ ' + msg : '⚠ ' + msg;
+            document.body.appendChild(toast);
+            setTimeout(function () { toast.style.opacity = '0'; setTimeout(function () { toast.remove(); }, 400); }, 3000);
+          }
+        });
+    });
+  });
 })();
 </script>
 </body>

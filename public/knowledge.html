@@ -6,7 +6,9 @@
   <title>База знаний — МИК</title>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
   <style>
-    /* ── Walrus.xyz design tokens (light) ─────────────────────────────────── */
+    /* ── Design System — source of truth ──────────────────────────────────── */
+    /* Figma: https://www.figma.com/design/wHktQ8mQHf571VPHbqws32             */
+    /* File: MIK Platform — Design System (Pages › knowledge.html — Home)    */
     :root {
       --w-midnight:     #000000;
       --w-tusk:         #faf8f5;
@@ -43,6 +45,17 @@
       --shadow-md:      0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
       --radius-card:    12px;
       --radius-sm:      8px;
+      --radius-lg:      16px;
+      --bg-header:      #02120A;
+      /* Tag tokens (synced from Figma) */
+      --tag-final-bg:    rgba(30,122,67,.12);
+      --tag-final-text:  #1a7a44;
+      --tag-draft-bg:    rgba(180,130,0,.12);
+      --tag-draft-text:  #8a6500;
+      --tag-review-bg:   rgba(97,61,255,.12);
+      --tag-review-text: #613dff;
+      --tag-progress-bg:  rgba(59,111,234,.12);
+      --tag-progress-text: #3B6FEA;
     }
     *, *::before, *::after { box-sizing: border-box; }
     html { height: 100%; }
@@ -114,9 +127,9 @@
     }
     .kb-avatar {
       width: 36px; height: 36px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--w-purple) 0%, var(--w-violet) 100%);
+      background: rgba(97,61,255,.15);
       display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+      font-size: 12px; font-weight: 700; color: var(--accent); flex-shrink: 0;
     }
     .kb-user-info { flex: 1; min-width: 0; }
     .kb-user-name { font-size: 13px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -371,10 +384,10 @@
       transition: opacity .1s;
     }
     .kb-tag:hover { opacity: .75; }
-    .kb-tag.final   { background: rgba(30,122,67,.12);  color: #1a7a44; }
-    .kb-tag.draft   { background: rgba(180,130,0,.12);  color: #8a6500; }
-    .kb-tag.review  { background: rgba(97,61,255,.12);  color: var(--accent); }
-    .kb-tag.progress{ background: rgba(59,111,234,.12); color: #3B6FEA; }
+    .kb-tag.final   { background: var(--tag-final-bg);    color: var(--tag-final-text); }
+    .kb-tag.draft   { background: var(--tag-draft-bg);    color: var(--tag-draft-text); }
+    .kb-tag.review  { background: var(--tag-review-bg);   color: var(--tag-review-text); }
+    .kb-tag.progress{ background: var(--tag-progress-bg); color: var(--tag-progress-text); }
     .kb-tag.add-tag { background: var(--page-bg); color: var(--text-hint); border: 1px dashed var(--border-2); }
     .kb-tag.add-tag:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 

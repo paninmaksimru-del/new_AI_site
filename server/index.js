@@ -46,6 +46,7 @@ async function start() {
   app.get('/cases', (req, res) => res.sendFile(join(publicDir, 'cases.html')));
   app.get('/chat', (req, res) => res.sendFile(join(publicDir, 'chat.html')));
   app.get('/knowledge', (req, res) => res.sendFile(join(publicDir, 'knowledge.html')));
+  app.get('/knowledgev2', (req, res) => res.sendFile(join(publicDir, 'knowledgev2.html')));
 
   // ----- API -----
 

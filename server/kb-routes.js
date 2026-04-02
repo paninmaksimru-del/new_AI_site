@@ -184,12 +184,18 @@ export function setupKbRoutes(app) {
       const { rows } = await query('SELECT * FROM kb_files WHERE id = $1', [fileId]);
       if (!rows[0]) return res.status(404).json({ error: 'Файл не найден' });
       if (!canWriteFile(req.user.role, rows[0], req.user.id)) return res.status(403).json({ error: 'Нет доступа' });
-      const { original_name, folder_id } = req.body;
+      const { original_name, folder_id, tags } = req.body;
       const updates = [];
       const values = [];
       let i = 1;
       if (original_name !== undefined) { updates.push(`original_name = $${i++}`); values.push(original_name.trim()); }
       if (folder_id !== undefined) { updates.push(`folder_id = $${i++}`); values.push(folder_id || null); }
+      if (tags !== undefined) {
+        // Accept array or JSON string; store as JSON text
+        const tagsJson = Array.isArray(tags) ? JSON.stringify(tags) : tags;
+        updates.push(`tags = $${i++}`);
+        values.push(tagsJson);
+      }
       if (updates.length === 0) return res.json({ ok: true });
       updates.push(`updated_at = NOW()`);
       values.push(fileId);

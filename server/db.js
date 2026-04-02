@@ -149,6 +149,13 @@ export async function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_kb_messages_chat ON kb_messages(chat_id);
   `);
 
+  // Add tags column to kb_files if it doesn't exist yet (idempotent migration)
+  try {
+    await query(`ALTER TABLE kb_files ADD COLUMN IF NOT EXISTS tags TEXT NOT NULL DEFAULT '[]'`);
+  } catch (e) {
+    console.warn('Could not add tags column to kb_files:', e.message);
+  }
+
   // kb_chunks needs vector type — only create if pgvector is available
   try {
     await query(`

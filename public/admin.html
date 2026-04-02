@@ -126,6 +126,7 @@
             <select id="newUserRole">
               <option value="user">user — сотрудник</option>
               <option value="admin">admin — администратор</option>
+              <option value="viewer">viewer — наблюдатель (только чтение)</option>
             </select>
           </div>
         </div>
@@ -531,7 +532,7 @@ async function loadUsers() {
       <li class="list-item">
         <span>
           <b>${esc(u.full_name || u.login)}</b>
-          <span class="badge ${u.role==='admin'?'accent':'ok'}">${esc(u.role)}</span>
+          <span class="badge ${u.role==='admin'?'accent':u.role==='viewer'?'':'ok'}" style="${u.role==='viewer'?'background:rgba(97,61,255,.12);color:#613dff;':''}">${esc(u.role)}</span>
           <span class="hint" style="margin-left:6px;">${esc(u.login)}</span>
           ${u.department ? `<span class="hint" style="margin-left:6px;"> · ${esc(u.department)}</span>` : ''}
           ${u.contacts ? `<span class="hint" style="margin-left:6px;"> · ${esc(u.contacts)}</span>` : ''}
@@ -578,8 +579,11 @@ async function editUser(id) {
   if (department === null) return;
   const contacts = prompt('Контакты', u.contacts || '');
   if (contacts === null) return;
+  const roleInput = prompt('Роль (user / admin / viewer)', u.role || 'user');
+  if (roleInput === null) return;
+  const role = ['admin','user','viewer'].includes(roleInput.trim()) ? roleInput.trim() : 'user';
   try {
-    await api(`/api/users/${id}`, {method:'PUT', body:JSON.stringify({full_name: full_name || null, department: department || null, contacts: contacts || null})});
+    await api(`/api/users/${id}`, {method:'PUT', body:JSON.stringify({full_name: full_name || null, department: department || null, contacts: contacts || null, role})});
     toast('Сохранено');
     loadUsers();
   } catch(e) { toast(e.message,'err'); }

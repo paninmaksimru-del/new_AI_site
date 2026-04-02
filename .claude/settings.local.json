@@ -19,7 +19,8 @@
       "Bash(findstr \":8765\")",
       "Bash(taskkill /PID 23512 /F)",
       "Bash(cmd /c \"taskkill /PID 23512 /F\")",
-      "Bash(cmd /c \"netstat -ano | findstr :8765\")"
+      "Bash(cmd /c \"netstat -ano | findstr :8765\")",
+      "mcp__f08dbe5f-1a4e-4a8e-8d4d-84aa71f21a59__use_figma"
     ]
   }
 }

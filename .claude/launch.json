@@ -3,14 +3,14 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "node",
+      "runtimeExecutable": "/opt/homebrew/bin/node",
       "runtimeArgs": ["--watch", "server/index.js"],
       "port": 19080,
       "autoPort": false
     },
     {
       "name": "start",
-      "runtimeExecutable": "node",
+      "runtimeExecutable": "/opt/homebrew/bin/node",
       "runtimeArgs": ["server/index.js"],
       "port": 19080,
       "autoPort": false

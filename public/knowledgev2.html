@@ -62,8 +62,9 @@
       transition: background .12s, color .12s;
       white-space: nowrap;
     }
-    .ph-navlink:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.92); }
-    .ph-navlink.active { background: rgba(97,61,255,.2); color: var(--w-violet); }
+    .ph-navlink { border: 1px solid transparent; }
+    .ph-navlink:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.10); color: rgba(255,255,255,.92); }
+    .ph-navlink.active { background: rgba(0,180,100,.14); border-color: rgba(0,200,110,.26); color: rgba(255,255,255,.95); }
     .ph-profile {
       margin-left: 12px;
       padding: 6px 14px;
@@ -74,7 +75,10 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      background: rgba(255,255,255,.05);
+      cursor: pointer;
     }
+    .ph-profile:hover { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.28); }
 
     /* ── Workspace (макет Figma 1920w default) ────────────────────────────── */
     .kv2-wrap {
@@ -904,11 +908,65 @@
     <a class="ph-navlink active" href="/knowledgev2">База знаний</a>
     <a class="ph-navlink" href="/dashboard">Статистика</a>
   </nav>
-  <a class="ph-profile" href="/profile">
+  <a class="ph-profile" href="/profile" id="profileBtn">
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 12c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-    <span>Профиль</span>
+    <span class="nowrap">Личный кабинет</span>
   </a>
 </header>
+
+<script>
+(function () {
+  var token = localStorage.getItem('auth_token');
+  var auth = null;
+  try { auth = JSON.parse(localStorage.getItem('mikAuth')); } catch (_) {}
+  if (!token || !auth || !auth.isAuthorized) {
+    window.location.replace('/login');
+    return;
+  }
+  var fullName = (auth && auth.full_name) || localStorage.getItem('auth_full_name') || 'Профиль';
+  var btn = document.getElementById('profileBtn');
+  if (btn) {
+    var sp = btn.querySelector('.nowrap');
+    if (sp) sp.textContent = fullName;
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      window.location = '/profile';
+    });
+  }
+
+  // ── Динамическая загрузка папок (Доски) ──
+  var CHEV_SVG = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="#666666" d="M4.54 6.81C4.57751 6.71869 4.64121 6.64053 4.72307 6.58536C4.80493 6.53019 4.90129 6.50049 5 6.5H11C11.0987 6.50049 11.1951 6.53019 11.2769 6.58536C11.3588 6.64053 11.4225 6.71869 11.46 6.81C11.4983 6.90106 11.5088 7.00141 11.4901 7.09841C11.4714 7.1954 11.4244 7.28469 11.355 7.355L8.355 10.355C8.30852 10.4019 8.25322 10.4391 8.19229 10.4644C8.13136 10.4898 8.06601 10.5029 8 10.5029C7.93399 10.5029 7.86864 10.4898 7.80771 10.4644C7.74678 10.4391 7.69148 10.4019 7.645 10.355L4.645 7.355C4.57562 7.28469 4.52862 7.1954 4.50994 7.09841C4.49125 7.00141 4.50171 6.90106 4.54 6.81Z"/></svg>';
+
+  function escHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, function (c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];
+    });
+  }
+
+  function renderBoards(folders) {
+    var el = document.getElementById('boardsList');
+    if (!el) return;
+    if (!folders || !folders.length) {
+      el.innerHTML = '<div style="padding:6px 8px;font-size:12px;color:var(--kv-hint)">Нет доступных папок</div>';
+      return;
+    }
+    el.innerHTML = folders.map(function (f) {
+      return '<div class="kv2-board-row" data-folder-id="' + f.id + '" style="cursor:pointer">' +
+        '<span class="kv2-board-chev" aria-hidden="true">' + CHEV_SVG + '</span>' +
+        '<span>' + escHtml(f.name) + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  fetch('/api/kb/folders', { headers: { 'x-auth-token': token } })
+    .then(function (r) { return r.json(); })
+    .then(renderBoards)
+    .catch(function () {
+      var el = document.getElementById('boardsList');
+      if (el) el.innerHTML = '<div style="padding:6px 8px;font-size:12px;color:var(--kv-hint)">Ошибка загрузки</div>';
+    });
+})();
+</script>
 
 <div class="kv2-wrap">
   <div class="kv2-inner">
@@ -964,17 +1022,8 @@
             <span>Доски</span>
             <span style="opacity:.35">···</span>
           </div>
-          <div class="kv2-board-row">
-            <span class="kv2-board-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="#666666" d="M4.54 6.81C4.57751 6.71869 4.64121 6.64053 4.72307 6.58536C4.80493 6.53019 4.90129 6.50049 5 6.5H11C11.0987 6.50049 11.1951 6.53019 11.2769 6.58536C11.3588 6.64053 11.4225 6.71869 11.46 6.81C11.4983 6.90106 11.5088 7.00141 11.4901 7.09841C11.4714 7.1954 11.4244 7.28469 11.355 7.355L8.355 10.355C8.30852 10.4019 8.25322 10.4391 8.19229 10.4644C8.13136 10.4898 8.06601 10.5029 8 10.5029C7.93399 10.5029 7.86864 10.4898 7.80771 10.4644C7.74678 10.4391 7.69148 10.4019 7.645 10.355L4.645 7.355C4.57562 7.28469 4.52862 7.1954 4.50994 7.09841C4.49125 7.00141 4.50171 6.90106 4.54 6.81Z"/></svg></span>
-            <span>Фонд</span>
-          </div>
-          <div class="kv2-board-row">
-            <span class="kv2-board-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="#666666" d="M4.54 6.81C4.57751 6.71869 4.64121 6.64053 4.72307 6.58536C4.80493 6.53019 4.90129 6.50049 5 6.5H11C11.0987 6.50049 11.1951 6.53019 11.2769 6.58536C11.3588 6.64053 11.4225 6.71869 11.46 6.81C11.4983 6.90106 11.5088 7.00141 11.4901 7.09841C11.4714 7.1954 11.4244 7.28469 11.355 7.355L8.355 10.355C8.30852 10.4019 8.25322 10.4391 8.19229 10.4644C8.13136 10.4898 8.06601 10.5029 8 10.5029C7.93399 10.5029 7.86864 10.4898 7.80771 10.4644C7.74678 10.4391 7.69148 10.4019 7.645 10.355L4.645 7.355C4.57562 7.28469 4.52862 7.1954 4.50994 7.09841C4.49125 7.00141 4.50171 6.90106 4.54 6.81Z"/></svg></span>
-            <span>Полезное</span>
-          </div>
-          <div class="kv2-board-row">
-            <span class="kv2-board-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="#666666" d="M4.54 6.81C4.57751 6.71869 4.64121 6.64053 4.72307 6.58536C4.80493 6.53019 4.90129 6.50049 5 6.5H11C11.0987 6.50049 11.1951 6.53019 11.2769 6.58536C11.3588 6.64053 11.4225 6.71869 11.46 6.81C11.4983 6.90106 11.5088 7.00141 11.4901 7.09841C11.4714 7.1954 11.4244 7.28469 11.355 7.355L8.355 10.355C8.30852 10.4019 8.25322 10.4391 8.19229 10.4644C8.13136 10.4898 8.06601 10.5029 8 10.5029C7.93399 10.5029 7.86864 10.4898 7.80771 10.4644C7.74678 10.4391 7.69148 10.4019 7.645 10.355L4.645 7.355C4.57562 7.28469 4.52862 7.1954 4.50994 7.09841C4.49125 7.00141 4.50171 6.90106 4.54 6.81Z"/></svg></span>
-            <span>Моя папка</span>
+          <div id="boardsList">
+            <div style="padding:6px 8px;font-size:12px;color:var(--kv-hint)">Загрузка...</div>
           </div>
         </div>
       </aside>
@@ -1578,7 +1627,7 @@
     files.forEach(function (file) {
       var fd = new FormData();
       fd.append('file', file);
-      fetch('/api/kb/files', { method: 'POST', body: fd })
+      fetch('/api/kb/files', { method: 'POST', body: fd, headers: { 'x-auth-token': localStorage.getItem('auth_token') || '' } })
         .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
         .then(function () { done++; })
         .catch(function () { failed++; })

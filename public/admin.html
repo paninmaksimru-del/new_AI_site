@@ -110,6 +110,7 @@
     <button class="tabbtn" data-tab="browser">Браузер</button>
     <button class="tabbtn" data-tab="instructions">Инструкции</button>
     <button class="tabbtn" data-tab="videos">Видеоматериалы</button>
+    <button class="tabbtn" data-tab="kbfolders">Папки БЗ</button>
   </div>
 
   <!-- USERS -->
@@ -472,6 +473,32 @@
     </div>
   </div>
 
+  <!-- KB FOLDERS -->
+  <div id="tab_kbfolders" class="tabpane">
+    <div class="panel">
+      <h2>Папки Базы знаний</h2>
+      <p class="muted">Управление папками и доступом по подразделениям. Пустой список отделов = папка видна всем.</p>
+      <div class="panel" style="margin-top:12px;">
+        <h3>Создать папку</h3>
+        <div class="field-row">
+          <div class="field" style="flex:2;">
+            <label>Название папки</label>
+            <input type="text" id="newFolderName" placeholder="Например: Фонд МИК" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Доступ для подразделений (оставьте пустым — видна всем)</label>
+          <div id="newFolderDeptChecks" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;min-height:32px;">
+            <span class="hint">Загрузка...</span>
+          </div>
+        </div>
+        <button class="btn ok" id="btnCreateFolder" style="margin-top:8px;">Создать папку</button>
+      </div>
+      <h3 style="margin-top:20px;">Все папки</h3>
+      <ul class="plain" id="kbFolderList"><li class="loading">Загрузка...</li></ul>
+    </div>
+  </div>
+
 </main>
 
 <div class="toast-bar" id="toast"></div>
@@ -524,12 +551,14 @@ document.querySelectorAll('.tabbtn').forEach(btn => {
 });
 
 // ── USERS ─────────────────────────────────────────────────────────────────────
+let _users = [];
+
 async function loadUsers() {
   const ul = document.getElementById('userList');
   try {
-    const users = await api('/api/users');
-    ul.innerHTML = users.length ? users.map(u => `
-      <li class="list-item">
+    _users = await api('/api/users');
+    ul.innerHTML = _users.length ? _users.map(u => `
+      <li class="list-item" id="user-item-${u.id}">
         <span>
           <b>${esc(u.full_name || u.login)}</b>
           <span class="badge ${u.role==='admin'?'accent':u.role==='viewer'?'':'ok'}" style="${u.role==='viewer'?'background:rgba(97,61,255,.12);color:#613dff;':''}">${esc(u.role)}</span>
@@ -570,23 +599,62 @@ document.getElementById('btnCreateUser').addEventListener('click', async () => {
 });
 
 async function editUser(id) {
-  const users = await api('/api/users');
-  const u = users.find(x => x.id === id);
+  const u = _users.find(x => x.id === id);
   if (!u) return;
-  const full_name = prompt('ФИО', u.full_name || '');
-  if (full_name === null) return;
-  const department = prompt('Подразделение', u.department || '');
-  if (department === null) return;
-  const contacts = prompt('Контакты', u.contacts || '');
-  if (contacts === null) return;
-  const roleInput = prompt('Роль (user / admin / viewer)', u.role || 'user');
-  if (roleInput === null) return;
-  const role = ['admin','user','viewer'].includes(roleInput.trim()) ? roleInput.trim() : 'user';
+  const li = document.getElementById(`user-item-${id}`);
+  if (!li) return;
+
+  let depts = [];
+  try { depts = await api('/api/departments'); } catch(_) {}
+
+  const deptOptions = `<option value="">— не указано —</option>` +
+    depts.map(d => `<option value="${esc(d)}" ${u.department===d?'selected':''}>${esc(d)}</option>`).join('');
+
+  li.innerHTML = `
+    <div style="flex:1;">
+      <div class="field-row" style="margin-bottom:8px;">
+        <div class="field" style="flex:2;min-width:180px;">
+          <label>ФИО</label>
+          <input type="text" id="eu-name-${id}" value="${esc(u.full_name||'')}" />
+        </div>
+        <div class="field" style="flex:1;min-width:130px;">
+          <label>Роль</label>
+          <select id="eu-role-${id}">
+            <option value="user" ${u.role==='user'?'selected':''}>user — сотрудник</option>
+            <option value="admin" ${u.role==='admin'?'selected':''}>admin — администратор</option>
+            <option value="viewer" ${u.role==='viewer'?'selected':''}>viewer — наблюдатель</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row" style="margin-bottom:10px;">
+        <div class="field" style="flex:1;min-width:160px;">
+          <label>Подразделение</label>
+          <select id="eu-dept-${id}">${deptOptions}</select>
+        </div>
+        <div class="field" style="flex:1;min-width:160px;">
+          <label>Контакты</label>
+          <input type="text" id="eu-contacts-${id}" value="${esc(u.contacts||'')}" placeholder="тел., e-mail, Telegram" />
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn small ok" onclick="saveUserEdit(${id})">Сохранить</button>
+        <button class="btn small" onclick="loadUsers()">Отмена</button>
+      </div>
+    </div>`;
+
+  document.getElementById(`eu-name-${id}`)?.focus();
+}
+
+async function saveUserEdit(id) {
+  const full_name   = document.getElementById(`eu-name-${id}`)?.value.trim() || null;
+  const role        = document.getElementById(`eu-role-${id}`)?.value || 'user';
+  const department  = document.getElementById(`eu-dept-${id}`)?.value || null;
+  const contacts    = document.getElementById(`eu-contacts-${id}`)?.value.trim() || null;
   try {
-    await api(`/api/users/${id}`, {method:'PUT', body:JSON.stringify({full_name: full_name || null, department: department || null, contacts: contacts || null, role})});
+    await api(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify({ full_name, role, department, contacts }) });
     toast('Сохранено');
     loadUsers();
-  } catch(e) { toast(e.message,'err'); }
+  } catch(e) { toast(e.message, 'err'); }
 }
 
 // ── DEPARTMENTS ───────────────────────────────────────────────────────────────
@@ -1438,6 +1506,107 @@ document.getElementById('instrSave').addEventListener('click', async () => {
 });
 
 // INIT
+// ── KB FOLDERS ────────────────────────────────────────────────────────────────
+let _kbFolders = [];
+
+function renderDeptChecks(containerId, selectedDepts) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  if (!_deptNames.length) { wrap.innerHTML = '<span class="hint">Нет подразделений — добавьте в Справочниках</span>'; return; }
+  wrap.innerHTML = _deptNames.map(d => {
+    const checked = (selectedDepts || []).includes(d) ? 'checked' : '';
+    return `<label style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;border:1px solid var(--stroke);background:rgba(255,255,255,.04);cursor:pointer;font-size:13px;">
+      <input type="checkbox" value="${esc(d)}" ${checked} style="accent-color:var(--accent);width:14px;height:14px;" />
+      ${esc(d)}
+    </label>`;
+  }).join('');
+}
+
+function getCheckedDepts(containerId) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return [];
+  return Array.from(wrap.querySelectorAll('input[type=checkbox]:checked')).map(el => el.value);
+}
+
+async function loadKbFolders() {
+  const ul = document.getElementById('kbFolderList');
+  if (!ul) return;
+  try {
+    _kbFolders = await api('/api/kb/folders');
+    renderDeptChecks('newFolderDeptChecks', []);
+    ul.innerHTML = _kbFolders.length ? _kbFolders.map(f => {
+      const depts = (() => { try { return JSON.parse(f.allowed_departments || '[]'); } catch(_) { return []; } })();
+      const deptsLabel = depts.length ? depts.map(d => `<span class="badge">${esc(d)}</span>`).join(' ') : '<span class="hint">все отделы</span>';
+      return `<li class="list-item" id="kbf-item-${f.id}">
+        <span>
+          <b>${esc(f.name)}</b>
+          <span style="margin-left:8px;">${deptsLabel}</span>
+        </span>
+        <div class="list-actions">
+          <button class="btn small" onclick="editKbFolder(${f.id})">Изменить</button>
+          <button class="btn small danger" onclick="delKbFolder(${f.id},'${esc(f.name)}')">Удалить</button>
+        </div>
+      </li>`;
+    }).join('') : '<li class="loading">Папок нет</li>';
+  } catch(e) { if (ul) ul.innerHTML = `<li class="loading" style="color:var(--danger)">Ошибка: ${e.message}</li>`; }
+}
+
+async function editKbFolder(id) {
+  const f = _kbFolders.find(x => x.id === id);
+  if (!f) return;
+  const li = document.getElementById(`kbf-item-${id}`);
+  if (!li) return;
+  const depts = (() => { try { return JSON.parse(f.allowed_departments || '[]'); } catch(_) { return []; } })();
+  li.innerHTML = `
+    <div style="flex:1;">
+      <div class="field" style="margin-bottom:8px;">
+        <label>Название</label>
+        <input type="text" id="kbf-name-${id}" value="${esc(f.name)}" style="max-width:320px;" />
+      </div>
+      <div class="field" style="margin-bottom:10px;">
+        <label>Доступ для подразделений (пусто = все)</label>
+        <div id="kbf-depts-${id}" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn small ok" onclick="saveKbFolder(${id})">Сохранить</button>
+        <button class="btn small" onclick="loadKbFolders()">Отмена</button>
+      </div>
+    </div>`;
+  renderDeptChecks(`kbf-depts-${id}`, depts);
+}
+
+async function saveKbFolder(id) {
+  const name = document.getElementById(`kbf-name-${id}`)?.value.trim();
+  if (!name) { toast('Название обязательно', 'err'); return; }
+  const allowed_departments = getCheckedDepts(`kbf-depts-${id}`);
+  try {
+    await api(`/api/kb/folders/${id}`, { method: 'PATCH', body: JSON.stringify({ name, allowed_departments }) });
+    toast('Сохранено');
+    loadKbFolders();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function delKbFolder(id, name) {
+  if (!confirm(`Удалить папку "${name}"? Файлы внутри останутся без папки.`)) return;
+  try { await api(`/api/kb/folders/${id}`, { method: 'DELETE' }); toast('Удалено'); loadKbFolders(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+document.getElementById('btnCreateFolder')?.addEventListener('click', async () => {
+  const name = document.getElementById('newFolderName')?.value.trim();
+  if (!name) { toast('Введите название папки', 'err'); return; }
+  const allowed_departments = getCheckedDepts('newFolderDeptChecks');
+  try {
+    await api('/api/kb/folders', { method: 'POST', body: JSON.stringify({ name, allowed_departments }) });
+    document.getElementById('newFolderName').value = '';
+    renderDeptChecks('newFolderDeptChecks', []);
+    toast('Папка создана');
+    loadKbFolders();
+  } catch(e) { toast(e.message, 'err'); }
+});
+
+document.querySelector('[data-tab="kbfolders"]')?.addEventListener('click', () => loadKbFolders());
+
 document.addEventListener('DOMContentLoaded', () => {
   loadUsers(); loadDepts(); loadTaskCats(); loadAiTools(); loadCases(); loadPrompts(); loadTools(); loadTasks();
   loadBrowserConfig(); loadInstructions();

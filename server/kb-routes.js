@@ -45,6 +45,11 @@ async function getVisibleFileIds(userId, userRole) {
   return rows.map(r => r.id);
 }
 
+// ── Migration: ensure allowed_departments column exists ────────────────────────
+try {
+  await query(`ALTER TABLE kb_folders ADD COLUMN IF NOT EXISTS allowed_departments TEXT NOT NULL DEFAULT '[]'`);
+} catch (_) {}
+
 // ── Register routes ────────────────────────────────────────────────────────────
 export function setupKbRoutes(app) {
 
@@ -282,7 +287,16 @@ export function setupKbRoutes(app) {
       if (req.user.role === 'admin') {
         ({ rows } = await query('SELECT * FROM kb_folders ORDER BY name'));
       } else {
-        ({ rows } = await query('SELECT * FROM kb_folders WHERE owner_id = $1 ORDER BY name', [req.user.id]));
+        const dept = req.user.department || null;
+        ({ rows } = await query(`
+          SELECT * FROM kb_folders
+          WHERE (
+            owner_id = $1
+            OR (allowed_departments IS NULL OR allowed_departments = '[]')
+            OR ($2::text IS NOT NULL AND allowed_departments::jsonb @> to_jsonb($2::text))
+          )
+          ORDER BY name
+        `, [req.user.id, dept]));
       }
       res.json(rows);
     } catch (e) {
@@ -294,11 +308,12 @@ export function setupKbRoutes(app) {
   app.post('/api/kb/folders', requireKbAuth(), async (req, res) => {
     try {
       if (req.user.role === 'viewer') return res.status(403).json({ error: 'Нет доступа' });
-      const { name, parent_id } = req.body;
+      const { name, parent_id, allowed_departments } = req.body;
       if (!name) return res.status(400).json({ error: 'name обязателен' });
+      const depts = Array.isArray(allowed_departments) ? JSON.stringify(allowed_departments) : (allowed_departments || '[]');
       const { rows } = await query(
-        'INSERT INTO kb_folders (name, parent_id, owner_id) VALUES ($1, $2, $3) RETURNING *',
-        [name.trim(), parent_id || null, req.user.id]
+        'INSERT INTO kb_folders (name, parent_id, owner_id, allowed_departments) VALUES ($1, $2, $3, $4) RETURNING *',
+        [name.trim(), parent_id || null, req.user.id, depts]
       );
       res.status(201).json(rows[0]);
     } catch (e) {
@@ -312,8 +327,18 @@ export function setupKbRoutes(app) {
       const { rows } = await query('SELECT * FROM kb_folders WHERE id = $1', [req.params.id]);
       if (!rows[0]) return res.status(404).json({ error: 'Папка не найдена' });
       if (!canWriteFile(req.user.role, rows[0], req.user.id)) return res.status(403).json({ error: 'Нет доступа' });
-      const { name } = req.body;
-      if (name) await query('UPDATE kb_folders SET name = $1 WHERE id = $2', [name.trim(), req.params.id]);
+      const { name, allowed_departments } = req.body;
+      const updates = [];
+      const values = [];
+      let i = 1;
+      if (name !== undefined) { updates.push(`name = $${i++}`); values.push(name.trim()); }
+      if (allowed_departments !== undefined) {
+        const depts = Array.isArray(allowed_departments) ? JSON.stringify(allowed_departments) : allowed_departments;
+        updates.push(`allowed_departments = $${i++}`); values.push(depts);
+      }
+      if (updates.length === 0) return res.json({ ok: true });
+      values.push(req.params.id);
+      await query(`UPDATE kb_folders SET ${updates.join(', ')} WHERE id = $${i}`, values);
       res.json({ ok: true });
     } catch (e) {
       res.status(500).json({ error: String(e.message) });

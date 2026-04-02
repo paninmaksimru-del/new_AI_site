@@ -101,15 +101,7 @@
       align-items: center;
       justify-content: center;
       padding: 0 16px;
-    }
-    .kv2-topbar-left {
-      position: absolute;
-      left: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      transition: margin-right .32s cubic-bezier(.4,0,.2,1);
     }
     .kv2-topbar-right {
       position: absolute;
@@ -117,26 +109,6 @@
       top: 50%;
       transform: translateY(-50%);
     }
-    .kv2-btn-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: var(--kv-radius);
-      border: 1px solid var(--kv-border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--kv-surface);
-    }
-    .kv2-user-menu {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      height: 32px;
-      padding: 0 8px;
-      border-radius: var(--kv-radius);
-    }
-    .kv2-user-menu:hover { background: rgba(0,0,0,.04); }
-    .kv2-user-name { font-size: 16px; font-weight: 600; color: var(--kv-muted); }
     .kv2-search-wrap {
       width: 100%;
       max-width: 600px;
@@ -637,16 +609,16 @@
 
     @media (max-width: 900px) {
       .kv2-side { display: none; }
-      .kv2-topbar-left { position: static; transform: none; }
       .kv2-topbar { flex-wrap: wrap; height: auto; padding: 12px; gap: 12px; }
       .kv2-search-wrap { max-width: none; order: 3; width: 100%; }
     }
 
     /* ── AI Chat Widget ───────────────────────────────────────────────── */
 
-    /* Split view: shrink main panel when sidebar opens */
+    /* Split view: сдвиг основной колонки и верхней полосы (поиск + Загрузить) */
     .kv2-main { transition: margin-right .32s cubic-bezier(.4,0,.2,1); }
     body.ai-split .kv2-main { margin-right: 420px; }
+    body.ai-split .kv2-topbar { margin-right: 420px; }
 
     /* Widget floating button */
     .ai-widget-btn {
@@ -679,7 +651,7 @@
     .ai-widget-btn.open .ai-btn-icon-chat { opacity: 0; transform: scale(.5) rotate(90deg); }
     .ai-widget-btn.open .ai-btn-icon-close { opacity: 1; transform: scale(1) rotate(0deg); }
 
-    /* Sidebar panel */
+    /* Sidebar panel: светлый фон в тон рабочей области (--kv-bg / --kv-surface) */
     .ai-sidebar {
       position: fixed;
       top: var(--header-h);
@@ -687,11 +659,15 @@
       bottom: 0;
       width: 420px;
       max-width: 100vw;
-      background: #16181c;
+      background: var(--kv-bg);
       z-index: 300;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+      border-left: 1px solid var(--kv-border);
       box-shadow: none;
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
     }
 
     .ai-sidebar-head {
@@ -700,7 +676,8 @@
       display: flex;
       align-items: center;
       padding: 0 16px;
-      border-bottom: 1px solid rgba(255,255,255,.07);
+      background: var(--kv-surface);
+      border-bottom: 1px solid var(--kv-border);
       gap: 10px;
     }
     .ai-sidebar-head-icon {
@@ -708,15 +685,15 @@
       background: linear-gradient(135deg, #613dff, #9b6bff);
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .ai-sidebar-title { font-size: 15px; font-weight: 600; color: rgba(255,255,255,.92); flex: 1; }
+    .ai-sidebar-title { font-size: 15px; font-weight: 600; color: var(--kv-text); flex: 1; }
     .ai-sidebar-close {
       width: 32px; height: 32px;
       display: flex; align-items: center; justify-content: center;
-      border-radius: 8px; color: rgba(255,255,255,.45);
+      border-radius: 8px; color: var(--kv-hint);
       border: none; background: transparent; cursor: pointer;
       transition: background .15s, color .15s;
     }
-    .ai-sidebar-close:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.9); }
+    .ai-sidebar-close:hover { background: rgba(0,0,0,.06); color: var(--kv-muted); }
 
     /* Messages area */
     .ai-messages {
@@ -725,14 +702,14 @@
       display: flex; flex-direction: column; gap: 14px;
     }
     .ai-messages::-webkit-scrollbar { width: 4px; }
-    .ai-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
+    .ai-messages::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 2px; }
 
     .ai-welcome-msg {
       display: flex; flex-direction: column; align-items: center;
       gap: 12px; margin: auto; text-align: center; padding: 28px 20px;
     }
-    .ai-welcome-msg h3 { font-size: 16px; font-weight: 600; color: rgba(255,255,255,.72); margin: 0; }
-    .ai-welcome-msg p { font-size: 13px; line-height: 1.55; color: rgba(255,255,255,.38); margin: 0; max-width: 260px; }
+    .ai-welcome-msg h3 { font-size: 16px; font-weight: 600; color: var(--kv-muted); margin: 0; }
+    .ai-welcome-msg p { font-size: 13px; line-height: 1.55; color: var(--kv-hint); margin: 0; max-width: 260px; }
 
     .ai-msg { display: flex; flex-direction: column; max-width: 86%; }
     .ai-msg.user { align-self: flex-end; align-items: flex-end; }
@@ -740,15 +717,21 @@
     .ai-msg-bubble { padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.55; }
     .ai-msg.user .ai-msg-bubble { background: #613dff; color: #fff; border-bottom-right-radius: 5px; }
     .ai-msg.assistant .ai-msg-bubble {
-      background: #1F2023; color: rgba(255,255,255,.85);
-      border-bottom-left-radius: 5px; border: 1px solid rgba(255,255,255,.08);
+      background: var(--kv-surface);
+      color: var(--kv-text);
+      border-bottom-left-radius: 5px;
+      border: 1px solid var(--kv-border);
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
     }
-    .ai-msg-time { font-size: 11px; color: rgba(255,255,255,.25); margin-top: 4px; padding: 0 4px; }
+    .ai-msg-time { font-size: 11px; color: rgba(0,0,0,.38); margin-top: 4px; padding: 0 4px; }
 
     .ai-typing {
       align-self: flex-start; display: none; align-items: center; gap: 5px;
-      padding: 12px 16px; background: #1F2023;
-      border-radius: 18px; border-bottom-left-radius: 5px; border: 1px solid rgba(255,255,255,.08);
+      padding: 12px 16px;
+      background: var(--kv-surface);
+      border-radius: 18px; border-bottom-left-radius: 5px;
+      border: 1px solid var(--kv-border);
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
     }
     .ai-typing.visible { display: flex; }
     .ai-typing-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(155,135,245,.6); animation: ai-bounce .9s infinite; }
@@ -760,7 +743,8 @@
     .ai-input-area {
       flex-shrink: 0;
       padding: 10px 12px 16px;
-      border-top: 1px solid rgba(255,255,255,.05);
+      background: var(--kv-bg);
+      border-top: 1px solid var(--kv-border);
     }
 
     /* File preview strip */
@@ -769,20 +753,21 @@
       padding: 0 4px 8px; overflow-x: auto;
     }
     .ai-files-strip::-webkit-scrollbar { height: 3px; }
-    .ai-files-strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
+    .ai-files-strip::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 2px; }
     .ai-file-thumb {
       position: relative; flex-shrink: 0;
       width: 60px; height: 60px; border-radius: 12px; overflow: hidden;
-      background: rgba(255,255,255,.07); cursor: pointer;
+      background: rgba(0,0,0,.05); cursor: pointer;
     }
     .ai-file-thumb img { width: 100%; height: 100%; object-fit: cover; }
     .ai-file-thumb-doc {
       width: 60px; height: 60px; border-radius: 12px;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      border: 1px solid rgba(255,255,255,.12);
+      border: 1px solid var(--kv-border);
       font-size: 9px; font-weight: 700; letter-spacing: .04em;
-      text-transform: uppercase; color: rgba(255,255,255,.55);
+      text-transform: uppercase; color: var(--kv-hint);
       padding: 4px; text-align: center; gap: 4px;
+      background: var(--kv-surface);
     }
     .ai-file-thumb-doc svg { width: 20px; height: 20px; opacity: .6; }
     .ai-file-remove {
@@ -801,7 +786,7 @@
     .ai-voice-rec-top { display: flex; align-items: center; gap: 8px; }
     .ai-voice-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: ai-pulse-dot .9s infinite; }
     @keyframes ai-pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
-    .ai-voice-time { font-family: monospace; font-size: 13px; color: rgba(255,255,255,.7); }
+    .ai-voice-time { font-family: monospace; font-size: 13px; color: var(--kv-muted); }
     .ai-voice-bars { display: flex; align-items: center; gap: 2px; height: 36px; width: 100%; }
     .ai-voice-bar {
       flex: 1; border-radius: 2px; background: rgba(155,135,245,.55);
@@ -813,24 +798,27 @@
     /* Prompt box */
     .ai-prompt-box {
       border-radius: 24px;
-      border: 1px solid #3d3d3d;
-      background: #1F2023;
+      border: 1px solid var(--kv-border);
+      background: var(--kv-surface);
       padding: 8px 8px 6px;
-      box-shadow: 0 8px 30px rgba(0,0,0,.24);
-      transition: border-color .2s;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.03);
+      transition: border-color .2s, box-shadow .2s;
     }
-    .ai-prompt-box:focus-within { border-color: rgba(97,61,255,.55); }
+    .ai-prompt-box:focus-within {
+      border-color: rgba(97,61,255,.35);
+      box-shadow: 0 4px 20px rgba(97,61,255,.12), 0 0 0 1px rgba(97,61,255,.15);
+    }
     .ai-prompt-textarea {
       width: 100%; background: transparent; border: none; outline: none;
-      color: rgba(255,255,255,.9);
+      color: var(--kv-text);
       font-family: 'Inter', ui-sans-serif, sans-serif;
       font-size: 14px; line-height: 1.5;
       resize: none; padding: 4px 8px;
       min-height: 38px; max-height: 130px; overflow-y: auto;
     }
-    .ai-prompt-textarea::placeholder { color: rgba(255,255,255,.28); }
+    .ai-prompt-textarea::placeholder { color: var(--kv-hint); }
     .ai-prompt-textarea::-webkit-scrollbar { width: 4px; }
-    .ai-prompt-textarea::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+    .ai-prompt-textarea::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 2px; }
 
     .ai-prompt-actions {
       display: flex; align-items: center; justify-content: space-between;
@@ -843,11 +831,11 @@
       display: inline-flex; align-items: center; gap: 4px;
       height: 30px; padding: 0 7px;
       border-radius: 999px; font-size: 12px; font-weight: 500;
-      color: rgba(255,255,255,.4);
+      color: var(--kv-hint);
       border: 1px solid transparent; background: transparent; cursor: pointer;
       transition: background .15s, color .15s, border-color .15s;
     }
-    .ai-action-btn:hover { background: rgba(255,255,255,.06); color: rgba(255,255,255,.78); }
+    .ai-action-btn:hover { background: rgba(0,0,0,.05); color: var(--kv-muted); }
     .ai-action-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
 
     /* Sliding label inside toggles */
@@ -869,7 +857,7 @@
     .ai-diamond-div {
       flex-shrink: 0;
       width: 1.5px; height: 22px; margin: 0 1px;
-      background: linear-gradient(to bottom, transparent 0%, rgba(155,135,245,.5) 50%, transparent 100%);
+      background: linear-gradient(to bottom, transparent 0%, rgba(97,61,255,.35) 50%, transparent 100%);
       border-radius: 1px;
     }
 
@@ -883,12 +871,12 @@
       overflow: hidden;
     }
     .ai-send-btn:active { transform: scale(.88); }
-    .ai-send-btn.idle { background: transparent; color: rgba(255,255,255,.35); }
-    .ai-send-btn.idle:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.7); }
-    .ai-send-btn.ready { background: #fff; color: #1F2023; }
-    .ai-send-btn.ready:hover { background: rgba(255,255,255,.85); }
+    .ai-send-btn.idle { background: transparent; color: var(--kv-hint); }
+    .ai-send-btn.idle:hover { background: rgba(0,0,0,.06); color: var(--kv-muted); }
+    .ai-send-btn.ready { background: var(--accent); color: #fff; }
+    .ai-send-btn.ready:hover { filter: brightness(1.06); }
     .ai-send-btn.rec { background: transparent; color: #ef4444; }
-    .ai-send-btn.rec:hover { background: rgba(255,255,255,.06); }
+    .ai-send-btn.rec:hover { background: rgba(239,68,68,.08); }
     /* overlapping icons inside the button */
     .ai-send-btn .ai-si {
       position: absolute;
@@ -898,7 +886,8 @@
 
     @media (max-width: 640px) {
       .ai-sidebar { width: 100vw; right: -100vw; }
-      body.ai-split .kv2-main { margin-right: 0; }
+      body.ai-split .kv2-main,
+      body.ai-split .kv2-topbar { margin-right: 0; }
     }
   </style>
 </head>
@@ -924,15 +913,6 @@
 <div class="kv2-wrap">
   <div class="kv2-inner">
     <div class="kv2-topbar">
-      <div class="kv2-topbar-left">
-        <button type="button" class="kv2-btn-icon" title="Переключить панель" aria-label="Меню">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path fill="#666666" d="M3.2 3.5C3.01435 3.5 2.8363 3.57375 2.70503 3.70503C2.57375 3.8363 2.5 4.01435 2.5 4.2C2.5 4.38565 2.57375 4.5637 2.70503 4.69497C2.8363 4.82625 3.01435 4.9 3.2 4.9H12.8C12.9857 4.9 13.1637 4.82625 13.295 4.69497C13.4262 4.5637 13.5 4.38565 13.5 4.2C13.5 4.01435 13.4262 3.8363 13.295 3.70503C13.1637 3.57375 12.9857 3.5 12.8 3.5H3.2ZM2.5 8C2.5 7.81435 2.57375 7.6363 2.70503 7.50503C2.8363 7.37375 3.01435 7.3 3.2 7.3H12.8C12.9857 7.3 13.1637 7.37375 13.295 7.50503C13.4262 7.6363 13.5 7.81435 13.5 8C13.5 8.18565 13.4262 8.3637 13.295 8.49498C13.1637 8.62625 12.9857 8.7 12.8 8.7H3.2C3.01435 8.7 2.8363 8.62625 2.70503 8.49498C2.57375 8.3637 2.5 8.18565 2.5 8ZM2.5 11.8C2.5 11.6143 2.57375 11.4363 2.70503 11.305C2.8363 11.1737 3.01435 11.1 3.2 11.1H12.8C12.9857 11.1 13.1637 11.1737 13.295 11.305C13.4262 11.4363 13.5 11.6143 13.5 11.8C13.5 11.9857 13.4262 12.1637 13.295 12.295C13.1637 12.4262 12.9857 12.5 12.8 12.5H3.2C3.10807 12.5 3.01705 12.4819 2.93212 12.4467C2.84719 12.4115 2.77003 12.36 2.70503 12.295C2.64002 12.23 2.58846 12.1528 2.55328 12.0679C2.51811 11.983 2.5 11.8919 2.5 11.8Z"/></svg>
-        </button>
-        <div class="kv2-user-menu">
-          <span class="kv2-user-name">Максим Панин</span>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path fill="#4d4d4d" d="M4.54 6.81C4.57751 6.71869 4.64121 6.64053 4.72307 6.58536C4.80493 6.53019 4.90129 6.50049 5 6.5H11C11.0987 6.50049 11.1951 6.53019 11.2769 6.58536C11.3588 6.64053 11.4225 6.71869 11.46 6.81C11.4983 6.90106 11.5088 7.00141 11.4901 7.09841C11.4714 7.1954 11.4244 7.28469 11.355 7.355L8.355 10.355C8.30852 10.4019 8.25322 10.4391 8.19229 10.4644C8.13136 10.4898 8.06601 10.5029 8 10.5029C7.93399 10.5029 7.86864 10.4898 7.80771 10.4644C7.74678 10.4391 7.69148 10.4019 7.645 10.355L4.645 7.355C4.57562 7.28469 4.52862 7.1954 4.50994 7.09841C4.49125 7.00141 4.50171 6.90106 4.54 6.81Z"/></svg>
-        </div>
-      </div>
       <div class="kv2-search-wrap">
         <div class="kv2-search">
           <div class="kv2-search-inner">
@@ -983,10 +963,6 @@
           <div class="kv2-section-head">
             <span>Доски</span>
             <span style="opacity:.35">···</span>
-          </div>
-          <div class="kv2-board-row">
-            <span class="kv2-board-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="#666666" d="M4.54 6.81C4.57751 6.71869 4.64121 6.64053 4.72307 6.58536C4.80493 6.53019 4.90129 6.50049 5 6.5H11C11.0987 6.50049 11.1951 6.53019 11.2769 6.58536C11.3588 6.64053 11.4225 6.71869 11.46 6.81C11.4983 6.90106 11.5088 7.00141 11.4901 7.09841C11.4714 7.1954 11.4244 7.28469 11.355 7.355L8.355 10.355C8.30852 10.4019 8.25322 10.4391 8.19229 10.4644C8.13136 10.4898 8.06601 10.5029 8 10.5029C7.93399 10.5029 7.86864 10.4898 7.80771 10.4644C7.74678 10.4391 7.69148 10.4019 7.645 10.355L4.645 7.355C4.57562 7.28469 4.52862 7.1954 4.50994 7.09841C4.49125 7.00141 4.50171 6.90106 4.54 6.81Z"/></svg></span>
-            <span>Моя доска</span>
           </div>
           <div class="kv2-board-row">
             <span class="kv2-board-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="#666666" d="M4.54 6.81C4.57751 6.71869 4.64121 6.64053 4.72307 6.58536C4.80493 6.53019 4.90129 6.50049 5 6.5H11C11.0987 6.50049 11.1951 6.53019 11.2769 6.58536C11.3588 6.64053 11.4225 6.71869 11.46 6.81C11.4983 6.90106 11.5088 7.00141 11.4901 7.09841C11.4714 7.1954 11.4244 7.28469 11.355 7.355L8.355 10.355C8.30852 10.4019 8.25322 10.4391 8.19229 10.4644C8.13136 10.4898 8.06601 10.5029 8 10.5029C7.93399 10.5029 7.86864 10.4898 7.80771 10.4644C7.74678 10.4391 7.69148 10.4019 7.645 10.355L4.645 7.355C4.57562 7.28469 4.52862 7.1954 4.50994 7.09841C4.49125 7.00141 4.50171 6.90106 4.54 6.81Z"/></svg></span>
@@ -1128,7 +1104,7 @@
 
   <div class="ai-messages" id="aiMessages">
     <div class="ai-welcome-msg" id="aiWelcome">
-      <svg width="44" height="44" viewBox="0 0 24 24" fill="rgba(155,135,245,.5)">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="rgba(97,61,255,.35)">
         <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
       </svg>
       <h3>Чем могу помочь?</h3>
@@ -1189,7 +1165,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
             </svg>
-            <span class="ai-toggle-label">Think</span>
+            <span class="ai-toggle-label">Размышление</span>
           </button>
 
           <div class="ai-diamond-div"></div>
@@ -1289,7 +1265,8 @@
     void sidebar.offsetWidth; // force reflow
     sidebar.style.transition = 'right ' + DUR + ' ' + EASE + ', box-shadow ' + DUR;
     sidebar.style.right = '0px';
-    sidebar.style.boxShadow = '-4px 0 24px rgba(0,0,0,.22)';
+    sidebar.style.boxShadow =
+      '-8px 0 32px rgba(0,0,0,.08), -2px 0 8px rgba(0,0,0,.05), 0 0 0 1px rgba(0,0,0,.06)';
     wrap.classList.add('ai-split');
     setTimeout(function () { textarea.focus(); }, 340);
   }
@@ -1339,8 +1316,8 @@
     isSearch = isThink = isCanvas = false;
   }
   function makePlaceholder() {
-    if (isSearch)      return 'Поиск в интернете...';
-    if (isThink)       return 'Подумать глубже...';
+    if (isSearch)      return 'Использовать web-поиск...';
+    if (isThink)       return 'Режим размышления...';
     if (isCanvas)      return 'Создать на канвасе...';
     return 'Спросите что-нибудь...';
   }
@@ -1612,7 +1589,7 @@
             var msg = done + ' файл' + (done !== 1 ? 'а' : '') + ' загружен' + (done !== 1 ? 'о' : '');
             if (failed) msg += ', ' + failed + ' ошибок';
             var toast = document.createElement('div');
-            toast.style.cssText = 'position:fixed;bottom:90px;right:32px;z-index:400;background:#1F2023;color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 16px;font-size:13px;font-family:Inter,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,.35);transition:opacity .4s';
+            toast.style.cssText = 'position:fixed;bottom:90px;right:32px;z-index:400;background:#fff;color:#202020;border:1px solid #dcdcdc;border-radius:10px;padding:10px 16px;font-size:13px;font-family:Inter,sans-serif;box-shadow:0 4px 20px rgba(0,0,0,.12);transition:opacity .4s';
             toast.textContent = failed === 0 ? '✓ ' + msg : '⚠ ' + msg;
             document.body.appendChild(toast);
             setTimeout(function () { toast.style.opacity = '0'; setTimeout(function () { toast.remove(); }, 400); }, 3000);

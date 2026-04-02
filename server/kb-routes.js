@@ -61,6 +61,7 @@ export function setupKbRoutes(app) {
       const { folder_id, search } = req.query;
       const { id: userId, role } = req.user;
 
+      const dept = req.user.department || null;
       let sql, params;
       if (role === 'admin') {
         sql = `SELECT f.*, u.full_name AS owner_name
@@ -73,12 +74,19 @@ export function setupKbRoutes(app) {
         sql = `SELECT DISTINCT f.*, u.full_name AS owner_name
                FROM kb_files f
                LEFT JOIN users u ON u.id = f.owner_id
-               LEFT JOIN kb_file_permissions p ON p.file_id = f.id
-               WHERE (f.owner_id = $1 OR p.user_id = $1)
-               AND ($2::integer IS NULL OR f.folder_id = $2)
-               AND ($3::text IS NULL OR f.original_name ILIKE $3)
+               LEFT JOIN kb_folders kf ON kf.id = f.folder_id
+               WHERE (
+                 f.folder_id IS NULL
+                 OR (
+                   kf.owner_id = $1
+                   OR (kf.allowed_departments IS NULL OR kf.allowed_departments = '[]')
+                   OR ($2::text IS NOT NULL AND kf.allowed_departments::jsonb @> to_jsonb($2::text))
+                 )
+               )
+               AND ($3::integer IS NULL OR f.folder_id = $3)
+               AND ($4::text IS NULL OR f.original_name ILIKE $4)
                ORDER BY f.created_at DESC`;
-        params = [userId, folder_id || null, search ? `%${search}%` : null];
+        params = [userId, dept, folder_id || null, search ? `%${search}%` : null];
       }
       const { rows } = await query(sql, params);
       res.json(rows);

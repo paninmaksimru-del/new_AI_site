@@ -1,42 +1,55 @@
 // server/kb-pipeline.js
 // Background worker: OCR → chunking → embedding → pgvector storage
 
-import { readFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
 import { query, getDb } from './db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const UPLOADS_DIR = join(__dirname, '..', 'data', 'uploads');
 const TESSDATA_DIR = join(__dirname, '..', 'data', 'tessdata');
+
+const SUPABASE_BUCKET = 'kb-files';
+
+function getSupabase() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY не настроены');
+  return createClient(url, key);
+}
+
+async function downloadFileBuffer(storedName) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).download(storedName);
+  if (error) throw new Error(`Ошибка загрузки файла из хранилища: ${error.message}`);
+  return Buffer.from(await data.arrayBuffer());
+}
 
 // ── Text extraction ────────────────────────────────────────────────────────────
 
 async function extractText(file) {
-  const filePath = join(UPLOADS_DIR, file.stored_name);
+  const buffer = await downloadFileBuffer(file.stored_name);
   const mime = file.mime_type;
 
   if (mime === 'application/pdf') {
     const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
-    const buffer = await readFile(filePath);
     const data = await pdfParse(buffer);
     return data.text;
   }
 
   if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
     const mammoth = (await import('mammoth')).default;
-    const result = await mammoth.extractRawText({ path: filePath });
+    const result = await mammoth.extractRawText({ buffer });
     return result.value;
   }
 
   if (mime === 'text/plain') {
-    const buf = await readFile(filePath, 'utf-8');
-    return buf;
+    return buffer.toString('utf-8');
   }
 
   if (mime.startsWith('image/')) {
     const Tesseract = await import('tesseract.js');
-    const { data: { text } } = await Tesseract.recognize(filePath, 'rus+eng', {
+    const { data: { text } } = await Tesseract.recognize(buffer, 'rus+eng', {
       cachePath: TESSDATA_DIR,
       logger: () => {},
     });

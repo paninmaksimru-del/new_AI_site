@@ -1,20 +1,20 @@
 // server/kb-routes.js
 // All /api/kb/* routes for the Knowledge Base module
 
-import { createReadStream, existsSync } from 'fs';
-import { unlink, mkdir } from 'fs/promises';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
 import multer from 'multer';
 import { randomUUID } from 'crypto';
 import { query } from './db.js';
 import { requireKbAuth, requireAdmin, canReadFile, canWriteFile } from './auth.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const UPLOADS_DIR = join(__dirname, '..', 'data', 'uploads');
+const SUPABASE_BUCKET = 'kb-files';
 
-// Ensure uploads directory exists
-await mkdir(UPLOADS_DIR, { recursive: true });
+function getSupabase() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY не настроены');
+  return createClient(url, key);
+}
 
 // ── Multer config ──────────────────────────────────────────────────────────────
 const ALLOWED_MIMES = new Set([
@@ -25,16 +25,8 @@ const ALLOWED_MIMES = new Set([
 ]);
 const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
-  filename: (req, file, cb) => {
-    const ext = file.originalname.split('.').pop().toLowerCase();
-    cb(null, `${randomUUID()}.${ext}`);
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: MAX_SIZE },
   fileFilter: (req, file, cb) => {
     if (ALLOWED_MIMES.has(file.mimetype)) cb(null, true);
@@ -98,10 +90,21 @@ export function setupKbRoutes(app) {
     try {
       if (!req.file) return res.status(400).json({ error: 'Файл не получен' });
       const { folder_id } = req.body;
+
+      const ext = req.file.originalname.split('.').pop().toLowerCase();
+      const storedName = `${randomUUID()}.${ext}`;
+
+      const supabase = getSupabase();
+      const { error: uploadError } = await supabase.storage
+        .from(SUPABASE_BUCKET)
+        .upload(storedName, req.file.buffer, { contentType: req.file.mimetype });
+
+      if (uploadError) return res.status(500).json({ error: uploadError.message });
+
       const { rows } = await query(
         `INSERT INTO kb_files (original_name, stored_name, mime_type, size_bytes, folder_id, owner_id)
          VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [req.file.originalname, req.file.filename, req.file.mimetype,
+        [req.file.originalname, storedName, req.file.mimetype,
          req.file.size, folder_id || null, req.user.id]
       );
       res.status(201).json(rows[0]);
@@ -127,7 +130,7 @@ export function setupKbRoutes(app) {
     }
   });
 
-  /** GET /api/kb/files/:id/download — stream raw file */
+  /** GET /api/kb/files/:id/download — proxy file from Supabase Storage */
   app.get('/api/kb/files/:id/download', requireKbAuth(), async (req, res) => {
     try {
       const fileId = parseInt(req.params.id);
@@ -135,11 +138,18 @@ export function setupKbRoutes(app) {
       if (!rows[0]) return res.status(404).json({ error: 'Файл не найден' });
       const ok = await canReadFile(req.user.id, req.user.role, fileId);
       if (!ok) return res.status(403).json({ error: 'Нет доступа' });
-      const filePath = join(UPLOADS_DIR, rows[0].stored_name);
-      if (!existsSync(filePath)) return res.status(404).json({ error: 'Файл не найден на диске' });
+
+      const supabase = getSupabase();
+      const { data, error } = await supabase.storage
+        .from(SUPABASE_BUCKET)
+        .download(rows[0].stored_name);
+
+      if (error) return res.status(404).json({ error: 'Файл не найден в хранилище' });
+
+      const buffer = Buffer.from(await data.arrayBuffer());
       res.setHeader('Content-Type', rows[0].mime_type);
       res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(rows[0].original_name)}"`);
-      createReadStream(filePath).pipe(res);
+      res.send(buffer);
     } catch (e) {
       res.status(500).json({ error: String(e.message) });
     }
@@ -166,9 +176,11 @@ export function setupKbRoutes(app) {
       const { rows } = await query('SELECT * FROM kb_files WHERE id = $1', [fileId]);
       if (!rows[0]) return res.status(404).json({ error: 'Файл не найден' });
       if (!canWriteFile(req.user.role, rows[0], req.user.id)) return res.status(403).json({ error: 'Нет доступа' });
-      // Delete from disk
-      const filePath = join(UPLOADS_DIR, rows[0].stored_name);
-      try { await unlink(filePath); } catch (_) {}
+
+      // Delete from Supabase Storage
+      const supabase = getSupabase();
+      await supabase.storage.from(SUPABASE_BUCKET).remove([rows[0].stored_name]);
+
       // Cascade deletes chunks + permissions via FK
       await query('DELETE FROM kb_files WHERE id = $1', [fileId]);
       res.json({ ok: true });

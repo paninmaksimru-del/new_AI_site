@@ -21,7 +21,8 @@
       "Bash(cmd /c \"taskkill /PID 23512 /F\")",
       "Bash(cmd /c \"netstat -ano | findstr :8765\")",
       "mcp__f08dbe5f-1a4e-4a8e-8d4d-84aa71f21a59__use_figma",
-      "mcp__f08dbe5f-1a4e-4a8e-8d4d-84aa71f21a59__create_new_file"
+      "mcp__f08dbe5f-1a4e-4a8e-8d4d-84aa71f21a59__create_new_file",
+      "Bash(ls /Users/max/Desktop/new_AI_site/.env*)"
     ]
   }
 }

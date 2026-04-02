@@ -162,6 +162,54 @@
       border: 1px solid var(--kv-border);
     }
     .kv2-btn-upload:hover { opacity: .92; }
+    .kv2-folder-select {
+      height: 32px;
+      padding: 0 8px;
+      border-radius: var(--kv-radius);
+      border: 1px solid var(--kv-border);
+      background: var(--kv-surface);
+      color: var(--kv-text);
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      max-width: 160px;
+    }
+    .kv2-board-row.active-folder { background: rgba(3,75,255,.1); border: 1px solid rgba(3,75,255,.25); }
+    .kv2-add-subfolder-btn {
+      margin-left: auto;
+      width: 20px; height: 20px;
+      border-radius: 4px;
+      font-size: 15px; line-height: 1;
+      color: var(--kv-hint);
+      display: none;
+      align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .kv2-board-row:hover .kv2-add-subfolder-btn { display: flex; }
+    .kv2-add-subfolder-btn:hover { background: rgba(0,0,0,.08); color: var(--kv-text); }
+    .kv2-board-chev.no-chev { opacity: 0; pointer-events: none; }
+    .kv2-folder-children { display: none; }
+    .kv2-folder-children.open { display: block; }
+    .kv2-subfolder-form {
+      display: flex; gap: 5px; align-items: center;
+      padding: 4px 8px;
+    }
+    .kv2-subfolder-input {
+      flex: 1; height: 26px; border-radius: 6px;
+      border: 1px solid var(--kv-border);
+      padding: 0 8px; font: inherit; font-size: 12px;
+      background: var(--kv-surface); color: var(--kv-text);
+      outline: none;
+    }
+    .kv2-subfolder-input:focus { border-color: var(--kv-blue); }
+    .kv2-subfolder-ok, .kv2-subfolder-cancel {
+      width: 22px; height: 22px; border-radius: 4px;
+      font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .kv2-subfolder-ok { color: #22a55a; }
+    .kv2-subfolder-ok:hover { background: rgba(34,165,90,.12); }
+    .kv2-subfolder-cancel { color: var(--kv-hint); }
+    .kv2-subfolder-cancel:hover { background: rgba(0,0,0,.06); }
 
     .kv2-row {
       flex: 1;
@@ -532,9 +580,9 @@
     }
     .kv2-modal {
       position: absolute;
-      bottom: 100px;
+      bottom: 60px;
       right: 32px;
-      width: 386px;
+      width: 309px;
       max-width: calc(100vw - 32px);
       background: var(--kv-surface);
       border-radius: var(--kv-radius);
@@ -545,7 +593,7 @@
     }
     .kv2-modal.open { display: block; }
     .kv2-modal-hero {
-      height: 217px;
+      height: 174px;
       position: relative;
       border-radius: var(--kv-radius) var(--kv-radius) 0 0;
       overflow: hidden;
@@ -571,18 +619,18 @@
       z-index: 2;
     }
     .kv2-modal-close:hover { background: rgba(0,0,0,.08); }
-    .kv2-modal-body { padding: 15px 32px 24px; }
+    .kv2-modal-body { padding: 12px 26px 19px; }
     .kv2-modal-body h2 {
-      margin: 0 0 16px;
-      font-size: 24px;
+      margin: 0 0 12px;
+      font-size: 19px;
       font-weight: 600;
       letter-spacing: -.02em;
       line-height: 1.2;
       color: var(--kv-text);
     }
     .kv2-modal-body p {
-      margin: 0 0 16px;
-      font-size: 14px;
+      margin: 0 0 12px;
+      font-size: 12px;
       line-height: 1.45;
       color: var(--kv-muted);
     }
@@ -943,28 +991,163 @@
     });
   }
 
-  function renderBoards(folders) {
-    var el = document.getElementById('boardsList');
-    if (!el) return;
-    if (!folders || !folders.length) {
-      el.innerHTML = '<div style="padding:6px 8px;font-size:12px;color:var(--kv-hint)">Нет доступных папок</div>';
-      return;
-    }
-    el.innerHTML = folders.map(function (f) {
-      return '<div class="kv2-board-row" data-folder-id="' + f.id + '" style="cursor:pointer">' +
-        '<span class="kv2-board-chev" aria-hidden="true">' + CHEV_SVG + '</span>' +
-        '<span>' + escHtml(f.name) + '</span>' +
-        '</div>';
+  var _folders = [];
+
+  function buildTree(list, parentId) {
+    parentId = parentId === undefined ? null : parentId;
+    return list.filter(function (f) {
+      return (f.parent_id === parentId) || (f.parent_id == null && parentId === null);
+    }).map(function (f) {
+      return Object.assign({}, f, { children: buildTree(list, f.id) });
+    });
+  }
+
+  function folderSelectOptions(list, parentId, depth) {
+    parentId = parentId === undefined ? null : parentId;
+    depth = depth || 0;
+    var prefix = depth ? Array(depth + 1).join('  ') + '└ ' : '';
+    return list
+      .filter(function (f) { return (f.parent_id === parentId) || (f.parent_id == null && parentId === null); })
+      .map(function (f) {
+        return '<option value="' + f.id + '">' + prefix + escHtml(f.name) + '</option>' +
+          folderSelectOptions(list, f.id, depth + 1);
+      }).join('');
+  }
+
+  function renderTreeNodes(nodes, depth) {
+    depth = depth || 0;
+    return nodes.map(function (f) {
+      var hasChildren = f.children && f.children.length;
+      var pl = 8 + depth * 16;
+      return '<div class="kv2-folder-node" data-id="' + f.id + '">' +
+        '<div class="kv2-board-row" data-folder-id="' + f.id + '" style="padding-left:' + pl + 'px;cursor:pointer;">' +
+          '<span class="kv2-board-chev' + (hasChildren ? '' : ' no-chev') + '" data-chev="' + f.id + '" aria-hidden="true">' + CHEV_SVG + '</span>' +
+          '<span>' + escHtml(f.name) + '</span>' +
+          '<button type="button" class="kv2-add-subfolder-btn" data-parent="' + f.id + '" title="Добавить подпапку">+</button>' +
+        '</div>' +
+        '<div class="kv2-folder-children' + (hasChildren ? '' : '') + '" id="kvc-' + f.id + '">' +
+          (hasChildren ? renderTreeNodes(f.children, depth + 1) : '') +
+          '<div class="kv2-subfolder-form" id="kvf-' + f.id + '" style="display:none;padding-left:' + (pl + 16) + 'px;">' +
+            '<input class="kv2-subfolder-input" type="text" placeholder="Название папки" />' +
+            '<button type="button" class="kv2-subfolder-ok" data-parent="' + f.id + '" title="Создать">✓</button>' +
+            '<button type="button" class="kv2-subfolder-cancel" data-parent="' + f.id + '" title="Отмена">✕</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
     }).join('');
   }
 
-  fetch('/api/kb/folders', { headers: { 'x-auth-token': token } })
-    .then(function (r) { return r.json(); })
-    .then(renderBoards)
-    .catch(function () {
-      var el = document.getElementById('boardsList');
-      if (el) el.innerHTML = '<div style="padding:6px 8px;font-size:12px;color:var(--kv-hint)">Ошибка загрузки</div>';
+  function bindBoardEvents(container) {
+    var sel = document.getElementById('kv2FolderSelect');
+
+    // Row click → select folder
+    container.querySelectorAll('.kv2-board-row').forEach(function (row) {
+      row.addEventListener('click', function (e) {
+        if (e.target.closest('.kv2-add-subfolder-btn') || e.target.closest('.kv2-board-chev')) return;
+        container.querySelectorAll('.kv2-board-row').forEach(function (r) { r.classList.remove('active-folder'); });
+        row.classList.add('active-folder');
+        if (sel) sel.value = row.getAttribute('data-folder-id');
+      });
     });
+
+    // Chevron click → expand/collapse
+    container.querySelectorAll('.kv2-board-chev:not(.no-chev)').forEach(function (chev) {
+      chev.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var id = chev.getAttribute('data-chev');
+        var children = document.getElementById('kvc-' + id);
+        if (!children) return;
+        var open = children.classList.toggle('open');
+        chev.style.transform = open ? 'rotate(0deg)' : 'rotate(-90deg)';
+      });
+      chev.style.transform = 'rotate(-90deg)'; // collapsed by default
+    });
+
+    // "+" button → show subfolder form and expand parent
+    container.querySelectorAll('.kv2-add-subfolder-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var pid = btn.getAttribute('data-parent');
+        var form = document.getElementById('kvf-' + pid);
+        var children = document.getElementById('kvc-' + pid);
+        var chev = container.querySelector('[data-chev="' + pid + '"]');
+        if (!form) return;
+        form.style.display = 'flex';
+        if (children && !children.classList.contains('open')) {
+          children.classList.add('open');
+          if (chev) chev.style.transform = 'rotate(0deg)';
+        }
+        var input = form.querySelector('.kv2-subfolder-input');
+        if (input) { input.value = ''; input.focus(); }
+      });
+    });
+
+    // Save subfolder
+    container.querySelectorAll('.kv2-subfolder-ok').forEach(function (btn) {
+      btn.addEventListener('click', function () { createSubfolder(btn.getAttribute('data-parent'), btn.closest('.kv2-subfolder-form')); });
+    });
+
+    // Cancel subfolder
+    container.querySelectorAll('.kv2-subfolder-cancel').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var form = document.getElementById('kvf-' + btn.getAttribute('data-parent'));
+        if (form) form.style.display = 'none';
+      });
+    });
+
+    // Enter key in subfolder input
+    container.querySelectorAll('.kv2-subfolder-input').forEach(function (inp) {
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { var btn = inp.closest('.kv2-subfolder-form').querySelector('.kv2-subfolder-ok'); if (btn) btn.click(); }
+        if (e.key === 'Escape') { var cb = inp.closest('.kv2-subfolder-form').querySelector('.kv2-subfolder-cancel'); if (cb) cb.click(); }
+      });
+    });
+  }
+
+  function createSubfolder(parentId, form) {
+    var input = form ? form.querySelector('.kv2-subfolder-input') : null;
+    var name = input ? input.value.trim() : '';
+    if (!name) return;
+    fetch('/api/kb/folders', {
+      method: 'POST',
+      headers: { 'x-auth-token': token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, parent_id: parseInt(parentId), allowed_departments: [] })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function () { loadFolders(); })
+      .catch(function (e) { console.error(e); });
+  }
+
+  function loadFolders() {
+    fetch('/api/kb/folders', { headers: { 'x-auth-token': token } })
+      .then(function (r) { return r.json(); })
+      .then(function (folders) {
+        _folders = folders || [];
+        var el = document.getElementById('boardsList');
+        var sel = document.getElementById('kv2FolderSelect');
+
+        var tree = buildTree(_folders, null);
+
+        if (el) {
+          if (!tree.length) {
+            el.innerHTML = '<div style="padding:6px 8px;font-size:12px;color:var(--kv-hint)">Нет доступных папок</div>';
+          } else {
+            el.innerHTML = renderTreeNodes(tree, 0);
+            bindBoardEvents(el);
+          }
+        }
+
+        if (sel) {
+          sel.innerHTML = '<option value="">— без папки —</option>' + folderSelectOptions(_folders, null, 0);
+        }
+      })
+      .catch(function () {
+        var el = document.getElementById('boardsList');
+        if (el) el.innerHTML = '<div style="padding:6px 8px;font-size:12px;color:var(--kv-hint)">Ошибка загрузки</div>';
+      });
+  }
+
+  loadFolders();
 })();
 </script>
 
@@ -982,7 +1165,10 @@
           </div>
         </div>
       </div>
-      <div class="kv2-topbar-right">
+      <div class="kv2-topbar-right" style="display:flex;align-items:center;gap:8px;">
+        <select class="kv2-folder-select" id="kv2FolderSelect" title="Папка для загрузки">
+          <option value="">— без папки —</option>
+        </select>
         <input type="file" id="kv2UploadInput" multiple accept=".pdf,.docx,.txt,.jpg,.jpeg,.png,.webp,.tiff" style="display:none">
         <button type="button" class="kv2-btn-upload" id="kv2UploadBtn">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path fill="#ffffff" d="M12.41 14.5H3.59C3.31488 14.4993 3.04258 14.4445 2.78866 14.3386C2.53473 14.2327 2.30415 14.0779 2.11007 13.8829C1.916 13.6879 1.76223 13.4565 1.65756 13.2021C1.55288 12.9477 1.49934 12.6751 1.5 12.4V9.615C1.5 9.54343 1.5141 9.47256 1.54149 9.40644C1.56887 9.34032 1.60902 9.28023 1.65963 9.22963C1.71023 9.17902 1.77032 9.13887 1.83644 9.11149C1.90256 9.0841 1.97343 9.07 2.045 9.07C2.11657 9.07 2.18744 9.0841 2.25356 9.11149C2.31968 9.13887 2.37977 9.17902 2.43037 9.22963C2.48098 9.28023 2.52113 9.34032 2.54851 9.40644C2.5759 9.47256 2.59 9.54343 2.59 9.615V12.4C2.59 12.6652 2.69536 12.9196 2.88289 13.1071C3.07043 13.2946 3.32478 13.4 3.59 13.4H12.41C12.6752 13.4 12.9296 13.2946 13.1171 13.1071C13.3046 12.9196 13.41 12.6652 13.41 12.4V9.615C13.41 9.47046 13.4674 9.33183 13.5696 9.22963C13.6718 9.12742 13.8105 9.07 13.955 9.07C14.0995 9.07 14.2382 9.12742 14.3404 9.22963C14.4426 9.33183 14.5 9.47046 14.5 9.615V12.4C14.5007 12.6751 14.4471 12.9477 14.3424 13.2021C14.2378 13.4565 14.084 13.6879 13.8899 13.8829C13.6959 14.0779 13.4653 14.2327 13.2113 14.3386C12.9574 14.4445 12.6851 14.4993 12.41 14.5ZM8.545 10.29V3.385L10.5 5.355C10.5494 5.40956 10.6092 5.45356 10.6761 5.48435C10.7429 5.51514 10.8152 5.53208 10.8888 5.53416C10.9623 5.53624 11.0355 5.52341 11.1039 5.49644C11.1724 5.46947 11.2347 5.42893 11.287 5.37725C11.3394 5.32557 11.3807 5.26382 11.4086 5.19573C11.4364 5.12764 11.4502 5.05461 11.4491 4.98106C11.448 4.9075 11.432 4.83493 11.402 4.76772C11.3721 4.70051 11.3289 4.64006 11.275 4.59L8.395 1.675C8.2914 1.5671 8.14953 1.50424 8 1.5C7.8533 1.50129 7.71308 1.56062 7.61 1.665L4.735 4.595C4.65735 4.70022 4.62013 4.82985 4.63012 4.96024C4.64011 5.09063 4.69665 5.21308 4.78942 5.30524C4.88219 5.39741 5.005 5.45314 5.13545 5.46228C5.2659 5.47141 5.39529 5.43334 5.5 5.355L7.44 3.355V10.29C7.44 10.4345 7.49742 10.5732 7.59963 10.6754C7.70183 10.7776 7.84046 10.835 7.985 10.835C8.12954 10.835 8.26817 10.7776 8.37037 10.6754C8.47258 10.5732 8.53 10.4345 8.53 10.29H8.545Z"/></svg>
@@ -1623,10 +1809,12 @@
     uploadBtn.disabled = true;
     uploadBtn.style.opacity = '.6';
 
+    var folderId = document.getElementById('kv2FolderSelect')?.value || '';
     var done = 0, failed = 0;
     files.forEach(function (file) {
       var fd = new FormData();
       fd.append('file', file);
+      if (folderId) fd.append('folder_id', folderId);
       fetch('/api/kb/files', { method: 'POST', body: fd, headers: { 'x-auth-token': localStorage.getItem('auth_token') || '' } })
         .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
         .then(function () { done++; })

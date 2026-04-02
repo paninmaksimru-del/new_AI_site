@@ -17,21 +17,11 @@ function getSupabase() {
 }
 
 // ── Multer config ──────────────────────────────────────────────────────────────
-const ALLOWED_MIMES = new Set([
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'text/plain',
-  'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/tiff',
-]);
 const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_SIZE },
-  fileFilter: (req, file, cb) => {
-    if (ALLOWED_MIMES.has(file.mimetype)) cb(null, true);
-    else cb(new Error(`Неподдерживаемый тип файла: ${file.mimetype}`));
-  },
 });
 
 // ── Helper ─────────────────────────────────────────────────────────────────────

@@ -1148,6 +1148,89 @@
   }
 
   loadFolders();
+
+  /* ── File grid ── */
+  var _currentFolderId = null;
+
+  function formatBytes(b) {
+    if (b >= 1048576) return (b / 1048576).toFixed(1) + ' MB';
+    if (b >= 1024) return (b / 1024).toFixed(0) + ' KB';
+    return b + ' B';
+  }
+
+  function fileExt(name) {
+    var parts = (name || '').split('.');
+    return parts.length > 1 ? parts.pop().toUpperCase() : 'FILE';
+  }
+
+  function renderFileCard(f) {
+    var ext = fileExt(f.original_name);
+    var size = formatBytes(f.size_bytes || 0);
+    var title = escHtml(f.original_name);
+    var short = f.original_name.length > 18 ? f.original_name.slice(0, 16) + '…' : f.original_name;
+    return '<article class="kv2-card" data-file-id="' + f.id + '" title="' + title + '">' +
+      '<div class="kv2-card-thumb"></div>' +
+      '<span class="kv2-card-badge">' + escHtml(ext) + '</span>' +
+      '<div class="kv2-card-cap">' +
+        '<div class="kv2-card-title">' + escHtml(short) + '</div>' +
+        '<div class="kv2-card-meta">' + escHtml(ext) + ' · ' + size + '</div>' +
+      '</div>' +
+    '</article>';
+  }
+
+  window.loadFiles = function (folderId) {
+    _currentFolderId = folderId !== undefined ? folderId : _currentFolderId;
+    var url = '/api/kb/files';
+    if (_currentFolderId) url += '?folder_id=' + _currentFolderId;
+    fetch(url, { headers: { 'x-auth-token': token } })
+      .then(function (r) { return r.json(); })
+      .then(function (files) {
+        files = files || [];
+        var grid = document.getElementById('assetGrid');
+        var label = document.getElementById('assetLabel');
+        var footer = document.querySelector('.kv2-footer-bar');
+        if (grid) {
+          if (!files.length) {
+            grid.innerHTML = '<div style="padding:24px;color:var(--kv-hint);font-size:13px">Нет файлов</div>';
+          } else {
+            grid.innerHTML = files.map(renderFileCard).join('');
+            grid.querySelectorAll('.kv2-card').forEach(function (card) {
+              card.addEventListener('click', function () {
+                var fid = card.getAttribute('data-file-id');
+                window.open('/api/kb/files/' + fid + '/download', '_blank');
+              });
+            });
+          }
+        }
+        if (label) {
+          var svg = label.querySelector('svg') ? label.querySelector('svg').outerHTML : '';
+          label.innerHTML = files.length + ' Asset' + (files.length !== 1 ? 's' : '') + ' ' + svg;
+        }
+        if (footer) {
+          var total = files.reduce(function (s, f) { return s + (f.size_bytes || 0); }, 0);
+          footer.textContent = files.length + ' файл' + (files.length !== 1 ? 'ов' : '') + ' · ' + formatBytes(total);
+        }
+      })
+      .catch(function () {
+        var grid = document.getElementById('assetGrid');
+        if (grid) grid.innerHTML = '<div style="padding:24px;color:var(--kv-hint);font-size:13px">Ошибка загрузки</div>';
+      });
+  };
+
+  // load on start
+  window.loadFiles(null);
+
+  // reload when folder row is clicked
+  var origBind = bindBoardEvents;
+  bindBoardEvents = function (container) {
+    origBind(container);
+    container.querySelectorAll('.kv2-board-row').forEach(function (row) {
+      row.addEventListener('click', function (e) {
+        if (e.target.closest('.kv2-add-subfolder-btn') || e.target.closest('.kv2-board-chev')) return;
+        window.loadFiles(row.getAttribute('data-folder-id'));
+      });
+    });
+  };
 })();
 </script>
 
@@ -1169,7 +1252,7 @@
         <select class="kv2-folder-select" id="kv2FolderSelect" title="Папка для загрузки">
           <option value="">— без папки —</option>
         </select>
-        <input type="file" id="kv2UploadInput" multiple accept=".pdf,.docx,.txt,.jpg,.jpeg,.png,.webp,.tiff" style="display:none">
+        <input type="file" id="kv2UploadInput" multiple accept="*/*" style="display:none">
         <button type="button" class="kv2-btn-upload" id="kv2UploadBtn">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path fill="#ffffff" d="M12.41 14.5H3.59C3.31488 14.4993 3.04258 14.4445 2.78866 14.3386C2.53473 14.2327 2.30415 14.0779 2.11007 13.8829C1.916 13.6879 1.76223 13.4565 1.65756 13.2021C1.55288 12.9477 1.49934 12.6751 1.5 12.4V9.615C1.5 9.54343 1.5141 9.47256 1.54149 9.40644C1.56887 9.34032 1.60902 9.28023 1.65963 9.22963C1.71023 9.17902 1.77032 9.13887 1.83644 9.11149C1.90256 9.0841 1.97343 9.07 2.045 9.07C2.11657 9.07 2.18744 9.0841 2.25356 9.11149C2.31968 9.13887 2.37977 9.17902 2.43037 9.22963C2.48098 9.28023 2.52113 9.34032 2.54851 9.40644C2.5759 9.47256 2.59 9.54343 2.59 9.615V12.4C2.59 12.6652 2.69536 12.9196 2.88289 13.1071C3.07043 13.2946 3.32478 13.4 3.59 13.4H12.41C12.6752 13.4 12.9296 13.2946 13.1171 13.1071C13.3046 12.9196 13.41 12.6652 13.41 12.4V9.615C13.41 9.47046 13.4674 9.33183 13.5696 9.22963C13.6718 9.12742 13.8105 9.07 13.955 9.07C14.0995 9.07 14.2382 9.12742 14.3404 9.22963C14.4426 9.33183 14.5 9.47046 14.5 9.615V12.4C14.5007 12.6751 14.4471 12.9477 14.3424 13.2021C14.2378 13.4565 14.084 13.6879 13.8899 13.8829C13.6959 14.0779 13.4653 14.2327 13.2113 14.3386C12.9574 14.4445 12.6851 14.4993 12.41 14.5ZM8.545 10.29V3.385L10.5 5.355C10.5494 5.40956 10.6092 5.45356 10.6761 5.48435C10.7429 5.51514 10.8152 5.53208 10.8888 5.53416C10.9623 5.53624 11.0355 5.52341 11.1039 5.49644C11.1724 5.46947 11.2347 5.42893 11.287 5.37725C11.3394 5.32557 11.3807 5.26382 11.4086 5.19573C11.4364 5.12764 11.4502 5.05461 11.4491 4.98106C11.448 4.9075 11.432 4.83493 11.402 4.76772C11.3721 4.70051 11.3289 4.64006 11.275 4.59L8.395 1.675C8.2914 1.5671 8.14953 1.50424 8 1.5C7.8533 1.50129 7.71308 1.56062 7.61 1.665L4.735 4.595C4.65735 4.70022 4.62013 4.82985 4.63012 4.96024C4.64011 5.09063 4.69665 5.21308 4.78942 5.30524C4.88219 5.39741 5.005 5.45314 5.13545 5.46228C5.2659 5.47141 5.39529 5.43334 5.5 5.355L7.44 3.355V10.29C7.44 10.4345 7.49742 10.5732 7.59963 10.6754C7.70183 10.7776 7.84046 10.835 7.985 10.835C8.12954 10.835 8.26817 10.7776 8.37037 10.6754C8.47258 10.5732 8.53 10.4345 8.53 10.29H8.545Z"/></svg>
           Загрузить
@@ -1274,16 +1357,9 @@
           </div>
 
           <div class="kv2-body">
-            <div class="kv2-asset-label">1 Asset <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill="#4d4d4d" d="M3.405 5.1075C3.43313 5.03902 3.48091 4.9804 3.5423 4.93902C3.6037 4.89765 3.67597 4.87537 3.75 4.875H8.25C8.32403 4.87537 8.3963 4.89765 8.4577 4.93902C8.51909 4.9804 8.56687 5.03902 8.595 5.1075C8.62372 5.17579 8.63156 5.25106 8.61755 5.32381C8.60353 5.39655 8.56828 5.46352 8.51625 5.51625L6.26625 7.76625C6.23139 7.8014 6.18991 7.8293 6.14422 7.84833C6.09852 7.86737 6.0495 7.87717 6 7.87717C5.9505 7.87717 5.90148 7.86737 5.85578 7.84833C5.81009 7.8293 5.76861 7.8014 5.73375 7.76625L3.48375 5.51625C3.43172 5.46352 3.39647 5.39655 3.38245 5.32381C3.36844 5.25106 3.37628 5.17579 3.405 5.1075Z"/></svg></div>
+            <div class="kv2-asset-label" id="assetLabel">0 Assets <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill="#4d4d4d" d="M3.405 5.1075C3.43313 5.03902 3.48091 4.9804 3.5423 4.93902C3.6037 4.89765 3.67597 4.87537 3.75 4.875H8.25C8.32403 4.87537 8.3963 4.89765 8.4577 4.93902C8.51909 4.9804 8.56687 5.03902 8.595 5.1075C8.62372 5.17579 8.63156 5.25106 8.61755 5.32381C8.60353 5.39655 8.56828 5.46352 8.51625 5.51625L6.26625 7.76625C6.23139 7.8014 6.18991 7.8293 6.14422 7.84833C6.09852 7.86737 6.0495 7.87717 6 7.87717C5.9505 7.87717 5.90148 7.86737 5.85578 7.84833C5.81009 7.8293 5.76861 7.8014 5.73375 7.76625L3.48375 5.51625C3.43172 5.46352 3.39647 5.39655 3.38245 5.32381C3.36844 5.25106 3.37628 5.17579 3.405 5.1075Z"/></svg></div>
             <div class="kv2-grid" id="assetGrid">
-              <article class="kv2-card">
-                <div class="kv2-card-thumb"></div>
-                <span class="kv2-card-badge">PDF</span>
-                <div class="kv2-card-cap">
-                  <div class="kv2-card-title">CryptoProPDF_U…</div>
-                  <div class="kv2-card-meta">PDF · 1 MB · 25 pages</div>
-                </div>
-              </article>
+              <div style="padding:24px;color:var(--kv-hint);font-size:13px">Загрузка файлов…</div>
             </div>
           </div>
         </div>
@@ -1823,6 +1899,7 @@
           if (done + failed === files.length) {
             uploadBtn.disabled = false;
             uploadBtn.style.opacity = '';
+            if (window.loadFiles) window.loadFiles();
             var msg = done + ' файл' + (done !== 1 ? 'а' : '') + ' загружен' + (done !== 1 ? 'о' : '');
             if (failed) msg += ', ' + failed + ' ошибок';
             var toast = document.createElement('div');

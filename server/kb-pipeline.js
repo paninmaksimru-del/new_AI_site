@@ -56,7 +56,8 @@ async function extractText(file) {
     return text;
   }
 
-  throw new Error(`Неподдерживаемый тип файла: ${mime}`);
+  // Unsupported type — return null so pipeline marks file as 'unsupported' instead of failing
+  return null;
 }
 
 // ── Chunking ───────────────────────────────────────────────────────────────────
@@ -180,8 +181,14 @@ async function processFile(fileId) {
       throw new Error(`Ошибка извлечения текста: ${e.message}`);
     }
 
-    if (!rawText || !rawText.trim()) {
-      // No text found — still mark done (might be a blank image)
+    if (rawText === null) {
+      // File type not supported for OCR — mark as skipped, not failed
+      await query(`UPDATE kb_files SET ocr_status = 'unsupported', updated_at = NOW() WHERE id = $1`, [fileId]);
+      return;
+    }
+
+    if (!rawText.trim()) {
+      // Empty text (blank image etc.) — mark done with 0 chunks
       await query(`UPDATE kb_files SET ocr_status = 'done', updated_at = NOW() WHERE id = $1`, [fileId]);
       return;
     }

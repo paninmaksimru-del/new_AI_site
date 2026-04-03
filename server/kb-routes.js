@@ -35,9 +35,17 @@ async function getVisibleFileIds(userId, userRole) {
   return rows.map(r => r.id);
 }
 
-// ── Migration: ensure allowed_departments column exists ────────────────────────
+// ── Migrations ────────────────────────────────────────────────────────────────
 try {
   await query(`ALTER TABLE kb_folders ADD COLUMN IF NOT EXISTS allowed_departments TEXT NOT NULL DEFAULT '[]'`);
+} catch (_) {}
+try {
+  await query(`CREATE TABLE IF NOT EXISTS kb_favorites (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    file_id INTEGER NOT NULL REFERENCES kb_files(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (user_id, file_id)
+  )`);
 } catch (_) {}
 
 // ── Register routes ────────────────────────────────────────────────────────────
@@ -589,6 +597,57 @@ export function setupKbRoutes(app) {
         res.end();
       } catch (_) {}
     }
+  });
+
+  // ── Favorites ─────────────────────────────────────────────────────────────
+
+  /** GET /api/kb/favorites — list favorite file ids for current user */
+  app.get('/api/kb/favorites', requireKbAuth(), async (req, res) => {
+    try {
+      const { rows } = await query(
+        'SELECT file_id FROM kb_favorites WHERE user_id = $1',
+        [req.user.id]
+      );
+      res.json(rows.map(r => r.file_id));
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  /** GET /api/kb/favorites/files — list favorite files with metadata */
+  app.get('/api/kb/favorites/files', requireKbAuth(), async (req, res) => {
+    try {
+      const { rows } = await query(
+        `SELECT f.*, u.full_name AS owner_name
+         FROM kb_favorites fav
+         JOIN kb_files f ON f.id = fav.file_id
+         LEFT JOIN users u ON u.id = f.owner_id
+         WHERE fav.user_id = $1
+         ORDER BY fav.created_at DESC`,
+        [req.user.id]
+      );
+      res.json(rows);
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  /** POST /api/kb/favorites/:fileId — add to favorites */
+  app.post('/api/kb/favorites/:fileId', requireKbAuth(), async (req, res) => {
+    try {
+      await query(
+        'INSERT INTO kb_favorites (user_id, file_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [req.user.id, parseInt(req.params.fileId)]
+      );
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
+  });
+
+  /** DELETE /api/kb/favorites/:fileId — remove from favorites */
+  app.delete('/api/kb/favorites/:fileId', requireKbAuth(), async (req, res) => {
+    try {
+      await query(
+        'DELETE FROM kb_favorites WHERE user_id = $1 AND file_id = $2',
+        [req.user.id, parseInt(req.params.fileId)]
+      );
+      res.json({ ok: true });
+    } catch (e) { res.status(500).json({ error: String(e.message) }); }
   });
 
   // ── Admin ──────────────────────────────────────────────────────────────────

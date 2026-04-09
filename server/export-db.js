@@ -63,7 +63,7 @@ if (userCount.c === 0) {
   db.prepare(
     'INSERT INTO users (login, password_hash, role, full_name, department, contacts) VALUES (?, ?, ?, ?, ?, ?)'
   ).run('user', hashPassword('user123'), 'user', 'Иванов Иван Иванович', 'Отдел цифровых инноваций', null);
-  console.log('✅ Добавлены пользователи: admin/admin123, user/user123');
+  console.log('Добавлены пользователи: admin/admin123, user/user123');
 }
 
 console.log('');

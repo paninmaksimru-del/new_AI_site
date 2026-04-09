@@ -6,7 +6,8 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "node --watch server/index.js",
+    "dev": "node --env-file=.env --watch server/index.js",
+    "preview": "node server/preview-static.mjs",
     "init-db": "node server/init-db.js",
     "export-db": "node server/export-db.js"
   },
@@ -14,7 +15,10 @@
     "node": ">=18"
   },
   "dependencies": {
-    "better-sqlite3": "^11.6.0",
-    "express": "^4.21.1"
+    "express": "^4.21.1",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "xlsx": "^0.18.5"
   }
 }

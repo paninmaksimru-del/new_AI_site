@@ -409,12 +409,206 @@
       max-width: 78ch;
     }
 
+    /* ── SCROLL HERO (tablet animation) ────────────────────── */
+    .scroll-section {
+      height: max(150vh, 1100px);
+      position: relative;
+    }
+    .scroll-sticky {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: clamp(16px, 3vw, 40px);
+    }
+    .scroll-title {
+      text-align: center;
+      margin-bottom: clamp(16px, 2.5vw, 32px);
+      will-change: transform;
+      position: relative;
+      z-index: 2;
+    }
+    .scroll-eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      color: rgba(0,212,255,.85);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 14px;
+    }
+    .scroll-eyebrow::before {
+      content: '';
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: rgba(0,212,255,.9);
+      box-shadow: 0 0 8px rgba(0,212,255,.7);
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+    .scroll-h1 {
+      font-size: clamp(30px, 4.5vw, 58px);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -.025em;
+      color: #fff;
+      margin: 0;
+    }
+    .scroll-h1 em {
+      font-style: normal;
+      color: rgba(0,212,255,.9);
+    }
+    /* Tablet frame */
+    .scroll-card {
+      width: 100%;
+      max-width: min(900px, 88vw);
+      border: 4px solid #555;
+      border-radius: 28px;
+      background: #1c1c1e;
+      padding: clamp(6px, 1.2vw, 14px);
+      will-change: transform;
+      box-shadow:
+        0 0   #0000004d,
+        0 9px  20px #0000004a,
+        0 37px 37px #00000042,
+        0 84px 50px #00000026,
+        0 0 60px rgba(0,212,255,.08);
+      transform-origin: center 30%;
+    }
+    .scroll-card-inner {
+      border-radius: 18px;
+      overflow: hidden;
+      background: #000;
+      width: 100%;
+      aspect-ratio: 16/9;
+      line-height: 0;
+    }
+    .scroll-card-inner video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1);   opacity: 1; }
+      50%       { transform: scale(1.5); opacity: .6; }
+    }
+    @media (max-width: 600px) {
+      .scroll-h1 { font-size: 26px; }
+      .scroll-card { border-width: 3px; border-radius: 20px; }
+      .scroll-card-inner { border-radius: 12px; }
+    }
+
+    /* ── GLOW CARD EFFECT ──────────────────────────────────── */
+    /* CSS custom-property API (set by JS) */
+    .mik-card, .public-card, .hw-item {
+      --active: 0;
+      --start: 0;
+      --spread: 40;
+      --glow-border: 3px;
+    }
+    .public-card { position: relative; }
+    .hw-item     { position: relative; }
+
+    /* ── Animated gradient border ── */
+    .mik-card::before,
+    .public-card::before,
+    .hw-item::before {
+      content: '';
+      pointer-events: none;
+      position: absolute;
+      /* extend outside by border-width so mask covers the ring */
+      inset: calc(-1 * var(--glow-border));
+      border-radius: calc(inherit + var(--glow-border));
+      border: var(--glow-border) solid transparent;
+
+      /* Exact gradient from the original Aceternity GlowingEffect component */
+      background:
+        radial-gradient(circle,           #dd7bbb 10%, #dd7bbb00 20%),
+        radial-gradient(circle at 40% 40%, #d79f1e  5%, #d79f1e00 15%),
+        radial-gradient(circle at 60% 60%, #5a922c 10%, #5a922c00 20%),
+        radial-gradient(circle at 40% 60%, #4c7894 10%, #4c789400 20%),
+        repeating-conic-gradient(
+          from 236.84deg at 50% 50%,
+          #dd7bbb 0%,
+          #d79f1e calc(25% / 5),
+          #5a922c calc(50% / 5),
+          #4c7894 calc(75% / 5),
+          #dd7bbb calc(100% / 5)
+        );
+      background-attachment: fixed; /* gradient stays fixed to viewport */
+
+      /* mask: show gradient only in the 3px border ring */
+      -webkit-mask-image:
+        linear-gradient(#0000 0 0),
+        conic-gradient(
+          from calc((var(--start) - var(--spread)) * 1deg),
+          #0000 0deg, #fff, #0000 calc(var(--spread) * 2deg)
+        );
+      -webkit-mask-clip: padding-box, border-box;
+      -webkit-mask-composite: source-in;          /* WebKit intersect */
+          mask-image:
+        linear-gradient(#0000 0 0),
+        conic-gradient(
+          from calc((var(--start) - var(--spread)) * 1deg),
+          #0000 0deg, #fff, #0000 calc(var(--spread) * 2deg)
+        );
+          mask-clip: padding-box, border-box;
+          mask-composite: intersect;              /* Standard intersect */
+
+      opacity: var(--active);
+      transition: opacity .4s ease;
+    }
+
+    /* Static base border */
+    .mik-card::after,
+    .public-card::after,
+    .hw-item::after {
+      content: '';
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+
+    /* Remove old CSS borders from cards */
+    .mik-card:not(.is-stub) { border-color: transparent !important; overflow: visible; }
+    .public-card            { border-color: transparent !important; }
+
+    /* Stubs: keep dashed border, skip glow layers */
+    .mik-card.is-stub::before,
+    .mik-card.is-stub::after { display: none; }
+
     /* HERO */
     #hero{
       padding: 86px 0 60px;
       position: relative;
       overflow: hidden;
+      background: #020c18;
     }
+    #hero::before{
+      content:'';
+      position:absolute;
+      top:0; left:0; right:0;
+      height:38%;
+      background: linear-gradient(to bottom, #020c18 0%, transparent 100%);
+      z-index:1;
+      pointer-events:none;
+    }
+    #wave-canvas{
+      position:absolute;
+      inset:0;
+      width:100% !important;
+      height:100% !important;
+      z-index:0;
+    }
+    #hero .wrap{ position:relative; z-index:2; }
     .hero-box{
       position: relative;
       overflow: hidden;
@@ -914,8 +1108,27 @@
   </header>
 
   <main>
+    <!-- Scroll Hero: ContainerScroll animation -->
+    <section class="scroll-section" id="scroll-hero">
+      <div class="scroll-sticky">
+        <div class="scroll-title" id="scrollTitle">
+          <p class="scroll-eyebrow">Фонд МИК</p>
+          <h1 class="scroll-h1">Инновации <em>начинаются</em><br>с нас</h1>
+        </div>
+        <div class="scroll-card" id="scrollCard">
+          <div class="scroll-card-inner">
+            <video autoplay muted loop playsinline preload="auto">
+              <source src="https://s3.i.moscow/front/video/videosMain/robotBlock2.webm" type="video/webm">
+              <source src="https://s3.i.moscow/front/video/videosMain/robotBlock2.mp4" type="video/mp4">
+            </video>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Главный блок -->
     <section id="hero">
+      <canvas id="wave-canvas" aria-hidden="true"></canvas>
       <div class="wrap">
         <div class="hero-box">
           <div class="grid-anim" aria-hidden="true"></div>
@@ -1480,6 +1693,249 @@
       }
     });
   </script>
+
+<!-- Glow card effect -->
+<script>
+(function () {
+  const PROXIMITY      = 80;    // px — zone around card that activates glow
+  const INACTIVE_ZONE  = 0.01;  // fraction of card size — dead zone at center
+  const MOVE_DURATION  = 400;   // ms — angle easing duration (like motion/react)
+
+  /* ── Per-card angle tweener (smooth like framer-motion spring) ── */
+  function makeTweener(initial) {
+    return { cur: initial, target: initial, rafId: null };
+  }
+
+  function tweenTo(tw, target, onUpdate) {
+    // Shortest-path angle delta (avoids spinning backwards)
+    const diff = ((target - tw.cur + 180) % 360) - 180;
+    tw.target = tw.cur + diff;
+    if (tw.rafId !== null) return;        // already animating
+
+    const start = performance.now();
+    const from  = tw.cur;
+    const to    = tw.target;
+
+    function tick(now) {
+      const t = Math.min((now - start) / MOVE_DURATION, 1);
+      // Ease-out expo: matches [0.16, 1, 0.3, 1] cubic-bezier closely
+      const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+      tw.cur = from + (to - from) * eased;
+      onUpdate(tw.cur);
+      if (t < 1) {
+        tw.rafId = requestAnimationFrame(tick);
+      } else {
+        tw.cur = to;
+        tw.rafId = null;
+      }
+    }
+    tw.rafId = requestAnimationFrame(tick);
+  }
+
+  /* ── Initialise cards ── */
+  // Mark hw-grid divs
+  document.querySelectorAll('.hw-grid > div').forEach(el => {
+    el.classList.add('hw-item');
+    el.style.border = 'none';
+  });
+
+  const SELECTOR = '.mik-card:not(.is-stub), .public-card, .hw-item';
+  const tweeners = new WeakMap();
+
+  function getCards() {
+    const cards = Array.from(document.querySelectorAll(SELECTOR));
+    cards.forEach(c => { if (!tweeners.has(c)) tweeners.set(c, makeTweener(0)); });
+    return cards;
+  }
+
+  /* ── Mouse tracking ── */
+  let mx = 0, my = 0, scrollTick = false;
+
+  document.addEventListener('pointermove', e => {
+    mx = e.clientX; my = e.clientY;
+    updateAll();
+  }, { passive: true });
+
+  window.addEventListener('scroll', () => {
+    if (!scrollTick) {
+      scrollTick = true;
+      requestAnimationFrame(() => { scrollTick = false; updateAll(); });
+    }
+  }, { passive: true });
+
+  function updateAll() {
+    getCards().forEach(card => {
+      const r   = card.getBoundingClientRect();
+      const cx  = r.left + r.width  * 0.5;
+      const cy  = r.top  + r.height * 0.5;
+
+      // Dead zone — centre of card
+      const dist         = Math.hypot(mx - cx, my - cy);
+      const inactiveR    = 0.5 * Math.min(r.width, r.height) * INACTIVE_ZONE;
+      if (dist < inactiveR) { card.style.setProperty('--active', '0'); return; }
+
+      // Proximity check
+      const near =
+        mx > r.left   - PROXIMITY &&
+        mx < r.right  + PROXIMITY &&
+        my > r.top    - PROXIMITY &&
+        my < r.bottom + PROXIMITY;
+
+      card.style.setProperty('--active', near ? '1' : '0');
+      if (!near) return;
+
+      // Smooth angle tween (identical to motion/react animate() call)
+      const targetAngle = Math.atan2(my - cy, mx - cx) * 180 / Math.PI + 90;
+      const tw = tweeners.get(card);
+      tweenTo(tw, targetAngle, val => card.style.setProperty('--start', String(val)));
+    });
+  }
+})();
+</script>
+
+<!-- Wave animation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script>
+(function(){
+  const canvas = document.getElementById('wave-canvas');
+  if (!canvas || typeof THREE === 'undefined') return;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x020c18, 1);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x020c18, 0.020);
+
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 300);
+  camera.position.set(0, 14, 22);
+  camera.lookAt(0, 0, -5);
+
+  const COLS = 80, ROWS = 80, SPACING = 0.72;
+  const W = COLS * SPACING, D = ROWS * SPACING;
+
+  const idx = (c, r) => r * (COLS + 1) + c;
+  const totalVerts = (COLS + 1) * (ROWS + 1);
+
+  // Points
+  const ptPosArr = new Float32Array(totalVerts * 3);
+  const ptColArr = new Float32Array(totalVerts * 3);
+  for (let r = 0; r <= ROWS; r++) {
+    for (let c = 0; c <= COLS; c++) {
+      const i = idx(c, r) * 3;
+      ptPosArr[i]   = (c / COLS - 0.5) * W;
+      ptPosArr[i+1] = 0;
+      ptPosArr[i+2] = (r / ROWS - 0.5) * D;
+      ptColArr[i]=0; ptColArr[i+1]=0.78; ptColArr[i+2]=1;
+    }
+  }
+  const ptGeo = new THREE.BufferGeometry();
+  ptGeo.setAttribute('position', new THREE.BufferAttribute(ptPosArr, 3));
+  ptGeo.setAttribute('color',    new THREE.BufferAttribute(ptColArr, 3));
+  scene.add(new THREE.Points(ptGeo, new THREE.PointsMaterial({
+    size: 0.11, vertexColors: true, transparent: true, opacity: 0.9,
+    sizeAttenuation: true, blending: THREE.AdditiveBlending, depthWrite: false
+  })));
+
+  // Lines
+  const lineMap = [];
+  for (let r = 0; r <= ROWS; r++)
+    for (let c = 0; c <= COLS; c++) {
+      if (c < COLS) lineMap.push([idx(c,r), idx(c+1,r)]);
+      if (r < ROWS) lineMap.push([idx(c,r), idx(c,r+1)]);
+    }
+  const lnPosArr = new Float32Array(lineMap.length * 6);
+  const lnColArr = new Float32Array(lineMap.length * 6);
+  const lnGeo = new THREE.BufferGeometry();
+  lnGeo.setAttribute('position', new THREE.BufferAttribute(lnPosArr, 3));
+  lnGeo.setAttribute('color',    new THREE.BufferAttribute(lnColArr, 3));
+  scene.add(new THREE.LineSegments(lnGeo, new THREE.LineBasicMaterial({
+    vertexColors: true, transparent: true, opacity: 0.20,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  })));
+
+  const heights = new Float32Array(totalVerts);
+
+  function resize() {
+    const hero = document.getElementById('hero');
+    const w = hero.offsetWidth, h = hero.offsetHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  new ResizeObserver(resize).observe(document.getElementById('hero'));
+
+  let t = 0;
+  (function animate() {
+    requestAnimationFrame(animate);
+    t += 0.008;
+    const pos = ptGeo.attributes.position.array;
+    const col = ptGeo.attributes.color.array;
+    for (let r = 0; r <= ROWS; r++) {
+      for (let c = 0; c <= COLS; c++) {
+        const i = idx(c, r), b = i * 3;
+        const x = pos[b], z = pos[b+2];
+        const y = Math.sin(x*0.28 + t*1.2)*2.8
+                + Math.sin(z*0.22 - t*0.9)*2.0
+                + Math.sin((x+z)*0.18 + t*0.7)*1.4;
+        heights[i] = y;
+        pos[b+1] = y;
+        const n = (y + 6.2) / 12.4;
+        col[b]=n*0.05; col[b+1]=0.35+n*0.65; col[b+2]=0.70+n*0.30;
+      }
+    }
+    ptGeo.attributes.position.needsUpdate = true;
+    ptGeo.attributes.color.needsUpdate    = true;
+    for (let s = 0; s < lineMap.length; s++) {
+      const [ia, ib] = lineMap[s], pa=ia*3, pb=ib*3, ls=s*6;
+      lnPosArr[ls]=pos[pa]; lnPosArr[ls+1]=pos[pa+1]; lnPosArr[ls+2]=pos[pa+2];
+      lnPosArr[ls+3]=pos[pb]; lnPosArr[ls+4]=pos[pb+1]; lnPosArr[ls+5]=pos[pb+2];
+      const n=((heights[ia]+heights[ib])*0.5+6.2)/12.4;
+      lnColArr[ls]=n*0.04; lnColArr[ls+1]=0.3+n*0.55; lnColArr[ls+2]=0.65+n*0.35;
+      lnColArr[ls+3]=n*0.04; lnColArr[ls+4]=0.3+n*0.55; lnColArr[ls+5]=0.65+n*0.35;
+    }
+    lnGeo.attributes.position.needsUpdate = true;
+    lnGeo.attributes.color.needsUpdate    = true;
+    renderer.render(scene, camera);
+  })();
+})();
+</script>
+
+<!-- Scroll Hero Animation -->
+<script>
+(function () {
+  const section = document.getElementById('scroll-hero');
+  const card    = document.getElementById('scrollCard');
+  const title   = document.getElementById('scrollTitle');
+  if (!section || !card || !title) return;
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function clamp(v, lo, hi) { return Math.min(Math.max(v, lo), hi); }
+
+  function onScroll() {
+    const rect   = section.getBoundingClientRect();
+    const viewH  = window.innerHeight;
+    const total  = section.offsetHeight - viewH;           // scrollable range
+    const scrolled = clamp(-rect.top, 0, total);
+    const p = total > 0 ? scrolled / total : 0;            // 0 → 1
+
+    // Card: rotateX 20 → 0, scale 1.08 → 1
+    const rotX  = lerp(20, 0, p);
+    const sc    = lerp(1.08, 1, p);
+    card.style.transform = `perspective(1000px) rotateX(${rotX}deg) scale(${sc})`;
+
+    // Title: translateY 0 → -80px, opacity 1 → 0
+    const ty  = lerp(0, -80, p);
+    const op  = lerp(1, 0, Math.min(p * 2, 1));
+    title.style.transform = `translateY(${ty}px)`;
+    title.style.opacity   = op;
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll(); // initial call
+})();
+</script>
 </body>
 </html>
 

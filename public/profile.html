@@ -50,10 +50,10 @@ body{
   margin:0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
   background:
-    radial-gradient(1000px 450px at 20% 10%, rgba(120,140,255,.12), transparent 60%),
-    radial-gradient(900px 450px at 85% 25%, rgba(38,210,152,.10), transparent 60%),
-    radial-gradient(900px 450px at 20% 80%, rgba(255,193,7,.08), transparent 65%),
-    var(--bg);
+    radial-gradient(1200px 700px at 15% 85%, rgba(0,90,55,.9), transparent 58%),
+    radial-gradient(900px 600px at 85% 15%, rgba(0,70,45,.7), transparent 55%),
+    radial-gradient(700px 500px at 50% 50%, rgba(0,50,35,.4), transparent 65%),
+    linear-gradient(160deg, #021510 0%, #031a12 40%, #042018 70%, #021408 100%);
   color: var(--text); line-height: 1.45; overflow-x: hidden;
 }
 a{ color: inherit; text-decoration: none; }
@@ -166,7 +166,7 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 .like-card.expanded{ border-color: rgba(120,140,255,.35); box-shadow: 0 0 20px rgba(120,140,255,.12); }
 .like-card.liked-active{ border-color: rgba(255,96,96,.30); box-shadow: 0 0 0 1px rgba(255,96,96,.10), var(--shadow); }
 .like-card-header{ display: flex; align-items:center; justify-content: space-between; gap: 8px; }
-.like-card-title{ font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1 1 auto; min-width: 0; }
+.like-card-title{ font-size: 14px; font-weight: 600; flex: 1 1 auto; min-width: 0; line-height: 1.4; }
 .like-btn{ background: none; border: none; cursor: pointer; font-size: 18px; color: var(--danger); padding: 2px 4px; transition: transform .2s ease, color .15s ease; flex: 0 0 auto; }
 .like-btn:hover{ transform: scale(1.2); color: rgba(255,96,96,.6); }
 .like-btn.pop{ animation: popHeart .3s ease; }
@@ -176,6 +176,39 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 .like-card.expanded .like-card-body{ max-height: 280px; opacity: 1; }
 .like-card-body p{ margin: 10px 0 12px; font-size: 13px; color: var(--muted); line-height: 1.5; }
 .like-card-body .btn{ font-size: 13px; }
+
+/* Used tabs */
+.used-tabs{ display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+.used-tab{
+  padding:8px 16px; border-radius:99px; font-size:14px; font-weight:500;
+  border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04);
+  color:var(--muted); cursor:pointer; user-select:none;
+  transition:all .2s; display:flex; align-items:center; gap:8px;
+}
+.used-tab:hover{ background:rgba(255,255,255,.07); color:var(--text); }
+.used-tab.active{ border-color:rgba(120,140,255,.4); background:rgba(120,140,255,.1); color:var(--text); }
+.used-tab-dot{ width:8px; height:8px; border-radius:50%; }
+.used-tab-count{ font-size:12px; color:var(--muted-2); }
+.used-panel{ display:none; }
+.used-panel.active{ display:block; }
+.used-list-item{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:10px 14px; margin:0 -14px; border-radius:10px;
+  text-decoration:none; color:inherit; transition:background .12s;
+}
+.used-list-item:hover{ background:rgba(255,255,255,.04); }
+.used-list-item-title{ font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.used-list-item-arrow{ color:var(--muted-2); font-size:13px; flex:0 0 auto; transition:transform .12s; }
+.used-list-item:hover .used-list-item-arrow{ transform:translateX(3px); color:var(--text); }
+.used-show-all{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:12px 32px; margin-top:12px; border-radius:14px;
+  border:1px solid rgba(255,255,255,.18);
+  background:linear-gradient(135deg, rgba(0,170,100,.95), rgba(0,220,130,.78));
+  color:rgba(255,255,255,.97); font-size:14px; cursor:pointer;
+  transition:opacity .15s; font:inherit;
+}
+.used-show-all:hover{ opacity:.85; }
 
 .reco-card{ border-left: 3px solid var(--pilot); }
 .reco-item{ padding: 12px 14px; border-radius: 10px; cursor: pointer; transition: background .15s ease; font-size: 14px; color: var(--muted); display: flex; gap: 10px; align-items: flex-start; }
@@ -187,11 +220,32 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 .heatmap-grid{ display:grid; grid-template-rows:repeat(7,11px); grid-auto-flow:column; gap:3px; overflow-x:auto; padding-bottom:4px; }
 .heatmap-grid::-webkit-scrollbar{height:4px} .heatmap-grid::-webkit-scrollbar-track{background:rgba(255,255,255,.04);border-radius:99px} .heatmap-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:99px}
 
-.chart-flex{ display: grid; grid-template-columns: 1.6fr 1fr; gap: var(--gap); align-items: start; }
+.chart-flex{ display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); align-items: start; }
+
+/* Activity chart card */
+.activity-chart-card{ position:relative; overflow:visible !important; }
+.ac-top-bar{ position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--ok), var(--pilot), var(--warn)); border-radius:var(--radius) var(--radius) 0 0; }
+.ac-layout{ display:grid; grid-template-columns:240px 1fr; gap:clamp(24px, 4vw, 48px); align-items:center; }
+.ac-rings-wrap{ width:240px; height:240px; position:relative; flex:0 0 auto; }
+.ac-rings-wrap svg{ width:100%; height:100%; display:block; }
+.ac-legend{ display:flex; flex-direction:column; gap:24px; }
+.ac-legend-item{ display:flex; align-items:flex-start; gap:12px; }
+.ac-legend-dot{ width:12px; height:12px; border-radius:50%; flex:0 0 auto; margin-top:4px; }
+.ac-legend-info{ flex:1 1 auto; }
+.ac-legend-label{ font-size:13px; color:var(--muted); display:block; margin-bottom:2px; }
+.ac-legend-nums{ display:flex; align-items:baseline; gap:6px; }
+.ac-legend-value{ font-size:clamp(26px, 2.8vw, 36px); font-weight:900; line-height:1; }
+.ac-legend-max{ font-size:14px; color:var(--muted-2); font-weight:500; }
+.ac-legend-pct{ font-size:13px; color:var(--muted-2); }
+.level-breakdown{ font-size:13px; color:var(--muted-2); margin-top:8px; line-height:1.6; }
+.level-breakdown strong{ color:var(--text); }
 
 @media (max-width: 1050px){ .kpi-grid{ grid-template-columns: repeat(3, 1fr); } .likes-grid{ grid-template-columns: repeat(2, 1fr); } .chart-flex{ grid-template-columns: 1fr; } }
-@media (max-width: 768px){ nav{ display: none; } .burger{ display: flex; } .kpi-grid{ grid-template-columns: repeat(2, 1fr); } .kpi-card:last-child{ grid-column: span 2; } .likes-grid{ grid-template-columns: repeat(2, 1fr); } .level-row{ flex-direction: column !important; } .brand{ min-width: 0; } }
+@media (max-width: 768px){ nav{ display: none; } .burger{ display: flex; } .kpi-grid{ grid-template-columns: repeat(2, 1fr); } .kpi-card:last-child{ grid-column: span 2; } .likes-grid{ grid-template-columns: repeat(2, 1fr); } .level-row{ flex-direction: column !important; } .brand{ min-width: 0; } .ac-layout{ grid-template-columns:1fr; justify-items:center; } .ac-rings-wrap{ width:200px; height:200px; } .ac-legend{ width:100%; } }
 @media (max-width: 640px){ .hero-inner{ flex-direction: column !important; } .hero-right{ align-items: flex-start !important; } .kpi-grid{ grid-template-columns: repeat(2, 1fr); } .likes-grid{ grid-template-columns: 1fr; } .chart-canvas-wrap, .chart-donut-wrap { height: 220px; } }
+    #scrollTopBtn{position:fixed;bottom:32px;right:32px;z-index:9999;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(7,10,16,.75);backdrop-filter:blur(8px);color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .25s ease,background .15s,border-color .15s}
+    #scrollTopBtn.visible{opacity:1;pointer-events:auto}
+    #scrollTopBtn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35)}
 </style>
 </head>
 <body data-user-id="__USER_ID__">
@@ -219,7 +273,7 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
       <a class="navlink" href="education">Обучение</a>
       <a class="navlink" href="cases">Кейсы</a>
       <a class="navlink" href="dashboard">Статистика</a>
-      <a class="navlink" href="cases#feedback">Обратная связь</a>
+      <!-- <a class="navlink" href="cases#feedback">Обратная связь</a> -->
       <button class="btn ghost small" id="logoutBtn" type="button">Выйти</button>
     </nav>
     <button class="burger" id="burger" aria-label="Меню"><i></i></button>
@@ -228,7 +282,7 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     <a class="navlink" href="education">Обучение</a>
     <a class="navlink" href="cases">Кейсы</a>
     <a class="navlink" href="dashboard">Статистика</a>
-    <a class="navlink" href="cases#feedback">Обратная связь</a>
+    <!-- <a class="navlink" href="cases#feedback">Обратная связь</a> -->
     <button class="btn ghost small" id="logoutBtnMobile" type="button" style="width:100%;margin-top:4px;">Выйти</button>
   </div>
 </header>
@@ -243,21 +297,17 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
       <div class="glass-deep-overlay"></div>
       <div style="position:relative; z-index:2;">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:20px;">
-          <h1 class="greeting" id="greetingTitle">Добро пожаловать, Алексей!</h1>
+          <h1 class="greeting" id="greetingTitle"></h1>
           <span style="font-size:13px; color:var(--muted);">Неделя 3–9 марта · <span id="activeDaysBadge">21</span> активный день</span>
         </div>
-        <div class="hero-inner" style="display:flex; gap:24px; align-items:flex-start;">
+        <div class="hero-inner" id="heroInner" style="display:flex; gap:24px; align-items:flex-start; opacity:0; transition: opacity 0.3s ease;">
           <div style="display:flex; gap:18px; align-items:flex-start; flex:1 1 auto;">
-            <div class="avatar" id="avatar">АП<div class="avatar-camera">📷</div></div>
+            <div class="avatar" id="avatar"><div class="avatar-camera"></div></div>
             <div>
-              <p class="profile-name">Алексей Петров</p>
-              <p class="profile-role">Менеджер проектов · Отдел цифровых инноваций</p>
-              <p class="profile-center">Центр трансформации бизнеса</p>
-              <div class="profile-contacts">
-                <span>Tel: +7 (999) 123-45-67</span>
-                <span>e-mail: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7d1c530d18090f120b3d101416530f08">[email&#160;protected]</a></span>
-                <span>TG: @a_petrov</span>
-              </div>
+              <p class="profile-name"></p>
+              <p class="profile-role"></p>
+              <p class="profile-center"></p>
+              <div class="profile-contacts"></div>
             </div>
           </div>
           <div class="hero-right" style="display:flex; flex-direction:column; gap:8px; align-items:flex-end; flex:0 0 auto;">
@@ -281,13 +331,12 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
           <div class="level-title" id="levelTitle">Практик</div>
         </div>
         <div style="flex:1 1 auto;">
-          <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">До уровня <strong style="color:var(--text);">Эксперт</strong></div>
+          <div style="font-size:13px; color:var(--muted); margin-bottom:8px;" id="levelNextLabel">До уровня <strong style="color:var(--text);">Эксперт</strong></div>
           <div class="level-bar-track"><div class="level-bar-fill" id="levelBar"></div></div>
-          <div style="font-size:13px; color:var(--muted-2); margin-top:8px;">Использовано <strong id="levelUsed" style="color:var(--text);">34</strong> из <strong style="color:var(--text);">50</strong> решений</div>
+          <div class="level-breakdown" id="levelBreakdown"></div>
         </div>
         <div style="flex:0 0 auto; text-align:center;">
           <div class="pips" id="pips"></div>
-          <div style="display:flex; gap:12px; margin-top:6px; font-size:11px; color:var(--muted-2);"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
         </div>
       </div>
     </div>
@@ -301,43 +350,57 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   </div>
 </section>
 
-<!-- СЕКЦИЯ 3 — График личной активности -->
+<!-- СЕКЦИЯ 3 — Моя активность (chart + stats) -->
 <section>
   <div class="wrap">
-    <div class="card pad no-hover">
-      <div class="chart-row">
-        <h3 style="margin:0;">Моя активность</h3>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <div class="seg" id="segPeriod">
-            <button class="active" data-period="7">7д</button>
-            <button data-period="30">30д</button>
-            <button data-period="90">90д</button>
+    <div class="card pad no-hover activity-chart-card">
+      <div class="ac-top-bar"></div>
+      <h3 style="margin:0 0 18px; font-size:18px;">Моя активность</h3>
+      <div class="ac-layout">
+        <!-- Left: rings chart (SVG) -->
+        <div class="ac-rings-wrap">
+          <svg id="activityRingsSvg" viewBox="0 0 240 240" width="240" height="240" style="display:block;"></svg>
+        </div>
+        <!-- Right: legend -->
+        <div class="ac-legend">
+          <div class="ac-legend-item">
+            <span class="ac-legend-dot" style="background:var(--pilot);"></span>
+            <div class="ac-legend-info">
+              <span class="ac-legend-label">Промптов</span>
+              <div class="ac-legend-nums">
+                <span class="ac-legend-value" id="statPrompts">0</span>
+                <span class="ac-legend-max">/ 100</span>
+                <span class="ac-legend-pct" id="statPromptsPct"></span>
+              </div>
+            </div>
           </div>
-          <div class="seg" id="segType">
-            <button class="active" data-chart="line">Линейный</button>
-            <button data-chart="bar">Столбчатый</button>
+          <div class="ac-legend-item">
+            <span class="ac-legend-dot" style="background:var(--ok);"></span>
+            <div class="ac-legend-info">
+              <span class="ac-legend-label">Кейсов</span>
+              <div class="ac-legend-nums">
+                <span class="ac-legend-value" id="statCases">0</span>
+                <span class="ac-legend-max">/ 17</span>
+                <span class="ac-legend-pct" id="statCasesPct"></span>
+              </div>
+            </div>
+          </div>
+          <div class="ac-legend-item">
+            <span class="ac-legend-dot" style="background:var(--warn);"></span>
+            <div class="ac-legend-info">
+              <span class="ac-legend-label">Инструментов</span>
+              <div class="ac-legend-nums">
+                <span class="ac-legend-value" id="statTools">0</span>
+                <span class="ac-legend-max">/ 8</span>
+                <span class="ac-legend-pct" id="statToolsPct"></span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="chart-flex">
-        <div>
-          <div class="chart-canvas-wrap" style="position:relative; height:260px; width:100%;">
-            <canvas id="cPersonalActivity" style="transition: opacity .15s ease;"></canvas>
-          </div>
-          <div class="legend">
-            <div class="leg-item"><span class="dot" style="background:var(--ok);"></span> Кейсы</div>
-            <div class="leg-item"><span class="dot" style="background:var(--pilot);"></span> Промпты</div>
-            <div class="leg-item"><span class="dot" style="background:var(--warn);"></span> Инструменты</div>
-          </div>
-        </div>
-        <div>
-          <div class="chart-donut-wrap" style="position:relative; height:260px; width:100%;">
-            <canvas id="cPersonalDonut"></canvas>
-          </div>
-        </div>
-      </div>
+    </div>
 
-      <!-- HEATMAP — Активность за последний год -->
+      <!-- HEATMAP — HIDDEN (commented out, not deleted)
       <div style="margin-top:28px; border-top:1px solid rgba(255,255,255,.08); padding-top:20px;">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
           <h4 style="margin:0; font-size:15px; font-weight:600;">Активность за последний год</h4>
@@ -375,59 +438,41 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
           <div class="card" style="flex:1; min-width:120px; padding:14px 18px; text-align:center;">
             <div id="hmCases" style="font-size:26px; font-weight:900; color:var(--warn);">0</div>
             <div style="font-size:12px; color:var(--muted); margin-top:4px;">кейсов решено</div>
-            <!-- [DB] /api/user/stats -> cases_total -->
+          </div>
+          <div class="card" style="flex:1; min-width:120px; padding:14px 18px; text-align:center;">
+            <div id="hmPrompts" style="font-size:26px; font-weight:900; color:rgba(0,200,120,.9);">0</div>
+            <div style="font-size:12px; color:var(--muted); margin-top:4px;">промптов использовано</div>
           </div>
         </div>
       </div>
-      <!-- END HEATMAP -->
+      END HEATMAP -->
 
     </div>
   </div>
 </section>
 
-<!-- СЕКЦИЯ 4 — Избранное (бывш. «Мои лайки») -->
-<!-- [ИЗМЕНЕНИЕ 1] Переименовано + задел на социальность -->
+<!-- СЕКЦИЯ 4 — Вы использовали -->
 <section>
   <div class="wrap">
     <div class="card pad no-hover">
-      <h3 style="margin:0 0 16px;">Избранное</h3>
-      <div class="likes-grid" id="likesGrid"></div>
-      <div style="margin-top:16px;">
-        <a href="index.html#solutions" class="btn ghost small">Перейти в каталог решений →</a>
-      </div>
+      <h3 style="margin:0 0 14px;">Вы использовали</h3>
+      <div class="used-tabs" id="usedTabs"></div>
+      <div id="usedContent"></div>
     </div>
   </div>
 </section>
 
-<!-- СЕКЦИЯ 5 — Персональные рекомендации -->
-<!-- [ИЗМЕНЕНИЕ 2] Привязка к обучению по уровню зрелости -->
+<!-- СЕКЦИЯ 5 — Ваш следующий шаг -->
 <section>
   <div class="wrap">
-    <div class="card pad no-hover reco-card">
-
-      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:18px;">
+    <div class="card pad no-hover">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
         <h3 style="margin:0;">Ваш следующий шаг</h3>
-        <span class="badge pilot">Уровень 3 → 4: Практик → Эксперт</span>
+        <span class="badge pilot" id="recoLevelBadge"></span>
       </div>
-
-      <!-- Блок обучения по уровню -->
-      <div class="reco-learn-block" style="background: rgba(120,140,255,.07); border: 1px solid rgba(120,140,255,.18); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 14px;">
-        <div style="font-size:13px; color:var(--muted); margin-bottom:10px; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">
-          Рекомендованное обучение для вашего уровня
-        </div>
-        <div id="recoLearnList"></div>
-        <!-- [NAV] Ссылки ведут на страницу /learning#advanced -->
-        <!-- [DB] Треки подбираются на сервере по уровню зрелости /api/user/learning-recommendations -->
-        <a href="#" class="btn ghost small" style="margin-top:12px; font-size:13px;">
-          Перейти на страницу обучения →
-        </a>
-      </div>
-
-      <!-- Список действий-рекомендаций -->
-      <div id="recoList"></div>
-
+      <div class="likes-grid" id="recoGrid"></div>
       <p style="margin:14px 0 0; font-size:12px; color:var(--muted-2);">
-        Рекомендации обновляются еженедельно на основе вашей активности
+        Рекомендации обновляются автоматически на основе вашей активности
       </p>
     </div>
   </div>
@@ -517,28 +562,36 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     levelTarget: 50,
     isLeaderOfMonth: true,
     isNominee: true,
-    metrics: { cases: 34, prompts: 127, tools: 8, activeDays: 21, timeSaved: 14.5 },
-    likedSolutions: [
-      { id:"s1", title:"Автоматизация протоколов совещаний", type:"Кейс", category:"Документооборот", desc:"Генерация структурированных протоколов по аудиозаписям встреч с помощью ИИ.", likedBy:["А. Иванов","М. Смирнова"] },
-      { id:"s2", title:"Анализ обратной связи клиентов", type:"Промпт", category:"Аналитика", desc:"Систематизация и классификация отзывов и обращений с помощью NLP-моделей.", likedBy:["К. Орлов"] },
-      { id:"s3", title:"Генерация презентаций из данных", type:"Инструмент", category:"Визуализация", desc:"Автоматическое создание слайдов на основе таблиц и отчётов.", likedBy:[] },
-      { id:"s4", title:"Умный поиск по базе знаний", type:"Инструмент", category:"Инструмент", desc:"Семантический поиск по внутренним документам компании с использованием RAG.", likedBy:["А. Иванов","Д. Петрова","С. Новиков"] },
-      { id:"s5", title:"Прогнозирование загрузки команды", type:"Кейс", category:"Управление", desc:"ИИ-модель прогнозирует нагрузку проектных команд на основании исторических данных.", likedBy:["М. Смирнова"] },
-      { id:"s6", title:"Автоматический перевод документации", type:"Промпт", category:"Локализация", desc:"Перевод технической документации с сохранением терминологии и форматирования.", likedBy:[] }
-    ],
-    learningTracks: [
-      { title: "Продвинутый промптинг для аналитиков", type: "Интенсив", duration: "2 ч", href: "#" },
-      { title: "Автоматизация отчётности с AI", type: "Воркшоп", duration: "1.5 ч", href: "#" },
-      { title: "RAG и работа с базами знаний", type: "Видеокурс", duration: "3 ч", href: "#" }
-    ],
-    recommendations: [
-      { text: "Попробуйте промпт «Анализ данных с ChatGPT» — подходит вашей роли", action: "#" },
-      { text: "Освойте инструмент Notion AI — ещё 1 инструмент до нового уровня", action: "#" },
-      { text: "Поделитесь кейсом этой недели — +5 очков к прогрессу", action: "#" }
-    ]
+    metrics: (function() {
+      try {
+        var usedCases = JSON.parse(localStorage.getItem('cases_used_map') || '{}');
+        var usedPrompts = JSON.parse(localStorage.getItem('prompt_used_map') || '{}');
+        var usedTools = JSON.parse(localStorage.getItem('tool_used_map') || '{}');
+        var cases = Object.keys(usedCases).length;
+        var prompts = Object.keys(usedPrompts).length;
+        var tools = Object.keys(usedTools).length;
+        // Active days: count unique dates from ui_events
+        var events = JSON.parse(localStorage.getItem('ui_events') || '[]');
+        var auth = JSON.parse(localStorage.getItem('mikAuth') || '{}');
+        var login = auth.login || '';
+        var days = {};
+        events.forEach(function(e) {
+          if (e.client_id === login && e.timestamp) days[e.timestamp.slice(0, 10)] = true;
+        });
+        var activeDays = Object.keys(days).length || 1;
+        // Time saved estimate: 35 min per case, 12 min per prompt, 8 min per tool
+        var timeSaved = Math.round(((cases * 35 + prompts * 12 + tools * 8) / 60) * 10) / 10;
+        return { cases: cases, prompts: prompts, tools: tools, activeDays: activeDays, timeSaved: timeSaved };
+      } catch(_) { return { cases: 0, prompts: 0, tools: 0, activeDays: 0, timeSaved: 0 }; }
+    })(),
+    likedSolutions: [],
+    learningTracks: [],
+    recommendations: []
   };
 
   var LEVELS = ["Новичок","Исследователь","Практик","Эксперт","Лидер"];
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
   // Проверка сессии и загрузка данных пользователя из БД
   (async function loadMe() {
@@ -550,6 +603,9 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
         return;
       }
       var me = await res.json();
+      if (me.first_name) {
+        PROFILE.firstName = me.first_name;
+      }
       if (me.full_name) {
         PROFILE.name = me.full_name;
         PROFILE.initials = me.full_name.split(/\s+/).map(function(p){ return p && p[0] ? p[0] : ''; }).join('').slice(0, 2).toUpperCase();
@@ -573,8 +629,8 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     if (AUTH.full_name) PROFILE.name = AUTH.full_name;
 
     var greetingEl = document.getElementById('greetingTitle');
-    if (greetingEl && PROFILE.name) {
-      var firstName = PROFILE.name.split(/\s+/)[0] || PROFILE.name;
+    if (greetingEl) {
+      var firstName = PROFILE.firstName || PROFILE.name.split(/\s+/)[0] || PROFILE.name;
       greetingEl.textContent = 'Добро пожаловать, ' + firstName + '!';
     }
 
@@ -608,10 +664,12 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
 
     var avatarEl = document.getElementById('avatar');
     if (avatarEl && PROFILE.initials) {
-      if (avatarEl.firstChild) {
-        avatarEl.firstChild.nodeValue = PROFILE.initials;
-      }
+      avatarEl.insertAdjacentText('afterbegin', PROFILE.initials);
     }
+
+    // Показать профиль после загрузки данных
+    var heroInner = document.getElementById('heroInner');
+    if (heroInner) heroInner.style.opacity = '1';
   })();
 
   var progBar = document.getElementById('progBar');
@@ -640,24 +698,147 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     requestAnimationFrame(tick);
   }
 
-  (function renderPips() {
+  /* ===== LEVEL THRESHOLDS (all 3 must be met) ===== */
+  var LEVEL_THRESHOLDS = [
+    { cases: 0,  prompts: 0,  activeDays: 0  }, // Level 1 — Новичок
+    { cases: 2,  prompts: 5,  activeDays: 2  }, // Level 2 — Исследователь
+    { cases: 5,  prompts: 15, activeDays: 5  }, // Level 3 — Практик
+    { cases: 10, prompts: 40, activeDays: 10 }, // Level 4 — Эксперт
+    { cases: 17, prompts: 80, activeDays: 20 }  // Level 5 — Лидер
+  ];
+
+  function computeLevel(metrics) {
+    var cases = metrics.cases || 0;
+    var prompts = metrics.prompts || 0;
+    var activeDays = metrics.activeDays || 0;
+
+    var level = 1;
+    for (var i = 1; i < LEVEL_THRESHOLDS.length; i++) {
+      var t = LEVEL_THRESHOLDS[i];
+      if (cases >= t.cases && prompts >= t.prompts && activeDays >= t.activeDays) {
+        level = i + 1;
+      } else {
+        break;
+      }
+    }
+
+    var progress = 100;
+    var nextThreshold = null;
+    if (level < 5) {
+      nextThreshold = LEVEL_THRESHOLDS[level];
+      var prevThreshold = LEVEL_THRESHOLDS[level - 1];
+      var rangeCases = nextThreshold.cases - prevThreshold.cases;
+      var rangePrompts = nextThreshold.prompts - prevThreshold.prompts;
+      var rangeDays = nextThreshold.activeDays - prevThreshold.activeDays;
+
+      var pctCases = rangeCases > 0 ? Math.min(((cases - prevThreshold.cases) / rangeCases) * 100, 100) : 100;
+      var pctPrompts = rangePrompts > 0 ? Math.min(((prompts - prevThreshold.prompts) / rangePrompts) * 100, 100) : 100;
+      var pctDays = rangeDays > 0 ? Math.min(((activeDays - prevThreshold.activeDays) / rangeDays) * 100, 100) : 100;
+
+      progress = Math.max(0, Math.min(Math.floor(Math.min(pctCases, pctPrompts, pctDays)), 99));
+    }
+
+    return {
+      level: level,
+      title: LEVELS[level - 1],
+      progress: progress,
+      nextTitle: level < 5 ? LEVELS[level] : null,
+      nextThreshold: nextThreshold,
+      currentValues: { cases: cases, prompts: prompts, activeDays: activeDays }
+    };
+  }
+
+  function renderLevelSection(info) {
+    document.getElementById('levelNum').textContent = info.level;
+    document.getElementById('levelTitle').textContent = info.title;
+
+    var nextLabel = document.getElementById('levelNextLabel');
+    if (nextLabel) {
+      if (info.level >= 5) {
+        nextLabel.innerHTML = '<strong style="color:var(--ok);">Максимальный уровень достигнут!</strong>';
+      } else {
+        nextLabel.innerHTML = 'До уровня <strong style="color:var(--text);">' + info.nextTitle + '</strong>';
+      }
+    }
+
+    var breakdown = document.getElementById('levelBreakdown');
+    if (breakdown) {
+      if (info.level >= 5) {
+        breakdown.innerHTML = 'Вы достигли высшего уровня ИИ-зрелости';
+      } else {
+        var nt = info.nextThreshold;
+        var cv = info.currentValues;
+        breakdown.innerHTML =
+          'Кейсов: <strong>' + cv.cases + '</strong> / ' + nt.cases +
+          ' &nbsp;&middot;&nbsp; Промптов: <strong>' + cv.prompts + '</strong> / ' + nt.prompts +
+          ' &nbsp;&middot;&nbsp; Дней: <strong>' + cv.activeDays + '</strong> / ' + nt.activeDays;
+      }
+    }
+
+    setTimeout(function() {
+      document.getElementById('levelBar').style.width = info.progress + '%';
+    }, 300);
+
     var pips = document.getElementById('pips'); pips.innerHTML = '';
     for (var i = 1; i <= 5; i++) {
+      var col = document.createElement('div');
+      col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;';
       var pip = document.createElement('div'); pip.className = 'pip';
-      if (i < PROFILE.level) pip.classList.add('done');
-      if (i === PROFILE.level) pip.classList.add('current');
-      pips.appendChild(pip);
+      if (i < info.level) pip.classList.add('done');
+      if (i === info.level) pip.classList.add('current');
+      var num = document.createElement('span');
+      num.style.cssText = 'font-size:11px;color:var(--muted-2);';
+      num.textContent = i;
+      col.appendChild(pip);
+      col.appendChild(num);
+      pips.appendChild(col);
     }
-  })();
 
-  setTimeout(function() { document.getElementById('levelBar').style.width = PROFILE.levelProgress + '%'; }, 300);
+    var badge = document.querySelector('.reco-card .badge');
+    if (badge) {
+      if (info.level >= 5) {
+        badge.textContent = 'Уровень 5: Лидер (максимум)';
+        badge.className = 'badge ok';
+      } else {
+        badge.textContent = 'Уровень ' + info.level + ' \u2192 ' + (info.level + 1) + ': ' + info.title + ' \u2192 ' + info.nextTitle;
+      }
+    }
+  }
 
+  var levelInfo = computeLevel(PROFILE.metrics);
+  PROFILE.level = levelInfo.level;
+  PROFILE.levelProgress = levelInfo.progress;
+  renderLevelSection(levelInfo);
+
+  /* ===== STATS PANEL (activity rings legend) ===== */
+  var RING_LIMITS = { prompts: 100, cases: 17, tools: 8 };
+
+  function renderStatsPanel() {
+    var m = PROFILE.metrics;
+    var limits = RING_LIMITS;
+
+    animateCounter(document.getElementById('statCases'), m.cases, 800);
+    animateCounter(document.getElementById('statPrompts'), m.prompts, 800);
+    animateCounter(document.getElementById('statTools'), m.tools, 800);
+
+    var pctCases = limits.cases > 0 ? Math.round((m.cases / limits.cases) * 100) : 0;
+    var pctPrompts = limits.prompts > 0 ? Math.round((m.prompts / limits.prompts) * 100) : 0;
+    var pctTools = limits.tools > 0 ? Math.round((m.tools / limits.tools) * 100) : 0;
+
+    document.getElementById('statCasesPct').textContent = pctCases + '%';
+    document.getElementById('statPromptsPct').textContent = pctPrompts + '%';
+    document.getElementById('statToolsPct').textContent = pctTools + '%';
+  }
+  renderStatsPanel();
+
+  var m = PROFILE.metrics;
+  var limits = RING_LIMITS;
   var KPI = [
-    { key:'cases', label:'Решённых<br/>кейсов', delta:'+12% за месяц' },
-    { key:'prompts', label:'Использованных<br/>промптов', delta:'+18% за месяц' },
-    { key:'tools', label:'Инструментов<br/>освоено', delta:'+2 за месяц' },
-    { key:'activeDays', label:'Активных<br/>дней', delta:'+5 за месяц' },
-    { key:'timeSaved', label:'Сэкономлено<br/>времени', delta:'+3.2 ч за месяц', suffix:' ч' }
+    { key:'cases', label:'Решённых<br/>кейсов', delta: limits.cases > 0 ? Math.round((m.cases / limits.cases) * 100) + '% от цели' : 'Нет данных' },
+    { key:'prompts', label:'Использованных<br/>промптов', delta: limits.prompts > 0 ? Math.round((m.prompts / limits.prompts) * 100) + '% от цели' : 'Нет данных' },
+    { key:'tools', label:'Инструментов<br/>освоено', delta: limits.tools > 0 ? Math.round((m.tools / limits.tools) * 100) + '% от цели' : 'Нет данных' },
+    { key:'activeDays', label:'Активных<br/>дней', delta: m.activeDays ? m.activeDays + ' д.' : 'Нет данных' },
+    { key:'timeSaved', label:'Сэкономлено<br/>времени', delta: m.timeSaved ? '~' + m.timeSaved + ' ч' : 'Нет данных', suffix:' ч' }
   ];
 
   var kpiGrid = document.getElementById('kpiGrid');
@@ -673,101 +854,199 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     setTimeout(function() { animateCounter(card.querySelector('.value'), val, 800, k.suffix || ''); }, 200 + i * 100);
   });
 
-  /* ===== ИЗБРАННОЕ ===== */
-  function renderLikes() {
-    var grid = document.getElementById('likesGrid');
-    if (!grid) return;
-    grid.innerHTML = '';
+  /* ===== ВЫ ИСПОЛЬЗОВАЛИ (tabs) ===== */
+  (function() {
+    var tabsEl = document.getElementById('usedTabs');
+    var contentEl = document.getElementById('usedContent');
+    if (!tabsEl || !contentEl) return;
 
-    if (PROFILE.likedSolutions.length === 0) {
-      grid.innerHTML =
-        '<div style="grid-column:1/-1;text-align:center;padding:32px 0;color:var(--muted);">' +
-          '<div style="font-size:32px;margin-bottom:10px;">\uD83E\uDD0D</div>' +
-          '<div style="font-size:14px;">Здесь появятся сущности, которые вы лайкнули в каталоге</div>' +
-          '<a href="index.html#solutions" class="btn ghost small" style="margin-top:14px;display:inline-flex;">Перейти в каталог \u2192</a>' +
+    var USED_VISIBLE = 4;
+    var usedCases = {}, usedPrompts = {}, usedTools = {};
+    try { usedCases = JSON.parse(localStorage.getItem('cases_used_map') || '{}'); } catch(_) {}
+    try { usedPrompts = JSON.parse(localStorage.getItem('prompt_used_map') || '{}'); } catch(_) {}
+    try { usedTools = JSON.parse(localStorage.getItem('tool_used_map') || '{}'); } catch(_) {}
+
+    var groups = [
+      { key:'cases', label:'Кейсы', dot:'var(--ok)', ids: Object.keys(usedCases), href:'/cases', items:[] },
+      { key:'prompts', label:'Промпты', dot:'var(--pilot)', ids: Object.keys(usedPrompts), href:'/cases#prompts', items:[] },
+      { key:'tools', label:'Инструменты', dot:'var(--warn)', ids: Object.keys(usedTools), href:'/', items:[] }
+    ];
+
+    // Filter to groups that have items
+    var activeGroups = groups.filter(function(g) { return g.ids.length > 0; });
+
+    if (!activeGroups.length) {
+      contentEl.innerHTML =
+        '<div style="text-align:center;padding:24px 0;color:var(--muted);">' +
+          '<div style="font-size:14px;">Вы пока не отмечали кейсы и промпты</div>' +
+          '<a href="/cases" class="btn ghost small" style="margin-top:14px;display:inline-flex;">Перейти в каталог \u2192</a>' +
         '</div>';
       return;
     }
 
-    PROFILE.likedSolutions.forEach(function(sol) {
-      var card = document.createElement('div');
-      card.className = 'like-card liked-active';
-      card.dataset.id = sol.id;
-
-      /* Новый layout:
-         Строка 1: название ............ ♥
-         Строка 2: [Кейс] [Документооборот]
-         Expand:   описание + likedBy + кнопка */
-      card.innerHTML =
-        '<div class="like-card-header">' +
-          '<span class="like-card-title">' + sol.title + '</span>' +
-          '<button class="like-btn" title="Убрать из избранного" aria-label="Убрать из избранного">\u2665</button>' +
-        '</div>' +
-        '<div class="like-card-badges">' +
-          (sol.type ? '<span class="badge" style="font-size:11px;padding:3px 8px;">' + sol.type + '</span>' : '') +
-          '<span class="badge pilot" style="font-size:11px;padding:3px 8px;">' + sol.category + '</span>' +
-        '</div>' +
-        '<p style="margin:8px 0 0;font-size:13px;color:var(--muted);line-height:1.5;">' + (sol.desc || '') + '</p>' +
-        '<div class="like-card-body">' +
-          '<a href="#" class="btn primary small" style="margin-top:10px;">Попробовать \u2192</a>' +
-          (sol.likedBy && sol.likedBy.length
-            ? '<div style="font-size:12px;color:var(--muted-2);margin-top:10px;">\uD83D\uDC65 Также сохранили: <span style="color:var(--muted);">' + sol.likedBy.join(', ') + '</span></div>'
-            : '') +
-          '<!-- [DB] /api/solutions/' + sol.id + '/liked-by -->' +
-        '</div>';
-
-      card.addEventListener('click', function(e) {
-        if (e.target.classList.contains('like-btn')) return;
-        card.classList.toggle('expanded');
-      });
-
-      var btn = card.querySelector('.like-btn');
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        btn.classList.add('pop');
-        card.style.opacity = '0';
-        card.style.transform = 'scale(0.92)';
-        setTimeout(function() {
-          PROFILE.likedSolutions = PROFILE.likedSolutions.filter(function(s) { return s.id !== sol.id; });
-          // [DB] DELETE /api/solutions/like { userId, solutionId: sol.id }
-          renderLikes();
-        }, 350);
-      });
-
-      grid.appendChild(card);
+    // Init items with IDs
+    groups.forEach(function(g) {
+      g.items = g.ids.map(function(id) { return { id:id, title:id, href:g.href }; });
     });
-  }
-  renderLikes();
 
-  /* ===== LEARNING TRACKS ===== */
-  var learnList = document.getElementById('recoLearnList');
-  if (learnList) {
-    PROFILE.learningTracks.forEach(function(track) {
-      var el = document.createElement('div');
-      el.className = 'reco-item';
-      el.style.cssText = 'cursor:pointer;';
-      el.innerHTML =
-        '<span class="arrow">\u2192</span>' +
-        '<div style="flex:1; min-width:0;">' +
-          '<div style="font-size:14px;">' + track.title + '</div>' +
-          '<div style="font-size:12px; color:var(--muted-2); margin-top:2px;">' +
-            '<span class="badge" style="font-size:11px; padding:2px 7px;">' + track.type + '</span>' +
-            ' \u00B7 ' + track.duration +
+    var activeTab = activeGroups[0].key;
+
+    function renderTabs() {
+      tabsEl.innerHTML = activeGroups.map(function(g) {
+        return '<div class="used-tab' + (g.key === activeTab ? ' active' : '') + '" data-used-tab="' + g.key + '">' +
+          '<span class="used-tab-dot" style="background:' + g.dot + ';"></span>' +
+          esc(g.label) +
+          '<span class="used-tab-count">' + g.ids.length + '</span>' +
+        '</div>';
+      }).join('');
+
+      tabsEl.querySelectorAll('.used-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+          activeTab = tab.getAttribute('data-used-tab');
+          renderTabs();
+          renderPanel();
+        });
+      });
+    }
+
+    function renderPanel() {
+      var g = groups.find(function(x) { return x.key === activeTab; });
+      if (!g) { contentEl.innerHTML = ''; return; }
+
+      var visible = g.items.slice(0, USED_VISIBLE);
+      var hidden = g.items.slice(USED_VISIBLE);
+      var panelId = 'usedPanel_' + g.key;
+
+      var html = '<div class="used-panel active">';
+      visible.forEach(function(item) {
+        html += '<a href="' + esc(item.href) + '" class="used-list-item">' +
+          '<span class="used-list-item-title">' + esc(item.title) + '</span>' +
+          '<span class="used-list-item-arrow">\u2192</span></a>';
+      });
+
+      if (hidden.length) {
+        html += '<div id="' + panelId + '_more" style="display:none;">';
+        hidden.forEach(function(item) {
+          html += '<a href="' + esc(item.href) + '" class="used-list-item">' +
+            '<span class="used-list-item-title">' + esc(item.title) + '</span>' +
+            '<span class="used-list-item-arrow">\u2192</span></a>';
+        });
+        html += '</div>';
+        html += '<button class="used-show-all" id="' + panelId + '_btn">Показать все ' + g.ids.length + '</button>';
+      }
+
+      html += '</div>';
+      contentEl.innerHTML = html;
+
+      if (hidden.length) {
+        var btn = document.getElementById(panelId + '_btn');
+        var more = document.getElementById(panelId + '_more');
+        if (btn && more) {
+          btn.addEventListener('click', function() {
+            var shown = more.style.display !== 'none';
+            more.style.display = shown ? 'none' : 'block';
+            btn.textContent = shown ? 'Показать все ' + g.ids.length : 'Скрыть';
+          });
+        }
+      }
+    }
+
+    renderTabs();
+    renderPanel();
+
+    // Enrich with real titles from API
+    Promise.all([
+      fetch('/api/cases').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; }),
+      fetch('/api/prompts').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; }),
+      fetch('/api/tools').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; })
+    ]).then(function(results) {
+      var cases = Array.isArray(results[0]) ? results[0] : (results[0].data || []);
+      var prompts = Array.isArray(results[1]) ? results[1] : (results[1].data || []);
+      var tools = Array.isArray(results[2]) ? results[2] : (results[2].data || []);
+      var changed = false;
+      groups[0].items.forEach(function(item) { var c = cases.find(function(x){return x.id===item.id;}); if(c){item.title=c.title||item.id;changed=true;} });
+      groups[1].items.forEach(function(item) { var p = prompts.find(function(x){return x.id===item.id;}); if(p){item.title=p.title||p.sectionTitle||item.id;changed=true;} });
+      groups[2].items.forEach(function(item) { var t = tools.find(function(x){return x.id===item.id;}); if(t){item.title=t.name||item.id;changed=true;} });
+      if (changed) renderPanel();
+    }).catch(function() {});
+  })();
+
+  /* ===== NEXT STEP — dynamic recommendations ===== */
+  (function() {
+    var levelInfo = computeLevel(PROFILE.metrics);
+    var badge = document.getElementById('recoLevelBadge');
+    var grid = document.getElementById('recoGrid');
+    if (!grid) return;
+
+    // 1. Level badge
+    if (badge) {
+      if (levelInfo.level >= 5) {
+        badge.textContent = 'Лидер — максимальный уровень';
+        badge.className = 'badge ok';
+      } else {
+        badge.textContent = 'Уровень ' + levelInfo.level + ' \u2192 ' + (levelInfo.level + 1) + ': ' + levelInfo.title + ' \u2192 ' + levelInfo.nextTitle;
+      }
+    }
+
+    // 2. Collect cards: progress steps + untried cases
+    var cards = [];
+
+    if (levelInfo.level < 5) {
+      var nt = levelInfo.nextThreshold;
+      var cv = levelInfo.currentValues;
+      if (cv.cases < nt.cases) cards.push({ title: 'Используйте ещё ' + (nt.cases - cv.cases) + ' кейс' + pluralRu(nt.cases - cv.cases, '', 'а', 'ов'), desc: 'До уровня ' + levelInfo.nextTitle + ': ' + cv.cases + ' / ' + nt.cases + ' кейсов', type: 'Прогресс', color: 'ok', href: '/cases' });
+      if (cv.prompts < nt.prompts) cards.push({ title: 'Скопируйте ещё ' + (nt.prompts - cv.prompts) + ' промпт' + pluralRu(nt.prompts - cv.prompts, '', 'а', 'ов'), desc: 'До уровня ' + levelInfo.nextTitle + ': ' + cv.prompts + ' / ' + nt.prompts + ' промптов', type: 'Прогресс', color: 'pilot', href: '/cases#prompts' });
+      if (cv.activeDays < nt.activeDays) cards.push({ title: 'Зайдите ещё ' + (nt.activeDays - cv.activeDays) + ' д' + pluralRu(nt.activeDays - cv.activeDays, 'ень', 'ня', 'ней'), desc: 'До уровня ' + levelInfo.nextTitle + ': ' + cv.activeDays + ' / ' + nt.activeDays + ' дней', type: 'Прогресс', color: 'warn', href: '/' });
+    }
+
+    function renderGrid() {
+      grid.innerHTML = '';
+      if (!cards.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px 0;color:var(--muted);font-size:14px;">Все цели достигнуты — вы на максимуме!</div>';
+        return;
+      }
+      cards.forEach(function(item) {
+        var card = document.createElement('a');
+        card.href = item.href;
+        card.className = 'like-card';
+        card.style.textDecoration = 'none';
+        card.style.color = 'inherit';
+        card.innerHTML =
+          '<div class="like-card-header">' +
+            '<span class="like-card-title">' + esc(item.title) + '</span>' +
+            '<span style="font-size:14px; opacity:.5;">\u2192</span>' +
           '</div>' +
-        '</div>';
-      el.addEventListener('click', function() { window.location.href = track.href; });
-      learnList.appendChild(el);
-    });
-  }
+          '<div class="like-card-badges">' +
+            '<span class="badge ' + item.color + '" style="font-size:11px;padding:3px 8px;">' + item.type + '</span>' +
+          '</div>' +
+          (item.desc ? '<p style="margin:8px 0 0;font-size:13px;color:var(--muted);line-height:1.5;">' + esc(item.desc) + '</p>' : '');
+        grid.appendChild(card);
+      });
+    }
 
-  /* ===== RECOMMENDATIONS ===== */
-  var recoList = document.getElementById('recoList');
-  PROFILE.recommendations.forEach(function(r) {
-    var item = document.createElement('div');
-    item.className = 'reco-item';
-    item.innerHTML = '<span class="arrow">\u2192</span><span>' + r.text + '</span>';
-    recoList.appendChild(item);
-  });
+    // 3. Untried cases from API — add as cards
+    var usedCases = {};
+    try { usedCases = JSON.parse(localStorage.getItem('cases_used_map') || '{}'); } catch(_) {}
+
+    fetch('/api/cases').then(function(r) { return r.ok ? r.json() : []; }).then(function(cases) {
+      if (!Array.isArray(cases)) cases = cases.data || [];
+      var untried = cases.filter(function(c) { return !usedCases[c.id] && c.maturity !== 'draft'; });
+      untried.sort(function() { return 0.5 - Math.random(); });
+      untried.slice(0, 3).forEach(function(c) {
+        cards.push({ title: c.title, desc: c.goal || '', type: 'Попробуйте кейс', color: 'pilot', href: '/cases' });
+      });
+      renderGrid();
+    }).catch(function() { renderGrid(); });
+  })();
+
+  function pluralRu(n, one, few, many) {
+    var abs = Math.abs(n) % 100;
+    var last = abs % 10;
+    if (abs > 10 && abs < 20) return many;
+    if (last > 1 && last < 5) return few;
+    if (last === 1) return one;
+    return many;
+  }
 
   /* ===== FEEDBACK FORM ===== */
   var feedbackForm = document.getElementById('feedbackForm');
@@ -784,12 +1063,20 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
       feedbackForm.style.maxHeight = '0';
       btnOpen.style.display = '';
     });
-    btnSend.addEventListener('click', function() {
+    btnSend.addEventListener('click', async function() {
       var msg = document.getElementById('feedbackText').value.trim();
       if (!msg) return;
-      // [DB] здесь будет fetch('/api/feedback', { method:'POST', body: JSON.stringify({message: msg}) })
-      btnSend.textContent = '\u2713 Заявка отправлена';
       btnSend.disabled = true;
+      btnSend.textContent = 'Отправка\u2026';
+      try {
+        var userName = (document.querySelector('.profile-name') || {}).textContent || 'Без имени';
+        await fetch('https://hoshoyufag.beget.app/webhook/mik-consultation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: userName, comment: msg, source: 'profile' }),
+        });
+      } catch(e) { console.error(e); }
+      btnSend.textContent = '\u2713 Заявка отправлена';
       setTimeout(function() {
         feedbackForm.style.maxHeight = '0';
         btnOpen.style.display = '';
@@ -800,81 +1087,92 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     });
   }
 
-  /* ===== CHART.JS ===== */
-  Chart.defaults.color = 'rgba(255,255,255,.68)';
-  Chart.defaults.borderColor = 'rgba(255,255,255,.08)';
+  /* ===== ACTIVITY RINGS (Apple Watch style) ===== */
+  var hoveredRing = -1;
+  var legendItems = document.querySelectorAll('.ac-legend-item');
 
-  function genActivityData(days) {
-    var data = { labels: [], cases: [], prompts: [], tools: [] };
-    var now = new Date();
-    for (var i = days - 1; i >= 0; i--) {
-      var d = new Date(now); d.setDate(d.getDate() - i);
-      var label = days <= 7 ? d.toLocaleDateString('ru', { weekday: 'short' }) : d.toLocaleDateString('ru', { day: 'numeric', month: 'short' });
-      data.labels.push(label);
-      data.cases.push(Math.floor(Math.random() * 5 + 1));
-      data.prompts.push(Math.floor(Math.random() * 8 + 2));
-      data.tools.push(Math.floor(Math.random() * 3));
-    }
-    return data;
-  }
+  var RINGS_CFG = [
+    { key:'prompts', color:'120,140,255', label:'Промпты' },
+    { key:'cases',   color:'38,210,152',  label:'Кейсы' },
+    { key:'tools',   color:'255,193,7',   label:'Инструменты' }
+  ];
 
-  var activityChart = null, donutChart = null, currentPeriod = 7, currentChartType = 'line';
+  function buildRingsSvg() {
+    var svg = document.getElementById('activityRingsSvg');
+    if (!svg) return;
+    var m = PROFILE.metrics;
+    var cx = 120, cy = 120;
+    var lineW = 20;
+    var gap = 8;
+    var maxR = 108;
 
-  function buildActivityChart() {
-    var canvas = document.getElementById('cPersonalActivity');
-    var data = genActivityData(currentPeriod);
-    var isLine = currentChartType === 'line';
-    var datasets = [
-      { label: 'Кейсы', data: data.cases, borderColor: 'rgba(38, 210, 152, .95)', backgroundColor: 'rgba(38, 210, 152, .15)', fill: isLine, tension: 0.4, borderWidth: 2, pointRadius: isLine ? 3 : 0, pointHoverRadius: 5, borderRadius: isLine ? 0 : 6 },
-      { label: 'Промпты', data: data.prompts, borderColor: 'rgba(120, 140, 255, .95)', backgroundColor: 'rgba(120, 140, 255, .15)', fill: isLine, tension: 0.4, borderWidth: 2, pointRadius: isLine ? 3 : 0, pointHoverRadius: 5, borderRadius: isLine ? 0 : 6 },
-      { label: 'Инструменты', data: data.tools, borderColor: 'rgba(255, 193, 7, .95)', backgroundColor: 'rgba(255, 193, 7, .15)', fill: isLine, tension: 0.4, borderWidth: 2, pointRadius: isLine ? 3 : 0, pointHoverRadius: 5, borderRadius: isLine ? 0 : 6 }
+    var vals = [
+      { value: m.prompts || 0, max: RING_LIMITS.prompts },
+      { value: m.cases || 0,   max: RING_LIMITS.cases },
+      { value: m.tools || 0,   max: RING_LIMITS.tools }
     ];
-    if (activityChart) activityChart.destroy();
-    activityChart = new Chart(canvas, {
-      type: currentChartType, data: { labels: data.labels, datasets: datasets },
-      options: { responsive: true, maintainAspectRatio: false, animation: { duration: 500, easing: 'easeInOutQuart' }, interaction: { intersect: false, mode: 'index' },
-        plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(10,12,18,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1, cornerRadius: 12, padding: 12, titleFont: { weight: 600 } } },
-        scales: { x: { grid: { display: false }, ticks: { font: { size: 11 } } }, y: { grid: { color: 'rgba(255,255,255,.06)' }, ticks: { font: { size: 11 } }, beginAtZero: true } }
+
+    var html = '';
+    RINGS_CFG.forEach(function(cfg, i) {
+      var r = maxR - i * (lineW + gap);
+      var pct = Math.min(vals[i].value / vals[i].max, 1);
+      var circumference = 2 * Math.PI * r;
+      var dashLen = pct * circumference;
+      var isHovered = hoveredRing === i;
+      var isDimmed = hoveredRing >= 0 && !isHovered;
+      var lw = isHovered ? lineW + 4 : lineW;
+      var alpha = isDimmed ? 0.25 : 0.9;
+      var bgAlpha = isDimmed ? 0.05 : 0.1;
+
+      // Background track
+      html += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba('+cfg.color+','+bgAlpha+')" stroke-width="'+lw+'" />';
+
+      // Filled arc
+      if (pct > 0) {
+        html += '<circle class="ring-fill" data-ring="'+i+'" cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" '
+          + 'stroke="rgba('+cfg.color+','+alpha+')" stroke-width="'+lw+'" '
+          + 'stroke-linecap="round" '
+          + 'stroke-dasharray="'+dashLen+' '+circumference+'" '
+          + 'transform="rotate(-90 '+cx+' '+cy+')" '
+          + 'style="cursor:pointer; transition: stroke-width .2s, stroke-opacity .2s; filter:'+(isHovered ? 'drop-shadow(0 0 6px rgba('+cfg.color+',.5))' : 'none')+';" />';
       }
+    });
+
+    svg.innerHTML = html;
+
+    // Highlight legend
+    legendItems.forEach(function(el, i) {
+      if (hoveredRing < 0) { el.style.opacity = '1'; el.style.transform = 'none'; }
+      else if (i === hoveredRing) { el.style.opacity = '1'; el.style.transform = 'translateX(4px)'; }
+      else { el.style.opacity = '0.35'; el.style.transform = 'none'; }
     });
   }
 
-  function buildDonut() {
-    var canvas = document.getElementById('cPersonalDonut');
-    if (donutChart) donutChart.destroy();
-    donutChart = new Chart(canvas, {
-      type: 'doughnut',
-      data: { labels: ['Кейсы', 'Промпты', 'Инструменты'], datasets: [{ data: [PROFILE.metrics.cases, PROFILE.metrics.prompts, PROFILE.metrics.tools], backgroundColor: ['rgba(38, 210, 152, .85)', 'rgba(120, 140, 255, .85)', 'rgba(255, 193, 7, .85)'], borderColor: 'rgba(7,10,16,.6)', borderWidth: 3, hoverOffset: 8 }] },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '62%', animation: { duration: 600 },
-        plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(10,12,18,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1, cornerRadius: 12, padding: 12,
-          callbacks: { label: function(ctx) { var total = ctx.dataset.data.reduce(function(s,v){ return s+v; }, 0); return ctx.label + ': ' + ctx.parsed + ' (' + ((ctx.parsed / total) * 100).toFixed(1) + '%)'; } }
-        } }
-      }
+  // SVG ring hover
+  (function() {
+    var svg = document.getElementById('activityRingsSvg');
+    if (!svg) return;
+    svg.addEventListener('mouseover', function(e) {
+      var ring = e.target.closest('[data-ring]');
+      var idx = ring ? parseInt(ring.getAttribute('data-ring')) : -1;
+      if (idx !== hoveredRing) { hoveredRing = idx; buildRingsSvg(); }
     });
-  }
+    svg.addEventListener('mouseleave', function() {
+      if (hoveredRing !== -1) { hoveredRing = -1; buildRingsSvg(); }
+    });
+  })();
 
-  function switchChart(period, type) {
-    var canvas = document.getElementById('cPersonalActivity');
-    canvas.style.opacity = '0';
-    setTimeout(function() { currentPeriod = period; currentChartType = type; buildActivityChart(); canvas.style.opacity = '1'; }, 150);
-  }
-
-  document.getElementById('segPeriod').addEventListener('click', function(e) {
-    var btn = e.target.closest('button'); if (!btn) return;
-    document.querySelectorAll('#segPeriod button').forEach(function(b){ b.classList.remove('active'); });
-    btn.classList.add('active'); switchChart(parseInt(btn.dataset.period), currentChartType);
+  // Legend hover → highlight ring
+  legendItems.forEach(function(el, i) {
+    el.style.transition = 'opacity .2s, transform .2s';
+    el.style.cursor = 'pointer';
+    el.addEventListener('mouseenter', function() { hoveredRing = i; buildRingsSvg(); });
+    el.addEventListener('mouseleave', function() { hoveredRing = -1; buildRingsSvg(); });
   });
 
-  document.getElementById('segType').addEventListener('click', function(e) {
-    var btn = e.target.closest('button'); if (!btn) return;
-    document.querySelectorAll('#segType button').forEach(function(b){ b.classList.remove('active'); });
-    btn.classList.add('active'); switchChart(currentPeriod, btn.dataset.chart);
-  });
+  buildRingsSvg();
 
-  if (typeof Chart !== 'undefined') { buildActivityChart(); buildDonut(); }
-  else { document.addEventListener('DOMContentLoaded', function() { buildActivityChart(); buildDonut(); }); }
-
-  /* ===== HEATMAP ===== */
+  /* ===== HEATMAP — HIDDEN (commented out, not deleted) =====
   (function() {
     // [DB] Заменить на fetch('/api/user/activity-heatmap?userId=__USER_ID__&days=365')
     function genHeatmapData() {
@@ -1028,9 +1326,18 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
       animNum('hmStreak', s.streak);
       animNum('hmStreakMax', s.maxStreak);
       animNum('hmCases', PROFILE.metrics.cases);
+
+      // Load prompt usage count from API
+      var authLogin = localStorage.getItem('auth_login') || '';
+      if (authLogin) {
+        fetch('/api/prompt-usages/count/' + encodeURIComponent(authLogin))
+          .then(function(r) { return r.json(); })
+          .then(function(d) { if (d && typeof d.count === 'number') animNum('hmPrompts', d.count); })
+          .catch(function() {});
+      }
     }
   })();
-  /* ===== END HEATMAP ===== */
+  ===== END HEATMAP ===== */
 
   // ===== ВЫХОД ИЗ ЛИЧНОГО КАБИНЕТА =====
   var logoutButtons = [];
@@ -1051,6 +1358,16 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     });
   }
 
+})();
+</script>
+<button id="scrollTopBtn" aria-label="Наверх">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+<script>
+(function(){
+  var b=document.getElementById('scrollTopBtn');
+  window.addEventListener('scroll',function(){b.classList.toggle('visible',window.scrollY>300)});
+  b.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
 })();
 </script>
 </body>

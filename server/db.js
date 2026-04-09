@@ -1,28 +1,40 @@
-import Database from 'better-sqlite3';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { mkdirSync, existsSync } from 'fs';
+import pg from 'pg';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const dbPath = process.env.DATABASE_PATH || join(__dirname, '..', 'data', 'platform.db');
+const { Pool } = pg;
 
-let db;
-
-export function getDb() {
-  if (!db) {
-    const dataDir = join(__dirname, '..', 'data');
-    if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
-    db = new Database(dbPath);
-    db.pragma('journal_mode = WAL');
-    initSchema(db);
-  }
-  return db;
+if (!process.env.DATABASE_URL) {
+  console.error('ERROR: DATABASE_URL environment variable is not set.');
+  console.error('Create a .env file with DATABASE_URL=postgresql://user:pass@host:5432/dbname');
+  process.exit(1);
 }
 
-function initSchema(database) {
-  database.exec(`
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false }
+});
+
+export function getDb() {
+  return pool;
+}
+
+export async function query(sql, params = []) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(sql, params);
+    return result;
+  } finally {
+    client.release();
+  }
+}
+
+export async function initSchema() {
+  await query(`
     CREATE TABLE IF NOT EXISTS departments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
+      name TEXT UNIQUE NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS case_task_categories (
+      id SERIAL PRIMARY KEY,
       name TEXT UNIQUE NOT NULL
     );
     CREATE TABLE IF NOT EXISTS cases (
@@ -42,17 +54,58 @@ function initSchema(database) {
       data TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS ui_events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       timestamp TEXT NOT NULL,
       event_type TEXT,
       payload TEXT
+    );
+    CREATE TABLE IF NOT EXISTS speaker_questions (
+      id SERIAL PRIMARY KEY,
+      speaker TEXT NOT NULL,
+      first_name TEXT NOT NULL,
+      last_name TEXT NOT NULL,
+      telegram TEXT NOT NULL,
+      question TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS prompt_usages (
+      id SERIAL PRIMARY KEY,
+      user_login TEXT NOT NULL,
+      user_name TEXT,
+      prompt_id TEXT NOT NULL,
+      prompt_title TEXT,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
     );
     CREATE TABLE IF NOT EXISTS kv (
       key TEXT PRIMARY KEY,
       value TEXT
     );
+    CREATE TABLE IF NOT EXISTS materials (
+      id TEXT PRIMARY KEY,
+      data TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS instructions (
+      id TEXT PRIMARY KEY,
+      data TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS videos (
+      id TEXT PRIMARY KEY,
+      data TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS video_categories (
+      id SERIAL PRIMARY KEY,
+      name TEXT UNIQUE NOT NULL,
+      color TEXT NOT NULL DEFAULT '#6B9FFF'
+    );
+    CREATE TABLE IF NOT EXISTS dashboard_feedback (
+      id SERIAL PRIMARY KEY,
+      score SMALLINT NOT NULL CHECK (score BETWEEN 1 AND 10),
+      comment TEXT,
+      user_login TEXT,
+      user_name TEXT,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
     CREATE INDEX IF NOT EXISTS idx_ui_events_ts ON ui_events(timestamp);
     CREATE INDEX IF NOT EXISTS idx_ui_events_type ON ui_events(event_type);
   `);
 }
-

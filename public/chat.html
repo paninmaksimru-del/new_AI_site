@@ -370,6 +370,9 @@
       .input-footer { padding: 2px 8px 5px; font-size: 10px; }
       .toast { bottom: max(12px, env(safe-area-inset-bottom)); }
     }
+    #scrollTopBtn{position:fixed;bottom:32px;right:32px;z-index:9999;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(7,10,16,.75);backdrop-filter:blur(8px);color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .25s ease,background .15s,border-color .15s}
+    #scrollTopBtn.visible{opacity:1;pointer-events:auto}
+    #scrollTopBtn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35)}
   </style>
 </head>
 <body>
@@ -386,7 +389,7 @@
       <a class="navlink" href="/education" data-section="education">Обучение</a>
       <a class="navlink" href="/cases" data-section="cases">Кейсы</a>
       <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
-      <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a>
+      <!-- <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a> -->
       <a class="profile-btn" href="/profile" id="profileBtn">
         <span class="nowrap">Личный кабинет</span>
       </a>
@@ -399,7 +402,7 @@
     <a class="navlink" href="/education" data-section="education">Обучение</a>
     <a class="navlink" href="/cases" data-section="cases">Кейсы</a>
     <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
-    <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a>
+    <!-- <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a> -->
     <a class="profile-btn" href="/profile">
       <span class="nowrap">Личный кабинет</span>
     </a>
@@ -417,8 +420,8 @@
     </div>
     <div class="sb-scroll" id="sbScroll"></div>
     <div class="sb-footer">
-      <div class="sb-footer-item" id="addProjectBtn">📁 Новый проект</div>
-      <a href="/" class="sb-footer-item">🧰 Все инструменты</a>
+      <div class="sb-footer-item" id="addProjectBtn">Новый проект</div>
+      <a href="/" class="sb-footer-item">Все инструменты</a>
     </div>
   </aside>
 
@@ -472,7 +475,7 @@
           </div>
         </div>
         <div class="chat-topbar-right">
-          <button class="history-btn" id="historyBtn" type="button">🕐 История</button>
+          <button class="history-btn" id="historyBtn" type="button">История</button>
         </div>
       </div>
 
@@ -499,8 +502,8 @@
           <div class="input-inner">
             <textarea id="userInput" rows="1" placeholder="Что вас интересует?"></textarea>
             <div class="input-tools">
-              <button class="tool-btn" type="button" id="attachBtn" title="Прикрепить изображение">📎</button>
-              <button class="send-btn" type="button" id="sendBtn" disabled>➤</button>
+              <button class="tool-btn" type="button" id="attachBtn" title="Прикрепить изображение">+</button>
+              <button class="send-btn" type="button" id="sendBtn" disabled>&rarr;</button>
             </div>
           </div>
           <div class="input-footer">
@@ -519,9 +522,9 @@
 
 <!-- Context menu -->
 <div class="ctx-menu" id="ctxMenu">
-  <div class="ctx-item" id="ctxRename">✏️ Переименовать</div>
-  <div class="ctx-item" id="ctxMove">📁 В проект</div>
-  <div class="ctx-item danger" id="ctxDelete">🗑 Удалить</div>
+  <div class="ctx-item" id="ctxRename">Переименовать</div>
+  <div class="ctx-item" id="ctxMove">В проект</div>
+  <div class="ctx-item danger" id="ctxDelete">Удалить</div>
 </div>
 
 <!-- New project modal -->
@@ -780,7 +783,7 @@ function doCreateProject() {
   state.projects.push({ id: 'proj_' + Date.now(), name, open: true });
   saveState(); renderSidebar();
   document.getElementById('projectModal').classList.remove('open');
-  showToast(`📁 Проект «${name}» создан`);
+  showToast(`Проект «${name}» создан`);
 }
 
 // ── TEXTAREA ───────────────────────────────────────────────
@@ -817,14 +820,14 @@ document.getElementById('fileInput').addEventListener('change', function() {
       }
       renderPills(); sendBtn.disabled = false;
     };
-    r.onerror = () => { showToast('⚠️ Не удалось прочитать файл'); };
+    r.onerror = () => { showToast('Не удалось прочитать файл'); };
     r.readAsDataURL(f);
   });
   this.value = '';
 });
 function renderPills() {
   const fb = document.getElementById('filePreviewBar');
-  fb.innerHTML = state.pendingFiles.map((f,i) => `<div class="file-pill"><span>🖼</span><span class="file-pill-name" title="${escHtml(f.name)}">${escHtml(f.name)}</span><span class="file-pill-rm" data-idx="${i}">✕</span></div>`).join('');
+  fb.innerHTML = state.pendingFiles.map((f,i) => `<div class="file-pill"><span></span><span class="file-pill-name" title="${escHtml(f.name)}">${escHtml(f.name)}</span><span class="file-pill-rm" data-idx="${i}">✕</span></div>`).join('');
   fb.classList.toggle('has-files', state.pendingFiles.length > 0);
 }
 document.getElementById('filePreviewBar').addEventListener('click', e => {
@@ -877,7 +880,7 @@ async function sendMessage() {
     if (chat) { chat.messages = [...state.messages]; saveState(); }
   } catch(err) {
     removeTyping(tid); setProgress(0);
-    showToast('⚠️ ' + (err.message || 'Ошибка'));
+    showToast('' + (err.message || 'Ошибка'));
   } finally {
     state.isLoading = false;
     setTimeout(() => setProgress(0), 600);
@@ -945,10 +948,10 @@ document.getElementById('messagesArea')?.addEventListener('click', e => {
   const b = document.getElementById(btn.dataset.cpmsg)?.querySelector('.msg-bubble');
   if (!b) return;
   if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(b.innerText).then(() => showToast('✅ Скопировано')).catch(() => showToast('Не удалось скопировать'));
+    navigator.clipboard.writeText(b.innerText).then(() => showToast('Скопировано')).catch(() => showToast('Не удалось скопировать'));
   } else showToast('Не удалось скопировать');
 });
-document.getElementById('historyBtn').addEventListener('click', () => showToast('📋 История будет доступна после подключения базы данных'));
+document.getElementById('historyBtn').addEventListener('click', () => showToast('История будет доступна после подключения базы данных'));
 document.getElementById('burgerBtn').addEventListener('click', () => {
   const m = document.getElementById('mobileMenu');
   const burger = document.getElementById('burgerBtn');
@@ -987,6 +990,16 @@ function showToast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 function escHtml(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+<button id="scrollTopBtn" aria-label="Наверх">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+<script>
+(function(){
+  var b=document.getElementById('scrollTopBtn');
+  window.addEventListener('scroll',function(){b.classList.toggle('visible',window.scrollY>300)});
+  b.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'})});
+})();
 </script>
 </body>
 </html>

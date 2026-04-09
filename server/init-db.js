@@ -1,5 +1,5 @@
-import { getDb } from './db.js';
+import { initSchema } from './db.js';
 import './seed.js';
 
-getDb();
+await initSchema();
 console.log('DB initialized. Run npm start to start the server.');

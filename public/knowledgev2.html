@@ -459,13 +459,14 @@
       border-radius: 16px;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      overflow: visible;
       position: relative;
     }
     .kv2-panel-head {
       flex-shrink: 0;
       padding: 16px 16px 12px;
       border-bottom: 1px solid var(--kv-bg);
+      border-radius: 16px 16px 0 0;
     }
     .kv2-toolbar-row {
       display: flex;
@@ -649,8 +650,10 @@
     /* Grid area */
     .kv2-body {
       flex: 1;
+      min-height: 0;
       overflow: auto;
       padding: 24px 16px 16px;
+      border-radius: 0 0 16px 16px;
     }
     .kv2-asset-label {
       font-size: 12px;
@@ -1826,7 +1829,7 @@
               <button type="button" class="kv2-chip"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><g clip-path="url(#kv2-smart-clip)"><path fill="#4d4d4d" d="M5.20312 3.86719C5.20312 3.98529 5.25005 4.09855 5.33355 4.18207C5.41707 4.26558 5.53033 4.3125 5.64844 4.3125C6.23896 4.3125 6.80529 4.54709 7.22285 4.96465C7.6404 5.38221 7.875 5.94854 7.875 6.53906C7.875 6.65717 7.92195 6.77044 8.00542 6.85395C8.08897 6.93746 8.20222 6.98438 8.32035 6.98438C8.4384 6.98438 8.55165 6.93746 8.6352 6.85395C8.71868 6.77044 8.76562 6.65717 8.76562 6.53906C8.76562 5.94854 9.00023 5.38221 9.41775 4.96465C9.83535 4.54709 10.4017 4.3125 10.9922 4.3125C11.1103 4.3125 11.2235 4.26558 11.3071 4.18207C11.3906 4.09855 11.4375 3.98529 11.4375 3.86719C11.4375 3.74908 11.3906 3.63582 11.3071 3.55231C11.2235 3.4688 11.1103 3.42188 10.9922 3.42188C10.4017 3.42188 9.83535 3.18729 9.41775 2.76973C9.00023 2.35217 8.76562 1.78583 8.76562 1.19531C8.76562 1.07721 8.71868 0.963945 8.6352 0.880433C8.55165 0.79692 8.4384 0.75 8.32035 0.75C8.20222 0.75 8.08897 0.79692 8.00542 0.880433C7.92195 0.963945 7.875 1.07721 7.875 1.19531C7.875 1.78583 7.6404 2.35217 7.22285 2.76973C6.80529 3.18729 6.23896 3.42188 5.64844 3.42188C5.53033 3.42188 5.41707 3.4688 5.33355 3.55231C5.25005 3.63582 5.20312 3.74908 5.20312 3.86719ZM4.75781 9.65625C4.75781 9.77437 4.80473 9.88762 4.88824 9.9711C4.97176 10.0546 5.08502 10.1016 5.20312 10.1016C5.43934 10.1016 5.66587 10.1954 5.83289 10.3624C5.99992 10.5295 6.09375 10.756 6.09375 10.9922C6.09375 11.1103 6.14067 11.2235 6.22418 11.3071C6.3077 11.3906 6.42096 11.4375 6.53906 11.4375C6.65717 11.4375 6.77043 11.3906 6.85394 11.3071C6.93745 11.2235 6.98438 11.1103 6.98438 10.9922C6.98438 10.756 7.07821 10.5295 7.24523 10.3624C7.41226 10.1954 7.63882 10.1016 7.875 10.1016C7.99312 10.1016 8.10637 10.0546 8.18985 9.9711C8.2734 9.88762 8.32035 9.77437 8.32035 9.65625C8.32035 9.53813 8.2734 9.42488 8.18985 9.3414C8.10637 9.25785 7.99312 9.2109 7.875 9.2109C7.63882 9.2109 7.41226 9.11708 7.24523 8.95005C7.07821 8.78303 6.98438 8.55652 6.98438 8.32035C6.98438 8.20222 6.93745 8.08897 6.85394 8.00542C6.77043 7.92195 6.65717 7.875 6.53906 7.875C6.42096 7.875 6.3077 7.92195 6.22418 8.00542C6.14067 8.08897 6.09375 8.20222 6.09375 8.32035C6.09375 8.55652 5.99992 8.78303 5.83289 8.95005C5.66587 9.11708 5.43934 9.2109 5.20312 9.2109C5.08502 9.2109 4.97176 9.25785 4.88824 9.3414C4.80473 9.42488 4.75781 9.53813 4.75781 9.65625ZM0.880425 6.85395C0.79692 6.77044 0.75 6.65717 0.75 6.53906C0.75 6.42096 0.79692 6.30769 0.880425 6.22417C0.963945 6.14067 1.07721 6.09375 1.19531 6.09375C1.66773 6.09375 2.1208 5.90608 2.45485 5.57203C2.7889 5.23798 2.97656 4.78492 2.97656 4.3125C2.97656 4.1944 3.02348 4.08113 3.10699 3.99762C3.19051 3.91411 3.30377 3.86719 3.42188 3.86719C3.53998 3.86719 3.65324 3.91411 3.73676 3.99762C3.82027 4.08113 3.86719 4.1944 3.86719 4.3125C3.86719 4.78492 4.05485 5.23798 4.3889 5.57203C4.72295 5.90608 5.17602 6.09375 5.64844 6.09375C5.76654 6.09375 5.8798 6.14067 5.96332 6.22417C6.04683 6.30769 6.09375 6.42096 6.09375 6.53906C6.09375 6.65717 6.04683 6.77044 5.96332 6.85395C5.8798 6.93746 5.76654 6.98438 5.64844 6.98438C5.17602 6.98438 4.72295 7.17204 4.3889 7.50607C4.05485 7.84012 3.86719 8.2932 3.86719 8.76562C3.86719 8.88375 3.82027 8.997 3.73676 9.08047C3.65324 9.16402 3.53998 9.2109 3.42188 9.2109C3.30377 9.2109 3.19051 9.16402 3.10699 9.08047C3.02348 8.997 2.97656 8.88375 2.97656 8.76562C2.97656 8.2932 2.7889 7.84012 2.45485 7.50607C2.1208 7.17204 1.66773 6.98438 1.19531 6.98438C1.07721 6.98438 0.963945 6.93746 0.880425 6.85395Z"/></g><defs><clipPath id="kv2-smart-clip"><rect width="12" height="12" fill="white"/></clipPath></defs></svg>Смарт Теги</button>
               <span class="kv2-divider-v"></span>
               <button type="button" class="kv2-chip"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill="#4d4d4d" d="M2.09625 1.3125H9.90375C10.1613 1.3125 10.4084 1.41483 10.5905 1.59697C10.7727 1.77912 10.875 2.02616 10.875 2.28375V4.46625C10.875 4.72384 10.7727 4.97088 10.5905 5.15303C10.4084 5.33517 10.1613 5.4375 9.90375 5.4375H2.09625C1.83866 5.4375 1.59162 5.33517 1.40947 5.15303C1.22733 4.97088 1.125 4.72384 1.125 4.46625V2.28375C1.125 2.02616 1.22733 1.77912 1.40947 1.59697C1.59162 1.41483 1.83866 1.3125 2.09625 1.3125ZM9.90375 4.6875C9.96213 4.68653 10.0178 4.66291 10.0591 4.62163C10.1004 4.58034 10.124 4.52463 10.125 4.46625V2.28375C10.124 2.22537 10.1004 2.16966 10.0591 2.12837C10.0178 2.08709 9.96213 2.06347 9.90375 2.0625H2.09625C2.03787 2.06347 1.98216 2.08709 1.94087 2.12837C1.89959 2.16966 1.87597 2.22537 1.875 2.28375V4.46625C1.87597 4.52463 1.89959 4.58034 1.94087 4.62163C1.98216 4.66291 2.03787 4.68653 2.09625 4.6875H9.90375ZM5.19 3.375C5.19 3.47446 5.22951 3.56984 5.29984 3.64016C5.37016 3.71049 5.46554 3.75 5.565 3.75H9.06375C9.16321 3.75 9.25859 3.71049 9.32892 3.64016C9.39924 3.56984 9.43875 3.47446 9.43875 3.375C9.43875 3.27554 9.39924 3.18016 9.32892 3.10984C9.25859 3.03951 9.16321 3 9.06375 3H5.565C5.46554 3 5.37016 3.03951 5.29984 3.10984C5.22951 3.18016 5.19 3.27554 5.19 3.375ZM2.565 3.375C2.565 3.47446 2.60451 3.56984 2.67483 3.64016C2.74516 3.71049 2.84054 3.75 2.94 3.75H4.125C4.22446 3.75 4.31984 3.71049 4.39016 3.64016C4.46049 3.56984 4.5 3.47446 4.5 3.375C4.5 3.27554 4.46049 3.18016 4.39016 3.10984C4.31984 3.03951 4.22446 3 4.125 3H2.93625C2.83679 3 2.74141 3.03951 2.67109 3.10984C2.60076 3.18016 2.56125 3.27554 2.56125 3.375H2.565ZM2.04375 6.5625H7.905C8.16259 6.5625 8.40963 6.66483 8.59178 6.84697C8.77392 7.02912 8.87625 7.27616 8.87625 7.53375V9.71625C8.87625 9.97384 8.77392 10.2209 8.59178 10.403C8.40963 10.5852 8.16259 10.6875 7.905 10.6875H2.09625C1.83866 10.6875 1.59162 10.5852 1.40947 10.403C1.22733 10.2209 1.125 9.97384 1.125 9.71625V7.5C1.12251 7.37778 1.14443 7.25629 1.18948 7.14265C1.23453 7.02901 1.30181 6.9255 1.38738 6.83819C1.47294 6.75088 1.57507 6.68152 1.68777 6.63419C1.80048 6.58685 1.9215 6.56247 2.04375 6.5625ZM7.905 9.9375C7.96368 9.9375 8.01996 9.91419 8.06145 9.8727C8.10294 9.8312 8.12625 9.77493 8.12625 9.71625V7.53375C8.12625 7.47507 8.10294 7.4188 8.06145 7.3773C8.01996 7.33581 7.96368 7.3125 7.905 7.3125H2.04375C2.01992 7.31235 1.99633 7.31725 1.97453 7.32688C1.95273 7.33651 1.93322 7.35065 1.91727 7.36836C1.90133 7.38607 1.88932 7.40696 1.88204 7.42965C1.87475 7.45234 1.87235 7.47632 1.875 7.5V9.75C1.87597 9.80838 1.89959 9.86409 1.94087 9.90538C1.98216 9.94667 2.03787 9.97028 2.09625 9.97125L7.905 9.9375ZM3.81375 8.67C3.81375 8.76946 3.85326 8.86484 3.92359 8.93516C3.99391 9.00549 4.08929 9.045 4.18875 9.045H7.0875C7.18696 9.045 7.28234 9.00549 7.35267 8.93516C7.42299 8.86484 7.4625 8.76946 7.4625 8.67C7.4625 8.57054 7.42299 8.47516 7.35267 8.40483C7.28234 8.33451 7.18696 8.295 7.0875 8.295H4.18875C4.08929 8.295 3.99391 8.33451 3.92359 8.40483C3.85326 8.47516 3.81375 8.57054 3.81375 8.67ZM2.91375 9.075C2.98792 9.075 3.06042 9.05301 3.12209 9.0118C3.18376 8.9706 3.23182 8.91203 3.2602 8.84351C3.28859 8.77498 3.29601 8.69958 3.28154 8.62684C3.26707 8.5541 3.23136 8.48728 3.17892 8.43483C3.12647 8.38239 3.05965 8.34668 2.98691 8.33221C2.91417 8.31774 2.83877 8.32516 2.77024 8.35355C2.70172 8.38193 2.64315 8.42999 2.60195 8.49166C2.56074 8.55333 2.53875 8.62583 2.53875 8.7C2.53875 8.79946 2.57826 8.89484 2.64859 8.96516C2.71891 9.03549 2.81429 9.075 2.91375 9.075Z"/></svg>Год создания</button>
-              <button type="button" class="kv2-chip"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill="#4d4d4d" d="M2.09625 1.3125H9.90375C10.1613 1.3125 10.4084 1.41483 10.5905 1.59697C10.7727 1.77912 10.875 2.02616 10.875 2.28375V4.46625C10.875 4.72384 10.7727 4.97088 10.5905 5.15303C10.4084 5.33517 10.1613 5.4375 9.90375 5.4375H2.09625C1.83866 5.4375 1.59162 5.33517 1.40947 5.15303C1.22733 4.97088 1.125 4.72384 1.125 4.46625V2.28375C1.125 2.02616 1.22733 1.77912 1.40947 1.59697C1.59162 1.41483 1.83866 1.3125 2.09625 1.3125ZM9.90375 4.6875C9.96213 4.68653 10.0178 4.66291 10.0591 4.62163C10.1004 4.58034 10.124 4.52463 10.125 4.46625V2.28375C10.124 2.22537 10.1004 2.16966 10.0591 2.12837C10.0178 2.08709 9.96213 2.06347 9.90375 2.0625H2.09625C2.03787 2.06347 1.98216 2.08709 1.94087 2.12837C1.89959 2.16966 1.87597 2.22537 1.875 2.28375V4.46625C1.87597 4.52463 1.89959 4.58034 1.94087 4.62163C1.98216 4.66291 2.03787 4.68653 2.09625 4.6875H9.90375ZM5.19 3.375C5.19 3.47446 5.22951 3.56984 5.29984 3.64016C5.37016 3.71049 5.46554 3.75 5.565 3.75H9.06375C9.16321 3.75 9.25859 3.71049 9.32892 3.64016C9.39924 3.56984 9.43875 3.47446 9.43875 3.375C9.43875 3.27554 9.39924 3.18016 9.32892 3.10984C9.25859 3.03951 9.16321 3 9.06375 3H5.565C5.46554 3 5.37016 3.03951 5.29984 3.10984C5.22951 3.18016 5.19 3.27554 5.19 3.375ZM2.565 3.375C2.565 3.47446 2.60451 3.56984 2.67483 3.64016C2.74516 3.71049 2.84054 3.75 2.94 3.75H4.125C4.22446 3.75 4.31984 3.71049 4.39016 3.64016C4.46049 3.56984 4.5 3.47446 4.5 3.375C4.5 3.27554 4.46049 3.18016 4.39016 3.10984C4.31984 3.03951 4.22446 3 4.125 3H2.93625C2.83679 3 2.74141 3.03951 2.67109 3.10984C2.60076 3.18016 2.56125 3.27554 2.56125 3.375H2.565ZM2.04375 6.5625H7.905C8.16259 6.5625 8.40963 6.66483 8.59178 6.84697C8.77392 7.02912 8.87625 7.27616 8.87625 7.53375V9.71625C8.87625 9.97384 8.77392 10.2209 8.59178 10.403C8.40963 10.5852 8.16259 10.6875 7.905 10.6875H2.09625C1.83866 10.6875 1.59162 10.5852 1.40947 10.403C1.22733 10.2209 1.125 9.97384 1.125 9.71625V7.5C1.12251 7.37778 1.14443 7.25629 1.18948 7.14265C1.23453 7.02901 1.30181 6.9255 1.38738 6.83819C1.47294 6.75088 1.57507 6.68152 1.68777 6.63419C1.80048 6.58685 1.9215 6.56247 2.04375 6.5625ZM7.905 9.9375C7.96368 9.9375 8.01996 9.91419 8.06145 9.8727C8.10294 9.8312 8.12625 9.77493 8.12625 9.71625V7.53375C8.12625 7.47507 8.10294 7.4188 8.06145 7.3773C8.01996 7.33581 7.96368 7.3125 7.905 7.3125H2.04375C2.01992 7.31235 1.99633 7.31725 1.97453 7.32688C1.95273 7.33651 1.93322 7.35065 1.91727 7.36836C1.90133 7.38607 1.88932 7.40696 1.88204 7.42965C1.87475 7.45234 1.87235 7.47632 1.875 7.5V9.75C1.87597 9.80838 1.89959 9.86409 1.94087 9.90538C1.98216 9.94667 2.03787 9.97028 2.09625 9.97125L7.905 9.9375ZM3.81375 8.67C3.81375 8.76946 3.85326 8.86484 3.92359 8.93516C3.99391 9.00549 4.08929 9.045 4.18875 9.045H7.0875C7.18696 9.045 7.28234 9.00549 7.35267 8.93516C7.42299 8.86484 7.4625 8.76946 7.4625 8.67C7.4625 8.57054 7.42299 8.47516 7.35267 8.40483C7.28234 8.33451 7.18696 8.295 7.0875 8.295H4.18875C4.08929 8.295 3.99391 8.33451 3.92359 8.40483C3.85326 8.47516 3.81375 8.57054 3.81375 8.67ZM2.91375 9.075C2.98792 9.075 3.06042 9.05301 3.12209 9.0118C3.18376 8.9706 3.23182 8.91203 3.2602 8.84351C3.28859 8.77498 3.29601 8.69958 3.28154 8.62684C3.26707 8.5541 3.23136 8.48728 3.17892 8.43483C3.12647 8.38239 3.05965 8.34668 2.98691 8.33221C2.91417 8.31774 2.83877 8.32516 2.77024 8.35355C2.70172 8.38193 2.64315 8.42999 2.60195 8.49166C2.56074 8.55333 2.53875 8.62583 2.53875 8.7C2.53875 8.79946 2.57826 8.89484 2.64859 8.96516C2.71891 9.03549 2.81429 9.075 2.91375 9.075Z"/></svg>Ответственное лицо              </button>
+              <button type="button" class="kv2-chip"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill="#4d4d4d" d="M2.09625 1.3125H9.90375C10.1613 1.3125 10.4084 1.41483 10.5905 1.59697C10.7727 1.77912 10.875 2.02616 10.875 2.28375V4.46625C10.875 4.72384 10.7727 4.97088 10.5905 5.15303C10.4084 5.33517 10.1613 5.4375 9.90375 5.4375H2.09625C1.83866 5.4375 1.59162 5.33517 1.40947 5.15303C1.22733 4.97088 1.125 4.72384 1.125 4.46625V2.28375C1.125 2.02616 1.22733 1.77912 1.40947 1.59697C1.59162 1.41483 1.83866 1.3125 2.09625 1.3125ZM9.90375 4.6875C9.96213 4.68653 10.0178 4.66291 10.0591 4.62163C10.1004 4.58034 10.124 4.52463 10.125 4.46625V2.28375C10.124 2.22537 10.1004 2.16966 10.0591 2.12837C10.0178 2.08709 9.96213 2.06347 9.90375 2.0625H2.09625C2.03787 2.06347 1.98216 2.08709 1.94087 2.12837C1.89959 2.16966 1.87597 2.22537 1.875 2.28375V4.46625C1.87597 4.52463 1.89959 4.58034 1.94087 4.62163C1.98216 4.66291 2.03787 4.68653 2.09625 4.6875H9.90375ZM5.19 3.375C5.19 3.47446 5.22951 3.56984 5.29984 3.64016C5.37016 3.71049 5.46554 3.75 5.565 3.75H9.06375C9.16321 3.75 9.25859 3.71049 9.32892 3.64016C9.39924 3.56984 9.43875 3.47446 9.43875 3.375C9.43875 3.27554 9.39924 3.18016 9.32892 3.10984C9.25859 3.03951 9.16321 3 9.06375 3H5.565C5.46554 3 5.37016 3.03951 5.29984 3.10984C5.22951 3.18016 5.19 3.27554 5.19 3.375ZM2.565 3.375C2.565 3.47446 2.60451 3.56984 2.67483 3.64016C2.74516 3.71049 2.84054 3.75 2.94 3.75H4.125C4.22446 3.75 4.31984 3.71049 4.39016 3.64016C4.46049 3.56984 4.5 3.47446 4.5 3.375C4.5 3.27554 4.46049 3.18016 4.39016 3.10984C4.31984 3.03951 4.22446 3 4.125 3H2.93625C2.83679 3 2.74141 3.03951 2.67109 3.10984C2.60076 3.18016 2.56125 3.27554 2.56125 3.375H2.565ZM2.04375 6.5625H7.905C8.16259 6.5625 8.40963 6.66483 8.59178 6.84697C8.77392 7.02912 8.87625 7.27616 8.87625 7.53375V9.71625C8.87625 9.97384 8.77392 10.2209 8.59178 10.403C8.40963 10.5852 8.16259 10.6875 7.905 10.6875H2.09625C1.83866 10.6875 1.59162 10.5852 1.40947 10.403C1.22733 10.2209 1.125 9.97384 1.125 9.71625V7.5C1.12251 7.37778 1.14443 7.25629 1.18948 7.14265C1.23453 7.02901 1.30181 6.9255 1.38738 6.83819C1.47294 6.75088 1.57507 6.68152 1.68777 6.63419C1.80048 6.58685 1.9215 6.56247 2.04375 6.5625ZM7.905 9.9375C7.96368 9.9375 8.01996 9.91419 8.06145 9.8727C8.10294 9.8312 8.12625 9.77493 8.12625 9.71625V7.53375C8.12625 7.47507 8.10294 7.4188 8.06145 7.3773C8.01996 7.33581 7.96368 7.3125 7.905 7.3125H2.04375C2.01992 7.31235 1.99633 7.31725 1.97453 7.32688C1.95273 7.33651 1.93322 7.35065 1.91727 7.36836C1.90133 7.38607 1.88932 7.40696 1.88204 7.42965C1.87475 7.45234 1.87235 7.47632 1.875 7.5V9.75C1.87597 9.80838 1.89959 9.86409 1.94087 9.90538C1.98216 9.94667 2.03787 9.97028 2.09625 9.97125L7.905 9.9375ZM3.81375 8.67C3.81375 8.76946 3.85326 8.86484 3.92359 8.93516C3.99391 9.00549 4.08929 9.045 4.18875 9.045H7.0875C7.18696 9.045 7.28234 9.00549 7.35267 8.93516C7.42299 8.86484 7.4625 8.76946 7.4625 8.67C7.4625 8.57054 7.42299 8.47516 7.35267 8.40483C7.28234 8.33451 7.18696 8.295 7.0875 8.295H4.18875C4.08929 8.295 3.99391 8.33451 3.92359 8.40483C3.85326 8.47516 3.81375 8.57054 3.81375 8.67ZM2.91375 9.075C2.98792 9.075 3.06042 9.05301 3.12209 9.0118C3.18376 8.9706 3.23182 8.91203 3.2602 8.84351C3.28859 8.77498 3.29601 8.69958 3.28154 8.62684C3.26707 8.5541 3.23136 8.48728 3.17892 8.43483C3.12647 8.38239 3.05965 8.34668 2.98691 8.33221C2.91417 8.31774 2.83877 8.32516 2.77024 8.35355C2.70172 8.38193 2.64315 8.42999 2.60195 8.49166C2.56074 8.55333 2.53875 8.62583 2.53875 8.7C2.53875 8.79946 2.57826 8.89484 2.64859 8.96516C2.71891 9.03549 2.81429 9.075 2.91375 9.075Z"/></svg>Ответственное лицо</button>
               <div class="kv2-type-wrap" id="docTypeWrap">
                 <button type="button" class="kv2-chip" id="docTypeBtn" aria-expanded="false" aria-controls="docTypeMenu" aria-haspopup="listbox" title="Фильтр по типу документа">
                   <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill="#4d4d4d" d="M2.09625 1.3125H9.90375C10.1613 1.3125 10.4084 1.41483 10.5905 1.59697C10.7727 1.77912 10.875 2.02616 10.875 2.28375V4.46625C10.875 4.72384 10.7727 4.97088 10.5905 5.15303C10.4084 5.33517 10.1613 5.4375 9.90375 5.4375H2.09625C1.83866 5.4375 1.59162 5.33517 1.40947 5.15303C1.22733 4.97088 1.125 4.72384 1.125 4.46625V2.28375C1.125 2.02616 1.22733 1.77912 1.40947 1.59697C1.59162 1.41483 1.83866 1.3125 2.09625 1.3125ZM3.81375 8.67C3.81375 8.76946 3.85326 8.86484 3.92359 8.93516C3.99391 9.00549 4.08929 9.045 4.18875 9.045H7.0875C7.18696 9.045 7.28234 9.00549 7.35267 8.93516C7.42299 8.86484 7.4625 8.76946 7.4625 8.67C7.4625 8.57054 7.42299 8.47516 7.35267 8.40483C7.28234 8.33451 7.18696 8.295 7.0875 8.295H4.18875C4.08929 8.295 3.99391 8.33451 3.92359 8.40483C3.85326 8.47516 3.81375 8.57054 3.81375 8.67Z"/></svg>
@@ -1993,56 +1996,79 @@
 (function () {
   /* Welcome modal — always show on page load */
   var modal = document.getElementById('welcomeModal');
-  modal.classList.add('open');
-  var closeModal = function () { modal.classList.remove('open'); };
-  document.getElementById('welcomeClose').addEventListener('click', closeModal);
-  document.getElementById('welcomeLater').addEventListener('click', closeModal);
-  document.getElementById('welcomeTry').addEventListener('click', closeModal);
+  if (modal) {
+    modal.classList.add('open');
+    var closeModal = function () { modal.classList.remove('open'); };
+    var wc = document.getElementById('welcomeClose');
+    var wl = document.getElementById('welcomeLater');
+    var wt = document.getElementById('welcomeTry');
+    if (wc) wc.addEventListener('click', closeModal);
+    if (wl) wl.addEventListener('click', closeModal);
+    if (wt) wt.addEventListener('click', closeModal);
+  }
 
   function toggle(el, on) {
+    if (!el) return;
     if (on) el.classList.add('open'); else el.classList.remove('open');
   }
   var sortWrap = document.getElementById('sortWrap');
   var sortMenu = document.getElementById('sortMenu');
   var sortLabelBtn = document.getElementById('sortLabelBtn');
-  function toggleSortMenu() {
-    toggle(sortMenu, !sortMenu.classList.contains('open'));
-    toggle(document.getElementById('viewMenu'), false);
-  }
-  document.getElementById('sortCaret').addEventListener('click', function (e) {
-    e.stopPropagation();
-    toggleSortMenu();
-  });
-  sortLabelBtn.addEventListener('click', function (e) {
-    e.stopPropagation();
-    toggleSortMenu();
-  });
-  sortMenu.querySelectorAll('button[data-sort]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      sortLabelBtn.textContent = btn.getAttribute('data-sort');
-      toggle(sortMenu, false);
-    });
-  });
-
+  var sortCaret = document.getElementById('sortCaret');
   var viewMenuWrap = document.getElementById('viewMenuWrap');
   var viewMenu = document.getElementById('viewMenu');
-  document.getElementById('viewMenuBtn').addEventListener('click', function (e) {
-    e.stopPropagation();
-    toggle(viewMenu, !viewMenu.classList.contains('open'));
-    toggle(sortMenu, false);
-  });
+  var viewMenuBtn = document.getElementById('viewMenuBtn');
+  function toggleSortMenu() {
+    if (!sortMenu) return;
+    toggle(sortMenu, !sortMenu.classList.contains('open'));
+    toggle(viewMenu, false);
+  }
+  if (sortCaret) {
+    sortCaret.addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleSortMenu();
+    });
+  }
+  if (sortLabelBtn) {
+    sortLabelBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleSortMenu();
+    });
+  }
+  if (sortMenu && sortLabelBtn) {
+    sortMenu.querySelectorAll('button[data-sort]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        sortLabelBtn.textContent = btn.getAttribute('data-sort');
+        toggle(sortMenu, false);
+      });
+    });
+  }
+
+  if (viewMenuBtn && viewMenu) {
+    viewMenuBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggle(viewMenu, !viewMenu.classList.contains('open'));
+      toggle(sortMenu, false);
+    });
+  }
 
   var tagsChip = document.getElementById('tagsChip');
   var tagsPop = document.getElementById('tagsPop');
-  tagsChip.addEventListener('click', function (e) {
-    e.stopPropagation();
-    var willOpen = !tagsPop.classList.contains('open');
-    toggle(tagsPop, willOpen);
-    toggle(sortMenu, false);
-    toggle(viewMenu, false);
-    if (willOpen) document.getElementById('tagsInput').focus();
-  });
-  tagsPop.addEventListener('click', function (e) { e.stopPropagation(); });
+  var tagsInput = document.getElementById('tagsInput');
+  if (tagsChip && tagsPop) {
+    tagsChip.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var willOpen = !tagsPop.classList.contains('open');
+      toggle(tagsPop, willOpen);
+      toggle(sortMenu, false);
+      toggle(viewMenu, false);
+      if (willOpen && tagsInput) tagsInput.focus();
+    });
+    tagsPop.addEventListener('click', function (e) { e.stopPropagation(); });
+  }
+  if (tagsInput) {
+    tagsInput.addEventListener('click', function (e) { e.stopPropagation(); });
+  }
 
   document.addEventListener('click', function () {
     toggle(sortMenu, false);
@@ -2050,10 +2076,8 @@
     toggle(tagsPop, false);
     if (typeof toggleDocTypeMenu === 'function') toggleDocTypeMenu(false);
   });
-  sortWrap.addEventListener('click', function (e) { e.stopPropagation(); });
-  viewMenuWrap.addEventListener('click', function (e) { e.stopPropagation(); });
-
-  document.getElementById('tagsInput').addEventListener('click', function (e) { e.stopPropagation(); });
+  if (sortWrap) sortWrap.addEventListener('click', function (e) { e.stopPropagation(); });
+  if (viewMenuWrap) viewMenuWrap.addEventListener('click', function (e) { e.stopPropagation(); });
 
   // ── Table view & column settings ──────────────────────────────────────────
   var TABLE_COLS = [
@@ -2380,9 +2404,11 @@
   function setView(view) {
     _currentView = view;
     localStorage.setItem('kv2_view', view);
-    viewMenu.querySelectorAll('[data-view]').forEach(function (btn) {
-      btn.classList.toggle('checked', btn.getAttribute('data-view') === view);
-    });
+    if (viewMenu) {
+      viewMenu.querySelectorAll('[data-view]').forEach(function (btn) {
+        btn.classList.toggle('checked', btn.getAttribute('data-view') === view);
+      });
+    }
     var gearWrapEl = document.getElementById('gearWrap');
     if (gearWrapEl) gearWrapEl.style.display = view === 'table' ? '' : 'none';
     if (_lastFiles && _lastFiles.length) {
@@ -2405,19 +2431,21 @@
   }
 
   // View menu item clicks
-  viewMenu.querySelectorAll('[data-view]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      setView(btn.getAttribute('data-view'));
-      toggle(viewMenu, false);
+  if (viewMenu) {
+    viewMenu.querySelectorAll('[data-view]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        setView(btn.getAttribute('data-view'));
+        toggle(viewMenu, false);
+      });
     });
-  });
+  }
 
   // Gear button toggle
   var tbGearBtn      = document.getElementById('gearBtn');
   var tbColSettings  = document.getElementById('colSettings');
   var tbGearWrap     = document.getElementById('gearWrap');
   if (tbGearWrap) tbGearWrap.addEventListener('click', function (e) { e.stopPropagation(); });
-  if (tbGearBtn) tbGearBtn.addEventListener('click', function (e) {
+  if (tbGearBtn && tbColSettings) tbGearBtn.addEventListener('click', function (e) {
     e.stopPropagation();
     var isOpen = tbColSettings.classList.toggle('open');
     if (isOpen) renderColSettings();
@@ -2461,7 +2489,9 @@
     visEl.innerHTML = visCols.length ? visCols.map(colRowHtml).join('') : '<div style="padding:6px 16px;font-size:12px;color:#aaa">Нет видимых колонок</div>';
     hidEl.innerHTML = hidCols.length ? hidCols.map(colRowHtml).join('') : '<div style="padding:6px 16px;font-size:12px;color:#aaa">Нет скрытых колонок</div>';
 
-    document.getElementById('colSettings').querySelectorAll('[data-col-toggle]').forEach(function (btn) {
+    var colSettingsRoot = document.getElementById('colSettings');
+    if (!colSettingsRoot) return;
+    colSettingsRoot.querySelectorAll('[data-col-toggle]').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         var key = btn.getAttribute('data-col-toggle');
@@ -2476,9 +2506,11 @@
     var gearEl = document.getElementById('gearWrap');
     if (gearEl) gearEl.style.display = _currentView === 'table' ? '' : 'none';
     if (_currentView === 'table') {
-      viewMenu.querySelectorAll('[data-view]').forEach(function (btn) {
-        btn.classList.toggle('checked', btn.getAttribute('data-view') === 'table');
-      });
+      if (viewMenu) {
+        viewMenu.querySelectorAll('[data-view]').forEach(function (btn) {
+          btn.classList.toggle('checked', btn.getAttribute('data-view') === 'table');
+        });
+      }
       window.loadFiles(null);
     } else if (window.kv2RefreshDocTypeMenu) {
       window.kv2RefreshDocTypeMenu();
@@ -2489,6 +2521,7 @@
   var uploadBtn   = document.getElementById('kv2UploadBtn');
   var uploadInput = document.getElementById('kv2UploadInput');
 
+  if (uploadBtn && uploadInput) {
   uploadBtn.addEventListener('click', function () { uploadInput.click(); });
 
   uploadInput.addEventListener('change', function () {
@@ -2526,6 +2559,7 @@
         });
     });
   });
+  }
 })();
 </script>
 

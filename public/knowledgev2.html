@@ -1336,7 +1336,7 @@
   var _currentFolderId = null;
 
   function formatBytes(b) {
-    if (b >= 1048576) return (b / 1048576).toFixed(1) + ' MB';
+    if (b >= 1048576) return (b / 1048576).toFixed(0) + ' MB';
     if (b >= 1024) return (b / 1024).toFixed(0) + ' KB';
     return b + ' B';
   }
@@ -1932,7 +1932,7 @@
   }
 
   function fmtBytes(b) {
-    return b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : b >= 1024 ? (b / 1024).toFixed(0) + ' KB' : b + ' B';
+    return b >= 1048576 ? (b / 1048576).toFixed(0) + ' MB' : b >= 1024 ? (b / 1024).toFixed(0) + ' KB' : b + ' B';
   }
 
   function escH(s) {
@@ -2227,7 +2227,7 @@
     <span class="kv2-ctx-item-label">Открыть</span>
   </div>
   <div class="kv2-ctx-item" data-action="copy-link">
-    <span class="kv2-ctx-item-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="#4d4d4d" d="M12.58 3.42a3.01 3.01 0 0 0-3.58 0L7.63 4.79A3.01 3.01 0 0 0 7 8.37a.5.5 0 1 1-.71.71A4.01 4.01 0 0 1 7.28 3.1L8.65 1.73a4.01 4.01 0 0 1 5.66 5.66l-1.42 1.41a.5.5 0 0 1-.7-.7l1.41-1.42c.78-.78.78-2.05 0-2.83l-.02-.03zM4.83 6.76a.5.5 0 0 1 .7.7L4.12 8.88a2.01 2.01 0 0 0 2.83 2.84l1.37-1.37a2.01 2.01 0 0 0-.37-3.13.5.5 0 1 1 .5-.87A3.01 3.01 0 0 1 9 12.04l-1.38 1.38a3.01 3.01 0 0 1-4.25-4.25l1.46-1.41z"/></svg></span>
+    <span class="kv2-ctx-item-icon"><svg width="16" height="16" viewBox="0 0 32 32" fill="none"><path fill="#4d4d4d" d="M25.16 6.84a5.08 5.08 0 00-7.16 0l-2.74 2.74a5.08 5.08 0 000 7.16 1.17 1.17 0 010 1.67 1.18 1.18 0 01-1.67 0 7.44 7.44 0 010-10.5l2.74-2.74a7.42 7.42 0 0110.5 10.5L24 18.48a1.18 1.18 0 01-1.67-1.67L25.16 14a5.08 5.08 0 000-7.16zM9.65 13.52a1.18 1.18 0 010 1.67L6.84 18A5.06 5.06 0 0014 25.16l2.74-2.74a5.08 5.08 0 000-7.16 1.17 1.17 0 010-1.67 1.18 1.18 0 011.67 0 7.44 7.44 0 010 10.5l-2.74 2.74a7.42 7.42 0 01-10.5-10.5L8 13.52a1.18 1.18 0 011.65 0z"/></svg></span>
     <span class="kv2-ctx-item-label">Поделиться ссылкой</span>
   </div>
   <div class="kv2-ctx-item" data-action="favorite">

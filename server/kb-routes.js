@@ -24,6 +24,45 @@ const upload = multer({
   limits: { fileSize: MAX_SIZE },
 });
 
+// ── Metadata columns whitelist (used by POST/PATCH for kb_files) ───────────────
+// Order matters only for readability; both endpoints build dynamic SQL.
+// `tags` is included so PATCH can keep updating it via the same path.
+export const KB_FILE_METADATA_COLUMNS = [
+  'title', 'tags', 'author', 'document_date', 'markdown_id', 'report_url',
+  'source', 'prepared_by_dpir', 'confidentiality', 'related_event', 'customer',
+  'publication_year', 'responsible_person', 'data_period_start', 'data_period_end',
+  'data_geography', 'document_type', 'research_format', 'tech_niche', 'market_niche',
+  'metadata',
+];
+
+// Coerce a single body field to the value we want to store in PostgreSQL.
+function coerceMetadataValue(col, raw) {
+  if (raw === undefined) return undefined;
+  if (raw === null || raw === '') return null;
+  if (col === 'tags') {
+    if (Array.isArray(raw)) return JSON.stringify(raw);
+    if (typeof raw === 'string') {
+      try { JSON.parse(raw); return raw; } catch { return JSON.stringify([raw]); }
+    }
+    return JSON.stringify(raw);
+  }
+  if (col === 'metadata') {
+    if (typeof raw === 'string') {
+      try { return JSON.parse(raw); } catch { return {}; }
+    }
+    return raw;
+  }
+  if (col === 'prepared_by_dpir') {
+    if (typeof raw === 'boolean') return raw;
+    return ['true', '1', 'yes', 'on'].includes(String(raw).toLowerCase());
+  }
+  if (col === 'publication_year') {
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) ? n : null;
+  }
+  return raw;
+}
+
 // ── Helper ─────────────────────────────────────────────────────────────────────
 async function getVisibleFileIds(userId, userRole) {
   if (userRole === 'admin') return null; // null = no filter (all files)
@@ -112,11 +151,26 @@ export function setupKbRoutes(app) {
 
       if (uploadError) return res.status(500).json({ error: uploadError.message });
 
+      const baseCols = ['original_name', 'stored_name', 'mime_type', 'size_bytes', 'folder_id', 'owner_id'];
+      const baseVals = [req.file.originalname, storedName, req.file.mimetype,
+                        req.file.size, folder_id || null, req.user.id];
+
+      const extraCols = [];
+      const extraVals = [];
+      for (const col of KB_FILE_METADATA_COLUMNS) {
+        if (req.body[col] === undefined) continue;
+        const v = coerceMetadataValue(col, req.body[col]);
+        if (v === undefined) continue;
+        extraCols.push(col);
+        extraVals.push(v);
+      }
+
+      const allCols = [...baseCols, ...extraCols];
+      const allVals = [...baseVals, ...extraVals];
+      const placeholders = allCols.map((_, i) => `$${i + 1}`).join(', ');
       const { rows } = await query(
-        `INSERT INTO kb_files (original_name, stored_name, mime_type, size_bytes, folder_id, owner_id)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [req.file.originalname, storedName, req.file.mimetype,
-         req.file.size, folder_id || null, req.user.id]
+        `INSERT INTO kb_files (${allCols.join(', ')}) VALUES (${placeholders}) RETURNING *`,
+        allVals
       );
       res.status(201).json(rows[0]);
     } catch (e) {
@@ -207,17 +261,18 @@ export function setupKbRoutes(app) {
       const { rows } = await query('SELECT * FROM kb_files WHERE id = $1', [fileId]);
       if (!rows[0]) return res.status(404).json({ error: 'Файл не найден' });
       if (!canWriteFile(req.user.role, rows[0], req.user.id)) return res.status(403).json({ error: 'Нет доступа' });
-      const { original_name, folder_id, tags } = req.body;
+      const { original_name, folder_id } = req.body;
       const updates = [];
       const values = [];
       let i = 1;
       if (original_name !== undefined) { updates.push(`original_name = $${i++}`); values.push(original_name.trim()); }
       if (folder_id !== undefined) { updates.push(`folder_id = $${i++}`); values.push(folder_id || null); }
-      if (tags !== undefined) {
-        // Accept array or JSON string; store as JSON text
-        const tagsJson = Array.isArray(tags) ? JSON.stringify(tags) : tags;
-        updates.push(`tags = $${i++}`);
-        values.push(tagsJson);
+      for (const col of KB_FILE_METADATA_COLUMNS) {
+        if (req.body[col] === undefined) continue;
+        const v = coerceMetadataValue(col, req.body[col]);
+        if (v === undefined) continue;
+        updates.push(`${col} = $${i++}`);
+        values.push(v);
       }
       if (updates.length === 0) return res.json({ ok: true });
       updates.push(`updated_at = NOW()`);

@@ -156,6 +156,46 @@ export async function initSchema() {
     console.warn('Could not add tags column to kb_files:', e.message);
   }
 
+  // Extended metadata columns for kb_files (idempotent — safe to run repeatedly)
+  const KB_FILES_NEW_COLUMNS = [
+    ['title',              'TEXT'],
+    ['author',             'TEXT'],
+    ['document_date',      'DATE'],
+    ['markdown_id',        'TEXT'],
+    ['report_url',         'TEXT'],
+    ['source',             'TEXT'],
+    ['prepared_by_dpir',   'BOOLEAN NOT NULL DEFAULT FALSE'],
+    ['confidentiality',    'TEXT'],
+    ['related_event',      'TEXT'],
+    ['customer',           'TEXT'],
+    ['publication_year',   'INTEGER'],
+    ['responsible_person', 'TEXT'],
+    ['data_period_start',  'DATE'],
+    ['data_period_end',    'DATE'],
+    ['data_geography',     'TEXT'],
+    ['document_type',      'TEXT'],
+    ['research_format',    'TEXT'],
+    ['tech_niche',         'TEXT'],
+    ['market_niche',       'TEXT'],
+    ['metadata',           "JSONB NOT NULL DEFAULT '{}'::jsonb"],
+  ];
+  for (const [col, type] of KB_FILES_NEW_COLUMNS) {
+    try {
+      await query(`ALTER TABLE kb_files ADD COLUMN IF NOT EXISTS ${col} ${type}`);
+    } catch (e) {
+      console.warn(`kb_files migration ${col}:`, e.message);
+    }
+  }
+  try {
+    await query(`CREATE INDEX IF NOT EXISTS idx_kb_files_customer        ON kb_files(customer)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_kb_files_doctype         ON kb_files(document_type)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_kb_files_pubyear         ON kb_files(publication_year)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_kb_files_confidentiality ON kb_files(confidentiality)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_kb_files_metadata_gin    ON kb_files USING GIN (metadata)`);
+  } catch (e) {
+    console.warn('kb_files metadata indexes:', e.message);
+  }
+
   // kb_chunks needs vector type — only create if pgvector is available
   try {
     await query(`

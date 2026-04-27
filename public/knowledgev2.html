@@ -238,15 +238,17 @@
     .kv2-ai-tgl {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      height: 34px;
+      justify-content: center;
+      gap: 6px;
+      height: 36px;
       padding: 0 14px;
       border-radius: 9999px;
       font-size: 13px;
       font-weight: 600;
+      line-height: 1;
       color: #404040;
       background: #f0f0f0;
-      transition: background 0.15s, color 0.15s, box-shadow 0.15s, outline 0.15s;
+      transition: background 0.15s, color 0.15s, outline-color 0.15s;
     }
     .kv2-ai-tgl:hover { background: #e4e4e4; }
     .kv2-ai-tgl[aria-pressed="true"] {
@@ -254,51 +256,61 @@
       color: #0a1a4a;
       outline: 1px solid rgba(3, 75, 255, 0.4);
     }
-    .kv2-ai-tgl svg { flex-shrink: 0; }
+    .kv2-ai-tgl svg {
+      flex-shrink: 0;
+      display: block;
+      stroke: currentColor;
+      transition: fill 0.2s, stroke 0.15s;
+    }
+    /* Маленькая «искорка» при наведении на лампочку, как в референсе */
+    .kv2-ai-tgl#kv2AiThink:hover svg { fill: rgba(253, 224, 71, 0.85); }
+
     .kv2-ai-deep {
       position: relative;
-      height: 34px;
+      height: 36px;
+      width: 36px;
       border-radius: 9999px;
       font-size: 13px;
       font-weight: 600;
+      line-height: 1;
       color: #404040;
       background: #f0f0f0;
       display: inline-flex;
       align-items: center;
-      padding: 0 8px;
-      justify-content: flex-start;
-      gap: 0;
+      justify-content: center;
+      padding: 0;
+      gap: 6px;
       overflow: hidden;
-      min-width: 0;
-      transition: background 0.15s, color 0.15s, outline 0.15s, min-width 0.28s ease, padding 0.28s ease, width 0.28s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition:
+        width 0.32s cubic-bezier(.34,1.2,.64,1),
+        padding 0.32s cubic-bezier(.34,1.2,.64,1),
+        background 0.15s,
+        color 0.15s,
+        outline-color 0.15s;
     }
     .kv2-ai-deep:hover { background: #e4e4e4; }
     .kv2-ai-deep[aria-pressed="true"] {
+      width: 178px;
+      padding: 0 14px 0 12px;
+      justify-content: flex-start;
       background: rgba(3, 75, 255, 0.1);
       color: #0a1a4a;
       outline: 1px solid rgba(3, 75, 255, 0.4);
     }
-    .kv2-ai-deep[aria-pressed="false"] {
-      width: 36px;
-      min-width: 36px;
-      max-width: 36px;
-      padding-left: 6px; padding-right: 6px;
-    }
-    .kv2-ai-deep[aria-pressed="true"] {
-      width: auto;
-      min-width: 150px;
-      max-width: 220px;
-      padding-left: 10px;
-      padding-right: 12px;
-    }
+    .kv2-ai-deep svg { flex-shrink: 0; display: block; }
     .kv2-ai-deep .kv2-ai-deep-label {
-      display: none;
+      display: inline-block;
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: opacity 0.22s ease, transform 0.28s cubic-bezier(.34,1.2,.64,1);
+      will-change: opacity, transform;
     }
     .kv2-ai-deep[aria-pressed="true"] .kv2-ai-deep-label {
-      display: inline;
-      margin-left: 2px;
-      white-space: nowrap;
-      padding-bottom: 1px;
+      opacity: 1;
+      transform: translateX(0);
+      transition-delay: 0.08s;
     }
     .kv2-btn-upload {
       display: inline-flex;
@@ -561,6 +573,28 @@
     }
     .kv2-chip:hover { background: rgba(0,0,0,.03); }
     .kv2-chip svg { width: 12px; height: 12px; }
+    .kv2-type-wrap { position: relative; }
+    .kv2-type-dd {
+      z-index: 100000;
+      left: 0;
+      right: auto;
+      top: calc(100% + 6px);
+      min-width: 216px;
+      max-width: min(20rem, calc(100vw - 24px));
+      max-height: min(360px, calc(100vh - 64px));
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      background: #fff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,.05), 0 3px 6px 0 rgba(0,0,0,.1), 0 9px 24px 0 rgba(0,0,0,.2);
+      animation: kv2TypeDDIn 0.2s ease;
+    }
+    @keyframes kv2TypeDDIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .kv2-type-chev { width: 10px !important; height: 10px !important; margin-left: 1px; opacity: .6; }
+    .kv2-type-menu-n { font-size: 12px; font-weight: 500; color: #a0a0a0; }
     .kv2-divider-v {
       width: 1px;
       height: 24px;
@@ -1031,6 +1065,46 @@
     }
     .kv2-dlg-btn--primary:active:not(:disabled) { background: #0031ad; }
     .kv2-dlg-btn--primary:disabled { background: #9ca3af; border-color: #9ca3af; }
+    .kv2-dlg-btn--danger {
+      min-height: 40px;
+      border-color: transparent;
+      background: #e5464d;
+      color: #fff;
+      font-weight: 600;
+    }
+    .kv2-dlg-btn--danger:hover:not(:disabled) {
+      background: #d13e45;
+      border-color: transparent;
+      color: #fff;
+    }
+    .kv2-dlg-btn--danger:active:not(:disabled) { background: #c2383f; }
+    .kv2-dlg-btn--danger:disabled { background: #d1d5db; color: #6b7280; cursor: not-allowed; }
+    .kv2-dlg-sub--delete { margin-bottom: 8px; }
+    .kv2-dlg-filename {
+      margin: 0 0 16px;
+      padding: 10px 12px;
+      font-size: 14px;
+      line-height: 1.45;
+      letter-spacing: -0.006em;
+      color: #111827;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      word-break: break-word;
+      font-weight: 500;
+    }
+    .kv2-dlg-list {
+      margin: 0 0 20px;
+      padding-left: 0;
+      list-style: disc;
+      list-style-position: inside;
+      font-size: 14px;
+      line-height: 1.45;
+      letter-spacing: -0.006em;
+      color: #6b7280;
+    }
+    .kv2-dlg-list li { margin-bottom: 6px; }
+    .kv2-dlg-list li:last-child { margin-bottom: 0; }
 
     .kv2-footer-bar {
       height: 40px;
@@ -1341,6 +1415,12 @@
     return b + ' B';
   }
 
+  /** API может отдать size_bytes строкой; иначе reduce склеит размеры как строки, а не сложит. */
+  function fileSizeBytes(f) {
+    return Math.max(0, Number(f && f.size_bytes) || 0);
+  }
+  window.fileSizeBytes = fileSizeBytes;
+
   function fileExt(name) {
     var parts = (name || '').split('.');
     return parts.length > 1 ? parts.pop().toUpperCase() : 'FILE';
@@ -1363,6 +1443,69 @@
     var map = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', svg: 'image/svg+xml', pdf: 'application/pdf' };
     return map[ex] || m;
   }
+
+  /** Расширение → «все возможные» категории; в меню показываем только реально встречающиеся. */
+  (function initKv2TypeCategories() {
+    var o = Object.create(null);
+    function set(exts, cat) { exts.split(',').forEach(function (e) { o[e.trim().toLowerCase()] = cat; }); }
+    set('jpg,jpeg,png,gif,webp,bmp,ico,heic,heif,tiff,tif,avif,svg', 'image');
+    set('mp4,webm,mov,avi,mkv,m4v,wmv,flv,ogv,mpeg,mpg,3gp', 'video');
+    set('mp3,wav,ogg,oga,flac,aac,m4a,wma,aiff', 'audio');
+    set('doc,docx,odt,rtf', 'word');
+    set('xls,xlsx,ods,csv,tsv', 'spreadsheet');
+    set('ppt,pptx,odp,key', 'presentation');
+    set('zip,rar,7z,tar,gz,bz2,xz,zipx', 'archive');
+    set('epub,mobi,azw,azw3,fb2', 'ebook');
+    set('txt,md,markdown,log,conf,cfg,ini,env', 'text');
+    set('html,htm,js,mjs,ts,tsx,jsx,json,xml,css,scss,less,py,rb,go,rs,java,kt,swift,cpp,cc,c,h,hpp,php,sql,sh,bat,ps1,yml,yaml,toml,mdx,vue,xml', 'code');
+    o.pdf = 'pdf';
+    o.xps = 'pdf';
+    window.kv2ExtToTypeCategory = o;
+  })();
+
+  function kv2FileExtLower(f) {
+    var n = (f && f.original_name) || '';
+    var i = n.lastIndexOf('.');
+    return i < 0 ? '' : n.slice(i + 1).toLowerCase();
+  }
+
+  function kv2GetFileCategory(f) {
+    var ex = kv2FileExtLower(f);
+    var mime = (inferMimeType(f) || '').toLowerCase();
+    if (mime.indexOf('image/') === 0) return 'image';
+    if (mime.indexOf('video/') === 0) return 'video';
+    if (mime.indexOf('audio/') === 0) return 'audio';
+    if (mime === 'application/pdf' || ex === 'pdf' || ex === 'xps') return 'pdf';
+    if (mime === 'text/csv' || mime === 'text/tab-separated-values' || ex === 'csv' || ex === 'tsv') {
+      if (ex === 'csv' || ex === 'tsv') return 'spreadsheet';
+    }
+    if (mime === 'text/html' && (ex === 'html' || ex === 'htm')) return 'code';
+    if (mime.indexOf('text/') === 0) {
+      if (ex === 'md' || ex === 'markdown' || ex === 'txt' || ex === 'log') return 'text';
+      return 'text';
+    }
+    if (mime.indexOf('application/json') === 0 || ex === 'json') return 'code';
+    if (mime.indexOf('javascript') > 0 || ex === 'js' || ex === 'mjs' || ex === 'ts' || ex === 'tsx' || ex === 'jsx') return 'code';
+    if (/\bmsword|wordprocessingml|officedocument\.wordprocessing|rtf/.test(mime) || (ex === 'doc' || ex === 'docx' || ex === 'odt')) return 'word';
+    if (/\bms-excel|spreadsheet|csv|excel/.test(mime) || (ex && ['xls', 'xlsx', 'ods', 'xlsm', 'xlsb'].indexOf(ex) >= 0)) return 'spreadsheet';
+    if (/\bms-powerpoint|presentation/.test(mime) || (ex && (ex === 'ppt' || ex === 'pptx' || ex === 'odp'))) return 'presentation';
+    if (/\bzip|x-rar|x-7z|gzip|bzip|tar|compressed/.test(mime) || (ex && 'zip rar 7z tar gz bz2'.indexOf(ex) >= 0)) return 'archive';
+    if (window.kv2ExtToTypeCategory && ex && window.kv2ExtToTypeCategory[ex]) {
+      if (ex === 'csv' || ex === 'tsv') return 'spreadsheet';
+      if (ex === 'md' || ex === 'markdown' || (window.kv2ExtToTypeCategory[ex] === 'text' && (ex === 'log' || ex === 'conf'))) return 'text';
+      return window.kv2ExtToTypeCategory[ex];
+    }
+    if (!ex) return 'other';
+    return 'other';
+  }
+
+  window.kv2GetFileCategory = kv2GetFileCategory;
+  window.kv2TypeCategoryOrder = ['image', 'pdf', 'word', 'spreadsheet', 'presentation', 'text', 'ebook', 'archive', 'video', 'audio', 'code', 'other'];
+  window.kv2TypeCategoryLabels = {
+    image: 'Изображения', pdf: 'PDF', word: 'Текстовые документы (Word, ODT, RTF)', spreadsheet: 'Таблицы (Excel, CSV, ODS, …)',
+    presentation: 'Презентации', text: 'Простой текст и разметка (TXT, MD, …)', ebook: 'Электронные книги (ePub, MOBI, …)',
+    archive: 'Архивы', video: 'Видео', audio: 'Аудио', code: 'Код и веб-файлы', other: 'Другое'
+  };
 
   function escAttr(s) {
     return String(s || '')
@@ -1430,6 +1573,7 @@
       .then(function (r) { return r.json(); })
       .then(function (files) {
         files = files || [];
+        window._kv2LastFiles = files;
         var grid = document.getElementById('assetGrid');
         var label = document.getElementById('assetLabel');
         var footer = document.querySelector('.kv2-footer-bar');
@@ -1464,7 +1608,7 @@
           label.innerHTML = files.length + '\u00a0' + pluralFiles(files.length) + ' ' + svg;
         }
         if (footer) {
-          var total = files.reduce(function (s, f) { return s + (f.size_bytes || 0); }, 0);
+          var total = files.reduce(function (s, f) { return s + fileSizeBytes(f); }, 0);
           footer.textContent = files.length + '\u00a0' + pluralFiles(files.length).toLowerCase() + ' · ' + formatBytes(total);
         }
       })
@@ -1682,8 +1826,15 @@
               <button type="button" class="kv2-chip"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><g clip-path="url(#kv2-smart-clip)"><path fill="#4d4d4d" d="M5.20312 3.86719C5.20312 3.98529 5.25005 4.09855 5.33355 4.18207C5.41707 4.26558 5.53033 4.3125 5.64844 4.3125C6.23896 4.3125 6.80529 4.54709 7.22285 4.96465C7.6404 5.38221 7.875 5.94854 7.875 6.53906C7.875 6.65717 7.92195 6.77044 8.00542 6.85395C8.08897 6.93746 8.20222 6.98438 8.32035 6.98438C8.4384 6.98438 8.55165 6.93746 8.6352 6.85395C8.71868 6.77044 8.76562 6.65717 8.76562 6.53906C8.76562 5.94854 9.00023 5.38221 9.41775 4.96465C9.83535 4.54709 10.4017 4.3125 10.9922 4.3125C11.1103 4.3125 11.2235 4.26558 11.3071 4.18207C11.3906 4.09855 11.4375 3.98529 11.4375 3.86719C11.4375 3.74908 11.3906 3.63582 11.3071 3.55231C11.2235 3.4688 11.1103 3.42188 10.9922 3.42188C10.4017 3.42188 9.83535 3.18729 9.41775 2.76973C9.00023 2.35217 8.76562 1.78583 8.76562 1.19531C8.76562 1.07721 8.71868 0.963945 8.6352 0.880433C8.55165 0.79692 8.4384 0.75 8.32035 0.75C8.20222 0.75 8.08897 0.79692 8.00542 0.880433C7.92195 0.963945 7.875 1.07721 7.875 1.19531C7.875 1.78583 7.6404 2.35217 7.22285 2.76973C6.80529 3.18729 6.23896 3.42188 5.64844 3.42188C5.53033 3.42188 5.41707 3.4688 5.33355 3.55231C5.25005 3.63582 5.20312 3.74908 5.20312 3.86719ZM4.75781 9.65625C4.75781 9.77437 4.80473 9.88762 4.88824 9.9711C4.97176 10.0546 5.08502 10.1016 5.20312 10.1016C5.43934 10.1016 5.66587 10.1954 5.83289 10.3624C5.99992 10.5295 6.09375 10.756 6.09375 10.9922C6.09375 11.1103 6.14067 11.2235 6.22418 11.3071C6.3077 11.3906 6.42096 11.4375 6.53906 11.4375C6.65717 11.4375 6.77043 11.3906 6.85394 11.3071C6.93745 11.2235 6.98438 11.1103 6.98438 10.9922C6.98438 10.756 7.07821 10.5295 7.24523 10.3624C7.41226 10.1954 7.63882 10.1016 7.875 10.1016C7.99312 10.1016 8.10637 10.0546 8.18985 9.9711C8.2734 9.88762 8.32035 9.77437 8.32035 9.65625C8.32035 9.53813 8.2734 9.42488 8.18985 9.3414C8.10637 9.25785 7.99312 9.2109 7.875 9.2109C7.63882 9.2109 7.41226 9.11708 7.24523 8.95005C7.07821 8.78303 6.98438 8.55652 6.98438 8.32035C6.98438 8.20222 6.93745 8.08897 6.85394 8.00542C6.77043 7.92195 6.65717 7.875 6.53906 7.875C6.42096 7.875 6.3077 7.92195 6.22418 8.00542C6.14067 8.08897 6.09375 8.20222 6.09375 8.32035C6.09375 8.55652 5.99992 8.78303 5.83289 8.95005C5.66587 9.11708 5.43934 9.2109 5.20312 9.2109C5.08502 9.2109 4.97176 9.25785 4.88824 9.3414C4.80473 9.42488 4.75781 9.53813 4.75781 9.65625ZM0.880425 6.85395C0.79692 6.77044 0.75 6.65717 0.75 6.53906C0.75 6.42096 0.79692 6.30769 0.880425 6.22417C0.963945 6.14067 1.07721 6.09375 1.19531 6.09375C1.66773 6.09375 2.1208 5.90608 2.45485 5.57203C2.7889 5.23798 2.97656 4.78492 2.97656 4.3125C2.97656 4.1944 3.02348 4.08113 3.10699 3.99762C3.19051 3.91411 3.30377 3.86719 3.42188 3.86719C3.53998 3.86719 3.65324 3.91411 3.73676 3.99762C3.82027 4.08113 3.86719 4.1944 3.86719 4.3125C3.86719 4.78492 4.05485 5.23798 4.3889 5.57203C4.72295 5.90608 5.17602 6.09375 5.64844 6.09375C5.76654 6.09375 5.8798 6.14067 5.96332 6.22417C6.04683 6.30769 6.09375 6.42096 6.09375 6.53906C6.09375 6.65717 6.04683 6.77044 5.96332 6.85395C5.8798 6.93746 5.76654 6.98438 5.64844 6.98438C5.17602 6.98438 4.72295 7.17204 4.3889 7.50607C4.05485 7.84012 3.86719 8.2932 3.86719 8.76562C3.86719 8.88375 3.82027 8.997 3.73676 9.08047C3.65324 9.16402 3.53998 9.2109 3.42188 9.2109C3.30377 9.2109 3.19051 9.16402 3.10699 9.08047C3.02348 8.997 2.97656 8.88375 2.97656 8.76562C2.97656 8.2932 2.7889 7.84012 2.45485 7.50607C2.1208 7.17204 1.66773 6.98438 1.19531 6.98438C1.07721 6.98438 0.963945 6.93746 0.880425 6.85395Z"/></g><defs><clipPath id="kv2-smart-clip"><rect width="12" height="12" fill="white"/></clipPath></defs></svg>Смарт Теги</button>
               <span class="kv2-divider-v"></span>
               <button type="button" class="kv2-chip"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill="#4d4d4d" d="M2.09625 1.3125H9.90375C10.1613 1.3125 10.4084 1.41483 10.5905 1.59697C10.7727 1.77912 10.875 2.02616 10.875 2.28375V4.46625C10.875 4.72384 10.7727 4.97088 10.5905 5.15303C10.4084 5.33517 10.1613 5.4375 9.90375 5.4375H2.09625C1.83866 5.4375 1.59162 5.33517 1.40947 5.15303C1.22733 4.97088 1.125 4.72384 1.125 4.46625V2.28375C1.125 2.02616 1.22733 1.77912 1.40947 1.59697C1.59162 1.41483 1.83866 1.3125 2.09625 1.3125ZM9.90375 4.6875C9.96213 4.68653 10.0178 4.66291 10.0591 4.62163C10.1004 4.58034 10.124 4.52463 10.125 4.46625V2.28375C10.124 2.22537 10.1004 2.16966 10.0591 2.12837C10.0178 2.08709 9.96213 2.06347 9.90375 2.0625H2.09625C2.03787 2.06347 1.98216 2.08709 1.94087 2.12837C1.89959 2.16966 1.87597 2.22537 1.875 2.28375V4.46625C1.87597 4.52463 1.89959 4.58034 1.94087 4.62163C1.98216 4.66291 2.03787 4.68653 2.09625 4.6875H9.90375ZM5.19 3.375C5.19 3.47446 5.22951 3.56984 5.29984 3.64016C5.37016 3.71049 5.46554 3.75 5.565 3.75H9.06375C9.16321 3.75 9.25859 3.71049 9.32892 3.64016C9.39924 3.56984 9.43875 3.47446 9.43875 3.375C9.43875 3.27554 9.39924 3.18016 9.32892 3.10984C9.25859 3.03951 9.16321 3 9.06375 3H5.565C5.46554 3 5.37016 3.03951 5.29984 3.10984C5.22951 3.18016 5.19 3.27554 5.19 3.375ZM2.565 3.375C2.565 3.47446 2.60451 3.56984 2.67483 3.64016C2.74516 3.71049 2.84054 3.75 2.94 3.75H4.125C4.22446 3.75 4.31984 3.71049 4.39016 3.64016C4.46049 3.56984 4.5 3.47446 4.5 3.375C4.5 3.27554 4.46049 3.18016 4.39016 3.10984C4.31984 3.03951 4.22446 3 4.125 3H2.93625C2.83679 3 2.74141 3.03951 2.67109 3.10984C2.60076 3.18016 2.56125 3.27554 2.56125 3.375H2.565ZM2.04375 6.5625H7.905C8.16259 6.5625 8.40963 6.66483 8.59178 6.84697C8.77392 7.02912 8.87625 7.27616 8.87625 7.53375V9.71625C8.87625 9.97384 8.77392 10.2209 8.59178 10.403C8.40963 10.5852 8.16259 10.6875 7.905 10.6875H2.09625C1.83866 10.6875 1.59162 10.5852 1.40947 10.403C1.22733 10.2209 1.125 9.97384 1.125 9.71625V7.5C1.12251 7.37778 1.14443 7.25629 1.18948 7.14265C1.23453 7.02901 1.30181 6.9255 1.38738 6.83819C1.47294 6.75088 1.57507 6.68152 1.68777 6.63419C1.80048 6.58685 1.9215 6.56247 2.04375 6.5625ZM7.905 9.9375C7.96368 9.9375 8.01996 9.91419 8.06145 9.8727C8.10294 9.8312 8.12625 9.77493 8.12625 9.71625V7.53375C8.12625 7.47507 8.10294 7.4188 8.06145 7.3773C8.01996 7.33581 7.96368 7.3125 7.905 7.3125H2.04375C2.01992 7.31235 1.99633 7.31725 1.97453 7.32688C1.95273 7.33651 1.93322 7.35065 1.91727 7.36836C1.90133 7.38607 1.88932 7.40696 1.88204 7.42965C1.87475 7.45234 1.87235 7.47632 1.875 7.5V9.75C1.87597 9.80838 1.89959 9.86409 1.94087 9.90538C1.98216 9.94667 2.03787 9.97028 2.09625 9.97125L7.905 9.9375ZM3.81375 8.67C3.81375 8.76946 3.85326 8.86484 3.92359 8.93516C3.99391 9.00549 4.08929 9.045 4.18875 9.045H7.0875C7.18696 9.045 7.28234 9.00549 7.35267 8.93516C7.42299 8.86484 7.4625 8.76946 7.4625 8.67C7.4625 8.57054 7.42299 8.47516 7.35267 8.40483C7.28234 8.33451 7.18696 8.295 7.0875 8.295H4.18875C4.08929 8.295 3.99391 8.33451 3.92359 8.40483C3.85326 8.47516 3.81375 8.57054 3.81375 8.67ZM2.91375 9.075C2.98792 9.075 3.06042 9.05301 3.12209 9.0118C3.18376 8.9706 3.23182 8.91203 3.2602 8.84351C3.28859 8.77498 3.29601 8.69958 3.28154 8.62684C3.26707 8.5541 3.23136 8.48728 3.17892 8.43483C3.12647 8.38239 3.05965 8.34668 2.98691 8.33221C2.91417 8.31774 2.83877 8.32516 2.77024 8.35355C2.70172 8.38193 2.64315 8.42999 2.60195 8.49166C2.56074 8.55333 2.53875 8.62583 2.53875 8.7C2.53875 8.79946 2.57826 8.89484 2.64859 8.96516C2.71891 9.03549 2.81429 9.075 2.91375 9.075Z"/></svg>Год создания</button>
-              <button type="button" class="kv2-chip"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill="#4d4d4d" d="M2.09625 1.3125H9.90375C10.1613 1.3125 10.4084 1.41483 10.5905 1.59697C10.7727 1.77912 10.875 2.02616 10.875 2.28375V4.46625C10.875 4.72384 10.7727 4.97088 10.5905 5.15303C10.4084 5.33517 10.1613 5.4375 9.90375 5.4375H2.09625C1.83866 5.4375 1.59162 5.33517 1.40947 5.15303C1.22733 4.97088 1.125 4.72384 1.125 4.46625V2.28375C1.125 2.02616 1.22733 1.77912 1.40947 1.59697C1.59162 1.41483 1.83866 1.3125 2.09625 1.3125ZM9.90375 4.6875C9.96213 4.68653 10.0178 4.66291 10.0591 4.62163C10.1004 4.58034 10.124 4.52463 10.125 4.46625V2.28375C10.124 2.22537 10.1004 2.16966 10.0591 2.12837C10.0178 2.08709 9.96213 2.06347 9.90375 2.0625H2.09625C2.03787 2.06347 1.98216 2.08709 1.94087 2.12837C1.89959 2.16966 1.87597 2.22537 1.875 2.28375V4.46625C1.87597 4.52463 1.89959 4.58034 1.94087 4.62163C1.98216 4.66291 2.03787 4.68653 2.09625 4.6875H9.90375ZM5.19 3.375C5.19 3.47446 5.22951 3.56984 5.29984 3.64016C5.37016 3.71049 5.46554 3.75 5.565 3.75H9.06375C9.16321 3.75 9.25859 3.71049 9.32892 3.64016C9.39924 3.56984 9.43875 3.47446 9.43875 3.375C9.43875 3.27554 9.39924 3.18016 9.32892 3.10984C9.25859 3.03951 9.16321 3 9.06375 3H5.565C5.46554 3 5.37016 3.03951 5.29984 3.10984C5.22951 3.18016 5.19 3.27554 5.19 3.375ZM2.565 3.375C2.565 3.47446 2.60451 3.56984 2.67483 3.64016C2.74516 3.71049 2.84054 3.75 2.94 3.75H4.125C4.22446 3.75 4.31984 3.71049 4.39016 3.64016C4.46049 3.56984 4.5 3.47446 4.5 3.375C4.5 3.27554 4.46049 3.18016 4.39016 3.10984C4.31984 3.03951 4.22446 3 4.125 3H2.93625C2.83679 3 2.74141 3.03951 2.67109 3.10984C2.60076 3.18016 2.56125 3.27554 2.56125 3.375H2.565ZM2.04375 6.5625H7.905C8.16259 6.5625 8.40963 6.66483 8.59178 6.84697C8.77392 7.02912 8.87625 7.27616 8.87625 7.53375V9.71625C8.87625 9.97384 8.77392 10.2209 8.59178 10.403C8.40963 10.5852 8.16259 10.6875 7.905 10.6875H2.09625C1.83866 10.6875 1.59162 10.5852 1.40947 10.403C1.22733 10.2209 1.125 9.97384 1.125 9.71625V7.5C1.12251 7.37778 1.14443 7.25629 1.18948 7.14265C1.23453 7.02901 1.30181 6.9255 1.38738 6.83819C1.47294 6.75088 1.57507 6.68152 1.68777 6.63419C1.80048 6.58685 1.9215 6.56247 2.04375 6.5625ZM7.905 9.9375C7.96368 9.9375 8.01996 9.91419 8.06145 9.8727C8.10294 9.8312 8.12625 9.77493 8.12625 9.71625V7.53375C8.12625 7.47507 8.10294 7.4188 8.06145 7.3773C8.01996 7.33581 7.96368 7.3125 7.905 7.3125H2.04375C2.01992 7.31235 1.99633 7.31725 1.97453 7.32688C1.95273 7.33651 1.93322 7.35065 1.91727 7.36836C1.90133 7.38607 1.88932 7.40696 1.88204 7.42965C1.87475 7.45234 1.87235 7.47632 1.875 7.5V9.75C1.87597 9.80838 1.89959 9.86409 1.94087 9.90538C1.98216 9.94667 2.03787 9.97028 2.09625 9.97125L7.905 9.9375ZM3.81375 8.67C3.81375 8.76946 3.85326 8.86484 3.92359 8.93516C3.99391 9.00549 4.08929 9.045 4.18875 9.045H7.0875C7.18696 9.045 7.28234 9.00549 7.35267 8.93516C7.42299 8.86484 7.4625 8.76946 7.4625 8.67C7.4625 8.57054 7.42299 8.47516 7.35267 8.40483C7.28234 8.33451 7.18696 8.295 7.0875 8.295H4.18875C4.08929 8.295 3.99391 8.33451 3.92359 8.40483C3.85326 8.47516 3.81375 8.57054 3.81375 8.67ZM2.91375 9.075C2.98792 9.075 3.06042 9.05301 3.12209 9.0118C3.18376 8.9706 3.23182 8.91203 3.2602 8.84351C3.28859 8.77498 3.29601 8.69958 3.28154 8.62684C3.26707 8.5541 3.23136 8.48728 3.17892 8.43483C3.12647 8.38239 3.05965 8.34668 2.98691 8.33221C2.91417 8.31774 2.83877 8.32516 2.77024 8.35355C2.70172 8.38193 2.64315 8.42999 2.60195 8.49166C2.56074 8.55333 2.53875 8.62583 2.53875 8.7C2.53875 8.79946 2.57826 8.89484 2.64859 8.96516C2.71891 9.03549 2.81429 9.075 2.91375 9.075Z"/></svg>Ответственное лицо</button>
-              <button type="button" class="kv2-chip"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill="#4d4d4d" d="M2.09625 1.3125H9.90375C10.1613 1.3125 10.4084 1.41483 10.5905 1.59697C10.7727 1.77912 10.875 2.02616 10.875 2.28375V4.46625C10.875 4.72384 10.7727 4.97088 10.5905 5.15303C10.4084 5.33517 10.1613 5.4375 9.90375 5.4375H2.09625C1.83866 5.4375 1.59162 5.33517 1.40947 5.15303C1.22733 4.97088 1.125 4.72384 1.125 4.46625V2.28375C1.125 2.02616 1.22733 1.77912 1.40947 1.59697C1.59162 1.41483 1.83866 1.3125 2.09625 1.3125ZM9.90375 4.6875C9.96213 4.68653 10.0178 4.66291 10.0591 4.62163C10.1004 4.58034 10.124 4.52463 10.125 4.46625V2.28375C10.124 2.22537 10.1004 2.16966 10.0591 2.12837C10.0178 2.08709 9.96213 2.06347 9.90375 2.0625H2.09625C2.03787 2.06347 1.98216 2.08709 1.94087 2.12837C1.89959 2.16966 1.87597 2.22537 1.875 2.28375V4.46625C1.87597 4.52463 1.89959 4.58034 1.94087 4.62163C1.98216 4.66291 2.03787 4.68653 2.09625 4.6875H9.90375ZM5.19 3.375C5.19 3.47446 5.22951 3.56984 5.29984 3.64016C5.37016 3.71049 5.46554 3.75 5.565 3.75H9.06375C9.16321 3.75 9.25859 3.71049 9.32892 3.64016C9.39924 3.56984 9.43875 3.47446 9.43875 3.375C9.43875 3.27554 9.39924 3.18016 9.32892 3.10984C9.25859 3.03951 9.16321 3 9.06375 3H5.565C5.46554 3 5.37016 3.03951 5.29984 3.10984C5.22951 3.18016 5.19 3.27554 5.19 3.375ZM2.565 3.375C2.565 3.47446 2.60451 3.56984 2.67483 3.64016C2.74516 3.71049 2.84054 3.75 2.94 3.75H4.125C4.22446 3.75 4.31984 3.71049 4.39016 3.64016C4.46049 3.56984 4.5 3.47446 4.5 3.375C4.5 3.27554 4.46049 3.18016 4.39016 3.10984C4.31984 3.03951 4.22446 3 4.125 3H2.93625C2.83679 3 2.74141 3.03951 2.67109 3.10984C2.60076 3.18016 2.56125 3.27554 2.56125 3.375H2.565ZM2.04375 6.5625H7.905C8.16259 6.5625 8.40963 6.66483 8.59178 6.84697C8.77392 7.02912 8.87625 7.27616 8.87625 7.53375V9.71625C8.87625 9.97384 8.77392 10.2209 8.59178 10.403C8.40963 10.5852 8.16259 10.6875 7.905 10.6875H2.09625C1.83866 10.6875 1.59162 10.5852 1.40947 10.403C1.22733 10.2209 1.125 9.97384 1.125 9.71625V7.5C1.12251 7.37778 1.14443 7.25629 1.18948 7.14265C1.23453 7.02901 1.30181 6.9255 1.38738 6.83819C1.47294 6.75088 1.57507 6.68152 1.68777 6.63419C1.80048 6.58685 1.9215 6.56247 2.04375 6.5625ZM7.905 9.9375C7.96368 9.9375 8.01996 9.91419 8.06145 9.8727C8.10294 9.8312 8.12625 9.77493 8.12625 9.71625V7.53375C8.12625 7.47507 8.10294 7.4188 8.06145 7.3773C8.01996 7.33581 7.96368 7.3125 7.905 7.3125H2.04375C2.01992 7.31235 1.99633 7.31725 1.97453 7.32688C1.95273 7.33651 1.93322 7.35065 1.91727 7.36836C1.90133 7.38607 1.88932 7.40696 1.88204 7.42965C1.87475 7.45234 1.87235 7.47632 1.875 7.5V9.75C1.87597 9.80838 1.89959 9.86409 1.94087 9.90538C1.98216 9.94667 2.03787 9.97028 2.09625 9.97125L7.905 9.9375ZM3.81375 8.67C3.81375 8.76946 3.85326 8.86484 3.92359 8.93516C3.99391 9.00549 4.08929 9.045 4.18875 9.045H7.0875C7.18696 9.045 7.28234 9.00549 7.35267 8.93516C7.42299 8.86484 7.4625 8.76946 7.4625 8.67C7.4625 8.57054 7.42299 8.47516 7.35267 8.40483C7.28234 8.33451 7.18696 8.295 7.0875 8.295H4.18875C4.08929 8.295 3.99391 8.33451 3.92359 8.40483C3.85326 8.47516 3.81375 8.57054 3.81375 8.67ZM2.91375 9.075C2.98792 9.075 3.06042 9.05301 3.12209 9.0118C3.18376 8.9706 3.23182 8.91203 3.2602 8.84351C3.28859 8.77498 3.29601 8.69958 3.28154 8.62684C3.26707 8.5541 3.23136 8.48728 3.17892 8.43483C3.12647 8.38239 3.05965 8.34668 2.98691 8.33221C2.91417 8.31774 2.83877 8.32516 2.77024 8.35355C2.70172 8.38193 2.64315 8.42999 2.60195 8.49166C2.56074 8.55333 2.53875 8.62583 2.53875 8.7C2.53875 8.79946 2.57826 8.89484 2.64859 8.96516C2.71891 9.03549 2.81429 9.075 2.91375 9.075Z"/></svg>Тип документа</button>
+              <button type="button" class="kv2-chip"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill="#4d4d4d" d="M2.09625 1.3125H9.90375C10.1613 1.3125 10.4084 1.41483 10.5905 1.59697C10.7727 1.77912 10.875 2.02616 10.875 2.28375V4.46625C10.875 4.72384 10.7727 4.97088 10.5905 5.15303C10.4084 5.33517 10.1613 5.4375 9.90375 5.4375H2.09625C1.83866 5.4375 1.59162 5.33517 1.40947 5.15303C1.22733 4.97088 1.125 4.72384 1.125 4.46625V2.28375C1.125 2.02616 1.22733 1.77912 1.40947 1.59697C1.59162 1.41483 1.83866 1.3125 2.09625 1.3125ZM9.90375 4.6875C9.96213 4.68653 10.0178 4.66291 10.0591 4.62163C10.1004 4.58034 10.124 4.52463 10.125 4.46625V2.28375C10.124 2.22537 10.1004 2.16966 10.0591 2.12837C10.0178 2.08709 9.96213 2.06347 9.90375 2.0625H2.09625C2.03787 2.06347 1.98216 2.08709 1.94087 2.12837C1.89959 2.16966 1.87597 2.22537 1.875 2.28375V4.46625C1.87597 4.52463 1.89959 4.58034 1.94087 4.62163C1.98216 4.66291 2.03787 4.68653 2.09625 4.6875H9.90375ZM5.19 3.375C5.19 3.47446 5.22951 3.56984 5.29984 3.64016C5.37016 3.71049 5.46554 3.75 5.565 3.75H9.06375C9.16321 3.75 9.25859 3.71049 9.32892 3.64016C9.39924 3.56984 9.43875 3.47446 9.43875 3.375C9.43875 3.27554 9.39924 3.18016 9.32892 3.10984C9.25859 3.03951 9.16321 3 9.06375 3H5.565C5.46554 3 5.37016 3.03951 5.29984 3.10984C5.22951 3.18016 5.19 3.27554 5.19 3.375ZM2.565 3.375C2.565 3.47446 2.60451 3.56984 2.67483 3.64016C2.74516 3.71049 2.84054 3.75 2.94 3.75H4.125C4.22446 3.75 4.31984 3.71049 4.39016 3.64016C4.46049 3.56984 4.5 3.47446 4.5 3.375C4.5 3.27554 4.46049 3.18016 4.39016 3.10984C4.31984 3.03951 4.22446 3 4.125 3H2.93625C2.83679 3 2.74141 3.03951 2.67109 3.10984C2.60076 3.18016 2.56125 3.27554 2.56125 3.375H2.565ZM2.04375 6.5625H7.905C8.16259 6.5625 8.40963 6.66483 8.59178 6.84697C8.77392 7.02912 8.87625 7.27616 8.87625 7.53375V9.71625C8.87625 9.97384 8.77392 10.2209 8.59178 10.403C8.40963 10.5852 8.16259 10.6875 7.905 10.6875H2.09625C1.83866 10.6875 1.59162 10.5852 1.40947 10.403C1.22733 10.2209 1.125 9.97384 1.125 9.71625V7.5C1.12251 7.37778 1.14443 7.25629 1.18948 7.14265C1.23453 7.02901 1.30181 6.9255 1.38738 6.83819C1.47294 6.75088 1.57507 6.68152 1.68777 6.63419C1.80048 6.58685 1.9215 6.56247 2.04375 6.5625ZM7.905 9.9375C7.96368 9.9375 8.01996 9.91419 8.06145 9.8727C8.10294 9.8312 8.12625 9.77493 8.12625 9.71625V7.53375C8.12625 7.47507 8.10294 7.4188 8.06145 7.3773C8.01996 7.33581 7.96368 7.3125 7.905 7.3125H2.04375C2.01992 7.31235 1.99633 7.31725 1.97453 7.32688C1.95273 7.33651 1.93322 7.35065 1.91727 7.36836C1.90133 7.38607 1.88932 7.40696 1.88204 7.42965C1.87475 7.45234 1.87235 7.47632 1.875 7.5V9.75C1.87597 9.80838 1.89959 9.86409 1.94087 9.90538C1.98216 9.94667 2.03787 9.97028 2.09625 9.97125L7.905 9.9375ZM3.81375 8.67C3.81375 8.76946 3.85326 8.86484 3.92359 8.93516C3.99391 9.00549 4.08929 9.045 4.18875 9.045H7.0875C7.18696 9.045 7.28234 9.00549 7.35267 8.93516C7.42299 8.86484 7.4625 8.76946 7.4625 8.67C7.4625 8.57054 7.42299 8.47516 7.35267 8.40483C7.28234 8.33451 7.18696 8.295 7.0875 8.295H4.18875C4.08929 8.295 3.99391 8.33451 3.92359 8.40483C3.85326 8.47516 3.81375 8.57054 3.81375 8.67ZM2.91375 9.075C2.98792 9.075 3.06042 9.05301 3.12209 9.0118C3.18376 8.9706 3.23182 8.91203 3.2602 8.84351C3.28859 8.77498 3.29601 8.69958 3.28154 8.62684C3.26707 8.5541 3.23136 8.48728 3.17892 8.43483C3.12647 8.38239 3.05965 8.34668 2.98691 8.33221C2.91417 8.31774 2.83877 8.32516 2.77024 8.35355C2.70172 8.38193 2.64315 8.42999 2.60195 8.49166C2.56074 8.55333 2.53875 8.62583 2.53875 8.7C2.53875 8.79946 2.57826 8.89484 2.64859 8.96516C2.71891 9.03549 2.81429 9.075 2.91375 9.075Z"/></svg>Ответственное лицо              </button>
+              <div class="kv2-type-wrap" id="docTypeWrap">
+                <button type="button" class="kv2-chip" id="docTypeBtn" aria-expanded="false" aria-controls="docTypeMenu" aria-haspopup="listbox" title="Фильтр по типу документа">
+                  <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill="#4d4d4d" d="M2.09625 1.3125H9.90375C10.1613 1.3125 10.4084 1.41483 10.5905 1.59697C10.7727 1.77912 10.875 2.02616 10.875 2.28375V4.46625C10.875 4.72384 10.7727 4.97088 10.5905 5.15303C10.4084 5.33517 10.1613 5.4375 9.90375 5.4375H2.09625C1.83866 5.4375 1.59162 5.33517 1.40947 5.15303C1.22733 4.97088 1.125 4.72384 1.125 4.46625V2.28375C1.125 2.02616 1.22733 1.77912 1.40947 1.59697C1.59162 1.41483 1.83866 1.3125 2.09625 1.3125ZM3.81375 8.67C3.81375 8.76946 3.85326 8.86484 3.92359 8.93516C3.99391 9.00549 4.08929 9.045 4.18875 9.045H7.0875C7.18696 9.045 7.28234 9.00549 7.35267 8.93516C7.42299 8.86484 7.4625 8.76946 7.4625 8.67C7.4625 8.57054 7.42299 8.47516 7.35267 8.40483C7.28234 8.33451 7.18696 8.295 7.0875 8.295H4.18875C4.08929 8.295 3.99391 8.33451 3.92359 8.40483C3.85326 8.47516 3.81375 8.57054 3.81375 8.67Z"/></svg>
+                  <span id="docTypeBtnLabel">Тип документа</span>
+                  <svg class="kv2-type-chev" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill="currentColor" d="M3.375 4.5L6 7.125L8.625 4.5H3.375Z"/></svg>
+                </button>
+                <div class="kv2-dropdown kv2-type-dd" id="docTypeMenu" role="listbox" aria-labelledby="docTypeBtnLabel"></div>
+              </div>
               <button type="button" class="kv2-chip">Ещё <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill="#4d4d4d" d="M3.405 5.1075C3.43313 5.03902 3.48091 4.9804 3.5423 4.93902C3.6037 4.89765 3.67597 4.87537 3.75 4.875H8.25C8.32403 4.87537 8.3963 4.89765 8.4577 4.93902C8.51909 4.9804 8.56687 5.03902 8.595 5.1075C8.62372 5.17579 8.63156 5.25106 8.61755 5.32381C8.60353 5.39655 8.56828 5.46352 8.51625 5.51625L6.26625 7.76625C6.23139 7.8014 6.18991 7.8293 6.14422 7.84833C6.09852 7.86737 6.0495 7.87717 6 7.87717C5.9505 7.87717 5.90148 7.86737 5.85578 7.84833C5.81009 7.8293 5.76861 7.8014 5.73375 7.76625L3.48375 5.51625C3.43172 5.46352 3.39647 5.39655 3.38245 5.32381C3.36844 5.25106 3.37628 5.17579 3.405 5.1075Z"/></svg></button>
             </div>
           </div>
@@ -1897,6 +2048,7 @@
     toggle(sortMenu, false);
     toggle(viewMenu, false);
     toggle(tagsPop, false);
+    if (typeof toggleDocTypeMenu === 'function') toggleDocTypeMenu(false);
   });
   sortWrap.addEventListener('click', function (e) { e.stopPropagation(); });
   viewMenuWrap.addEventListener('click', function (e) { e.stopPropagation(); });
@@ -1920,6 +2072,137 @@
   var _lastFiles   = [];
   var _kv2Folder   = null;
   var _tbToken     = localStorage.getItem('auth_token') || '';
+  window._kv2TypeFilter = null;
+
+  function kv2FilterByType(files) {
+    if (!window._kv2TypeFilter || !window.kv2GetFileCategory) return files || [];
+    return (files || []).filter(function (f) { return window.kv2GetFileCategory(f) === window._kv2TypeFilter; });
+  }
+
+  window._kv2SyncLastFiles = function (files) {
+    files = files || [];
+    _lastFiles = files;
+    window._kv2LastFiles = files;
+  };
+
+  window.kv2FilterByType = kv2FilterByType;
+
+  function kv2RerenderView() {
+    var all = window._kv2LastFiles;
+    if (all == null) return;
+    _lastFiles = all;
+    var navFavEarly = document.getElementById('navFavorites');
+    if (navFavEarly && navFavEarly.classList.contains('active') && !all.length) {
+      var gridE = document.getElementById('assetGrid');
+      if (gridE) {
+        gridE.className = 'kv2-grid';
+        gridE.innerHTML = '<div style="padding:24px;color:var(--kv-hint);font-size:13px">Нет избранных файлов</div>';
+      }
+      var lab0 = document.getElementById('assetLabel');
+      var foot0 = document.querySelector('.kv2-footer-bar');
+      if (lab0) {
+        var s0 = lab0.querySelector('svg');
+        var sg0 = s0 ? s0.outerHTML : '';
+        lab0.innerHTML = '0\u00a0Избранных ' + sg0;
+      }
+      if (foot0) foot0.textContent = '0 избранных · 0 B';
+      return;
+    }
+    var list = kv2FilterByType(all);
+    if (_currentView === 'table') renderTableView(list); else renderGrid(list);
+    if (list.length === 0 && all.length && window._kv2TypeFilter) {
+      var gridF = document.getElementById('assetGrid');
+      if (gridF) {
+        if (_currentView === 'grid') { gridF.className = 'kv2-grid'; } else { gridF.className = ''; }
+        gridF.innerHTML = '<div style="padding:24px;color:var(--kv-hint);font-size:13px">Нет файлов выбранного типа. Выберите «Все типы» в фильтре.</div>';
+      }
+    }
+    var navFav = document.getElementById('navFavorites');
+    if (navFav && navFav.classList.contains('active')) {
+      var label = document.getElementById('assetLabel');
+      var footer = document.querySelector('.kv2-footer-bar');
+      if (label) {
+        var svgEl = label.querySelector('svg');
+        var svg = svgEl ? svgEl.outerHTML : '';
+        label.innerHTML = list.length + '\u00a0Избранных ' + svg;
+      }
+      if (footer) {
+        var total = list.reduce(function (s, f) { return s + window.fileSizeBytes(f); }, 0);
+        var fmtB = function (b) { return b >= 1048576 ? (b / 1048576).toFixed(0) + ' MB' : b >= 1024 ? (b / 1024).toFixed(0) + ' KB' : b + ' B'; };
+        footer.textContent = list.length + ' избранных · ' + fmtB(total);
+      }
+    } else {
+      tbUpdateFooter(list);
+    }
+  }
+
+  window.kv2RerenderView = kv2RerenderView;
+
+  function docTypeLabelShortForButton(cat) {
+    var L = (window.kv2TypeCategoryLabels && window.kv2TypeCategoryLabels[cat]) || cat;
+    return (L.split('(')[0] || L).split('…')[0].trim() || 'Тип';
+  }
+
+  function refreshDocTypeMenu() {
+    var menu = document.getElementById('docTypeMenu');
+    if (!menu || !window.kv2GetFileCategory) return;
+    var files = window._kv2LastFiles || [];
+    var counts = Object.create(null);
+    for (var i = 0; i < files.length; i++) {
+      var c = window.kv2GetFileCategory(files[i]);
+      counts[c] = (counts[c] || 0) + 1;
+    }
+    var order = window.kv2TypeCategoryOrder || [];
+    var labels = window.kv2TypeCategoryLabels || {};
+    var cur = window._kv2TypeFilter;
+    var html = '<button type="button" class="kv2-dropdown-item' + (cur == null || cur === '' ? ' checked' : '') + '" data-kv2-type-cat="" role="option">Все типы <span class="kv2-type-menu-n">(' + files.length + ')</span></button>';
+    order.forEach(function (cat) {
+      var n = counts[cat];
+      if (!n) return;
+      var lab = escH((labels[cat] || cat) + ' (' + n + ')');
+      html += '<button type="button" class="kv2-dropdown-item' + (cur === cat ? ' checked' : '') + '" data-kv2-type-cat="' + escH(cat) + '" role="option">' + lab + '</button>';
+    });
+    menu.innerHTML = html;
+    menu.querySelectorAll('[data-kv2-type-cat]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        var v = btn.getAttribute('data-kv2-type-cat');
+        window._kv2TypeFilter = (v == null || v === '') ? null : v;
+        var dlab = document.getElementById('docTypeBtnLabel');
+        if (dlab) {
+          dlab.textContent = !window._kv2TypeFilter ? 'Тип документа' : docTypeLabelShortForButton(window._kv2TypeFilter);
+        }
+        toggleDocTypeMenu(false);
+        kv2RerenderView();
+        refreshDocTypeMenu();
+      });
+    });
+  }
+
+  function toggleDocTypeMenu(open) {
+    var menu = document.getElementById('docTypeMenu');
+    var btn = document.getElementById('docTypeBtn');
+    if (!menu) return;
+    if (open === undefined) open = !menu.classList.contains('open');
+    menu.classList.toggle('open', open);
+    if (btn) { btn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+  }
+
+  window.kv2RefreshDocTypeMenu = refreshDocTypeMenu;
+
+  var docTypeWrap = document.getElementById('docTypeWrap');
+  var docTypeBtn = document.getElementById('docTypeBtn');
+  if (docTypeBtn) {
+    docTypeBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleDocTypeMenu();
+      toggle(sortMenu, false);
+      toggle(viewMenu, false);
+      toggle(tagsPop, false);
+    });
+  }
+  if (docTypeWrap) docTypeWrap.addEventListener('click', function (e) { e.stopPropagation(); });
 
   function saveColState() {
     localStorage.setItem('kv2_hidden_cols', JSON.stringify(Array.from(_hiddenCols)));
@@ -2055,7 +2338,7 @@
       label.innerHTML = files.length + '\u00a0' + pf(files.length) + ' ' + svg;
     }
     if (footer) {
-      var total = files.reduce(function (s, f) { return s + (f.size_bytes || 0); }, 0);
+      var total = files.reduce(function (s, f) { return s + window.fileSizeBytes(f); }, 0);
       footer.textContent = files.length + '\u00a0' + pf(files.length).toLowerCase() + ' · ' + fmtBytes(total);
     }
   }
@@ -2069,9 +2352,21 @@
       .then(function (r) { return r.json(); })
       .then(function (files) {
         files = files || [];
+        window._kv2LastFiles = files;
         _lastFiles = files;
-        if (_currentView === 'table') renderTableView(files); else renderGrid(files);
-        tbUpdateFooter(files);
+        if (window._kv2TypeFilter) {
+          var c = window._kv2TypeFilter;
+          var hasCat = files.some(function (f) { return window.kv2GetFileCategory && window.kv2GetFileCategory(f) === c; });
+          if (!hasCat) window._kv2TypeFilter = null;
+        }
+        refreshDocTypeMenu();
+        var list = kv2FilterByType(files);
+        if (_currentView === 'table') renderTableView(list); else renderGrid(list);
+        tbUpdateFooter(list);
+        var dlab = document.getElementById('docTypeBtnLabel');
+        if (dlab) {
+          dlab.textContent = !window._kv2TypeFilter ? 'Тип документа' : docTypeLabelShortForButton(window._kv2TypeFilter);
+        }
       })
       .catch(function () {
         var grid = document.getElementById('assetGrid');
@@ -2090,8 +2385,20 @@
     });
     var gearWrapEl = document.getElementById('gearWrap');
     if (gearWrapEl) gearWrapEl.style.display = view === 'table' ? '' : 'none';
-    if (_lastFiles.length) {
-      if (view === 'table') renderTableView(_lastFiles); else renderGrid(_lastFiles);
+    if (_lastFiles && _lastFiles.length) {
+      var list = kv2FilterByType(_lastFiles);
+      if (view === 'table') renderTableView(list); else renderGrid(list);
+      var navFav = document.getElementById('navFavorites');
+      if (navFav && navFav.classList.contains('active')) {
+        var label = document.getElementById('assetLabel');
+        var footer = document.querySelector('.kv2-footer-bar');
+        if (label) { var sEl = label.querySelector('svg'); var sg = sEl ? sEl.outerHTML : ''; label.innerHTML = list.length + '\u00a0Избранных ' + sg; }
+        if (footer) {
+          var t2 = list.reduce(function (s, f) { return s + window.fileSizeBytes(f); }, 0);
+          var fB = function (b) { return b >= 1048576 ? (b / 1048576).toFixed(0) + ' MB' : b >= 1024 ? (b / 1024).toFixed(0) + ' KB' : b + ' B'; };
+          footer.textContent = list.length + ' избранных · ' + fB(t2);
+        }
+      } else { tbUpdateFooter(list); }
     } else {
       window.loadFiles();
     }
@@ -2173,6 +2480,8 @@
         btn.classList.toggle('checked', btn.getAttribute('data-view') === 'table');
       });
       window.loadFiles(null);
+    } else if (window.kv2RefreshDocTypeMenu) {
+      window.kv2RefreshDocTypeMenu();
     }
   })();
 
@@ -2337,37 +2646,91 @@
       .then(function (r) { return r.json(); })
       .then(function (files) {
         files = files || [];
-        var grid = document.getElementById('assetGrid');
-        var label = document.getElementById('assetLabel');
-        var footer = document.querySelector('.kv2-footer-bar');
-        var pluralFiles = window.pluralFiles || function (n) { return n === 1 ? 'Файл' : 'Файлов'; };
-        if (grid) {
-          if (!files.length) {
-            grid.innerHTML = '<div style="padding:24px;color:var(--kv-hint);font-size:13px">Нет избранных файлов</div>';
-          } else {
-            grid.innerHTML = files.map(window._renderFileCard || function(f){ return ''; }).join('');
-            grid.querySelectorAll('.kv2-card').forEach(function (card) {
-              card.addEventListener('click', function (e) {
-                if (e.target.closest('.kv2-card-more')) return;
-                window.open(kbFileDownloadUrl(card.getAttribute('data-file-id')), '_blank');
-              });
-              card.addEventListener('contextmenu', function (e) { e.preventDefault(); showCtxMenu(e.clientX, e.clientY, card); });
-              var mb = card.querySelector('.kv2-card-more');
-              if (mb) mb.addEventListener('click', function (e) { e.stopPropagation(); var r = mb.getBoundingClientRect(); showCtxMenu(r.right, r.bottom, card); });
-            });
+        if (window._kv2SyncLastFiles) window._kv2SyncLastFiles(files);
+        if (window._kv2TypeFilter) {
+          var c = window._kv2TypeFilter;
+          if (!files.some(function (f) { return window.kv2GetFileCategory && window.kv2GetFileCategory(f) === c; })) {
+            window._kv2TypeFilter = null;
           }
         }
-        if (label) {
-          var svgEl = label.querySelector('svg');
-          var svg = svgEl ? svgEl.outerHTML : '';
-          label.innerHTML = files.length + '\u00a0Избранных ' + svg;
-        }
-        if (footer) {
-          var total = files.reduce(function (s, f) { return s + (f.size_bytes || 0); }, 0);
-          var fmtB = function(b){ return b>=1048576?(b/1048576).toFixed(1)+' MB':b>=1024?(b/1024).toFixed(0)+' KB':b+' B'; };
-          footer.textContent = files.length + ' избранных · ' + fmtB(total);
-        }
+        if (window.kv2RefreshDocTypeMenu) window.kv2RefreshDocTypeMenu();
+        if (window.kv2RerenderView) window.kv2RerenderView();
+        var dlab = document.getElementById('docTypeBtnLabel');
+        if (dlab) dlab.textContent = !window._kv2TypeFilter ? 'Тип документа' : (window.kv2TypeCategoryLabels && (window.kv2TypeCategoryLabels[window._kv2TypeFilter] || '').split('(')[0].trim()) || 'Тип документа';
       });
+  }
+
+  function showDeleteConfirmDialog(fid, fileName) {
+    fileName = (fileName || '').trim() || 'файл';
+    var overlay = document.createElement('div');
+    overlay.className = 'kv2-dlg-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'kv2-del-dlg-title');
+    overlay.innerHTML =
+      '<div class="kv2-dlg" tabindex="-1">' +
+        '<div class="kv2-dlg-pad">' +
+          '<h1 id="kv2-del-dlg-title" class="kv2-dlg-title">Удалить файл?</h1>' +
+          '<p class="kv2-dlg-sub kv2-dlg-sub--delete">Следующий файл будет удалён безвозвратно:</p>' +
+          '<p class="kv2-dlg-filename" id="kv2-del-filename" aria-live="polite"></p>' +
+          '<ul class="kv2-dlg-list" aria-label="Что это значит">' +
+            '<li>файл исчезнет из папок и поиска;</li>' +
+            '<li>действие нельзя отменить.</li>' +
+          '</ul>' +
+          '<div class="kv2-dlg-actions">' +
+            '<button type="button" class="kv2-dlg-btn" data-del="cancel">Отмена</button>' +
+            '<button type="button" class="kv2-dlg-btn kv2-dlg-btn--danger" data-del="ok">Удалить</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    var nameEl = overlay.querySelector('#kv2-del-filename');
+    if (nameEl) nameEl.textContent = fileName;
+
+    var onKey;
+    function close() {
+      if (onKey) document.removeEventListener('keydown', onKey);
+      overlay.remove();
+    }
+
+    function doDelete() {
+      var btn = overlay.querySelector('[data-del="ok"]');
+      if (btn) btn.disabled = true;
+      fetch('/api/kb/files/' + fid, { method: 'DELETE', headers: { 'x-auth-token': token } })
+        .then(function (r) {
+          if (!r.ok) throw new Error();
+          close();
+          _favorites.delete(String(fid));
+          if (_favMode) loadFavFiles();
+          else if (window.loadFiles) window.loadFiles();
+          showToast('Файл удалён');
+        })
+        .catch(function () {
+          if (btn) btn.disabled = false;
+          showToast('Не удалось удалить файл');
+        });
+    }
+
+    onKey = function (e) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+
+    var panel = overlay.querySelector('.kv2-dlg');
+    if (panel) panel.addEventListener('click', function (e) { e.stopPropagation(); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+
+    var btnCancel = overlay.querySelector('[data-del="cancel"]');
+    var btnOk = overlay.querySelector('[data-del="ok"]');
+    if (btnCancel) btnCancel.addEventListener('click', close);
+    if (btnOk) btnOk.addEventListener('click', doDelete);
+
+    requestAnimationFrame(function () {
+      if (btnCancel) btnCancel.focus();
+    });
   }
 
   menu.querySelectorAll('.kv2-ctx-item').forEach(function (item) {
@@ -2409,12 +2772,7 @@
         showMoveDialog(fid);
 
       } else if (action === 'delete') {
-        if (!confirm('Удалить «' + _ctxFileName + '»?')) return;
-        fetch('/api/kb/files/' + fid, { method: 'DELETE', headers: { 'x-auth-token': token } })
-          .then(function () {
-            _favorites.delete(String(fid));
-            if (window.loadFiles) window.loadFiles();
-          });
+        showDeleteConfirmDialog(fid, _ctxFileName);
 
       } else if (action === 'tag') {
         showToast('Скоро будет доступно');

@@ -113,12 +113,12 @@ const AIChatInput = () => {
         <div className="flex flex-col items-stretch w-full h-full">
           <div className="flex items-center gap-2 p-3 rounded-full bg-white max-w-3xl w-full">
             <button
-              className="p-3 rounded-full hover:bg-gray-100 transition"
+              className="inline-flex items-center justify-center p-3 rounded-full hover:bg-gray-100 transition"
               title="Прикрепить файл"
               type="button"
               tabIndex={-1}
             >
-              <Paperclip size={20} />
+              <Paperclip size={20} className="shrink-0" />
             </button>
 
             <div className="relative flex-1">
@@ -165,12 +165,12 @@ const AIChatInput = () => {
             </div>
 
             <button
-              className="p-3 rounded-full hover:bg-gray-100 transition"
+              className="inline-flex items-center justify-center p-3 rounded-full hover:bg-gray-100 transition"
               title="Голос"
               type="button"
               tabIndex={-1}
             >
-              <Mic size={20} />
+              <Mic size={20} className="shrink-0" />
             </button>
             <button
               className="flex items-center gap-1 bg-black hover:bg-zinc-700 text-white p-3 rounded-full font-medium justify-center"
@@ -204,7 +204,7 @@ const AIChatInput = () => {
           >
             <div className="flex gap-3 items-center">
               <button
-                className={`flex items-center gap-1 px-4 py-2 rounded-full transition-all font-medium group ${
+                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full transition-all font-medium leading-none group ${
                   thinkActive
                     ? "bg-blue-600/10 outline outline-blue-600/60 text-blue-950"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -216,18 +216,20 @@ const AIChatInput = () => {
                   setThinkActive((a) => !a);
                 }}
               >
-                <Lightbulb
-                  className="group-hover:fill-yellow-300 transition-all"
-                  size={18}
-                />
+                <span className="inline-flex size-[18px] shrink-0 items-center justify-center">
+                  <Lightbulb
+                    className="group-hover:fill-yellow-300 transition-all"
+                    size={18}
+                  />
+                </span>
                 Think
               </button>
 
               <motion.button
-                className={`flex items-center px-4 gap-1 py-2 rounded-full transition font-medium whitespace-nowrap overflow-hidden justify-start  ${
+                className={`flex items-center gap-1 py-2 rounded-full transition font-medium whitespace-nowrap overflow-hidden ${
                   deepSearchActive
-                    ? "bg-blue-600/10 outline outline-blue-600/60 text-blue-950"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    ? "justify-start bg-blue-600/10 outline outline-blue-600/60 text-blue-950"
+                    : "justify-center bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
                 title="Глубокий поиск"
                 type="button"
@@ -238,18 +240,21 @@ const AIChatInput = () => {
                 initial={false}
                 animate={{
                   width: deepSearchActive ? 155 : 36,
-                  paddingLeft: deepSearchActive ? 8 : 9,
+                  paddingLeft: deepSearchActive ? 10 : 0,
+                  paddingRight: deepSearchActive ? 12 : 0,
                 }}
               >
-                <div className="flex-1">
+                <span className="inline-flex size-[18px] shrink-0 items-center justify-center [&>svg]:block">
                   <Globe size={18} />
-                </div>
+                </span>
                 <motion.span
-                  className="pb-[2px]"
+                  className="overflow-hidden whitespace-nowrap leading-none"
                   initial={false}
                   animate={{
                     opacity: deepSearchActive ? 1 : 0,
+                    maxWidth: deepSearchActive ? 140 : 0,
                   }}
+                  transition={{ duration: 0.2 }}
                 >
                   Глубокий поиск
                 </motion.span>

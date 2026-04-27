@@ -655,11 +655,40 @@
       content: '';
       position: absolute;
       inset: 0;
+      z-index: 1;
       background: linear-gradient(to top, rgba(0,0,0,.75) 0%, transparent 55%);
       opacity: 0;
       transition: opacity .15s;
     }
     .kv2-card:hover .kv2-card-thumb::after { opacity: 1; }
+    .kv2-thumb-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+    .kv2-thumb-iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .kv2-thumb-fallback {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+      font-weight: 800;
+      color: rgba(80, 80, 160, 0.42);
+      letter-spacing: 0.1em;
+      z-index: 0;
+    }
     .kv2-card-badge {
       position: absolute;
       bottom: 16px;
@@ -722,6 +751,11 @@
       background: linear-gradient(135deg, #e8e0ff, #d4e8ff);
       display: flex; align-items: center; justify-content: center;
       font-size: 9px; font-weight: 700; color: #6060aa; letter-spacing: .04em;
+      overflow: hidden;
+    }
+    .kv2-table .td-thumb.td-thumb-preview { padding: 0; }
+    .kv2-table .td-thumb.td-thumb-preview img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
     }
     .kv2-table .td-filename { overflow: hidden; text-overflow: ellipsis; }
     .kv2-table .td-muted { color: var(--kv-muted); font-size: 12px; }
@@ -1207,6 +1241,45 @@
     return 'Файлов';
   }
 
+  /** Уточнение MIME по имени файла, если в БД пусто или octet-stream */
+  function inferMimeType(f) {
+    var m = (f && f.mime_type && String(f.mime_type).trim()) || '';
+    if (m && m !== 'application/octet-stream') return m;
+    var n = ((f && f.original_name) || '').toLowerCase();
+    var ex = n.indexOf('.') >= 0 ? n.slice(n.lastIndexOf('.') + 1) : '';
+    var map = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', svg: 'image/svg+xml', pdf: 'application/pdf' };
+    return map[ex] || m;
+  }
+
+  function escAttr(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;');
+  }
+
+  function buildKv2CardThumb(f) {
+    var url = escAttr(kbFileDownloadUrl(f.id));
+    var mime = inferMimeType(f);
+    if (mime.indexOf('image/') === 0) {
+      return '<img class="kv2-thumb-img" src="' + url + '" alt="" loading="lazy" decoding="async" onerror="this.style.display=\'none\'" />';
+    }
+    if (mime === 'application/pdf') {
+      return '<iframe class="kv2-thumb-iframe" src="' + url + '#view=FitH" title=""></iframe>';
+    }
+    return '<div class="kv2-thumb-fallback">' + escHtml(fileExt(f.original_name)) + '</div>';
+  }
+
+  function tdThumbCell(f) {
+    var mime = inferMimeType(f);
+    var ext = fileExt(f.original_name);
+    if (mime.indexOf('image/') === 0) {
+      var u = escAttr(kbFileDownloadUrl(f.id));
+      return '<div class="td-thumb td-thumb-preview"><img src="' + u + '" alt="" loading="lazy" onerror="var p=this.parentNode;this.remove();p.className=\'td-thumb\';p.textContent=' + JSON.stringify(ext) + ';" /></div>';
+    }
+    return '<div class="td-thumb">' + escH(ext) + '</div>';
+  }
+
   var OCR_LABELS = { pending: 'OCR...', processing: 'Обработка', done: 'Индексирован', failed: 'Ошибка OCR', unsupported: 'Без OCR' };
 
   function ocrBadge(status) {
@@ -1221,7 +1294,7 @@
     var title = escHtml(f.original_name);
     var short = f.original_name.length > 18 ? f.original_name.slice(0, 16) + '…' : f.original_name;
     return '<article class="kv2-card" data-file-id="' + f.id + '" data-file-name="' + title + '" data-ocr="' + (f.ocr_status||'pending') + '" title="' + title + '">' +
-      '<div class="kv2-card-thumb"></div>' +
+      '<div class="kv2-card-thumb">' + buildKv2CardThumb(f) + '</div>' +
       ocrBadge(f.ocr_status) +
       '<span class="kv2-card-badge">' + escHtml(ext) + '</span>' +
       '<button type="button" class="kv2-card-more" title="Действия"><span></span><span></span><span></span></button>' +
@@ -1775,7 +1848,7 @@
       var ext = tbFileExt(f.original_name);
       var en  = escH(f.original_name);
       var tds = TABLE_COLS.map(function (c) {
-        if (c.key === 'name')     return '<td class="td-name col-name"><div class="td-thumb">' + escH(ext) + '</div><span class="td-filename">' + en + '</span></td>';
+        if (c.key === 'name')     return '<td class="td-name col-name">' + tdThumbCell(f) + '<span class="td-filename">' + en + '</span></td>';
         if (c.key === 'size')     return '<td class="col-size td-muted">' + fmtBytes(f.size_bytes || 0) + '</td>';
         if (c.key === 'type')     return '<td class="col-type td-muted">' + escH(ext) + '</td>';
         if (c.key === 'created')  return '<td class="col-created td-muted">' + fmtDate(f.created_at) + '</td>';

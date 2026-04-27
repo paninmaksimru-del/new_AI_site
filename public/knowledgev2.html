@@ -2181,8 +2181,8 @@
   </div>
 </div>
 
-<div class="kv2-modal-backdrop" id="welcomeRoot">
-  <div class="kv2-modal open" id="welcomeModal" role="dialog" aria-labelledby="welcomeTitle">
+<div class="kv2-modal-backdrop" id="welcomeRoot" aria-hidden="true">
+  <div class="kv2-modal" id="welcomeModal" role="dialog" aria-labelledby="welcomeTitle" aria-hidden="true">
     <div class="kv2-modal-hero">
       <button type="button" class="kv2-modal-close" id="welcomeClose" aria-label="Закрыть">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.62 3.62L12.38 12.38M12.38 3.62L3.62 12.38" stroke="#4d4d4d" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -2320,11 +2320,29 @@
 
 <script>
 (function () {
-  /* Welcome modal — always show on page load */
+  /* Welcome: once per login session (auth_login in localStorage; shared across tabs; new user or after logout → снова) */
+  function kv2WelcomeStorageKey() {
+    var login = localStorage.getItem('auth_login');
+    if (login) return 'kv2_welcome_dismissed_' + encodeURIComponent(login);
+    var t = localStorage.getItem('auth_token') || '';
+    return 'kv2_welcome_dismissed_' + (t ? 't_' + String(t).slice(0, 24) : 'anon');
+  }
+  var welcomeRoot = document.getElementById('welcomeRoot');
   var modal = document.getElementById('welcomeModal');
   if (modal) {
-    modal.classList.add('open');
-    var closeModal = function () { modal.classList.remove('open'); };
+    var closeModal = function () {
+      modal.classList.remove('open');
+      try { localStorage.setItem(kv2WelcomeStorageKey(), '1'); } catch (_) {}
+      modal.setAttribute('aria-hidden', 'true');
+      if (welcomeRoot) welcomeRoot.setAttribute('aria-hidden', 'true');
+    };
+    var dismissed = false;
+    try { dismissed = localStorage.getItem(kv2WelcomeStorageKey()) === '1'; } catch (_) {}
+    if (!dismissed) {
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      if (welcomeRoot) welcomeRoot.setAttribute('aria-hidden', 'false');
+    }
     var wc = document.getElementById('welcomeClose');
     var wl = document.getElementById('welcomeLater');
     var wt = document.getElementById('welcomeTry');

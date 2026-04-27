@@ -483,6 +483,10 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
   }
 
   function clearAuth() {
+    var login = localStorage.getItem('auth_login');
+    if (login) {
+      try { localStorage.removeItem('kv2_welcome_dismissed_' + encodeURIComponent(login)); } catch (e) {}
+    }
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_role');
     localStorage.removeItem('auth_login');
@@ -1045,6 +1049,10 @@ canvas{ width: 100%; height: 100%; display:block; border-radius: 16px; border: 1
     logoutButtons.forEach(function(btn) {
       btn.addEventListener('click', function(e) {
         e.preventDefault();
+        var login = localStorage.getItem('auth_login');
+        if (login) {
+          try { localStorage.removeItem('kv2_welcome_dismissed_' + encodeURIComponent(login)); } catch (err) {}
+        }
         try {
           localStorage.removeItem(AUTH_KEY);
         } catch (err) {}

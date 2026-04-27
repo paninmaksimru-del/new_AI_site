@@ -212,8 +212,15 @@ export function setupKbRoutes(app) {
       if (error) return res.status(404).json({ error: 'Файл не найден в хранилище' });
 
       const buffer = Buffer.from(await data.arrayBuffer());
+      const disposition = req.query.download === '1' ? 'attachment' : 'inline';
+      const fallbackName = String(rows[0].original_name || 'download')
+        .replace(/[\\/"\r\n]/g, '_')
+        .slice(0, 160) || 'download';
       res.setHeader('Content-Type', rows[0].mime_type);
-      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(rows[0].original_name)}"`);
+      res.setHeader(
+        'Content-Disposition',
+        `${disposition}; filename="${fallbackName}"; filename*=UTF-8''${encodeURIComponent(rows[0].original_name || fallbackName)}`
+      );
       res.send(buffer);
     } catch (e) {
       res.status(500).json({ error: String(e.message) });

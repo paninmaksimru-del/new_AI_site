@@ -1571,6 +1571,8 @@
       min-height: 0;
       overflow: auto;
       padding: 16px;
+      display: flex;
+      flex-direction: column;
     }
     .kv2-detail-preview {
       position: relative;
@@ -1684,6 +1686,170 @@
       font-size: 13px;
       line-height: 18px;
     }
+    .kv2-detail-bottom {
+      position: sticky;
+      bottom: -16px;
+      margin: auto -16px -16px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-top: 1px solid var(--air-gray-4);
+      background: rgba(255,255,255,.88);
+      -webkit-backdrop-filter: blur(9px);
+      backdrop-filter: blur(9px);
+    }
+    .kv2-detail-bottom-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .kv2-theme-toggle {
+      width: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      color: var(--air-gray-11);
+      background: var(--air-gray-3);
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .kv2-theme-toggle:hover {
+      background: var(--air-gray-4);
+      border-color: var(--air-gray-5);
+    }
+    .kv2-theme-toggle .kv2-theme-sun { display: none; }
+    .kv2-detail-download {
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 14px;
+      border: 1px solid var(--air-gray-5);
+      border-radius: 8px;
+      background: var(--air-gray-3);
+      color: var(--air-gray-11);
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: background .15s, border-color .15s;
+    }
+    .kv2-detail-download:hover {
+      background: var(--air-gray-4);
+      border-color: var(--air-gray-6, #cecece);
+    }
+    html[data-theme="dark"] {
+      --kv-bg: #141414;
+      --kv-surface: #1b1b1b;
+      --kv-text: #f4f4f4;
+      --kv-muted: #d0d0d0;
+      --kv-hint: #969696;
+      --kv-border: #303030;
+      --air-gray-1: #1b1b1b;
+      --air-gray-2: #202020;
+      --air-gray-3: #151515;
+      --air-gray-4: #262626;
+      --air-gray-5: #333333;
+      --air-gray-8: #a8a8a8;
+      --air-gray-10: #c9c9c9;
+      --air-gray-11: #e5e5e5;
+      --air-gray-12: #f5f5f5;
+      --air-blue-1: rgba(33,96,255,.16);
+      --air-blue-2: rgba(33,96,255,.32);
+      --air-popover-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 3px 6px rgba(0,0,0,.25), 0 12px 30px rgba(0,0,0,.38);
+      --air-soft-shadow: 0 1px 2px rgba(0,0,0,.25), 0 8px 24px rgba(0,0,0,.24);
+    }
+    html[data-theme="dark"] body {
+      background:
+        radial-gradient(circle at 12px 12px, rgba(255,255,255,.04) 1px, transparent 1px),
+        #141414;
+      color: var(--air-gray-12);
+    }
+    html[data-theme="dark"] .kv2-panel,
+    html[data-theme="dark"] .kv2-file-detail,
+    html[data-theme="dark"] .kv2-modal,
+    html[data-theme="dark"] .kv2-dlg,
+    html[data-theme="dark"] #colSettings {
+      background: #1b1b1b;
+      border-color: #303030;
+    }
+    html[data-theme="dark"] .kv2-panel-head,
+    html[data-theme="dark"] .kv2-file-detail-head,
+    html[data-theme="dark"] .kv2-detail-bottom,
+    html[data-theme="dark"] .kv2-footer-bar {
+      background: rgba(27,27,27,.9);
+      border-color: #2a2a2a;
+    }
+    html[data-theme="dark"] .kv2-body,
+    html[data-theme="dark"] .kv2-detail-props,
+    html[data-theme="dark"] .kv2-detail-action,
+    html[data-theme="dark"] .kv2-chip,
+    html[data-theme="dark"] .kv2-dropdown,
+    html[data-theme="dark"] .kv2-tags-pop,
+    html[data-theme="dark"] .kv2-col-settings,
+    html[data-theme="dark"] .kv2-ctx-menu,
+    html[data-theme="dark"] .kv2-ai-chat-shell {
+      background: #1b1b1b;
+      border-color: #303030;
+      color: var(--air-gray-11);
+    }
+    html[data-theme="dark"] .kv2-detail-note,
+    html[data-theme="dark"] .kv2-detail-preview,
+    html[data-theme="dark"] .kv2-card,
+    html[data-theme="dark"] .kv2-table th,
+    html[data-theme="dark"] .kv2-theme-toggle,
+    html[data-theme="dark"] .kv2-detail-download,
+    html[data-theme="dark"] .kv2-ai-tgl,
+    html[data-theme="dark"] .kv2-ai-deep {
+      background: #202020;
+      border-color: #303030;
+      color: var(--air-gray-11);
+    }
+    html[data-theme="dark"] .kv2-card-thumb,
+    html[data-theme="dark"] .kv2-table .td-thumb {
+      background:
+        radial-gradient(circle at 1px 1px, rgba(255,255,255,.08) 1px, transparent 1px),
+        linear-gradient(135deg, #202020, #151515);
+    }
+    html[data-theme="dark"] .kv2-detail-preview img,
+    html[data-theme="dark"] .kv2-detail-preview iframe {
+      background: #151515;
+    }
+    html[data-theme="dark"] .kv2-nav-link:hover,
+    html[data-theme="dark"] .kv2-board-row:hover,
+    html[data-theme="dark"] .kv2-detail-action:hover,
+    html[data-theme="dark"] .kv2-theme-toggle:hover,
+    html[data-theme="dark"] .kv2-dropdown-item:hover,
+    html[data-theme="dark"] .kv2-ctx-item:hover,
+    html[data-theme="dark"] .kv2-table tr:hover td {
+      background: #262626;
+    }
+    html[data-theme="dark"] .kv2-table td {
+      border-bottom-color: #2a2a2a;
+    }
+    html[data-theme="dark"] .kv2-table tr.is-selected td,
+    html[data-theme="dark"] .kv2-board-row.active-folder,
+    html[data-theme="dark"] .kv2-dropdown-item.checked {
+      background: rgba(33,96,255,.18);
+      color: #f2f6ff;
+    }
+    html[data-theme="dark"] .kv2-theme-toggle .kv2-theme-moon { display: none; }
+    html[data-theme="dark"] .kv2-theme-toggle .kv2-theme-sun { display: block; }
+    html[data-theme="dark"] svg path[fill="#4d4d4d"],
+    html[data-theme="dark"] svg path[fill="#666666"],
+    html[data-theme="dark"] svg path[fill="#202020"],
+    html[data-theme="dark"] svg rect[fill="#4d4d4d"],
+    html[data-theme="dark"] svg circle[fill="#4d4d4d"] {
+      fill: var(--air-gray-11);
+    }
+    html[data-theme="dark"] svg path[stroke="#4d4d4d"],
+    html[data-theme="dark"] svg circle[stroke="#4d4d4d"] {
+      stroke: var(--air-gray-11);
+    }
 
     @media (max-width: 1100px) {
       .kv2-topbar {
@@ -1790,10 +1956,19 @@
     });
   }
 
+  (function initKv2Theme() {
+    var saved = localStorage.getItem('kv2_theme');
+    var theme = saved === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+
   /** Скачивание/открытие в новой вкладке: GET не передаёт заголовок x-auth-token, сервер принимает ?token= */
-  function kbFileDownloadUrl(fileId) {
+  function kbFileDownloadUrl(fileId, forceDownload) {
     var t = localStorage.getItem('auth_token') || '';
-    return '/api/kb/files/' + fileId + '/download' + (t ? '?token=' + encodeURIComponent(t) : '');
+    var params = [];
+    if (t) params.push('token=' + encodeURIComponent(t));
+    if (forceDownload) params.push('download=1');
+    return '/api/kb/files/' + fileId + '/download' + (params.length ? '?' + params.join('&') : '');
   }
   window.kbFileDownloadUrl = kbFileDownloadUrl;
 
@@ -2824,10 +2999,24 @@
 
   function tbFileExt(n) { var p = (n || '').split('.'); return p.length > 1 ? p.pop().toUpperCase() : 'FILE'; }
 
-  function kv2DownloadUrl(fileId) {
-    if (typeof window.kbFileDownloadUrl === 'function') return window.kbFileDownloadUrl(fileId);
+  function kv2DownloadUrl(fileId, forceDownload) {
+    if (typeof window.kbFileDownloadUrl === 'function') return window.kbFileDownloadUrl(fileId, forceDownload);
     var t = localStorage.getItem('auth_token') || '';
-    return '/api/kb/files/' + fileId + '/download' + (t ? '?token=' + encodeURIComponent(t) : '');
+    var params = [];
+    if (t) params.push('token=' + encodeURIComponent(t));
+    if (forceDownload) params.push('download=1');
+    return '/api/kb/files/' + fileId + '/download' + (params.length ? '?' + params.join('&') : '');
+  }
+
+  function kv2ForceDownload(url, filename) {
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename || '';
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { a.remove(); }, 0);
   }
 
   function kv2Mime(f) {
@@ -2869,6 +3058,41 @@
     return labels[status] || status || '—';
   }
 
+  function currentKv2Theme() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+
+  function kv2ThemeToggleHtml() {
+    var title = currentKv2Theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+    return '<button type="button" class="kv2-theme-toggle" data-detail-action="theme" aria-label="' + title + '" title="' + title + '">' +
+      '<svg class="kv2-theme-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+      '<svg class="kv2-theme-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2.2M12 19.8V22M4.93 4.93l1.55 1.55M17.52 17.52l1.55 1.55M2 12h2.2M19.8 12H22M4.93 19.07l1.55-1.55M17.52 6.48l1.55-1.55" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' +
+    '</button>';
+  }
+
+  function kv2BottomDownloadHtml(f) {
+    var url = escH(kv2DownloadUrl(f.id, true));
+    return '<button type="button" class="kv2-detail-download" data-detail-action="download" data-url="' + url + '" data-file-name="' + escH(f.original_name) + '">' +
+      '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path fill="currentColor" d="M12.41 14.5H3.59A2.09 2.09 0 0 1 1.5 12.4V9.62a.55.55 0 0 1 1.09 0v2.78a1 1 0 0 0 1 1h8.82a1 1 0 0 0 1-1V9.62a.55.55 0 0 1 1.09 0v2.78a2.09 2.09 0 0 1-2.09 2.1ZM8.55 10.29V3.39l1.95 1.97a.55.55 0 0 0 .78-.77L8.4 1.68A.56.56 0 0 0 8 1.5a.55.55 0 0 0-.39.16L4.74 4.6a.55.55 0 0 0 .78.76l1.92-2v6.93a.55.55 0 1 0 1.11 0Z"/></svg>' +
+      '<span>Скачать</span>' +
+    '</button>';
+  }
+
+  function refreshKv2ThemeToggleLabels() {
+    var title = currentKv2Theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+    document.querySelectorAll('.kv2-theme-toggle').forEach(function (btn) {
+      btn.setAttribute('title', title);
+      btn.setAttribute('aria-label', title);
+    });
+  }
+
+  function toggleKv2Theme() {
+    var next = currentKv2Theme() === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('kv2_theme', next);
+    refreshKv2ThemeToggleLabels();
+  }
+
   function markSelectedFile(fileId) {
     window._kv2SelectedFileId = fileId ? String(fileId) : null;
     document.querySelectorAll('.kv2-card.is-selected, .kv2-table tr.is-selected').forEach(function (el) {
@@ -2904,7 +3128,7 @@
         '<div class="kv2-detail-preview">' + kv2DetailPreview(f) + '</div>' +
         '<div class="kv2-detail-actions">' +
           '<button type="button" class="kv2-detail-action primary" data-detail-action="open" data-url="' + url + '">Открыть</button>' +
-          '<button type="button" class="kv2-detail-action" data-detail-action="download" data-url="' + url + '">Скачать</button>' +
+          '<button type="button" class="kv2-detail-action" data-detail-action="download" data-url="' + escH(kv2DownloadUrl(f.id, true)) + '" data-file-name="' + escH(f.original_name) + '">Скачать</button>' +
           '<button type="button" class="kv2-detail-action" data-detail-action="copy" data-url="' + url + '">Ссылка</button>' +
         '</div>' +
         '<div class="kv2-detail-section">' +
@@ -2922,6 +3146,10 @@
         '<div class="kv2-detail-section">' +
           '<div class="kv2-detail-section-title">Контекст</div>' +
           '<div class="kv2-detail-note">Файл можно открыть, скачать, скопировать ссылку или передать в меню действий через кнопку сверху.</div>' +
+        '</div>' +
+        '<div class="kv2-detail-bottom">' +
+          '<div class="kv2-detail-bottom-tools">' + kv2ThemeToggleHtml() + '</div>' +
+          kv2BottomDownloadHtml(f) +
         '</div>' +
       '</div>';
   }
@@ -2983,11 +3211,15 @@
     var selectedId = window._kv2SelectedFileId;
     if (action === 'close') {
       closeFileDetail();
-    } else if (action === 'open' || action === 'download') {
+    } else if (action === 'open') {
       window.open(btn.getAttribute('data-url'), '_blank');
+    } else if (action === 'download') {
+      kv2ForceDownload(btn.getAttribute('data-url'), btn.getAttribute('data-file-name') || '');
     } else if (action === 'copy') {
       var absolute = location.origin + btn.getAttribute('data-url');
       navigator.clipboard.writeText(absolute);
+    } else if (action === 'theme') {
+      toggleKv2Theme();
     } else if (action === 'more' && selectedId) {
       var rect = btn.getBoundingClientRect();
       var proxy = document.querySelector('[data-file-id="' + String(selectedId).replace(/"/g, '\\"') + '"]') || btn;
@@ -3548,8 +3780,19 @@
       var fid = _ctxFileId;
       closeCtxMenu();
 
-      if (action === 'open' || action === 'download') {
+      if (action === 'open') {
         window.open(kbFileDownloadUrl(fid), '_blank');
+
+      } else if (action === 'download') {
+        var dl = kbFileDownloadUrl(fid, true);
+        var a = document.createElement('a');
+        a.href = dl;
+        a.download = _ctxFileName || '';
+        a.rel = 'noopener';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () { a.remove(); }, 0);
 
       } else if (action === 'copy-link') {
         var url = location.origin + kbFileDownloadUrl(fid);

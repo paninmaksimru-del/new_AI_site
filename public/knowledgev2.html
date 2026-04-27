@@ -1032,6 +1032,12 @@
     });
   }
 
+  /** Скачивание/открытие в новой вкладке: GET не передаёт заголовок x-auth-token, сервер принимает ?token= */
+  function kbFileDownloadUrl(fileId) {
+    var t = localStorage.getItem('auth_token') || '';
+    return '/api/kb/files/' + fileId + '/download' + (t ? '?token=' + encodeURIComponent(t) : '');
+  }
+
   // ── Динамическая загрузка папок (Доски) ──
   var CHEV_SVG = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="#666666" d="M4.54 6.81C4.57751 6.71869 4.64121 6.64053 4.72307 6.58536C4.80493 6.53019 4.90129 6.50049 5 6.5H11C11.0987 6.50049 11.1951 6.53019 11.2769 6.58536C11.3588 6.64053 11.4225 6.71869 11.46 6.81C11.4983 6.90106 11.5088 7.00141 11.4901 7.09841C11.4714 7.1954 11.4244 7.28469 11.355 7.355L8.355 10.355C8.30852 10.4019 8.25322 10.4391 8.19229 10.4644C8.13136 10.4898 8.06601 10.5029 8 10.5029C7.93399 10.5029 7.86864 10.4898 7.80771 10.4644C7.74678 10.4391 7.69148 10.4019 7.645 10.355L4.645 7.355C4.57562 7.28469 4.52862 7.1954 4.50994 7.09841C4.49125 7.00141 4.50171 6.90106 4.54 6.81Z"/></svg>';
 
@@ -1250,7 +1256,7 @@
               card.addEventListener('click', function (e) {
                 if (e.target.closest('.kv2-card-more')) return;
                 var fid = card.getAttribute('data-file-id');
-                window.open('/api/kb/files/' + fid + '/download', '_blank');
+                window.open(kbFileDownloadUrl(fid), '_blank');
               });
               card.addEventListener('contextmenu', function (e) {
                 e.preventDefault();
@@ -1799,7 +1805,7 @@
     wrap.querySelectorAll('tr[data-file-id]').forEach(function (row) {
       row.addEventListener('click', function (e) {
         if (e.target.closest('.kv2-card-more')) return;
-        window.open('/api/kb/files/' + row.getAttribute('data-file-id') + '/download', '_blank');
+        window.open(kbFileDownloadUrl(row.getAttribute('data-file-id')), '_blank');
       });
       row.addEventListener('contextmenu', function (e) {
         e.preventDefault();
@@ -1826,7 +1832,7 @@
     grid.querySelectorAll('.kv2-card').forEach(function (card) {
       card.addEventListener('click', function (e) {
         if (e.target.closest('.kv2-card-more')) return;
-        window.open('/api/kb/files/' + card.getAttribute('data-file-id') + '/download', '_blank');
+        window.open(kbFileDownloadUrl(card.getAttribute('data-file-id')), '_blank');
       });
       card.addEventListener('contextmenu', function (e) {
         e.preventDefault();
@@ -2157,7 +2163,7 @@
             grid.querySelectorAll('.kv2-card').forEach(function (card) {
               card.addEventListener('click', function (e) {
                 if (e.target.closest('.kv2-card-more')) return;
-                window.open('/api/kb/files/' + card.getAttribute('data-file-id') + '/download', '_blank');
+                window.open(kbFileDownloadUrl(card.getAttribute('data-file-id')), '_blank');
               });
               card.addEventListener('contextmenu', function (e) { e.preventDefault(); showCtxMenu(e.clientX, e.clientY, card); });
               var mb = card.querySelector('.kv2-card-more');
@@ -2185,10 +2191,10 @@
       closeCtxMenu();
 
       if (action === 'open' || action === 'download') {
-        window.open('/api/kb/files/' + fid + '/download', '_blank');
+        window.open(kbFileDownloadUrl(fid), '_blank');
 
       } else if (action === 'copy-link') {
-        var url = location.origin + '/api/kb/files/' + fid + '/download';
+        var url = location.origin + kbFileDownloadUrl(fid);
         navigator.clipboard.writeText(url).then(function () { showToast('Ссылка скопирована'); });
 
       } else if (action === 'open-ai') {

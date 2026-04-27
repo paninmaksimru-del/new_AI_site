@@ -561,7 +561,7 @@
     .kv2-sort-dd-panel .kv2-dropdown-item {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       min-height: 32px;
     }
 
@@ -780,24 +780,64 @@
       margin-top: 2px;
     }
 
-    /* ── Table view ── */
-    .kv2-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .kv2-table th {
-      text-align: left; padding: 0 12px; height: 36px;
-      font-size: 12px; font-weight: 600; color: var(--kv-muted);
-      border-bottom: 1px solid #efefef; white-space: nowrap;
-      position: relative; user-select: none;
+    /* ── Table view (Air-style dense rows) ── */
+    #kv2TableWrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 8px;
     }
+    .kv2-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      line-height: 1.35;
+      letter-spacing: -0.006em;
+      table-layout: fixed;
+    }
+    .kv2-table th {
+      text-align: left;
+      padding: 0 8px;
+      min-height: 48px;
+      height: 48px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--kv-muted);
+      border-bottom: 1px solid #efefef;
+      white-space: nowrap;
+      position: relative;
+      user-select: none;
+      vertical-align: middle;
+      box-sizing: border-box;
+    }
+    .kv2-table th.col-num,
+    .kv2-table td.col-num { text-align: right; }
     .kv2-table th.sortable { cursor: pointer; }
     .kv2-table th.sortable:hover { color: var(--kv-text); }
     .kv2-table th .th-sort { margin-left: 4px; opacity: .5; }
     .kv2-table td {
-      padding: 0 12px; height: 44px; border-bottom: 1px solid #f4f4f4;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      max-width: 0; color: var(--kv-text);
+      padding: 0 8px;
+      min-height: 48px;
+      height: 48px;
+      border-bottom: 1px solid #f4f4f4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 0;
+      color: var(--kv-text);
+      vertical-align: middle;
+      box-sizing: border-box;
     }
+    .kv2-table .col-name { width: 28%; min-width: 180px; max-width: none; }
     .kv2-table tr:hover td { background: #fafafa; }
-    .kv2-table .td-name { display: flex; align-items: center; gap: 10px; max-width: none; }
+    .kv2-table .td-name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: none;
+      height: 100%;
+      min-height: 48px;
+    }
     .kv2-table .td-thumb {
       width: 32px; height: 32px; border-radius: 6px; flex-shrink: 0;
       background: linear-gradient(135deg, #e8e0ff, #d4e8ff);
@@ -809,7 +849,7 @@
     .kv2-table .td-thumb.td-thumb-preview img {
       width: 100%; height: 100%; object-fit: cover; display: block;
     }
-    .kv2-table .td-filename { overflow: hidden; text-overflow: ellipsis; }
+    .kv2-table .td-filename { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; }
     .kv2-table .td-muted { color: var(--kv-muted); font-size: 12px; }
     .kv2-table td .kv2-card-more {
       position: static; opacity: 0; width: 24px; height: 24px;
@@ -822,12 +862,15 @@
       font-size: 10px; font-weight: 600; padding: 2px 6px;
       border-radius: 3px; text-transform: uppercase; letter-spacing: .04em;
     }
-    .hide-col-size     .col-size,
-    .hide-col-created  .col-created,
-    .hide-col-modified .col-modified,
-    .hide-col-type     .col-type,
-    .hide-col-ext      .col-ext,
-    .hide-col-ocr      .col-ocr { display: none; }
+    .hide-col-size       .col-size,
+    .hide-col-created    .col-created,
+    .hide-col-modified   .col-modified,
+    .hide-col-resolution .col-resolution,
+    .hide-col-ext        .col-ext,
+    .hide-col-kind       .col-kind,
+    .hide-col-boards     .col-boards,
+    .hide-col-tags       .col-tags,
+    .hide-col-ocr        .col-ocr { display: none; }
 
     /* Column settings dropdown */
     .kv2-col-settings {
@@ -866,7 +909,11 @@
     .kv2-gear-wrap { position: relative; }
 
     /* View menu item with check */
-    .kv2-dropdown-item.checked::after { content: '✓'; margin-left: auto; }
+    .kv2-dropdown-item.checked::before {
+      content: '✓';
+      flex-shrink: 0;
+      margin-right: 8px;
+    }
     .kv2-dropdown-item { display: flex; gap: 8px; align-items: center; }
 
     /* OCR status badge */
@@ -1414,13 +1461,15 @@
     .kv2-card-more span { background: var(--air-gray-11); }
     .kv2-card-more:hover { background: var(--air-gray-1); }
     .kv2-table th {
-      height: 38px;
+      min-height: 48px;
+      height: 48px;
       color: var(--air-gray-10);
       background: var(--air-gray-2);
       border-bottom-color: var(--air-gray-4);
     }
     .kv2-table td {
-      height: 46px;
+      min-height: 48px;
+      height: 48px;
       border-bottom-color: var(--air-gray-4);
     }
     .kv2-table tr:hover td { background: var(--air-gray-3); }
@@ -2215,8 +2264,8 @@
   window.kv2GetFileCategory = kv2GetFileCategory;
   window.kv2TypeCategoryOrder = ['image', 'pdf', 'word', 'spreadsheet', 'presentation', 'text', 'ebook', 'archive', 'video', 'audio', 'code', 'other'];
   window.kv2TypeCategoryLabels = {
-    image: 'Изображения', pdf: 'PDF', word: 'Текстовые документы (Word, ODT, RTF)', spreadsheet: 'Таблицы (Excel, CSV, ODS, …)',
-    presentation: 'Презентации', text: 'Простой текст и разметка (TXT, MD, …)', ebook: 'Электронные книги (ePub, MOBI, …)',
+    image: 'Изображения', pdf: 'PDF', word: 'Текстовые документы', spreadsheet: 'Таблицы',
+    presentation: 'Презентации', text: 'Простой текст и разметка', ebook: 'Электронные книги',
     archive: 'Архивы', video: 'Видео', audio: 'Аудио', code: 'Код и веб-файлы', other: 'Другое'
   };
 
@@ -2490,7 +2539,7 @@
                   <button type="button" class="kv2-dropdown-item" data-sort="Размер">Размер</button>
                   <button type="button" class="kv2-dropdown-item" data-sort="Дата загрузки">Дата загрузки</button>
                   <button type="button" class="kv2-dropdown-item" data-sort="Дата создания">Дата создания</button>
-                  <button type="button" class="kv2-dropdown-item" data-sort="Дата изменения">Дата изменения ✓</button>
+                  <button type="button" class="kv2-dropdown-item checked" data-sort="Дата изменения">Дата изменения</button>
                 </div>
               </div>
               <div class="kv2-gear-wrap" id="gearWrap">
@@ -2821,17 +2870,25 @@
 
   // ── Table view & column settings ──────────────────────────────────────────
   var TABLE_COLS = [
-    { key: 'name',     label: 'Название',      fixed: true  },
-    { key: 'size',     label: 'Размер',         fixed: false },
-    { key: 'type',     label: 'Тип файла',      fixed: false },
-    { key: 'created',  label: 'Дата загрузки',  fixed: false },
-    { key: 'modified', label: 'Дата изменения', fixed: false },
-    { key: 'ocr',      label: 'Статус OCR',     fixed: false },
+    { key: 'name',       label: 'Название',       fixed: true },
+    { key: 'size',       label: 'Размер',         fixed: false, num: true },
+    { key: 'created',    label: 'Дата загрузки',  fixed: false },
+    { key: 'modified',   label: 'Дата изменения', fixed: false },
+    { key: 'resolution', label: 'Разрешение',     fixed: false },
+    { key: 'ext',        label: 'Расширение',     fixed: false },
+    { key: 'kind',       label: 'Тип',            fixed: false },
+    { key: 'boards',     label: 'Папки',          fixed: false, num: true },
+    { key: 'tags',       label: 'Теги',           fixed: false, num: true },
+    { key: 'ocr',        label: 'Статус OCR',     fixed: false },
   ];
 
   var _savedHiddenCols;
   try { _savedHiddenCols = JSON.parse(localStorage.getItem('kv2_hidden_cols')); } catch(_) {}
-  var _hiddenCols = new Set(Array.isArray(_savedHiddenCols) ? _savedHiddenCols : ['modified', 'ocr']);
+  var _tableColKeys = new Set(TABLE_COLS.map(function (c) { return c.key; }));
+  var _savedFiltered = Array.isArray(_savedHiddenCols)
+    ? _savedHiddenCols.filter(function (k) { return _tableColKeys.has(k); })
+    : null;
+  var _hiddenCols = new Set(_savedFiltered && _savedFiltered.length ? _savedFiltered : ['ocr']);
   var _currentView = localStorage.getItem('kv2_view') || 'grid';
   var _lastFiles   = [];
   var _kv2Folder   = null;
@@ -2928,11 +2985,11 @@
     var order = window.kv2TypeCategoryOrder || [];
     var labels = window.kv2TypeCategoryLabels || {};
     var cur = window._kv2TypeFilter;
-    var html = '<button type="button" class="kv2-dropdown-item' + (cur == null || cur === '' ? ' checked' : '') + '" data-kv2-type-cat="" role="option">Все типы <span class="kv2-type-menu-n">(' + files.length + ')</span></button>';
+    var html = '<button type="button" class="kv2-dropdown-item' + (cur == null || cur === '' ? ' checked' : '') + '" data-kv2-type-cat="" role="option">Все типы</button>';
     order.forEach(function (cat) {
       var n = counts[cat];
       if (!n) return;
-      var lab = escH((labels[cat] || cat) + ' (' + n + ')');
+      var lab = escH(labels[cat] || cat);
       html += '<button type="button" class="kv2-dropdown-item' + (cur === cat ? ' checked' : '') + '" data-kv2-type-cat="' + escH(cat) + '" role="option">' + lab + '</button>';
     });
     menu.innerHTML = html;
@@ -3242,21 +3299,79 @@
       (TB_OCR_LABELS[status] || status) + '</span>';
   }
 
+  function kv2ParseTagsArr(f) {
+    var t = f && f.tags;
+    if (t == null || t === '') return [];
+    if (Array.isArray(t)) return t;
+    try {
+      var a = JSON.parse(t);
+      return Array.isArray(a) ? a : [];
+    } catch (_) { return []; }
+  }
+
+  function kv2TagCount(f) {
+    return kv2ParseTagsArr(f).length;
+  }
+
+  function kv2BoardCount(f) {
+    return f && f.folder_id != null && f.folder_id !== '' ? 1 : 0;
+  }
+
+  function kv2ResolutionFromFile(f) {
+    var meta = f && f.metadata;
+    if (meta && typeof meta === 'string') {
+      try { meta = JSON.parse(meta); } catch (e) { meta = null; }
+    }
+    if (meta && typeof meta === 'object') {
+      var w = meta.width || meta.image_width || meta.w;
+      var h = meta.height || meta.image_height || meta.h;
+      if (w && h) return String(w) + ' × ' + String(h);
+    }
+    var mime = (inferMimeType(f) || '').toLowerCase();
+    if (mime.indexOf('image/') !== 0) return '—';
+    var name = ((f && f.original_name) || '').replace(/\.[^.]+$/, '');
+    var m = name.match(/(\d{2,5})\s*[x×хX]\s*(\d{2,5})/);
+    if (m) return m[1] + ' × ' + m[2];
+    return '—';
+  }
+
+  function kv2KindLabel(f) {
+    var cat = window.kv2GetFileCategory ? window.kv2GetFileCategory(f) : 'other';
+    var map = {
+      image: 'Фото', video: 'Видео', audio: 'Аудио', pdf: 'PDF', word: 'Документ',
+      spreadsheet: 'Таблица', presentation: 'Презентация', text: 'Текст', ebook: 'Книга',
+      archive: 'Архив', code: 'Код', other: 'Файл'
+    };
+    return map[cat] || cat;
+  }
+
+  function fmtTableDate(s) {
+    if (!s) return '—';
+    var d = new Date(s);
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
   function buildTableHTML(files) {
     var ths = TABLE_COLS.map(function (c) {
-      return '<th class="col-' + c.key + '">' + c.label + '</th>';
+      var cls = 'col-' + c.key + (c.num ? ' col-num' : '');
+      return '<th class="' + cls + '">' + c.label + '</th>';
     }).join('') + '<th class="td-more"></th>';
 
     var rows = files.map(function (f) {
-      var ext = tbFileExt(f.original_name);
+      var extLower = kv2FileExtLower(f);
+      var extDisp = extLower || '—';
       var en  = escH(f.original_name);
       var tds = TABLE_COLS.map(function (c) {
-        if (c.key === 'name')     return '<td class="td-name col-name">' + tdThumbCell(f) + '<span class="td-filename">' + en + '</span></td>';
-        if (c.key === 'size')     return '<td class="col-size td-muted">' + fmtBytes(f.size_bytes || 0) + '</td>';
-        if (c.key === 'type')     return '<td class="col-type td-muted">' + escH(ext) + '</td>';
-        if (c.key === 'created')  return '<td class="col-created td-muted">' + fmtDate(f.created_at) + '</td>';
-        if (c.key === 'modified') return '<td class="col-modified td-muted">' + fmtDate(f.updated_at || f.created_at) + '</td>';
-        if (c.key === 'ocr')      return '<td class="col-ocr td-ocr">' + ocrCell(f.ocr_status) + '</td>';
+        if (c.key === 'name')       return '<td class="td-name col-name">' + tdThumbCell(f) + '<span class="td-filename">' + en + '</span></td>';
+        if (c.key === 'size')       return '<td class="col-size td-muted col-num">' + fmtBytes(f.size_bytes || 0) + '</td>';
+        if (c.key === 'created')    return '<td class="col-created td-muted">' + fmtTableDate(f.created_at) + '</td>';
+        if (c.key === 'modified')   return '<td class="col-modified td-muted">' + fmtTableDate(f.updated_at || f.created_at) + '</td>';
+        if (c.key === 'resolution') return '<td class="col-resolution td-muted">' + escH(kv2ResolutionFromFile(f)) + '</td>';
+        if (c.key === 'ext')        return '<td class="col-ext td-muted">' + escH(extDisp) + '</td>';
+        if (c.key === 'kind')       return '<td class="col-kind td-muted">' + escH(kv2KindLabel(f)) + '</td>';
+        if (c.key === 'boards')     return '<td class="col-boards td-muted col-num">' + String(kv2BoardCount(f)) + '</td>';
+        if (c.key === 'tags')       return '<td class="col-tags td-muted col-num">' + String(kv2TagCount(f)) + '</td>';
+        if (c.key === 'ocr')        return '<td class="col-ocr td-ocr">' + ocrCell(f.ocr_status) + '</td>';
         return '<td></td>';
       }).join('');
       return '<tr data-file-id="' + f.id + '" data-file-name="' + en + '" data-ocr="' + (f.ocr_status || 'pending') + '" style="cursor:pointer">' +

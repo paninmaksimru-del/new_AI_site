@@ -1483,6 +1483,207 @@
       border-color: var(--air-blue-9);
       box-shadow: 0 0 0 3px rgba(3,75,255,.12);
     }
+    .kv2-panel,
+    .kv2-footer-bar {
+      transition: margin-right .24s ease;
+    }
+    .kv2-main.detail-open .kv2-panel,
+    .kv2-main.detail-open .kv2-footer-bar {
+      margin-right: 396px;
+    }
+    .kv2-card.is-selected {
+      border-color: var(--air-blue-9);
+      box-shadow: 0 0 0 2px rgba(3,75,255,.16), var(--air-soft-shadow);
+    }
+    .kv2-table tr.is-selected td {
+      background: var(--air-blue-1);
+    }
+    .kv2-file-detail {
+      position: absolute;
+      top: 0;
+      right: 8px;
+      bottom: 12px;
+      z-index: 60;
+      width: 380px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: rgba(255,255,255,.98);
+      border: 1px solid var(--air-gray-5);
+      border-radius: 12px;
+      box-shadow: var(--air-popover-shadow);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(16px);
+      transition: opacity .2s ease, transform .24s ease;
+    }
+    .kv2-file-detail.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+    .kv2-file-detail-head {
+      min-height: 56px;
+      padding: 12px 12px 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--air-gray-4);
+      background: rgba(255,255,255,.86);
+      -webkit-backdrop-filter: blur(9px);
+      backdrop-filter: blur(9px);
+    }
+    .kv2-file-detail-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 14px;
+      color: var(--air-gray-8);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .kv2-file-detail-title {
+      margin-top: 2px;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 18px;
+      color: var(--air-gray-12);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .kv2-file-detail-close,
+    .kv2-detail-icon-btn {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      color: var(--air-gray-11);
+    }
+    .kv2-file-detail-close:hover,
+    .kv2-detail-icon-btn:hover {
+      background: var(--air-gray-4);
+    }
+    .kv2-file-detail-body {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 16px;
+    }
+    .kv2-detail-preview {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      border: 1px solid var(--air-gray-5);
+      border-radius: 10px;
+      background:
+        radial-gradient(circle at 1px 1px, rgba(220,220,220,.78) 1px, transparent 1px),
+        linear-gradient(135deg, var(--air-gray-2), var(--air-blue-1));
+      background-size: 14px 14px, auto;
+    }
+    .kv2-detail-preview img,
+    .kv2-detail-preview iframe {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border: 0;
+      object-fit: contain;
+      background: #fff;
+    }
+    .kv2-detail-preview iframe {
+      pointer-events: none;
+    }
+    .kv2-detail-fallback {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(77,77,77,.42);
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: .08em;
+    }
+    .kv2-detail-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .kv2-detail-action {
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border: 1px solid var(--air-gray-5);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--air-gray-11);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .kv2-detail-action:hover {
+      background: var(--air-gray-3);
+      border-color: var(--air-gray-6, #cecece);
+    }
+    .kv2-detail-action.primary {
+      border-color: var(--air-blue-9);
+      background: var(--air-blue-9);
+      color: #fff;
+    }
+    .kv2-detail-action.primary:hover {
+      background: #052de1;
+    }
+    .kv2-detail-section {
+      margin-top: 18px;
+    }
+    .kv2-detail-section-title {
+      margin-bottom: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--air-gray-8);
+    }
+    .kv2-detail-props {
+      border: 1px solid var(--air-gray-4);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .kv2-detail-prop {
+      min-height: 38px;
+      padding: 9px 12px;
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 12px;
+      border-bottom: 1px solid var(--air-gray-4);
+      font-size: 13px;
+      line-height: 18px;
+    }
+    .kv2-detail-prop:last-child {
+      border-bottom: 0;
+    }
+    .kv2-detail-prop span:first-child {
+      color: var(--air-gray-8);
+    }
+    .kv2-detail-prop span:last-child {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      color: var(--air-gray-12);
+    }
+    .kv2-detail-note {
+      padding: 12px;
+      border: 1px solid var(--air-gray-4);
+      border-radius: 10px;
+      background: var(--air-gray-2);
+      color: var(--air-gray-10);
+      font-size: 13px;
+      line-height: 18px;
+    }
 
     @media (max-width: 1100px) {
       .kv2-topbar {
@@ -1500,6 +1701,13 @@
         width: 100%;
         transform: none;
         justify-content: flex-end;
+      }
+      .kv2-main.detail-open .kv2-panel,
+      .kv2-main.detail-open .kv2-footer-bar {
+        margin-right: 0;
+      }
+      .kv2-file-detail {
+        width: min(380px, calc(100% - 16px));
       }
     }
 
@@ -1532,6 +1740,13 @@
         justify-content: flex-end;
       }
       .kv2-btn-upload { max-width: 100%; }
+      .kv2-file-detail {
+        left: 8px;
+        width: auto;
+      }
+      .kv2-detail-actions {
+        grid-template-columns: 1fr;
+      }
     }
 
   </style>
@@ -1580,6 +1795,7 @@
     var t = localStorage.getItem('auth_token') || '';
     return '/api/kb/files/' + fileId + '/download' + (t ? '?token=' + encodeURIComponent(t) : '');
   }
+  window.kbFileDownloadUrl = kbFileDownloadUrl;
 
   // ── Динамическая загрузка папок (Доски) ──
   var CHEV_SVG = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path fill="#666666" d="M4.54 6.81C4.57751 6.71869 4.64121 6.64053 4.72307 6.58536C4.80493 6.53019 4.90129 6.50049 5 6.5H11C11.0987 6.50049 11.1951 6.53019 11.2769 6.58536C11.3588 6.64053 11.4225 6.71869 11.46 6.81C11.4983 6.90106 11.5088 7.00141 11.4901 7.09841C11.4714 7.1954 11.4244 7.28469 11.355 7.355L8.355 10.355C8.30852 10.4019 8.25322 10.4391 8.19229 10.4644C8.13136 10.4898 8.06601 10.5029 8 10.5029C7.93399 10.5029 7.86864 10.4898 7.80771 10.4644C7.74678 10.4391 7.69148 10.4019 7.645 10.355L4.645 7.355C4.57562 7.28469 4.52862 7.1954 4.50994 7.09841C4.49125 7.00141 4.50171 6.90106 4.54 6.81Z"/></svg>';
@@ -1896,6 +2112,7 @@
       .then(function (files) {
         if (!Array.isArray(files)) throw new Error('Invalid files response');
         window._kv2LastFiles = files;
+        if (window.kv2RefreshDocTypeMenu) window.kv2RefreshDocTypeMenu();
         var grid = document.getElementById('assetGrid');
         var label = document.getElementById('assetLabel');
         var footer = document.querySelector('.kv2-footer-bar');
@@ -1908,7 +2125,8 @@
               card.addEventListener('click', function (e) {
                 if (e.target.closest('.kv2-card-more')) return;
                 var fid = card.getAttribute('data-file-id');
-                window.open(kbFileDownloadUrl(fid), '_blank');
+                if (window.openFileDetail) window.openFileDetail(fid);
+                else window.open(kbFileDownloadUrl(fid), '_blank');
               });
               card.addEventListener('contextmenu', function (e) {
                 e.preventDefault();
@@ -1935,6 +2153,8 @@
         }
       })
       .catch(function () {
+        window._kv2LastFiles = [];
+        if (window.kv2RefreshDocTypeMenu) window.kv2RefreshDocTypeMenu();
         var grid = document.getElementById('assetGrid');
         if (grid) grid.innerHTML = '<div style="padding:24px;color:var(--kv-hint);font-size:13px">Ошибка загрузки</div>';
         var label = document.getElementById('assetLabel');
@@ -2176,6 +2396,7 @@
           </div>
         </div>
         <div class="kv2-footer-bar">0 файлов · 0 B</div>
+        <aside class="kv2-file-detail" id="fileDetail" aria-hidden="true" aria-label="Подробная карточка файла"></aside>
       </main>
     </div>
   </div>
@@ -2603,6 +2824,183 @@
 
   function tbFileExt(n) { var p = (n || '').split('.'); return p.length > 1 ? p.pop().toUpperCase() : 'FILE'; }
 
+  function kv2DownloadUrl(fileId) {
+    if (typeof window.kbFileDownloadUrl === 'function') return window.kbFileDownloadUrl(fileId);
+    var t = localStorage.getItem('auth_token') || '';
+    return '/api/kb/files/' + fileId + '/download' + (t ? '?token=' + encodeURIComponent(t) : '');
+  }
+
+  function kv2Mime(f) {
+    var mime = (f && f.mime_type) ? String(f.mime_type) : '';
+    if (mime && mime !== 'application/octet-stream') return mime;
+    var ext = tbFileExt((f && f.original_name) || '').toLowerCase();
+    var map = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', pdf: 'application/pdf' };
+    return map[ext] || mime || '—';
+  }
+
+  function kv2FileById(fileId) {
+    var id = String(fileId);
+    var files = window._kv2LastFiles || _lastFiles || [];
+    for (var i = 0; i < files.length; i++) {
+      if (String(files[i].id) === id) return files[i];
+    }
+    return null;
+  }
+
+  function kv2DetailPreview(f) {
+    var url = escH(kv2DownloadUrl(f.id));
+    var mime = kv2Mime(f).toLowerCase();
+    var ext = escH(tbFileExt(f.original_name));
+    if (mime.indexOf('image/') === 0) {
+      return '<img src="' + url + '" alt="" loading="lazy" decoding="async" />';
+    }
+    if (mime === 'application/pdf') {
+      return '<iframe src="' + url + '#view=FitH" title="Предпросмотр PDF"></iframe>';
+    }
+    return '<div class="kv2-detail-fallback">' + ext + '</div>';
+  }
+
+  function kv2DetailProp(label, value) {
+    return '<div class="kv2-detail-prop"><span>' + escH(label) + '</span><span>' + escH(value || '—') + '</span></div>';
+  }
+
+  function kv2DetailStatus(status) {
+    var labels = { pending: 'OCR ожидает обработки', processing: 'OCR обрабатывается', done: 'Индексирован', failed: 'Ошибка OCR', unsupported: 'OCR не поддерживается' };
+    return labels[status] || status || '—';
+  }
+
+  function markSelectedFile(fileId) {
+    window._kv2SelectedFileId = fileId ? String(fileId) : null;
+    document.querySelectorAll('.kv2-card.is-selected, .kv2-table tr.is-selected').forEach(function (el) {
+      el.classList.remove('is-selected');
+    });
+    if (!fileId) return;
+    document.querySelectorAll('[data-file-id="' + String(fileId).replace(/"/g, '\\"') + '"]').forEach(function (el) {
+      if (el.classList.contains('kv2-card') || el.tagName === 'TR') el.classList.add('is-selected');
+    });
+  }
+
+  function renderFileDetail(f) {
+    var detail = document.getElementById('fileDetail');
+    if (!detail || !f) return;
+    var ext = tbFileExt(f.original_name);
+    var size = fmtBytes(Number(f.size_bytes) || 0);
+    var mime = kv2Mime(f);
+    var url = escH(kv2DownloadUrl(f.id));
+    detail.innerHTML =
+      '<div class="kv2-file-detail-head">' +
+        '<div style="min-width:0;flex:1">' +
+          '<div class="kv2-file-detail-kicker">' + escH(ext) + ' · ' + escH(size) + '</div>' +
+          '<div class="kv2-file-detail-title" title="' + escH(f.original_name) + '">' + escH(f.original_name) + '</div>' +
+        '</div>' +
+        '<button type="button" class="kv2-detail-icon-btn" data-detail-action="more" aria-label="Действия" title="Действия">' +
+          '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path fill="currentColor" d="M4 8a1.25 1.25 0 1 1-2.5 0A1.25 1.25 0 0 1 4 8Zm5.25 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0ZM14.5 8a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z"/></svg>' +
+        '</button>' +
+        '<button type="button" class="kv2-file-detail-close" data-detail-action="close" aria-label="Закрыть" title="Закрыть">' +
+          '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.62 3.62L12.38 12.38M12.38 3.62L3.62 12.38" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>' +
+        '</button>' +
+      '</div>' +
+      '<div class="kv2-file-detail-body">' +
+        '<div class="kv2-detail-preview">' + kv2DetailPreview(f) + '</div>' +
+        '<div class="kv2-detail-actions">' +
+          '<button type="button" class="kv2-detail-action primary" data-detail-action="open" data-url="' + url + '">Открыть</button>' +
+          '<button type="button" class="kv2-detail-action" data-detail-action="download" data-url="' + url + '">Скачать</button>' +
+          '<button type="button" class="kv2-detail-action" data-detail-action="copy" data-url="' + url + '">Ссылка</button>' +
+        '</div>' +
+        '<div class="kv2-detail-section">' +
+          '<div class="kv2-detail-section-title">Свойства</div>' +
+          '<div class="kv2-detail-props">' +
+            kv2DetailProp('Тип', ext) +
+            kv2DetailProp('Размер', size) +
+            kv2DetailProp('MIME', mime) +
+            kv2DetailProp('Загружен', fmtDate(f.created_at)) +
+            kv2DetailProp('Изменён', fmtDate(f.updated_at || f.created_at)) +
+            kv2DetailProp('Владелец', f.owner_name || f.owner_id) +
+            kv2DetailProp('Статус', kv2DetailStatus(f.ocr_status)) +
+          '</div>' +
+        '</div>' +
+        '<div class="kv2-detail-section">' +
+          '<div class="kv2-detail-section-title">Контекст</div>' +
+          '<div class="kv2-detail-note">Файл можно открыть, скачать, скопировать ссылку или передать в меню действий через кнопку сверху.</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function closeFileDetail() {
+    var detail = document.getElementById('fileDetail');
+    var main = detail ? detail.closest('.kv2-main') : null;
+    if (detail) {
+      detail.classList.remove('open');
+      detail.setAttribute('aria-hidden', 'true');
+    }
+    if (main) main.classList.remove('detail-open');
+    markSelectedFile(null);
+  }
+
+  function openFileDetail(fileId) {
+    var detail = document.getElementById('fileDetail');
+    if (!detail) return;
+    var main = detail.closest('.kv2-main');
+    var file = typeof fileId === 'object' ? fileId : kv2FileById(fileId);
+    var id = String((file && file.id) || fileId);
+    if (!file) {
+      detail.innerHTML =
+        '<div class="kv2-file-detail-head">' +
+          '<div style="min-width:0;flex:1"><div class="kv2-file-detail-kicker">Файл</div><div class="kv2-file-detail-title">Загрузка...</div></div>' +
+          '<button type="button" class="kv2-file-detail-close" data-detail-action="close" aria-label="Закрыть" title="Закрыть">' +
+            '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.62 3.62L12.38 12.38M12.38 3.62L3.62 12.38" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>' +
+          '</button>' +
+        '</div><div class="kv2-file-detail-body"><div class="kv2-detail-note">Загружаю данные файла...</div></div>';
+    } else {
+      renderFileDetail(file);
+    }
+    detail.classList.add('open');
+    detail.setAttribute('aria-hidden', 'false');
+    if (main) main.classList.add('detail-open');
+    markSelectedFile(id);
+    fetch('/api/kb/files/' + encodeURIComponent(id), { headers: { 'x-auth-token': _tbToken } })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (fresh) {
+        renderFileDetail(fresh);
+        markSelectedFile(fresh.id);
+      })
+      .catch(function () {
+        if (!file) {
+          detail.querySelector('.kv2-file-detail-body').innerHTML = '<div class="kv2-detail-note">Не удалось загрузить карточку файла.</div>';
+        }
+      });
+  }
+
+  window.openFileDetail = openFileDetail;
+  window.closeFileDetail = closeFileDetail;
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-detail-action]');
+    if (!btn) return;
+    var detail = btn.closest('#fileDetail');
+    if (!detail) return;
+    var action = btn.getAttribute('data-detail-action');
+    var selectedId = window._kv2SelectedFileId;
+    if (action === 'close') {
+      closeFileDetail();
+    } else if (action === 'open' || action === 'download') {
+      window.open(btn.getAttribute('data-url'), '_blank');
+    } else if (action === 'copy') {
+      var absolute = location.origin + btn.getAttribute('data-url');
+      navigator.clipboard.writeText(absolute);
+    } else if (action === 'more' && selectedId) {
+      var rect = btn.getBoundingClientRect();
+      var proxy = document.querySelector('[data-file-id="' + String(selectedId).replace(/"/g, '\\"') + '"]') || btn;
+      if (window.showCtxMenu) window.showCtxMenu(rect.right, rect.bottom, proxy);
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && document.getElementById('fileDetail') && document.getElementById('fileDetail').classList.contains('open')) {
+      closeFileDetail();
+    }
+  });
+
   var TB_OCR_COLORS  = { pending: '#888', processing: '#2160ff', done: '#00a050', failed: '#b41e1e', unsupported: '#aaa' };
   var TB_OCR_LABELS  = { pending: 'OCR...', processing: 'Обработка', done: 'Индексирован', failed: 'Ошибка', unsupported: 'Без OCR' };
 
@@ -2651,7 +3049,7 @@
     wrap.querySelectorAll('tr[data-file-id]').forEach(function (row) {
       row.addEventListener('click', function (e) {
         if (e.target.closest('.kv2-card-more')) return;
-        window.open(kbFileDownloadUrl(row.getAttribute('data-file-id')), '_blank');
+        openFileDetail(row.getAttribute('data-file-id'));
       });
       row.addEventListener('contextmenu', function (e) {
         e.preventDefault();
@@ -2678,7 +3076,7 @@
     grid.querySelectorAll('.kv2-card').forEach(function (card) {
       card.addEventListener('click', function (e) {
         if (e.target.closest('.kv2-card-more')) return;
-        window.open(kbFileDownloadUrl(card.getAttribute('data-file-id')), '_blank');
+        openFileDetail(card.getAttribute('data-file-id'));
       });
       card.addEventListener('contextmenu', function (e) {
         e.preventDefault();
@@ -2691,6 +3089,7 @@
         if (window.showCtxMenu) window.showCtxMenu(r.right, r.bottom, card);
       });
     });
+    if (window._kv2SelectedFileId) markSelectedFile(window._kv2SelectedFileId);
   }
 
   function renderTableView(files) {
@@ -2704,6 +3103,7 @@
     grid.innerHTML = buildTableHTML(files);
     applyColHidden();
     bindTableRowEvents();
+    if (window._kv2SelectedFileId) markSelectedFile(window._kv2SelectedFileId);
   }
 
   function tbUpdateFooter(files) {

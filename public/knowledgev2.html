@@ -126,7 +126,7 @@
       background: #fff;
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0,0,0,.08);
-      height: 68px;
+      height: 58px;
       transition: height 0.38s cubic-bezier(.34,1.2,.64,1), box-shadow 0.32s;
     }
     .kv2-ai-chat.expanded .kv2-ai-chat-shell,
@@ -918,6 +918,119 @@
       flex-shrink: 0;
     }
     .kv2-ctx-sep-wrap { height: 1px; position: relative; margin: 0; }
+
+    /* Modal: переименование (в духе Air — нейтральная панель, 8px radius) */
+    .kv2-dlg-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10002;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.4);
+      -webkit-backdrop-filter: blur(2px);
+      backdrop-filter: blur(2px);
+    }
+    .kv2-dlg {
+      width: 100%;
+      max-width: min(496px, 100vw);
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 12px 40px rgba(0, 0, 0, 0.18);
+      font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    }
+    .kv2-dlg-pad { padding: 24px; }
+    .kv2-dlg-title {
+      margin: 0 0 6px;
+      font-size: 24px;
+      line-height: 1.2;
+      font-weight: 600;
+      letter-spacing: -0.019em;
+      color: #111827;
+    }
+    .kv2-dlg-sub {
+      margin: 0 0 20px;
+      font-size: 14px;
+      line-height: 1.45;
+      letter-spacing: -0.006em;
+      color: #6b7280;
+      word-break: break-word;
+    }
+    .kv2-dlg-sub strong {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      color: #4b5563;
+      font-weight: 500;
+    }
+    .kv2-dlg-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 500;
+      color: #6b7280;
+    }
+    .kv2-dlg-input {
+      display: block;
+      width: 100%;
+      height: 40px;
+      margin: 0 0 24px;
+      padding: 0 12px;
+      font-size: 14px;
+      line-height: 20px;
+      letter-spacing: -0.006em;
+      color: #111827;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .kv2-dlg-input::placeholder { color: #9ca3af; }
+    .kv2-dlg-input:focus {
+      border-color: var(--kv-blue);
+      box-shadow: 0 0 0 1px var(--kv-blue);
+    }
+    .kv2-dlg-input:disabled { cursor: not-allowed; background: #f3f4f6; color: #9ca3af; }
+    .kv2-dlg-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    .kv2-dlg-btn {
+      min-height: 40px;
+      padding: 0 12px;
+      font-size: 14px;
+      line-height: 1.2;
+      font-weight: 500;
+      font-family: inherit;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      color: #374151;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
+    }
+    .kv2-dlg-btn:hover { background: #f3f4f6; border-color: #e5e7eb; }
+    .kv2-dlg-btn:active { background: #e5e7eb; }
+    .kv2-dlg-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .kv2-dlg-btn--primary {
+      border-color: var(--kv-blue);
+      background: var(--kv-blue);
+      color: #fff;
+    }
+    .kv2-dlg-btn--primary:hover:not(:disabled) {
+      background: #0239cc;
+      border-color: #0239cc;
+    }
+    .kv2-dlg-btn--primary:active:not(:disabled) { background: #0031ad; }
+    .kv2-dlg-btn--primary:disabled { background: #9ca3af; border-color: #9ca3af; }
 
     .kv2-footer-bar {
       height: 40px;
@@ -2290,13 +2403,7 @@
           });
 
       } else if (action === 'rename') {
-        var newName = prompt('Новое название:', _ctxFileName);
-        if (!newName || !newName.trim()) return;
-        fetch('/api/kb/files/' + fid, {
-          method: 'PATCH',
-          headers: { 'x-auth-token': token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ original_name: newName.trim() })
-        }).then(function () { if (window.loadFiles) window.loadFiles(); });
+        showRenameDialog(fid, _ctxFileName);
 
       } else if (action === 'move') {
         showMoveDialog(fid);
@@ -2321,6 +2428,113 @@
     t.textContent = msg;
     document.body.appendChild(t);
     setTimeout(function () { t.style.opacity = '0'; setTimeout(function () { t.remove(); }, 400); }, 2500);
+  }
+
+  function showRenameDialog(fid, currentName) {
+    currentName = (currentName || '').trim() || 'файл';
+    var overlay = document.createElement('div');
+    overlay.className = 'kv2-dlg-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'kv2-rename-dlg-title');
+    overlay.innerHTML =
+      '<div class="kv2-dlg" tabindex="-1">' +
+        '<div class="kv2-dlg-pad">' +
+          '<h1 id="kv2-rename-dlg-title" class="kv2-dlg-title">Переименовать</h1>' +
+          '<p class="kv2-dlg-sub">Сейчас: <strong></strong></p>' +
+          '<label class="kv2-dlg-label" for="kv2-rename-input">Новое имя файла</label>' +
+          '<input type="text" class="kv2-dlg-input" id="kv2-rename-input" name="name" autocomplete="off" />' +
+          '<div class="kv2-dlg-actions">' +
+            '<button type="button" class="kv2-dlg-btn" data-rename="cancel">Отмена</button>' +
+            '<button type="button" class="kv2-dlg-btn kv2-dlg-btn--primary" data-rename="ok">Сохранить</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    var subStrong = overlay.querySelector('.kv2-dlg-sub strong');
+    if (subStrong) subStrong.textContent = currentName;
+    var input = overlay.querySelector('#kv2-rename-input');
+    var btnOk = overlay.querySelector('[data-rename="ok"]');
+    if (input) {
+      input.value = currentName;
+    }
+
+    function setBtnState() {
+      if (!btnOk) return;
+      var v = (input && input.value) || '';
+      btnOk.disabled = !v.trim() || (v.trim() === currentName);
+    }
+
+    function close() {
+      if (onKey) document.removeEventListener('keydown', onKey);
+      overlay.remove();
+    }
+
+    function doPatch() {
+      if (!input) return;
+      var newName = input.value.trim();
+      if (!newName || newName === currentName) return;
+      btnOk.disabled = true;
+      if (input) input.disabled = true;
+      fetch('/api/kb/files/' + fid, {
+        method: 'PATCH',
+        headers: { 'x-auth-token': token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ original_name: newName })
+      })
+        .then(function (r) {
+          if (!r.ok) throw new Error();
+          return r.json();
+        })
+        .then(function () {
+          close();
+          if (window.loadFiles) window.loadFiles();
+          showToast('Имя файла обновлено');
+        })
+        .catch(function () {
+          if (input) { input.disabled = false; }
+          if (btnOk) btnOk.disabled = false;
+          setBtnState();
+          showToast('Не удалось переименовать');
+        });
+    }
+
+    if (input) {
+      input.addEventListener('input', setBtnState);
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !btnOk.disabled) {
+          e.preventDefault();
+          doPatch();
+        }
+      });
+    }
+
+    var onKey = function (e) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+
+    var panel = overlay.querySelector('.kv2-dlg');
+    if (panel) {
+      panel.addEventListener('click', function (e) { e.stopPropagation(); });
+    }
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+    if (btnOk) {
+      btnOk.addEventListener('click', doPatch);
+      setBtnState();
+    }
+    var btnCancel = overlay.querySelector('[data-rename="cancel"]');
+    if (btnCancel) btnCancel.addEventListener('click', close);
+
+    requestAnimationFrame(function () {
+      if (!input) return;
+      input.focus();
+      var dot = currentName.lastIndexOf('.');
+      if (currentName && dot > 0) { input.setSelectionRange(0, dot); } else { input.select(); }
+    });
   }
 
   function showMoveDialog(fid) {

@@ -1062,6 +1062,7 @@
       display: -webkit-box;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
+      line-clamp: 2;
       overflow: hidden;
       color: #4b5563;
       font-weight: 500;
@@ -2456,73 +2457,7 @@
   window._renderFileCard = renderFileCard;
   window.pluralFiles = pluralFiles;
 
-  window.loadFiles = function (folderId) {
-    _currentFolderId = folderId !== undefined ? folderId : _currentFolderId;
-    window._kv2CurrentFolderId = _currentFolderId;
-    var url = '/api/kb/files';
-    if (_currentFolderId) url += '?folder_id=' + _currentFolderId;
-    fetch(url, { headers: { 'x-auth-token': token } })
-      .then(function (r) { return r.json(); })
-      .then(function (files) {
-        if (!Array.isArray(files)) throw new Error('Invalid files response');
-        window._kv2LastFiles = files;
-        if (window.kv2RefreshDocTypeMenu) window.kv2RefreshDocTypeMenu();
-        var grid = document.getElementById('assetGrid');
-        var label = document.getElementById('assetLabel');
-        var footer = document.querySelector('.kv2-footer-bar');
-        if (grid) {
-          if (!files.length) {
-            grid.innerHTML = '<div style="padding:24px;color:var(--kv-hint);font-size:13px">Нет файлов</div>';
-          } else {
-            grid.innerHTML = files.map(renderFileCard).join('');
-            grid.querySelectorAll('.kv2-card').forEach(function (card) {
-              card.addEventListener('click', function (e) {
-                if (e.target.closest('.kv2-card-more')) return;
-                var fid = card.getAttribute('data-file-id');
-                if (window.openFileDetail) window.openFileDetail(fid);
-                else window.open(kbFileDownloadUrl(fid), '_blank');
-              });
-              card.addEventListener('contextmenu', function (e) {
-                e.preventDefault();
-                showCtxMenu(e.clientX, e.clientY, card);
-              });
-              var moreBtn = card.querySelector('.kv2-card-more');
-              if (moreBtn) {
-                moreBtn.addEventListener('click', function (e) {
-                  e.stopPropagation();
-                  var r = moreBtn.getBoundingClientRect();
-                  showCtxMenu(r.right, r.bottom, card);
-                });
-              }
-            });
-          }
-        }
-        if (label) {
-          var svg = label.querySelector('svg') ? label.querySelector('svg').outerHTML : '';
-          label.innerHTML = files.length + '\u00a0' + pluralFiles(files.length) + ' ' + svg;
-        }
-        if (footer) {
-          var total = files.reduce(function (s, f) { return s + fileSizeBytes(f); }, 0);
-          footer.textContent = files.length + '\u00a0' + pluralFiles(files.length).toLowerCase() + ' · ' + formatBytes(total);
-        }
-      })
-      .catch(function () {
-        window._kv2LastFiles = [];
-        if (window.kv2RefreshDocTypeMenu) window.kv2RefreshDocTypeMenu();
-        var grid = document.getElementById('assetGrid');
-        if (grid) grid.innerHTML = '<div style="padding:24px;color:var(--kv-hint);font-size:13px">Ошибка загрузки</div>';
-        var label = document.getElementById('assetLabel');
-        var footer = document.querySelector('.kv2-footer-bar');
-        if (label) {
-          var svg = label.querySelector('svg') ? label.querySelector('svg').outerHTML : '';
-          label.innerHTML = '0&nbsp;' + pluralFiles(0) + ' ' + svg;
-        }
-        if (footer) footer.textContent = '0 файлов · 0 B';
-      });
-  };
-
-  // load on start
-  window.loadFiles(null);
+  /* Загрузка списка файлов: полная реализация ниже (таблица, фильтр типа, футер). */
 
   // Poll OCR status for cards that are still pending/processing
   var _ocrPollTimer = null;
@@ -2937,6 +2872,40 @@
   var viewMenuWrap = document.getElementById('viewMenuWrap');
   var viewMenu = document.getElementById('viewMenu');
   var viewMenuBtn = document.getElementById('viewMenuBtn');
+
+  var KV2_SORT_LABELS = ['Название', 'Размер', 'Дата загрузки', 'Дата создания', 'Дата изменения'];
+  var _rawSortSaved = localStorage.getItem('kv2_sort');
+  var _sortMode = KV2_SORT_LABELS.indexOf(_rawSortSaved) >= 0 ? _rawSortSaved : 'Дата изменения';
+
+  function kv2SortFiles(files) {
+    var arr = (files || []).slice();
+    var mode = _sortMode || 'Дата изменения';
+    function sz(f) { return window.fileSizeBytes ? window.fileSizeBytes(f) : Math.max(0, Number(f && f.size_bytes) || 0); }
+    if (mode === 'Название') {
+      arr.sort(function (a, b) {
+        return String(a.original_name || '').localeCompare(String(b.original_name || ''), 'ru', { sensitivity: 'base' });
+      });
+    } else if (mode === 'Размер') {
+      arr.sort(function (a, b) { return sz(b) - sz(a); });
+    } else if (mode === 'Дата загрузки' || mode === 'Дата создания') {
+      arr.sort(function (a, b) { return new Date(b.created_at || 0) - new Date(a.created_at || 0); });
+    } else {
+      arr.sort(function (a, b) {
+        return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
+      });
+    }
+    return arr;
+  }
+
+  function syncSortMenuUi() {
+    if (sortLabelBtn) sortLabelBtn.textContent = _sortMode;
+    if (sortMenu) {
+      sortMenu.querySelectorAll('button[data-sort]').forEach(function (b) {
+        b.classList.toggle('checked', b.getAttribute('data-sort') === _sortMode);
+      });
+    }
+  }
+
   function toggleSortMenu() {
     if (!sortMenu) return;
     toggle(sortMenu, !sortMenu.classList.contains('open'));
@@ -2956,9 +2925,13 @@
   }
   if (sortMenu && sortLabelBtn) {
     sortMenu.querySelectorAll('button[data-sort]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        sortLabelBtn.textContent = btn.getAttribute('data-sort');
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        _sortMode = btn.getAttribute('data-sort') || 'Дата изменения';
+        localStorage.setItem('kv2_sort', _sortMode);
+        syncSortMenuUi();
         toggle(sortMenu, false);
+        if (window.kv2RerenderView) window.kv2RerenderView();
       });
     });
   }
@@ -3068,7 +3041,7 @@
       if (foot0) foot0.textContent = '0 избранных · 0 B';
       return;
     }
-    var list = kv2FilterByType(all);
+    var list = kv2SortFiles(kv2FilterByType(all));
     if (_currentView === 'table') renderTableView(list); else renderGrid(list);
     if (list.length === 0 && all.length && window._kv2TypeFilter) {
       var gridF = document.getElementById('assetGrid');
@@ -3693,7 +3666,7 @@
           if (!hasCat) window._kv2TypeFilter = null;
         }
         refreshDocTypeMenu();
-        var list = kv2FilterByType(files);
+        var list = kv2SortFiles(kv2FilterByType(files));
         if (_currentView === 'table') renderTableView(list); else renderGrid(list);
         tbUpdateFooter(list);
         var dlab = document.getElementById('docTypeBtnLabel');
@@ -3726,7 +3699,7 @@
     var gearWrapEl = document.getElementById('gearWrap');
     if (gearWrapEl) gearWrapEl.style.display = view === 'table' ? '' : 'none';
     if (_lastFiles && _lastFiles.length) {
-      var list = kv2FilterByType(_lastFiles);
+      var list = kv2SortFiles(kv2FilterByType(_lastFiles));
       if (view === 'table') renderTableView(list); else renderGrid(list);
       var navFav = document.getElementById('navFavorites');
       if (navFav && navFav.classList.contains('active')) {
@@ -3815,20 +3788,17 @@
     });
   }
 
-  // Initialize: apply saved view
+  // Initialize: apply saved view and load file list once (единая реализация loadFiles)
   (function () {
     var gearEl = document.getElementById('gearWrap');
     if (gearEl) gearEl.style.display = _currentView === 'table' ? '' : 'none';
-    if (_currentView === 'table') {
-      if (viewMenu) {
-        viewMenu.querySelectorAll('[data-view]').forEach(function (btn) {
-          btn.classList.toggle('checked', btn.getAttribute('data-view') === 'table');
-        });
-      }
-      window.loadFiles(null);
-    } else if (window.kv2RefreshDocTypeMenu) {
-      window.kv2RefreshDocTypeMenu();
+    if (viewMenu) {
+      viewMenu.querySelectorAll('[data-view]').forEach(function (btn) {
+        btn.classList.toggle('checked', btn.getAttribute('data-view') === _currentView);
+      });
     }
+    syncSortMenuUi();
+    window.loadFiles(null);
   })();
 
   /* ── "Загрузить" button — upload to /api/kb/files ── */

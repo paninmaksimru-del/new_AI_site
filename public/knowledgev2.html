@@ -1538,7 +1538,7 @@
     }
     .kv2-main.detail-open .kv2-panel,
     .kv2-main.detail-open .kv2-footer-bar {
-      margin-right: 396px;
+      margin-right: 0;
     }
     .kv2-card.is-selected {
       border-color: var(--air-blue-9);
@@ -1548,248 +1548,369 @@
       background: var(--air-blue-1);
     }
     .kv2-file-detail {
-      position: absolute;
-      top: 0;
-      right: 8px;
-      bottom: 12px;
-      z-index: 60;
-      width: 380px;
-      display: flex;
-      flex-direction: column;
+      position: fixed;
+      inset: var(--header-h) 0 0 0;
+      z-index: 10001;
+      display: grid;
+      grid-template-rows: 32px minmax(0, 1fr);
       overflow: hidden;
-      background: rgba(255,255,255,.98);
-      border: 1px solid var(--air-gray-5);
-      border-radius: 12px;
-      box-shadow: var(--air-popover-shadow);
+      background: #1f1f1f;
+      color: #f6f6f6;
       opacity: 0;
       pointer-events: none;
-      transform: translateX(16px);
-      transition: opacity .2s ease, transform .24s ease;
+      transform: scale(.995);
+      transition: opacity .18s ease, transform .18s ease;
+      font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
     }
     .kv2-file-detail.open {
       opacity: 1;
       pointer-events: auto;
-      transform: translateX(0);
+      transform: scale(1);
     }
-    .kv2-file-detail-head {
-      min-height: 56px;
-      padding: 12px 12px 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border-bottom: 1px solid var(--air-gray-4);
-      background: rgba(255,255,255,.86);
-      -webkit-backdrop-filter: blur(9px);
-      backdrop-filter: blur(9px);
-    }
-    .kv2-file-detail-kicker {
-      font-size: 11px;
-      font-weight: 700;
-      line-height: 14px;
-      color: var(--air-gray-8);
-      letter-spacing: .04em;
-      text-transform: uppercase;
-    }
-    .kv2-file-detail-title {
-      margin-top: 2px;
-      font-size: 14px;
-      font-weight: 600;
-      line-height: 18px;
-      color: var(--air-gray-12);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .kv2-file-detail-close,
-    .kv2-detail-icon-btn {
-      width: 32px;
-      height: 32px;
-      flex-shrink: 0;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      color: var(--air-gray-11);
-    }
-    .kv2-file-detail-close:hover,
-    .kv2-detail-icon-btn:hover {
-      background: var(--air-gray-4);
-    }
-    .kv2-file-detail-body {
-      flex: 1;
+    .kv2-file-detail-shell {
       min-height: 0;
-      overflow: auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-    }
-    .kv2-detail-preview {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16 / 10;
-      overflow: hidden;
-      border: 1px solid var(--air-gray-5);
-      border-radius: 10px;
-      background:
-        radial-gradient(circle at 1px 1px, rgba(220,220,220,.78) 1px, transparent 1px),
-        linear-gradient(135deg, var(--air-gray-2), var(--air-blue-1));
-      background-size: 14px 14px, auto;
-    }
-    .kv2-detail-preview img,
-    .kv2-detail-preview iframe {
-      width: 100%;
-      height: 100%;
-      display: block;
-      border: 0;
-      object-fit: contain;
-      background: #fff;
-    }
-    .kv2-detail-preview iframe {
-      pointer-events: none;
-    }
-    .kv2-detail-fallback {
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: rgba(77,77,77,.42);
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: .08em;
-    }
-    .kv2-detail-actions {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 12px;
+      grid-template-columns: minmax(0, 1fr) 302.8px;
     }
-    .kv2-detail-action {
-      min-height: 36px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      border: 1px solid var(--air-gray-5);
-      border-radius: 8px;
-      background: #fff;
-      color: var(--air-gray-11);
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .kv2-detail-action:hover {
-      background: var(--air-gray-3);
-      border-color: var(--air-gray-6, #cecece);
-    }
-    .kv2-detail-action.primary {
-      border-color: var(--air-blue-9);
-      background: var(--air-blue-9);
-      color: #fff;
-    }
-    .kv2-detail-action.primary:hover {
-      background: #052de1;
-    }
-    .kv2-detail-section {
-      margin-top: 18px;
-    }
-    .kv2-detail-section-title {
-      margin-bottom: 8px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-      color: var(--air-gray-8);
-    }
-    .kv2-detail-props {
-      border: 1px solid var(--air-gray-4);
-      border-radius: 10px;
-      overflow: hidden;
-      background: #fff;
-    }
-    .kv2-detail-prop {
-      min-height: 38px;
-      padding: 9px 12px;
-      display: grid;
-      grid-template-columns: 112px minmax(0, 1fr);
-      gap: 12px;
-      border-bottom: 1px solid var(--air-gray-4);
-      font-size: 13px;
-      line-height: 18px;
-    }
-    .kv2-detail-prop:last-child {
-      border-bottom: 0;
-    }
-    .kv2-detail-prop span:first-child {
-      color: var(--air-gray-8);
-    }
-    .kv2-detail-prop span:last-child {
-      min-width: 0;
-      overflow-wrap: anywhere;
-      color: var(--air-gray-12);
-    }
-    .kv2-detail-note {
-      padding: 12px;
-      border: 1px solid var(--air-gray-4);
-      border-radius: 10px;
-      background: var(--air-gray-2);
-      color: var(--air-gray-10);
-      font-size: 13px;
-      line-height: 18px;
-    }
-    .kv2-detail-bottom {
-      position: sticky;
-      bottom: -16px;
-      margin: auto -16px -16px;
-      padding: 10px 16px;
+    .kv2-file-detail-topbar {
+      height: 32px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      border-top: 1px solid var(--air-gray-4);
-      background: rgba(255,255,255,.88);
-      -webkit-backdrop-filter: blur(9px);
-      backdrop-filter: blur(9px);
+      padding: 0 8px 0 14px;
+      background: #202020;
+      color: #dcdcdc;
+      border-bottom: 1px solid rgba(255,255,255,.04);
     }
-    .kv2-detail-bottom-tools {
+    .kv2-viewer-file {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      line-height: 18px;
+      color: #dcdcdc;
+    }
+    .kv2-viewer-file span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .kv2-viewer-tools {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .kv2-viewer-btn,
+    .kv2-file-detail-close,
+    .kv2-detail-icon-btn {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      color: #dcdcdc;
+      background: transparent;
+    }
+    .kv2-viewer-btn:hover,
+    .kv2-file-detail-close:hover,
+    .kv2-detail-icon-btn:hover {
+      background: rgba(255,255,255,.08);
+    }
+    .kv2-viewer-share {
+      width: auto;
+      gap: 6px;
+      padding: 0 8px;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(255,255,255,.07);
+    }
+    .kv2-viewer-nav {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      margin-left: 4px;
+      padding-left: 4px;
+      border-left: 1px solid #333;
+    }
+    .kv2-viewer-main {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 32px 56px;
+      background: #202020;
+    }
+    .kv2-detail-preview {
+      position: relative;
+      width: min(80vw, 920px);
+      max-width: calc(100% - 48px);
+      height: min(72vh, 560px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 0;
+      background: #171717;
+    }
+    .kv2-detail-preview img,
+    .kv2-detail-preview iframe {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      display: block;
+      border: 0;
+      object-fit: contain;
+      background: transparent;
+    }
+    .kv2-detail-preview iframe {
+      width: 100%;
+      height: 100%;
+      pointer-events: auto;
+      background: #151515;
+    }
+    .kv2-detail-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,.38);
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      background:
+        radial-gradient(circle at 1px 1px, rgba(255,255,255,.06) 1px, transparent 1px),
+        #171717;
+      background-size: 14px 14px, auto;
+    }
+    .kv2-viewer-bottom {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 12px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .kv2-viewer-zoom,
+    .kv2-viewer-bottom-actions {
       display: flex;
       align-items: center;
       gap: 8px;
+      pointer-events: auto;
     }
-    .kv2-theme-toggle {
-      width: 36px;
-      height: 36px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      border: 1px solid transparent;
-      color: var(--air-gray-11);
-      background: var(--air-gray-3);
-      transition: background .15s, color .15s, border-color .15s;
+    .kv2-viewer-range {
+      width: 70px;
+      accent-color: #ffffff;
     }
-    .kv2-theme-toggle:hover {
-      background: var(--air-gray-4);
-      border-color: var(--air-gray-5);
-    }
-    .kv2-theme-toggle .kv2-theme-sun { display: none; }
     .kv2-detail-download {
-      height: 36px;
+      height: 28px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 0 14px;
-      border: 1px solid var(--air-gray-5);
-      border-radius: 8px;
-      background: var(--air-gray-3);
-      color: var(--air-gray-11);
-      font-size: 14px;
+      padding: 0 10px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 6px;
+      background: rgba(255,255,255,.08);
+      color: #f6f6f6;
+      font-size: 12px;
       font-weight: 600;
       white-space: nowrap;
       transition: background .15s, border-color .15s;
     }
     .kv2-detail-download:hover {
-      background: var(--air-gray-4);
-      border-color: var(--air-gray-6, #cecece);
+      background: rgba(255,255,255,.13);
+      border-color: rgba(255,255,255,.16);
+    }
+    .kv2-detail-side {
+      min-height: 0;
+      overflow: auto;
+      padding: 16px 10px 18px;
+      background: #202020;
+      border-left: 1px solid #2b2b2b;
+      color: #dcdcdc;
+    }
+    .kv2-detail-side::-webkit-scrollbar { width: 8px; }
+    .kv2-detail-side::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 9999px; }
+    .kv2-info-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      margin: 0 0 6px;
+      padding: 0 10px;
+      border-radius: 8px;
+      background: #303030;
+      color: #f6f6f6;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .kv2-file-detail-title {
+      margin: 0 0 6px;
+      padding: 0 0 0 1px;
+      color: #dcdcdc;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 22px;
+      letter-spacing: -0.084px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .kv2-file-detail-kicker,
+    .kv2-detail-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 18px;
+      color: #a4a4a4;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 16px;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+    .kv2-detail-chip {
+      min-height: 16px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 4px;
+      border-radius: 3px;
+      background: #303030;
+      color: #dcdcdc;
+    }
+    .kv2-detail-section {
+      margin-top: 8px;
+      border-radius: 8px;
+      background: #252525;
+      overflow: hidden;
+    }
+    .kv2-detail-section-title {
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 16px 11px;
+      color: #f6f6f6;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 18px;
+    }
+    .kv2-detail-section-title::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-right: 1.5px solid #a4a4a4;
+      border-bottom: 1.5px solid #a4a4a4;
+      transform: rotate(45deg) translateY(-2px);
+    }
+    .kv2-detail-section-body {
+      padding: 8px 16px 16px;
+    }
+    .kv2-detail-fields {
+      display: grid;
+      gap: 12px;
+    }
+    .kv2-detail-field label,
+    .kv2-smart-label {
+      display: block;
+      margin: 0 0 8px;
+      color: #c6c6c6;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 12px;
+      text-transform: uppercase;
+    }
+    .kv2-detail-input {
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #676767;
+      background: #202020;
+      font-size: 12px;
+      line-height: 18px;
+    }
+    .kv2-detail-add {
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 10px;
+      border-radius: 9999px;
+      background: #303030;
+      color: #f6f6f6;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .kv2-detail-note {
+      color: #dcdcdc;
+      font-size: 12px;
+      line-height: 18px;
+    }
+    .kv2-detail-note--muted {
+      color: #a4a4a4;
+    }
+    .kv2-smart-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .kv2-smart-tag {
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 8px;
+      border: 1px solid #333;
+      border-radius: 9999px;
+      color: #dcdcdc;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 18px;
+    }
+    .kv2-detail-props {
+      display: grid;
+      gap: 8px;
+    }
+    .kv2-detail-prop {
+      min-height: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: #dcdcdc;
+      font-size: 12px;
+      line-height: 18px;
+    }
+    .kv2-detail-prop span:first-child {
+      color: #a4a4a4;
+      white-space: nowrap;
+    }
+    .kv2-detail-prop span:last-child {
+      min-width: 0;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+    .kv2-detail-actions,
+    .kv2-detail-bottom,
+    .kv2-detail-bottom-tools,
+    .kv2-theme-toggle {
+      display: none;
     }
     html[data-theme="dark"] {
       --kv-bg: #141414;
@@ -1921,8 +2042,8 @@
       .kv2-main.detail-open .kv2-footer-bar {
         margin-right: 0;
       }
-      .kv2-file-detail {
-        width: min(380px, calc(100% - 16px));
+      .kv2-file-detail-shell {
+        grid-template-columns: minmax(0, 1fr) 302.8px;
       }
     }
 
@@ -1956,11 +2077,20 @@
       }
       .kv2-btn-upload { max-width: 100%; }
       .kv2-file-detail {
-        left: 8px;
-        width: auto;
+        inset: 0;
       }
-      .kv2-detail-actions {
+      .kv2-file-detail-shell {
         grid-template-columns: 1fr;
+        grid-template-rows: minmax(280px, 48vh) minmax(0, 1fr);
+      }
+      .kv2-detail-side {
+        border-left: 0;
+        border-top: 1px solid #2b2b2b;
+      }
+      .kv2-detail-preview {
+        width: 100%;
+        max-width: calc(100% - 24px);
+        height: calc(100% - 48px);
       }
     }
 
@@ -2620,7 +2750,7 @@
           </div>
         </div>
         <div class="kv2-footer-bar">0 файлов · 0 B</div>
-        <aside class="kv2-file-detail" id="fileDetail" aria-hidden="true" aria-label="Подробная карточка файла"></aside>
+        <aside class="kv2-file-detail" id="fileDetail" aria-hidden="true" aria-label="Подробная карточка файла" role="dialog" tabindex="-1"></aside>
       </main>
     </div>
   </div>
@@ -3161,6 +3291,55 @@
     });
   }
 
+  function kv2AirDate(s) {
+    if (!s) return '—';
+    var d = new Date(s);
+    if (Number.isNaN(d.getTime())) return '—';
+    var date = d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    var time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(' ', '');
+    return date + ' at ' + time;
+  }
+
+  function kv2DisplayBaseName(name) {
+    return String(name || '').replace(/\.[^.]+$/, '') || 'Untitled';
+  }
+
+  function kv2MetaObject(f) {
+    var meta = f && f.metadata;
+    if (meta && typeof meta === 'string') {
+      try { meta = JSON.parse(meta); } catch (_) { meta = null; }
+    }
+    return meta && typeof meta === 'object' ? meta : {};
+  }
+
+  function kv2FieldValue(v) {
+    return v === undefined || v === null || v === '' ? 'None' : String(v);
+  }
+
+  function kv2SmartSummary(f) {
+    var meta = kv2MetaObject(f);
+    return meta.smart_summary || meta.summary || f.summary || f.description ||
+      'This file has been indexed for quick search, preview, and metadata review.';
+  }
+
+  function kv2SmartTagsHtml(f) {
+    var meta = kv2MetaObject(f);
+    var tags = [];
+    if (typeof kv2ParseTagsArr === 'function') tags = kv2ParseTagsArr(f);
+    ['document_type', 'customer', 'tech_niche', 'market_niche', 'data_geography'].forEach(function (key) {
+      if (f && f[key]) tags.push(f[key]);
+    });
+    if (Array.isArray(meta.smart_tags)) tags = tags.concat(meta.smart_tags);
+    tags = tags.filter(Boolean).map(String).filter(function (tag, idx, arr) {
+      return arr.indexOf(tag) === idx;
+    }).slice(0, 10);
+    if (!tags.length) tags = ['indexed', 'knowledge', 'file'];
+    return tags.map(function (tag) {
+      return '<span class="kv2-smart-tag">' + escH(tag) +
+        '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3.2 3.2 8.8 8.8M8.8 3.2 3.2 8.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>';
+    }).join('');
+  }
+
   function renderFileDetail(f) {
     var detail = document.getElementById('fileDetail');
     if (!detail || !f) return;
@@ -3168,46 +3347,74 @@
     var size = fmtBytes(Number(f.size_bytes) || 0);
     var mime = kv2Mime(f);
     var url = escH(kv2DownloadUrl(f.id));
+    var title = kv2DisplayBaseName(f.title || f.original_name);
+    var resolution = kv2ResolutionFromFile(f);
+    var owner = f.owner_name || f.responsible_person || f.author || f.owner_id || '—';
+    var meta = kv2MetaObject(f);
     detail.innerHTML =
-      '<div class="kv2-file-detail-head">' +
-        '<div style="min-width:0;flex:1">' +
-          '<div class="kv2-file-detail-kicker">' + escH(ext) + ' · ' + escH(size) + '</div>' +
-          '<div class="kv2-file-detail-title" title="' + escH(f.original_name) + '">' + escH(f.original_name) + '</div>' +
+      '<div class="kv2-file-detail-topbar">' +
+        '<div class="kv2-viewer-file">' +
+          '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 1.5h5.1L11 4.4v8.1H3V1.5Z" stroke="currentColor" stroke-width="1.1"/><path d="M8 1.8v3h3" stroke="currentColor" stroke-width="1.1"/></svg>' +
+          '<span>' + escH(title) + '</span>' +
         '</div>' +
-        '<button type="button" class="kv2-detail-icon-btn" data-detail-action="more" aria-label="Действия" title="Действия">' +
-          '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path fill="currentColor" d="M4 8a1.25 1.25 0 1 1-2.5 0A1.25 1.25 0 0 1 4 8Zm5.25 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0ZM14.5 8a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z"/></svg>' +
-        '</button>' +
-        '<button type="button" class="kv2-file-detail-close" data-detail-action="close" aria-label="Закрыть" title="Закрыть">' +
-          '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.62 3.62L12.38 12.38M12.38 3.62L3.62 12.38" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>' +
-        '</button>' +
+        '<div class="kv2-viewer-tools">' +
+          '<button type="button" class="kv2-viewer-btn" data-detail-action="more" aria-label="Действия" title="Действия"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><circle cx="3" cy="7" r="1"/><circle cx="7" cy="7" r="1"/><circle cx="11" cy="7" r="1"/></svg></button>' +
+          '<button type="button" class="kv2-viewer-btn" aria-label="В избранное" title="В избранное"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="m7 1.8 1.55 3.15 3.48.5-2.52 2.46.6 3.46L7 9.74l-3.11 1.63.6-3.46-2.52-2.46 3.48-.5L7 1.8Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg></button>' +
+          '<button type="button" class="kv2-viewer-btn kv2-viewer-share" data-detail-action="copy" data-url="' + url + '" aria-label="Поделиться" title="Поделиться"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5.2 7.8 8.8 10M8.8 4 5.2 6.2" stroke="currentColor" stroke-width="1.1"/><circle cx="4" cy="7" r="1.6" stroke="currentColor" stroke-width="1.1"/><circle cx="10" cy="3.3" r="1.6" stroke="currentColor" stroke-width="1.1"/><circle cx="10" cy="10.7" r="1.6" stroke="currentColor" stroke-width="1.1"/></svg><span>Поделиться</span></button>' +
+          '<div class="kv2-viewer-nav"><button type="button" class="kv2-viewer-btn" aria-label="Назад" title="Назад"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M8.8 3.2 5 7l3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button type="button" class="kv2-viewer-btn" aria-label="Вперед" title="Вперед"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5.2 3.2 9 7l-3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>' +
+          '<button type="button" class="kv2-file-detail-close" data-detail-action="close" aria-label="Закрыть" title="Закрыть"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3.2 3.2 10.8 10.8M10.8 3.2 3.2 10.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>' +
+        '</div>' +
       '</div>' +
-      '<div class="kv2-file-detail-body">' +
-        '<div class="kv2-detail-preview">' + kv2DetailPreview(f) + '</div>' +
-        '<div class="kv2-detail-actions">' +
-          '<button type="button" class="kv2-detail-action primary" data-detail-action="open" data-url="' + url + '">Открыть</button>' +
-          '<button type="button" class="kv2-detail-action" data-detail-action="download" data-url="' + escH(kv2DownloadUrl(f.id, true)) + '" data-file-name="' + escH(f.original_name) + '">Скачать</button>' +
-          '<button type="button" class="kv2-detail-action" data-detail-action="copy" data-url="' + url + '">Ссылка</button>' +
-        '</div>' +
-        '<div class="kv2-detail-section">' +
-          '<div class="kv2-detail-section-title">Свойства</div>' +
-          '<div class="kv2-detail-props">' +
-            kv2DetailProp('Тип', ext) +
-            kv2DetailProp('Размер', size) +
-            kv2DetailProp('MIME', mime) +
-            kv2DetailProp('Загружен', fmtDate(f.created_at)) +
-            kv2DetailProp('Изменён', fmtDate(f.updated_at || f.created_at)) +
-            kv2DetailProp('Владелец', f.owner_name || f.owner_id) +
-            kv2DetailProp('Статус', kv2DetailStatus(f.ocr_status)) +
+      '<div class="kv2-file-detail-shell">' +
+        '<div class="kv2-viewer-main">' +
+          '<div class="kv2-detail-preview">' + kv2DetailPreview(f) + '</div>' +
+          '<div class="kv2-viewer-bottom">' +
+            '<div class="kv2-viewer-zoom"><button type="button" class="kv2-viewer-btn" aria-label="Уменьшить" title="Уменьшить">−</button><input class="kv2-viewer-range" type="range" min="0" max="100" value="24" aria-label="Масштаб" /><button type="button" class="kv2-viewer-btn" aria-label="Увеличить" title="Увеличить">+</button></div>' +
+            '<div class="kv2-viewer-bottom-actions"><button type="button" class="kv2-viewer-btn" data-detail-action="open" data-url="' + url + '" aria-label="Открыть" title="Открыть"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5.2 2.4H2.6v8.8h8.8V8.8M7.2 2.4h4.4v4.4M11.2 2.8 6.6 7.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' + kv2BottomDownloadHtml(f) + '</div>' +
           '</div>' +
         '</div>' +
-        '<div class="kv2-detail-section">' +
-          '<div class="kv2-detail-section-title">Контекст</div>' +
-          '<div class="kv2-detail-note">Файл можно открыть, скачать, скопировать ссылку или передать в меню действий через кнопку сверху.</div>' +
-        '</div>' +
-        '<div class="kv2-detail-bottom">' +
-          '<div class="kv2-detail-bottom-tools">' + kv2ThemeToggleHtml() + '</div>' +
-          kv2BottomDownloadHtml(f) +
-        '</div>' +
+        '<aside class="kv2-detail-side">' +
+          '<div class="kv2-info-pill">Информация</div>' +
+          '<div class="kv2-file-detail-title" title="' + escH(title) + '">' + escH(title) + '</div>' +
+          '<div class="kv2-detail-meta"><span class="kv2-detail-chip">#' + escH(f.id) + '</span><span>' + escH(ext) + '</span><span>' + escH(size) + '</span><span>' + escH(resolution) + '</span></div>' +
+          '<div class="kv2-detail-section"><div class="kv2-detail-section-title">Boards</div></div>' +
+          '<div class="kv2-detail-section">' +
+            '<div class="kv2-detail-section-title">Custom fields</div>' +
+            '<div class="kv2-detail-section-body kv2-detail-fields">' +
+              '<div class="kv2-detail-field"><label>Status</label><div class="kv2-detail-input">' + escH(kv2DetailStatus(f.ocr_status) || 'None') + '</div></div>' +
+              '<div class="kv2-detail-field"><label>Rating</label><div class="kv2-detail-input">' + escH(kv2FieldValue(meta.rating || f.rating)) + '</div></div>' +
+              '<div class="kv2-detail-field"><label>Usage rights</label><div class="kv2-detail-input">' + escH(kv2FieldValue(meta.usage_rights || f.usage_rights)) + '</div></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="kv2-detail-section">' +
+            '<div class="kv2-detail-section-title">Custom metadata</div>' +
+            '<div class="kv2-detail-section-body kv2-detail-fields">' +
+              '<div class="kv2-detail-field"><label>Description</label><div class="kv2-detail-input">' + escH(kv2FieldValue(f.description || meta.description)) + '</div></div>' +
+              '<div class="kv2-detail-field"><label>Tags</label><button type="button" class="kv2-detail-add"><span>+</span><span>Добавить</span></button></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="kv2-detail-section">' +
+            '<div class="kv2-detail-section-title">Smart metadata</div>' +
+            '<div class="kv2-detail-section-body">' +
+              '<div class="kv2-smart-label">Smart Summary</div>' +
+              '<div class="kv2-detail-note">' + escH(kv2SmartSummary(f)) + '</div>' +
+              '<div class="kv2-smart-label" style="margin-top:16px">Smart Tags</div>' +
+              '<div class="kv2-smart-tags">' + kv2SmartTagsHtml(f) + '</div>' +
+              '<div class="kv2-detail-note kv2-detail-note--muted" style="margin-top:16px">Summary and smart tags are AI generated</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="kv2-detail-section">' +
+            '<div class="kv2-detail-section-title">File info</div>' +
+            '<div class="kv2-detail-section-body"><div class="kv2-detail-props">' +
+              kv2DetailProp('Date Created', kv2AirDate(f.created_at)) +
+              kv2DetailProp('Modified', kv2AirDate(f.updated_at || f.created_at)) +
+              kv2DetailProp('Uploaded', kv2AirDate(f.created_at)) +
+              kv2DetailProp('Uploaded by', owner) +
+              kv2DetailProp('Upload Source', f.source || meta.upload_source || 'Web') +
+              kv2DetailProp('MIME', mime) +
+            '</div></div>' +
+          '</div>' +
+        '</aside>' +
       '</div>';
   }
 
@@ -3230,17 +3437,18 @@
     var id = String((file && file.id) || fileId);
     if (!file) {
       detail.innerHTML =
-        '<div class="kv2-file-detail-head">' +
-          '<div style="min-width:0;flex:1"><div class="kv2-file-detail-kicker">Файл</div><div class="kv2-file-detail-title">Загрузка...</div></div>' +
+        '<div class="kv2-file-detail-topbar">' +
+          '<div class="kv2-viewer-file"><span>Загрузка...</span></div>' +
           '<button type="button" class="kv2-file-detail-close" data-detail-action="close" aria-label="Закрыть" title="Закрыть">' +
-            '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.62 3.62L12.38 12.38M12.38 3.62L3.62 12.38" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>' +
+            '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3.2 3.2 10.8 10.8M10.8 3.2 3.2 10.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>' +
           '</button>' +
-        '</div><div class="kv2-file-detail-body"><div class="kv2-detail-note">Загружаю данные файла...</div></div>';
+        '</div><div class="kv2-file-detail-shell"><div class="kv2-viewer-main"><div class="kv2-detail-fallback">FILE</div></div><aside class="kv2-detail-side"><div class="kv2-info-pill">Информация</div><div class="kv2-detail-note">Загружаю данные файла...</div></aside></div>';
     } else {
       renderFileDetail(file);
     }
     detail.classList.add('open');
     detail.setAttribute('aria-hidden', 'false');
+    detail.focus({ preventScroll: true });
     if (main) main.classList.add('detail-open');
     markSelectedFile(id);
     fetch('/api/kb/files/' + encodeURIComponent(id), { headers: { 'x-auth-token': _tbToken } })
@@ -3251,7 +3459,8 @@
       })
       .catch(function () {
         if (!file) {
-          detail.querySelector('.kv2-file-detail-body').innerHTML = '<div class="kv2-detail-note">Не удалось загрузить карточку файла.</div>';
+          var side = detail.querySelector('.kv2-detail-side');
+          if (side) side.innerHTML = '<div class="kv2-info-pill">Информация</div><div class="kv2-detail-note">Не удалось загрузить карточку файла.</div>';
         }
       });
   }

@@ -1913,6 +1913,26 @@
     .kv2-theme-toggle {
       display: none;
     }
+    .kv2-file-detail-topbar .kv2-theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      margin: 0;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.92);
+      cursor: pointer;
+    }
+    .kv2-file-detail-topbar .kv2-theme-toggle:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .kv2-file-detail-topbar .kv2-theme-toggle .kv2-theme-sun {
+      display: none;
+    }
     html[data-theme="dark"] {
       --kv-bg: #141414;
       --kv-surface: #1b1b1b;
@@ -3183,7 +3203,12 @@
     var mime = (f && f.mime_type) ? String(f.mime_type) : '';
     if (mime && mime !== 'application/octet-stream') return mime;
     var ext = tbFileExt((f && f.original_name) || '').toLowerCase();
-    var map = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', pdf: 'application/pdf' };
+    var map = {
+      jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', pdf: 'application/pdf',
+      txt: 'text/plain', md: 'text/markdown', markdown: 'text/markdown', csv: 'text/csv', tsv: 'text/tab-separated-values',
+      json: 'application/json', xml: 'application/xml', yaml: 'text/yaml', yml: 'text/yaml', log: 'text/plain',
+      html: 'text/html', htm: 'text/html', css: 'text/css', js: 'text/javascript', ts: 'text/plain', tsx: 'text/plain', jsx: 'text/plain'
+    };
     return map[ext] || mime || '—';
   }
 
@@ -3196,17 +3221,29 @@
     return null;
   }
 
+  function kv2DetailPreviewIsText(mime, extRaw) {
+    var m = (mime || '').toLowerCase();
+    var e = String(extRaw || '').toLowerCase().replace(/^\./, '');
+    if (m.indexOf('text/') === 0) return true;
+    if (m === 'application/json' || m === 'application/xml' || m === 'text/xml') return true;
+    return /^(txt|md|markdown|csv|tsv|json|xml|yaml|yml|log|ini|cfg|conf|toml|properties|rtx|html|htm|css|js|mjs|cjs|ts|tsx|jsx|vue|svelte|sh|bat|ps1|py|rb|go|rs|java|kt|swift)$/i.test(e);
+  }
+
   function kv2DetailPreview(f) {
     var url = escH(kv2DownloadUrl(f.id));
     var mime = kv2Mime(f).toLowerCase();
-    var ext = escH(tbFileExt(f.original_name));
+    var ext = tbFileExt(f.original_name);
+    var extEsc = escH(ext);
     if (mime.indexOf('image/') === 0) {
       return '<img src="' + url + '" alt="" loading="lazy" decoding="async" />';
     }
     if (mime === 'application/pdf') {
       return '<iframe src="' + url + '#view=FitH" title="Предпросмотр PDF"></iframe>';
     }
-    return '<div class="kv2-detail-fallback">' + ext + '</div>';
+    if (kv2DetailPreviewIsText(mime, ext)) {
+      return '<iframe class="kv2-detail-text-preview" src="' + url + '" title="Предпросмотр текста"></iframe>';
+    }
+    return '<div class="kv2-detail-fallback">' + extEsc + '</div>';
   }
 
   function kv2DetailProp(label, value) {
@@ -3335,6 +3372,7 @@
           '<button type="button" class="kv2-viewer-btn" aria-label="В избранное" title="В избранное"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="m7 1.8 1.55 3.15 3.48.5-2.52 2.46.6 3.46L7 9.74l-3.11 1.63.6-3.46-2.52-2.46 3.48-.5L7 1.8Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg></button>' +
           '<button type="button" class="kv2-viewer-btn kv2-viewer-share" data-detail-action="copy" data-url="' + url + '" aria-label="Поделиться" title="Поделиться"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5.2 7.8 8.8 10M8.8 4 5.2 6.2" stroke="currentColor" stroke-width="1.1"/><circle cx="4" cy="7" r="1.6" stroke="currentColor" stroke-width="1.1"/><circle cx="10" cy="3.3" r="1.6" stroke="currentColor" stroke-width="1.1"/><circle cx="10" cy="10.7" r="1.6" stroke="currentColor" stroke-width="1.1"/></svg><span>Поделиться</span></button>' +
           '<div class="kv2-viewer-nav"><button type="button" class="kv2-viewer-btn" aria-label="Назад" title="Назад"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M8.8 3.2 5 7l3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button type="button" class="kv2-viewer-btn" aria-label="Вперед" title="Вперед"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5.2 3.2 9 7l-3.8 3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>' +
+          kv2ThemeToggleHtml() +
           '<button type="button" class="kv2-file-detail-close" data-detail-action="close" aria-label="Закрыть" title="Закрыть"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3.2 3.2 10.8 10.8M10.8 3.2 3.2 10.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>' +
         '</div>' +
       '</div>' +
@@ -4096,7 +4134,11 @@
       closeCtxMenu();
 
       if (action === 'open') {
-        window.open(kbFileDownloadUrl(fid), '_blank');
+        if (typeof window.openFileDetail === 'function') {
+          window.openFileDetail(fid);
+        } else {
+          window.open(kbFileDownloadUrl(fid), '_blank');
+        }
 
       } else if (action === 'download') {
         var dl = kbFileDownloadUrl(fid, true);

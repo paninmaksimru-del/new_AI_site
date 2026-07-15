@@ -24,10 +24,8 @@ npm start
 - **/profile** — личный профиль
 - **/audio-assistant** — расшифровка аудио/видео и суммаризация текста
 - **/chat** — персональный чат с Qwen3.6-27B и Qwen3.6-35B-A3B
-- **/admin → Audio Text Assistant** — admin-only настройка i.moscow и режимов сервиса
-- **/admin → Qwen Chat** — endpoint’ы прокси i.moscow и единый прокси-токен Qwen
-
-Запросы Qwen выполняются сервером только через `https://i.moscow/api/dit/proxy/operation/openqwen/...`; сохранённый токен автоматически добавляется как query-параметр `token` и не передаётся в браузер.
+- **/admin → Audio Text Assistant** — admin-only настройка proxy и режимов сервиса
+- **/admin → Qwen Chat** — endpoint’ы прокси и единый прокси-токен Qwen
 
 При первом запуске БД создаётся автоматически и заполняется дефолтными подразделениями, кейсами, промптами, инструментами и задачами.
 

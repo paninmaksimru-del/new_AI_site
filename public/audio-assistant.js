@@ -35,7 +35,7 @@ for (const select of document.querySelectorAll(".task-type")) {
 
 async function api(url, options = {}) {
   const token = localStorage.getItem("auth_token");
-  const response = await fetch(url, { headers: { Accept: "application/json", ...(token ? { "X-Auth-Token": token } : {}), ...(options.headers || {}) }, ...options });
+  const response = await fetch(url, { ...options, headers: { Accept: "application/json", ...(token ? { "X-Auth-Token": token } : {}), ...(options.headers || {}) } });
   const type = response.headers.get("content-type") || "";
   const body = type.includes("json") ? await response.json() : null;
   if (response.status === 401) {

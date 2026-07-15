@@ -94,17 +94,14 @@ async function publicTranscription(row, userId) {
 function textFromUnknown(value) {
   if (typeof value === 'string') return value.trim();
   if (Array.isArray(value)) {
-    for (const item of value) {
-      const found = textFromUnknown(item);
-      if (found) return found;
-    }
+    return value.map(item => textFromUnknown(item)).filter(Boolean).join(' ').trim();
   }
   if (value && typeof value === 'object') {
-    for (const key of ['answer', 'summary', 'transcript', 'text', 'result_text', 'output_text']) {
+    for (const key of ['answer', 'summary', 'text', 'transcript', 'transcription', 'recognized_text', 'result_text', 'output_text']) {
       const found = textFromUnknown(value[key]);
       if (found) return found;
     }
-    for (const key of ['predictions', 'prediction', 'result', 'results', 'output', 'outputs', 'data']) {
+    for (const key of ['predictions', 'prediction', 'result', 'results', 'data', 'output', 'outputs', 'response']) {
       const found = textFromUnknown(value[key]);
       if (found) return found;
     }
@@ -169,10 +166,22 @@ function safeResponseHeaders(response) {
   return output;
 }
 
+function describeResponseShape(value, depth = 0) {
+  if (depth > 5) return { type: 'max_depth' };
+  if (typeof value === 'string') return { type: 'string', length: value.length };
+  if (Array.isArray(value)) return { type: 'array', length: value.length, item: value.length ? describeResponseShape(value[0], depth + 1) : null };
+  if (value && typeof value === 'object') {
+    const fields = {};
+    for (const [key, item] of Object.entries(value).slice(0, 40)) fields[key] = describeResponseShape(item, depth + 1);
+    return { type: 'object', fields };
+  }
+  return { type: value === null ? 'null' : typeof value };
+}
+
 function responseForLog(body, ok) {
   if (!ok) return redactLogValue(body);
-  if (!body || typeof body !== 'object') return { kind: typeof body };
-  const output = {};
+  if (!body || typeof body !== 'object') return { schema: describeResponseShape(body) };
+  const output = { schema: describeResponseShape(body) };
   for (const key of ['id', 'job_id', 'task_id', 'status', 'code', 'message', 'detail']) {
     if (body[key] != null) output[key] = redactLogValue(body[key]);
   }
@@ -301,8 +310,8 @@ async function prepareMedia(file) {
 
 function findJobId(body) {
   if (!body || typeof body !== 'object') return null;
-  for (const key of ['job_id', 'task_id', 'id']) if (typeof body[key] === 'string' || typeof body[key] === 'number') return String(body[key]);
-  for (const key of ['data', 'result', 'prediction']) {
+  for (const key of ['job_id', 'task_id', 'operation_id', 'request_id', 'id']) if (typeof body[key] === 'string' || typeof body[key] === 'number') return String(body[key]);
+  for (const key of ['data', 'result', 'prediction', 'output', 'response']) {
     const found = findJobId(body[key]);
     if (found) return found;
   }
@@ -310,12 +319,23 @@ function findJobId(body) {
 }
 
 function normalizedSegments(body) {
-  const candidates = [body?.segments, body?.result?.segments, body?.data?.segments].find(Array.isArray) || [];
+  function findSegments(value, depth = 0) {
+    if (!value || depth > 8) return [];
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'object') return [];
+    for (const key of ['segments', 'chunks', 'words']) if (Array.isArray(value[key])) return value[key];
+    for (const key of ['result', 'data', 'output', 'outputs', 'response']) {
+      const found = findSegments(value[key], depth + 1);
+      if (found.length) return found;
+    }
+    return [];
+  }
+  const candidates = findSegments(body);
   return candidates.map(item => ({
-    text: String(item?.text || item?.transcript || '').trim(),
+    text: String(item?.text || item?.transcript || item?.word || '').trim(),
     start_seconds: Number.isFinite(Number(item?.start_seconds ?? item?.start)) ? Number(item.start_seconds ?? item.start) : null,
     end_seconds: Number.isFinite(Number(item?.end_seconds ?? item?.end)) ? Number(item.end_seconds ?? item.end) : null,
-    speaker: item?.speaker ? String(item.speaker) : null
+    speaker: item?.speaker || item?.speaker_id || item?.channel ? String(item.speaker || item.speaker_id || item.channel) : null
   })).filter(item => item.text);
 }
 
@@ -587,7 +607,7 @@ export async function setupAudioRoutes(app) {
     await query(`INSERT INTO audio_transcriptions (id, user_id, status, parameters, audio_sha256, audio_media_type, audio_size_bytes, original_filename) VALUES ($1,$2,'processing',$3,$4,$5,$6,$7)`, [id, req.user.id, JSON.stringify(parameters), crypto.createHash('sha256').update(media.buffer).digest('hex'), media.mimetype, media.size, req.file.originalname || 'audio']);
     try {
       const result = mockMode() ? { status: 'completed', transcript: MOCK_TRANSCRIPT, language: parameters.language || 'ru', segments: parameters.timestamp_granularity === 'segment' ? [{ text: MOCK_TRANSCRIPT, start_seconds: 0, end_seconds: 6, speaker: parameters.speaker_labels ? 'speaker-1' : null }] : [] } : await submitTranscription(media, { user_id: req.user.id, transcription_id: id });
-      await query(`UPDATE audio_transcriptions SET status=$2, transcript=$3, detected_language=$4, segments=$5, external_job_id=$6, updated_at=NOW(), completed_at=CASE WHEN $2='completed' THEN NOW() ELSE NULL END WHERE id=$1`, [id, result.status, result.transcript || null, result.language || null, JSON.stringify(result.segments || []), result.jobId || null]);
+      await query(`UPDATE audio_transcriptions SET status=$2, transcript=$3, detected_language=$4, segments=$5, external_job_id=$6, error_code=NULL, error_message=NULL, updated_at=NOW(), completed_at=CASE WHEN $2='completed' THEN NOW() ELSE NULL END WHERE id=$1`, [id, result.status, result.transcript || null, result.language || null, JSON.stringify(result.segments || []), result.jobId || null]);
     } catch (error) {
       const diagnosticMessage = error.details?.request_id ? `${error.message} ID диагностики: ${error.details.request_id}` : error.message;
       await query(`UPDATE audio_transcriptions SET status='failed', error_code=$2, error_message=$3, updated_at=NOW() WHERE id=$1`, [id, error.code || 'processing_failed', diagnosticMessage]);
@@ -604,10 +624,11 @@ export async function setupAudioRoutes(app) {
   app.get('/api/transcriptions/:id', auth, async (req, res) => {
     let row = await getOwnedTranscription(req.params.id, req.user);
     if (!row) return apiError(res, 404, 'not_found', 'Транскрибация не найдена.');
-    if (!mockMode() && ['created', 'pending', 'processing'].includes(row.status) && row.external_job_id) {
+    const canRecoverCompletedResult = row.status === 'failed' && row.error_code === 'unknown_external_response';
+    if (!mockMode() && (['created', 'pending', 'processing'].includes(row.status) || canRecoverCompletedResult) && row.external_job_id) {
       try {
         const result = await pollExternalTranscription(row.external_job_id, { user_id: req.user.id, transcription_id: row.id });
-        if (result.status === 'completed') await query(`UPDATE audio_transcriptions SET status='completed', transcript=$2, detected_language=$3, segments=$4, updated_at=NOW(), completed_at=NOW() WHERE id=$1`, [row.id, result.transcript, result.language, JSON.stringify(result.segments || [])]);
+        if (result.status === 'completed') await query(`UPDATE audio_transcriptions SET status='completed', transcript=$2, detected_language=$3, segments=$4, error_code=NULL, error_message=NULL, updated_at=NOW(), completed_at=NOW() WHERE id=$1`, [row.id, result.transcript, result.language, JSON.stringify(result.segments || [])]);
       } catch (error) {
         const diagnosticMessage = error.details?.request_id ? `${error.message} ID диагностики: ${error.details.request_id}` : error.message;
         await query(`UPDATE audio_transcriptions SET status='failed', error_code=$2, error_message=$3, updated_at=NOW() WHERE id=$1`, [row.id, error.code || 'processing_failed', diagnosticMessage]);

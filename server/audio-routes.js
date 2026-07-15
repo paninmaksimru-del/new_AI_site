@@ -6,7 +6,7 @@ import { tmpdir } from 'os';
 import { extname, join } from 'path';
 import { promisify } from 'util';
 import { query } from './db.js';
-import { requireAdmin, requireKbAuth } from './auth.js';
+import { optionalAuth, requireAdmin, requireKbAuth } from './auth.js';
 import { getAdminAudioSettings, getAudioSetting, loadAudioSettings, saveAdminAudioSettings } from './audio-settings.js';
 
 const upload = multer({
@@ -15,6 +15,9 @@ const upload = multer({
 });
 
 const progressById = new Map();
+const guestTranscriptions = new Map();
+const GUEST_RESULT_TTL_MS = 60 * 60 * 1000;
+const MAX_GUEST_RESULTS = 200;
 const execFileAsync = promisify(execFile);
 const DIRECT_MEDIA_TYPES = new Set(['audio/wav', 'audio/x-wav', 'audio/mpeg', 'audio/mp4', 'audio/aac', 'audio/ogg', 'audio/webm', 'audio/flac', 'video/mp4', 'video/webm']);
 const TASK_PROMPTS = {
@@ -47,6 +50,41 @@ function normalizeUploadFilename(value) {
 
 function asIso(value) {
   return value instanceof Date ? value.toISOString() : value;
+}
+
+function progressKey(req, progressId) {
+  return `${req.user ? `user:${req.user.id}` : 'guest'}:${progressId}`;
+}
+
+function pruneGuestTranscriptions() {
+  const cutoff = Date.now() - GUEST_RESULT_TTL_MS;
+  for (const [id, item] of guestTranscriptions) {
+    if (item.touched_at < cutoff) guestTranscriptions.delete(id);
+  }
+}
+
+function guestTranscription(id) {
+  pruneGuestTranscriptions();
+  const item = guestTranscriptions.get(id);
+  if (item) item.touched_at = Date.now();
+  return item || null;
+}
+
+function publicGuestTranscription(item) {
+  return {
+    id: item.id,
+    status: item.status,
+    created_at: item.created_at,
+    parameters: item.parameters,
+    original_filename: item.original_filename,
+    audio_media_type: item.audio_media_type,
+    audio_size_bytes: item.audio_size_bytes,
+    detected_language: item.detected_language || null,
+    transcript: item.transcript || null,
+    segments: item.segments || [],
+    error: item.error || null,
+    summaries: []
+  };
 }
 
 function publicSummary(row) {
@@ -568,10 +606,11 @@ function exportText(row, markdown = false) {
   return lines.join('\n').trimEnd() + '\n';
 }
 
-async function getOwnedTranscription(id, user) {
-  const params = user.role === 'admin' ? [id] : [id, user.id];
-  const condition = user.role === 'admin' ? 'id = $1' : 'id = $1 AND user_id = $2';
-  const { rows } = await query(`SELECT * FROM audio_transcriptions WHERE ${condition}`, params);
+async function getOwnedTranscription(id, userId) {
+  const { rows } = await query(
+    'SELECT * FROM audio_transcriptions WHERE id = $1 AND user_id = $2',
+    [id, userId]
+  );
   return rows[0] || null;
 }
 
@@ -631,6 +670,7 @@ export async function setupAudioRoutes(app) {
   `);
 
   const auth = requireKbAuth();
+  const optionalUser = optionalAuth();
 
   app.get('/api/admin/audio-assistant-settings', requireAdmin(), (req, res) => {
     res.json(getAdminAudioSettings());
@@ -657,9 +697,10 @@ export async function setupAudioRoutes(app) {
     res.json(rows.map(row => ({ ...row, response_body: parseJson(row.response_body, row.response_body) })));
   });
 
-  app.get('/api/audio-assistant/health', auth, (req, res) => {
+  app.get('/api/audio-assistant/health', optionalUser, (req, res) => {
     res.json({
       status: 'ok',
+      authenticated: Boolean(req.user),
       env: getAudioSetting('APP_ENV'),
       auth_mode: getAudioSetting('AUTH_MODE'),
       setup_mode: getAudioSetting('AUDIO_TEXT_ASSISTANT_SETUP_MODE'),
@@ -669,7 +710,7 @@ export async function setupAudioRoutes(app) {
     });
   });
 
-  app.post('/api/transcriptions', auth, upload.single('audio'), async (req, res) => {
+  app.post('/api/transcriptions', optionalUser, upload.single('audio'), async (req, res) => {
     if (!req.file?.buffer?.length) return apiError(res, 422, 'validation_error', 'Загрузите непустой аудиофайл.');
     req.file.originalname = normalizeUploadFilename(req.file.originalname);
     const mediaType = String(req.file.mimetype || 'application/octet-stream').toLowerCase();
@@ -679,15 +720,47 @@ export async function setupAudioRoutes(app) {
     const id = crypto.randomUUID();
     const parameters = { language: req.body.language || null, context_hint: req.body.context_hint || null, speaker_labels: req.body.speaker_labels === 'true', timestamp_granularity: req.body.timestamp_granularity === 'segment' ? 'segment' : 'none', converted: media.converted, source_media_type: media.sourceType, source_size_bytes: media.sourceSize };
     if ((parameters.context_hint || '').length > 1000) return apiError(res, 422, 'validation_error', 'Контекстная подсказка слишком длинная.');
-    await query(`INSERT INTO audio_transcriptions (id, user_id, status, parameters, audio_sha256, audio_media_type, audio_size_bytes, original_filename) VALUES ($1,$2,'processing',$3,$4,$5,$6,$7)`, [id, req.user.id, JSON.stringify(parameters), crypto.createHash('sha256').update(media.buffer).digest('hex'), media.mimetype, media.size, req.file.originalname || 'audio']);
+    const guestItem = req.user ? null : {
+      id,
+      status: 'processing',
+      created_at: new Date().toISOString(),
+      touched_at: Date.now(),
+      parameters,
+      audio_media_type: media.mimetype,
+      audio_size_bytes: media.size,
+      original_filename: req.file.originalname || 'audio',
+      transcript: null,
+      detected_language: null,
+      segments: [],
+      external_job_id: null,
+      error: null
+    };
+    if (req.user) {
+      await query(`INSERT INTO audio_transcriptions (id, user_id, status, parameters, audio_sha256, audio_media_type, audio_size_bytes, original_filename) VALUES ($1,$2,'processing',$3,$4,$5,$6,$7)`, [id, req.user.id, JSON.stringify(parameters), crypto.createHash('sha256').update(media.buffer).digest('hex'), media.mimetype, media.size, req.file.originalname || 'audio']);
+    } else {
+      pruneGuestTranscriptions();
+      while (guestTranscriptions.size >= MAX_GUEST_RESULTS) {
+        guestTranscriptions.delete(guestTranscriptions.keys().next().value);
+      }
+      guestTranscriptions.set(id, guestItem);
+    }
     try {
-      const result = mockMode() ? { status: 'completed', transcript: MOCK_TRANSCRIPT, language: parameters.language || 'ru', segments: parameters.timestamp_granularity === 'segment' ? [{ text: MOCK_TRANSCRIPT, start_seconds: 0, end_seconds: 6, speaker: parameters.speaker_labels ? 'speaker-1' : null }] : [] } : await submitTranscription(media, { user_id: req.user.id, transcription_id: id });
-      await query(`UPDATE audio_transcriptions SET status=$2, transcript=$3, detected_language=$4, segments=$5, external_job_id=$6, error_code=NULL, error_message=NULL, updated_at=NOW(), completed_at=CASE WHEN $2='completed' THEN NOW() ELSE NULL END WHERE id=$1`, [id, result.status, result.transcript || null, result.language || null, JSON.stringify(result.segments || []), result.jobId || null]);
+      const result = mockMode() ? { status: 'completed', transcript: MOCK_TRANSCRIPT, language: parameters.language || 'ru', segments: parameters.timestamp_granularity === 'segment' ? [{ text: MOCK_TRANSCRIPT, start_seconds: 0, end_seconds: 6, speaker: parameters.speaker_labels ? 'speaker-1' : null }] : [] } : await submitTranscription(media, { user_id: req.user?.id || null, transcription_id: req.user ? id : null });
+      if (req.user) {
+        await query(`UPDATE audio_transcriptions SET status=$2, transcript=$3, detected_language=$4, segments=$5, external_job_id=$6, error_code=NULL, error_message=NULL, updated_at=NOW(), completed_at=CASE WHEN $2='completed' THEN NOW() ELSE NULL END WHERE id=$1`, [id, result.status, result.transcript || null, result.language || null, JSON.stringify(result.segments || []), result.jobId || null]);
+      } else {
+        Object.assign(guestItem, { status: result.status, transcript: result.transcript || null, detected_language: result.language || null, segments: result.segments || [], external_job_id: result.jobId || null, touched_at: Date.now() });
+      }
     } catch (error) {
       const diagnosticMessage = error.details?.request_id ? `${error.message} ID диагностики: ${error.details.request_id}` : error.message;
-      await query(`UPDATE audio_transcriptions SET status='failed', error_code=$2, error_message=$3, updated_at=NOW() WHERE id=$1`, [id, error.code || 'processing_failed', diagnosticMessage]);
+      if (req.user) {
+        await query(`UPDATE audio_transcriptions SET status='failed', error_code=$2, error_message=$3, updated_at=NOW() WHERE id=$1`, [id, error.code || 'processing_failed', diagnosticMessage]);
+      } else {
+        Object.assign(guestItem, { status: 'failed', error: { code: error.code || 'processing_failed', message: diagnosticMessage }, touched_at: Date.now() });
+      }
     }
-    const row = await getOwnedTranscription(id, req.user);
+    if (!req.user) return res.status(201).json(publicGuestTranscription(guestItem));
+    const row = await getOwnedTranscription(id, req.user.id);
     res.status(201).json(await publicTranscription(row, req.user.id));
   });
 
@@ -696,8 +769,23 @@ export async function setupAudioRoutes(app) {
     res.json({ items: await Promise.all(rows.map(row => publicTranscription(row, req.user.id))) });
   });
 
-  app.get('/api/transcriptions/:id', auth, async (req, res) => {
-    let row = await getOwnedTranscription(req.params.id, req.user);
+  app.get('/api/transcriptions/:id', optionalUser, async (req, res) => {
+    if (!req.user) {
+      const item = guestTranscription(req.params.id);
+      if (!item) return apiError(res, 404, 'not_found', 'Временная расшифровка не найдена или уже удалена.');
+      if (!mockMode() && item.status === 'processing' && item.external_job_id) {
+        try {
+          const result = await pollExternalTranscription(item.external_job_id, { user_id: null, transcription_id: null });
+          if (result.status === 'completed') Object.assign(item, { status: 'completed', transcript: result.transcript, detected_language: result.language, segments: result.segments || [], error: null });
+        } catch (error) {
+          const diagnosticMessage = error.details?.request_id ? `${error.message} ID диагностики: ${error.details.request_id}` : error.message;
+          Object.assign(item, { status: 'failed', error: { code: error.code || 'processing_failed', message: diagnosticMessage } });
+        }
+        item.touched_at = Date.now();
+      }
+      return res.json(publicGuestTranscription(item));
+    }
+    let row = await getOwnedTranscription(req.params.id, req.user.id);
     if (!row) return apiError(res, 404, 'not_found', 'Транскрибация не найдена.');
     const canRecoverCompletedResult = row.status === 'failed' && row.error_code === 'unknown_external_response';
     if (!mockMode() && (['created', 'pending', 'processing'].includes(row.status) || canRecoverCompletedResult) && row.external_job_id) {
@@ -708,13 +796,13 @@ export async function setupAudioRoutes(app) {
         const diagnosticMessage = error.details?.request_id ? `${error.message} ID диагностики: ${error.details.request_id}` : error.message;
         await query(`UPDATE audio_transcriptions SET status='failed', error_code=$2, error_message=$3, updated_at=NOW() WHERE id=$1`, [row.id, error.code || 'processing_failed', diagnosticMessage]);
       }
-      row = await getOwnedTranscription(req.params.id, req.user);
+      row = await getOwnedTranscription(req.params.id, req.user.id);
     }
     res.json(await publicTranscription(row, req.user.id));
   });
 
-  app.get('/api/transcriptions/:id/download/:format', auth, async (req, res) => {
-    const row = await getOwnedTranscription(req.params.id, req.user);
+  app.get('/api/transcriptions/:id/download/:format', optionalUser, async (req, res) => {
+    const row = req.user ? await getOwnedTranscription(req.params.id, req.user.id) : guestTranscription(req.params.id);
     if (!row) return apiError(res, 404, 'not_found', 'Транскрибация не найдена.');
     if (row.status !== 'completed') return apiError(res, 409, 'not_ready', 'Расшифровка ещё не готова.');
     const format = req.params.format.toLowerCase();
@@ -733,7 +821,9 @@ export async function setupAudioRoutes(app) {
   async function createSummary(req, res, sourceTranscriptionId = null) {
     let text = String(req.body?.text || '').trim();
     if (sourceTranscriptionId) {
-      const transcription = await getOwnedTranscription(sourceTranscriptionId, req.user);
+      const transcription = req.user
+        ? await getOwnedTranscription(sourceTranscriptionId, req.user.id)
+        : guestTranscription(sourceTranscriptionId);
       if (!transcription) return apiError(res, 404, 'not_found', 'Транскрибация не найдена.');
       text = String(transcription.transcript || '').trim();
     }
@@ -741,25 +831,27 @@ export async function setupAudioRoutes(app) {
     if (text.length > 20000) return apiError(res, 413, 'payload_too_large', 'Текст превышает допустимый размер.');
     const taskType = Object.hasOwn(TASK_PROMPTS, req.body?.task_type) ? req.body.task_type : 'default';
     const progressId = req.body?.progress_id;
-    if (progressId) progressById.set(`${req.user.id}:${progressId}`, { status: 'running', stage: 'request', current: 0, total: 1, message: 'Запрос к сервису суммаризации' });
+    if (progressId) progressById.set(progressKey(req, progressId), { status: 'running', stage: 'request', current: 0, total: 1, message: 'Запрос к сервису суммаризации' });
     try {
       const result = mockMode() ? mockSummary(text, taskType) : await realSummary({
         ...req.body,
         text,
         task_type: taskType,
-        log_context: { user_id: req.user.id, transcription_id: sourceTranscriptionId }
+        log_context: { user_id: req.user?.id || null, transcription_id: req.user ? sourceTranscriptionId : null }
       });
       const id = crypto.randomUUID();
-      await query(`INSERT INTO audio_summaries (id,user_id,task_type,source_text,text_chars,answer,explain,source_transcription_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, [id, req.user.id, taskType, text, text.length, result.answer, result.explain || '', sourceTranscriptionId]);
-      if (progressId) progressById.set(`${req.user.id}:${progressId}`, { status: 'completed', stage: 'completed', current: 1, total: 1, message: 'Готово' });
+      if (req.user) {
+        await query(`INSERT INTO audio_summaries (id,user_id,task_type,source_text,text_chars,answer,explain,source_transcription_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, [id, req.user.id, taskType, text, text.length, result.answer, result.explain || '', sourceTranscriptionId]);
+      }
+      if (progressId) progressById.set(progressKey(req, progressId), { status: 'completed', stage: 'completed', current: 1, total: 1, message: 'Готово' });
       return res.status(201).json({ id, status: 'completed', source_transcription_id: sourceTranscriptionId, result: { answer: result.answer, explain: result.explain || '', result_kind: taskType, raw_status: 200 } });
     } catch (error) {
       if (!mockMode() && !error.details?.request_id) {
         const requestId = crypto.randomUUID();
         await recordExternalLog({
           request_id: requestId,
-          user_id: req.user.id,
-          transcription_id: sourceTranscriptionId,
+          user_id: req.user?.id || null,
+          transcription_id: req.user ? sourceTranscriptionId : null,
           operation: 'summary.preflight',
           method: process.env.IMOSCOW_SUMMARIZER_METHOD || 'POST',
           url: summarizerLogUrl(),
@@ -776,16 +868,16 @@ export async function setupAudioRoutes(app) {
         error.details = { ...(error.details || {}), request_id: requestId };
       }
       const diagnosticMessage = error.details?.request_id ? `${error.message} ID диагностики: ${error.details.request_id}` : error.message;
-      if (progressId) progressById.set(`${req.user.id}:${progressId}`, { status: 'failed', stage: 'failed', current: 0, total: 1, message: diagnosticMessage });
+      if (progressId) progressById.set(progressKey(req, progressId), { status: 'failed', stage: 'failed', current: 0, total: 1, message: diagnosticMessage });
       return apiError(res, error.status || 502, error.code || 'summary_failed', error.message, error.details);
     }
   }
 
-  app.post('/api/summarizer/summaries', auth, (req, res) => createSummary(req, res));
-  app.post('/api/transcriptions/:id/summaries', auth, (req, res) => createSummary(req, res, req.params.id));
+  app.post('/api/summarizer/summaries', optionalUser, (req, res) => createSummary(req, res));
+  app.post('/api/transcriptions/:id/summaries', optionalUser, (req, res) => createSummary(req, res, req.params.id));
 
-  app.get('/api/summarizer/progress/:progressId', auth, (req, res) => {
-    const progress = progressById.get(`${req.user.id}:${req.params.progressId}`);
+  app.get('/api/summarizer/progress/:progressId', optionalUser, (req, res) => {
+    const progress = progressById.get(progressKey(req, req.params.progressId));
     if (!progress) return apiError(res, 404, 'not_found', 'Прогресс не найден.');
     res.json(progress);
   });

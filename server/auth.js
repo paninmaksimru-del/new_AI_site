@@ -240,6 +240,30 @@ export function requireAuth() {
   };
 }
 
+/**
+ * Adds req.user when a valid session is present, but keeps the route public.
+ * Invalid and missing tokens are treated as a guest session.
+ */
+export function optionalAuth() {
+  return async (req, res, next) => {
+    try {
+      const token = req.headers['x-auth-token'] || req.query.token;
+      if (!token) return next();
+      const { rows } = await query(
+        `SELECT users.*
+           FROM sessions
+           JOIN users ON users.id = sessions.user_id
+          WHERE sessions.token = $1`,
+        [token]
+      );
+      if (rows[0]) req.user = rows[0];
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
 export function requireAdmin() {
   return async (req, res, next) => {
     const token = req.headers['x-auth-token'] || req.query.token;

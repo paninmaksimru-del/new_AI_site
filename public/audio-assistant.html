@@ -67,6 +67,7 @@
         <p>Два независимых сценария: расшифровка записи или резюме готового текста.</p>
       </div>
     </div>
+    <p id="guestNotice" class="message" hidden>Гостевой режим: результаты доступны только в текущей вкладке и не сохраняются в истории. Войдите, чтобы вести архив работы.</p>
 
     <div class="grid tools">
       <form id="transcriptionForm" class="panel panel--transcription">
@@ -176,14 +177,6 @@
     <span class="footer-copy">Внутренний ресурс для сотрудников</span>
   </div>
 </footer>
-<script>
-  (() => {
-    const token = localStorage.getItem('auth_token');
-    let auth = null;
-    try { auth = JSON.parse(localStorage.getItem('mikAuth')); } catch (_) {}
-    if (!token || !auth || !auth.isAuthorized) window.location.replace('/login');
-  })();
-</script>
 <script src="/audio-assistant.js" defer></script>
 </body>
 </html>

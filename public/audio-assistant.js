@@ -4,6 +4,21 @@ const activeStatuses = new Set(["created", "processing", "pending"]);
 let currentTranscription = null;
 let pollTimer = null;
 let progressTimer = null;
+let isAuthenticated = Boolean(localStorage.getItem("auth_token"));
+let profileName = "";
+
+function activeTranscriptionStorageKey() {
+  const login = localStorage.getItem("auth_login") || "anonymous";
+  return `audioAssistant.activeTranscription:${encodeURIComponent(login)}`;
+}
+
+function rememberActiveTranscription(id) {
+  localStorage.setItem(activeTranscriptionStorageKey(), id);
+}
+
+function forgetActiveTranscription() {
+  localStorage.removeItem(activeTranscriptionStorageKey());
+}
 
 const burger = $("#burgerBtn");
 const mobileMenu = $("#mobileMenu");
@@ -21,11 +36,25 @@ if (burger && mobileMenu) {
 
 try {
   const auth = JSON.parse(localStorage.getItem("mikAuth"));
-  const fullName = localStorage.getItem("auth_full_name") || auth?.full_name;
-  if (fullName) {
-    for (const label of document.querySelectorAll('.profile-btn .nowrap')) label.textContent = fullName;
-  }
+  profileName = localStorage.getItem("auth_full_name") || auth?.full_name || "";
 } catch (_) {}
+
+function applyAuthState(authenticated) {
+  isAuthenticated = authenticated;
+  $("#history").hidden = !authenticated;
+  $("#guestNotice").hidden = authenticated;
+  for (const button of document.querySelectorAll('.profile-btn')) {
+    button.href = authenticated ? "/profile" : "/login";
+    const label = button.querySelector('.nowrap');
+    if (label) label.textContent = authenticated ? (profileName || "Личный кабинет") : "Войти";
+  }
+  if (!authenticated) {
+    localStorage.removeItem("activeTranscription");
+    localStorage.removeItem("audioAssistant.activeTranscription:anonymous");
+  }
+}
+
+applyAuthState(isAuthenticated);
 
 for (const select of document.querySelectorAll(".task-type")) {
   for (const [value, label] of Object.entries(taskLabels)) {
@@ -38,10 +67,7 @@ async function api(url, options = {}) {
   const response = await fetch(url, { ...options, headers: { Accept: "application/json", ...(token ? { "X-Auth-Token": token } : {}), ...(options.headers || {}) } });
   const type = response.headers.get("content-type") || "";
   const body = type.includes("json") ? await response.json() : null;
-  if (response.status === 401) {
-    window.location.replace("/login");
-    throw new Error("Требуется авторизация");
-  }
+  if (response.status === 401) throw new Error("Требуется авторизация");
   if (!response.ok) {
     const error = new Error(body?.error?.message || body?.message || body?.detail || "Запрос не выполнен");
     error.status = response.status; error.code = body?.error?.code || body?.error; error.details = body?.details || {}; throw error;
@@ -72,8 +98,11 @@ function renderTranscription(item) {
   for (const link of document.querySelectorAll("[data-download]")) link.href = `/api/transcriptions/${encodeURIComponent(item.id)}/download/${link.dataset.download}?token=${encodeURIComponent(token)}`;
   $("#transcriptionMessage").textContent = item.error?.message || (ready ? "Расшифровка завершена." : activeStatuses.has(item.status) ? "Задание выполняется." : "Результат недоступен.");
   renderLinked(item.summaries || []);
-  if (activeStatuses.has(item.status)) { localStorage.setItem("activeTranscription", item.id); schedulePoll(item.id); }
-  else { localStorage.removeItem("activeTranscription"); if (pollTimer) clearTimeout(pollTimer); pollTimer=null; }
+  if (activeStatuses.has(item.status)) {
+    if (isAuthenticated) rememberActiveTranscription(item.id);
+    schedulePoll(item.id);
+  }
+  else { if (isAuthenticated) forgetActiveTranscription(); if (pollTimer) clearTimeout(pollTimer); pollTimer=null; }
 }
 
 function renderLinked(items) {
@@ -83,13 +112,13 @@ function renderLinked(items) {
   for (const item of items) { const button=document.createElement("button"); button.className="history-item"; button.textContent=`${taskLabels[item.task_type]} · ${item.created_at.slice(0,16)}`; button.onclick=()=>openSummary(item.id); box.appendChild(button); }
 }
 
-function schedulePoll(id, delay=2500) { if (pollTimer) return; pollTimer=setTimeout(async()=>{ pollTimer=null; try { renderTranscription(await api(`/api/transcriptions/${id}`)); await loadHistory(); } catch { schedulePoll(id,5000); } },delay); }
+function schedulePoll(id, delay=2500) { if (pollTimer) return; pollTimer=setTimeout(async()=>{ pollTimer=null; try { renderTranscription(await api(`/api/transcriptions/${id}`)); if (isAuthenticated) await loadHistory(); } catch(error) { if(error.status===404){if(isAuthenticated)forgetActiveTranscription();return;} schedulePoll(id,5000); } },delay); }
 
 $("#transcriptionForm").addEventListener("submit", async event => {
   event.preventDefault(); const file=$("#audioFile").files[0]; if (!file) return;
   const data=new FormData(); data.append("audio",file); data.append("language",$("#language").value); data.append("timestamp_granularity",$("#timestamps").value); data.append("speaker_labels",$("#speakers").checked ? "true":"false"); if ($("#contextHint").value.trim()) data.append("context_hint",$("#contextHint").value.trim());
   const button=$("#transcribeButton"); setBusy(button,true,"Транскрибировать");
-  try { renderTranscription(await api("/api/transcriptions",{method:"POST",body:data})); await loadHistory(); } catch(error) { $("#transcriptionMessage").textContent=error.message; } finally { setBusy(button,false,"Транскрибировать"); }
+  try { renderTranscription(await api("/api/transcriptions",{method:"POST",body:data})); if (isAuthenticated) await loadHistory(); } catch(error) { $("#transcriptionMessage").textContent=error.message; } finally { setBusy(button,false,"Транскрибировать"); }
 });
 
 function makeProgressId() { return globalThis.crypto?.randomUUID ? crypto.randomUUID() : `p-${Date.now()}-${Math.random()}`; }
@@ -105,7 +134,11 @@ async function requestSummary(url, settings) {
   startProgress(progressId); $("#summaryStatus").textContent="В работе"; $("#summaryActions").hidden=true;
   try {
     const result=await api(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-    renderSummary(result); await loadHistory(); if(currentTranscription) renderTranscription(await api(`/api/transcriptions/${currentTranscription.id}`));
+    renderSummary(result);
+    if (isAuthenticated) {
+      await loadHistory();
+      if(currentTranscription) renderTranscription(await api(`/api/transcriptions/${currentTranscription.id}`));
+    }
   } catch(error) {
     const diagnosticId = error.details?.request_id;
     $("#summaryStatus").textContent="Ошибка";
@@ -118,7 +151,12 @@ $("#textSummaryForm").addEventListener("submit", async event => {
   event.preventDefault(); const button=$("#summarizeTextButton"); setBusy(button,true,"Суммаризировать");
   await requestSummary("/api/summarizer/summaries",{text:$("#manualText").value,task_type:$("#manualTaskType").value,task:$("#manualTask").value||null}); setBusy(button,false,"Суммаризировать");
 });
-$("#summarizeTranscriptButton").addEventListener("click", async()=>{ if(!currentTranscription)return; await requestSummary(`/api/transcriptions/${currentTranscription.id}/summaries`,{task_type:$("#transcriptTaskType").value}); });
+$("#summarizeTranscriptButton").addEventListener("click", async()=>{
+  if(!currentTranscription)return;
+  const task_type=$("#transcriptTaskType").value;
+  if (isAuthenticated) await requestSummary(`/api/transcriptions/${currentTranscription.id}/summaries`,{task_type});
+  else await requestSummary("/api/summarizer/summaries",{text:currentTranscription.transcript,task_type});
+});
 
 function renderSummary(item) {
   const answer=item.result.answer || "";
@@ -153,6 +191,25 @@ async function loadHistory() {
   const tBox=$("#transcriptionHistory"); tBox.replaceChildren(); for(const item of transcriptions.items||[]){const b=document.createElement("button");b.className="history-item";b.innerHTML="";const title=document.createElement("strong");title.textContent=item.original_filename||"Запись";const meta=document.createElement("small");meta.textContent=`${statusLabel(item.status)} · ${(item.summaries||[]).length} резюме`;b.append(title,meta);b.onclick=async()=>renderTranscription(await api(`/api/transcriptions/${item.id}`));tBox.appendChild(b);}
   const sBox=$("#summaryHistory");sBox.replaceChildren();for(const item of summaries||[]){const b=document.createElement("button");b.className="history-item";const title=document.createElement("strong");title.textContent=taskLabels[item.task_type];const meta=document.createElement("small");meta.textContent=item.source_transcription_id?"Из расшифровки":"Из введённого текста";b.append(title,meta);b.onclick=()=>openSummary(item.id);sBox.appendChild(b);}
 }
-$("#refreshHistory").addEventListener("click",()=>loadHistory().catch(()=>{}));
-api("/api/audio-assistant/health").then(h=>{const mode=h.mock_mode?"mock":"real";$("#serviceStatus").textContent=mode==="mock"?"Mock":"Real";$("#serviceState").dataset.mode=mode;}).catch(()=>{$("#serviceStatus").textContent="Offline";$("#serviceState").dataset.mode="offline";});
-loadHistory().then(async()=>{const id=localStorage.getItem("activeTranscription");if(id)renderTranscription(await api(`/api/transcriptions/${id}`));}).catch(()=>{});
+$("#refreshHistory").addEventListener("click",()=>{ if (isAuthenticated) loadHistory().catch(()=>{}); });
+
+async function initialize() {
+  try {
+    const health=await api("/api/audio-assistant/health");
+    applyAuthState(Boolean(health.authenticated));
+    const mode=health.mock_mode?"mock":"real";
+    $("#serviceStatus").textContent=mode==="mock"?"Mock":"Real";
+    $("#serviceState").dataset.mode=mode;
+    if (isAuthenticated) {
+      localStorage.removeItem("activeTranscription");
+      await loadHistory();
+      const id=localStorage.getItem(activeTranscriptionStorageKey());
+      if(id)renderTranscription(await api(`/api/transcriptions/${id}`));
+    }
+  } catch {
+    $("#serviceStatus").textContent="Offline";
+    $("#serviceState").dataset.mode="offline";
+  }
+}
+
+initialize();

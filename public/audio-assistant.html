@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#031a12">
+  <title>Audio Text Assistant</title>
+  <link rel="stylesheet" href="/audio-assistant.css">
+</head>
+<body>
+<a class="skip-link" href="#workspace">Перейти к рабочей области</a>
+<div class="page-aurora" aria-hidden="true"></div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="/" aria-label="Вернуться на портал">
+      <span class="brand-mark" aria-hidden="true">AT</span>
+      <span class="brand-copy"><strong>Audio Text</strong><small>Assistant</small></span>
+    </a>
+    <nav class="main-nav" aria-label="Основная навигация">
+      <a href="/">Портал</a>
+      <a href="#workspace">Обработка</a>
+      <a href="#results">Результаты</a>
+      <a href="#history">История</a>
+    </nav>
+    <span id="serviceState" class="service-state" data-mode="loading">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span id="serviceStatus">Подключение</span>
+    </span>
+  </div>
+</header>
+
+<main id="top" class="shell" data-service="audio-text-assistant">
+  <section class="hero" aria-labelledby="heroTitle">
+    <div class="hero-grid" aria-hidden="true"></div>
+    <div class="hero-content">
+      <p class="eyebrow"><span aria-hidden="true"></span> Локальный ИИ‑инструмент</p>
+      <h1 id="heroTitle">Из записи — в ясный текст и короткое резюме.</h1>
+      <p class="hero-description">Загрузите аудио или видео, получите расшифровку и соберите главное в одном защищённом рабочем пространстве.</p>
+      <div class="hero-tags" aria-label="Возможности сервиса">
+        <span>Аудио и видео</span>
+        <span>Автоконвертация</span>
+        <span>Экспорт в TXT, MD и DOCX</span>
+      </div>
+    </div>
+    <div class="hero-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
+  </section>
+
+  <section id="workspace" class="page-section" aria-labelledby="workspaceTitle">
+    <div class="section-heading">
+      <div><p class="section-kicker">Рабочая область</p><h2 id="workspaceTitle">Начните с исходного материала</h2></div>
+      <p>Два независимых сценария: расшифровка записи или резюме готового текста.</p>
+    </div>
+
+    <div class="grid tools">
+      <form id="transcriptionForm" class="panel panel--transcription">
+        <div class="panel-intro">
+          <span class="step-number">01</span>
+          <div><h3>Расшифровать запись</h3><p>Поддерживаются аудио и видео; неподходящий формат будет преобразован автоматически.</p></div>
+        </div>
+        <label>Аудио или видео<input id="audioFile" name="audio" type="file" accept="audio/*,video/*" required></label>
+        <div class="row">
+          <label>Язык<select id="language"><option value="">Авто</option><option value="ru">Русский</option><option value="en">English</option></select></label>
+          <label>Таймкоды<select id="timestamps"><option value="none">Нет</option><option value="segment">По репликам</option></select></label>
+        </div>
+        <label class="check"><input id="speakers" type="checkbox"> <span>Определять спикеров</span></label>
+        <label>Контекст<textarea id="contextHint" rows="2" maxlength="1000" placeholder="Имена, термины и важные детали"></textarea></label>
+        <button id="transcribeButton" type="submit">Транскрибировать</button>
+      </form>
+
+      <form id="textSummaryForm" class="panel panel--summary">
+        <div class="panel-intro">
+          <span class="step-number">02</span>
+          <div><h3>Суммаризировать текст</h3><p>Вставьте готовый материал и выберите способ выделения ключевых мыслей.</p></div>
+        </div>
+        <label>Исходный текст<textarea id="manualText" rows="8" required placeholder="Вставьте текст, который нужно сократить…"></textarea></label>
+        <div class="row">
+          <label>Тип<select id="manualTaskType" class="task-type"></select></label>
+          <label>Своя задача<input id="manualTask" type="text" placeholder="Необязательно"></label>
+        </div>
+        <button id="summarizeTextButton" type="submit">Суммаризировать</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="results" class="page-section" aria-labelledby="resultsTitle">
+    <div class="section-heading">
+      <div><p class="section-kicker">Готовые материалы</p><h2 id="resultsTitle">Результаты обработки</h2></div>
+      <p>Расшифровка и резюме остаются рядом, чтобы их было удобно проверить и сохранить.</p>
+    </div>
+
+    <div class="grid results">
+      <article class="panel result-panel">
+        <div class="panel-head"><h3>Расшифровка</h3><span id="transcriptionStatus" class="pill muted">Нет задания</span></div>
+        <div id="transcriptionMeta" class="chips"></div>
+        <textarea id="transcriptOutput" rows="11" readonly placeholder="Здесь появится текст расшифровки"></textarea>
+        <div id="segments" class="segments" hidden></div>
+        <div id="downloadActions" class="actions" hidden>
+          <a data-download="txt">TXT</a><a data-download="md">MD</a><a data-download="docx">DOCX</a>
+        </div>
+        <div id="transcriptSummaryActions" class="summary-link" hidden>
+          <select id="transcriptTaskType" class="task-type" aria-label="Тип резюме расшифровки"></select>
+          <button id="summarizeTranscriptButton" type="button">Суммаризировать расшифровку</button>
+        </div>
+        <p id="transcriptionMessage" class="message">Выберите файл.</p>
+        <div id="linkedSummaries" class="linked"></div>
+      </article>
+
+      <article class="panel result-panel panel--answer">
+        <div class="panel-head"><h3>Резюме</h3><span id="summaryStatus" class="pill muted">Нет результата</span></div>
+        <div id="progressPanel" class="progress" hidden><span id="progressLabel">Подготовка</span><progress id="progressBar" max="1" value="0"></progress></div>
+        <pre id="summaryAnswer" class="answer" aria-live="polite"></pre>
+        <div id="summaryActions" class="actions" hidden>
+          <button id="copySummaryButton" type="button">Копировать резюме</button>
+        </div>
+        <p id="summaryExplain" class="message"></p>
+      </article>
+    </div>
+  </section>
+
+  <section id="history" class="panel history-panel" aria-labelledby="historyTitle">
+    <div class="panel-head history-head">
+      <div><p class="section-kicker">Архив работы</p><h2 id="historyTitle">История</h2></div>
+      <button id="refreshHistory" class="secondary-button" type="button">Обновить</button>
+    </div>
+    <div class="grid history-grid">
+      <div class="history-column"><h3>Транскрипции</h3><div id="transcriptionHistory"></div></div>
+      <div class="history-column"><h3>Резюме</h3><div id="summaryHistory"></div></div>
+    </div>
+  </section>
+</main>
+<script>
+  (() => {
+    const token = localStorage.getItem('auth_token');
+    let auth = null;
+    try { auth = JSON.parse(localStorage.getItem('mikAuth')); } catch (_) {}
+    if (!token || !auth || !auth.isAuthorized) window.location.replace('/login');
+  })();
+</script>
+<script src="/audio-assistant.js" defer></script>
+</body>
+</html>

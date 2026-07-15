@@ -1,6 +1,8 @@
 # Платформа внедрения ИИ инструментов (Фонд МИК)
 FROM node:20-alpine
 
+RUN apk add --no-cache ffmpeg
+
 WORKDIR /app
 
 # зависимости

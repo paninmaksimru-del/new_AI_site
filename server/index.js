@@ -5,6 +5,7 @@ import { initSchema, query } from './db.js';
 import { setupAuth, requireAuth, requireAdmin } from './auth.js';
 import { setupKbRoutes } from './kb-routes.js';
 import { startPipelineWorker } from './kb-pipeline.js';
+import { setupAudioRoutes } from './audio-routes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, '..', 'public');
@@ -28,6 +29,7 @@ app.get('/logo.png', (req, res) => {
 async function start() {
   await initSchema();
   await setupAuth(app);
+  await setupAudioRoutes(app);
   await import('./seed.js');
 
   // Knowledge Base routes + background pipeline worker
@@ -47,6 +49,7 @@ async function start() {
   app.get('/chat', (req, res) => res.sendFile(join(publicDir, 'chat.html')));
   app.get('/knowledge', (req, res) => res.sendFile(join(publicDir, 'knowledge.html')));
   app.get('/knowledgev2', (req, res) => res.sendFile(join(publicDir, 'knowledgev2.html')));
+  app.get('/audio-assistant', (req, res) => res.sendFile(join(publicDir, 'audio-assistant.html')));
 
   // ----- API -----
 

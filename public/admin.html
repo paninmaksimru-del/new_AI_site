@@ -69,6 +69,11 @@
     .step-block input, .step-block textarea { background:rgba(0,0,0,.35); }
     .step-block { transition: box-shadow .15s; }
     .step-block:hover { box-shadow: 0 0 0 1px rgba(78,135,255,.3); }
+    .secret-state{ display:inline-flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--muted); }
+    .secret-state.configured{ color:var(--ok); }
+    .secret-clear{ display:flex !important; align-items:center; gap:8px; margin-top:8px; color:var(--muted); font-size:12px; cursor:pointer; }
+    .secret-clear input{ width:auto !important; margin:0; accent-color:var(--danger); }
+    .settings-note{ padding:12px 14px; border:1px solid rgba(78,135,255,.25); border-radius:11px; background:rgba(78,135,255,.08); color:var(--muted); font-size:13px; }
   </style>
 </head>
 <body>
@@ -107,6 +112,7 @@
     <button class="tabbtn" data-tab="prompts">Промпты</button>
     <button class="tabbtn" data-tab="tools">Инструменты</button>
     <button class="tabbtn" data-tab="tasks">Задачи</button>
+    <button class="tabbtn" data-tab="audioassistant">Audio Text Assistant</button>
     <button class="tabbtn" data-tab="browser">Браузер</button>
     <button class="tabbtn" data-tab="instructions">Инструкции</button>
     <button class="tabbtn" data-tab="videos">Видеоматериалы</button>
@@ -313,6 +319,77 @@
         </div>
       </div>
       <ul class="plain" id="taskList"><li class="loading">Загрузка...</li></ul>
+    </div>
+  </div>
+  <div id="tab_audioassistant" class="tabpane">
+    <div class="panel">
+      <h2>Audio Text Assistant</h2>
+      <p class="muted">Настройки подключения к i.moscow и режимы работы сервиса расшифровки. Доступ к этой вкладке и API есть только у роли <b>admin</b>.</p>
+
+      <div class="settings-note">
+        Секреты не загружаются обратно в браузер. Пустое поле сохраняет текущее значение; чтобы удалить значение из БД, отметьте «Очистить сохранённое значение». Переменная из окружения при этом останется активной.
+      </div>
+
+      <h3>Режим работы</h3>
+      <div class="field-row">
+        <div class="field">
+          <label>IMOSCOW_MOCK_MODE</label>
+          <select id="ataMockMode"><option value="true">true — тестовый режим</option><option value="false">false — реальный i.moscow</option></select>
+        </div>
+        <div class="field">
+          <label>APP_ENV</label>
+          <select id="ataAppEnv"><option value="development">development</option><option value="staging">staging</option><option value="production">production</option><option value="dev">dev</option></select>
+        </div>
+        <div class="field">
+          <label>AUTH_MODE</label>
+          <select id="ataAuthMode"><option value="reverse_proxy">reverse_proxy</option><option value="dev">dev</option></select>
+          <div class="hint">На портале авторизация пользователей всегда выполняется через текущие сессии.</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>AUDIO_TEXT_ASSISTANT_SETUP_MODE</label>
+        <input id="ataSetupMode" type="text" placeholder="portal" />
+      </div>
+
+      <h3>Серверные учётные данные i.moscow</h3>
+      <div class="field-row">
+        <div class="field">
+          <label>IMOSCOW_PROXY_TOKEN</label>
+          <input id="ataProxyToken" type="password" autocomplete="new-password" spellcheck="false" placeholder="Введите новое значение" />
+          <span class="secret-state" id="ataProxyTokenState">Не настроено</span>
+          <label class="secret-clear"><input id="ataProxyTokenClear" type="checkbox" /> Очистить сохранённое значение</label>
+        </div>
+        <div class="field">
+          <label>IMOSCOW_PHPSESSID</label>
+          <input id="ataPhpsessid" type="password" autocomplete="new-password" spellcheck="false" placeholder="Введите новое значение" />
+          <span class="secret-state" id="ataPhpsessidState">Не настроено</span>
+          <label class="secret-clear"><input id="ataPhpsessidClear" type="checkbox" /> Очистить сохранённое значение</label>
+        </div>
+        <div class="field">
+          <label>IMOSCOW_SESSION_COOKIE</label>
+          <input id="ataSessionCookie" type="password" autocomplete="new-password" spellcheck="false" placeholder="Введите новое значение" />
+          <span class="secret-state" id="ataSessionCookieState">Не настроено</span>
+          <label class="secret-clear"><input id="ataSessionCookieClear" type="checkbox" /> Очистить сохранённое значение</label>
+        </div>
+      </div>
+
+      <h3>Подтверждение контрактов</h3>
+      <div class="field-row">
+        <div class="field">
+          <label>TRANSCRIPTION_PROXY_CONTRACT_VERIFIED</label>
+          <select id="ataTranscriptionVerified"><option value="false">false</option><option value="true">true</option></select>
+        </div>
+        <div class="field">
+          <label>SUMMARIZER_PROXY_CONTRACT_VERIFIED</label>
+          <select id="ataSummarizerVerified"><option value="false">false</option><option value="true">true</option></select>
+        </div>
+      </div>
+
+      <div class="actions-bar" style="margin-top:18px;">
+        <button class="btn ok" id="ataSettingsSave" type="button">Сохранить настройки</button>
+        <button class="btn small" id="ataSettingsReload" type="button">Перезагрузить</button>
+        <span class="badge" id="ataSettingsStatus">Не загружено</span>
+      </div>
     </div>
   </div>
   <div id="tab_browser" class="tabpane">
@@ -535,10 +612,92 @@ function toast(msg, type='ok') {
 const hdrs = () => ({ 'Content-Type':'application/json', 'x-auth-token': localStorage.getItem('auth_token')||'' });
 async function api(path, opts={}) {
   const res = await fetch(path, { ...opts, headers: { ...hdrs(), ...(opts.headers||{}) } });
-  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || res.status); }
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(typeof e.error === 'string' ? e.error : e.error?.message || res.status); }
   return res.json();
 }
 function esc(s) { return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
+
+// ── AUDIO TEXT ASSISTANT SETTINGS ───────────────────────────────────────────
+const ATA_SECRET_FIELDS = {
+  IMOSCOW_PROXY_TOKEN: ['ataProxyToken', 'ataProxyTokenState', 'ataProxyTokenClear'],
+  IMOSCOW_PHPSESSID: ['ataPhpsessid', 'ataPhpsessidState', 'ataPhpsessidClear'],
+  IMOSCOW_SESSION_COOKIE: ['ataSessionCookie', 'ataSessionCookieState', 'ataSessionCookieClear']
+};
+let ataSettingsLoaded = false;
+
+function renderAtaSecretState(key, configured, source) {
+  const [, stateId] = ATA_SECRET_FIELDS[key];
+  const state = document.getElementById(stateId);
+  if (!state) return;
+  state.classList.toggle('configured', configured);
+  const sourceLabel = source === 'database' ? 'БД' : source === 'environment' ? 'переменная окружения' : '';
+  state.textContent = configured ? `● Значение настроено${sourceLabel ? ` · ${sourceLabel}` : ''}` : '○ Не настроено';
+}
+
+async function loadAudioAssistantSettings() {
+  const status = document.getElementById('ataSettingsStatus');
+  if (status) { status.textContent = 'Загрузка…'; status.className = 'badge'; }
+  try {
+    const config = await api('/api/admin/audio-assistant-settings');
+    const values = config.values || {};
+    document.getElementById('ataMockMode').value = String(values.IMOSCOW_MOCK_MODE ?? 'true');
+    document.getElementById('ataAppEnv').value = values.APP_ENV || 'development';
+    document.getElementById('ataAuthMode').value = values.AUTH_MODE || 'reverse_proxy';
+    document.getElementById('ataSetupMode').value = values.AUDIO_TEXT_ASSISTANT_SETUP_MODE || 'portal';
+    document.getElementById('ataTranscriptionVerified').value = String(values.TRANSCRIPTION_PROXY_CONTRACT_VERIFIED ?? 'false');
+    document.getElementById('ataSummarizerVerified').value = String(values.SUMMARIZER_PROXY_CONTRACT_VERIFIED ?? 'false');
+    for (const [key, [inputId, , clearId]] of Object.entries(ATA_SECRET_FIELDS)) {
+      document.getElementById(inputId).value = '';
+      document.getElementById(clearId).checked = false;
+      renderAtaSecretState(key, Boolean(config.secrets?.[key]), config.sources?.[key]);
+    }
+    ataSettingsLoaded = true;
+    if (status) { status.textContent = values.IMOSCOW_MOCK_MODE === 'false' ? 'Реальный режим' : 'Mock-режим'; status.className = `badge ${values.IMOSCOW_MOCK_MODE === 'false' ? 'warn' : 'accent'}`; }
+  } catch (error) {
+    if (status) { status.textContent = 'Ошибка загрузки'; status.className = 'badge danger'; }
+    toast('Настройки Audio Text Assistant: ' + error.message, 'err');
+  }
+}
+
+async function saveAudioAssistantSettings() {
+  const values = {
+    IMOSCOW_MOCK_MODE: document.getElementById('ataMockMode').value,
+    APP_ENV: document.getElementById('ataAppEnv').value,
+    AUTH_MODE: document.getElementById('ataAuthMode').value,
+    AUDIO_TEXT_ASSISTANT_SETUP_MODE: document.getElementById('ataSetupMode').value.trim(),
+    TRANSCRIPTION_PROXY_CONTRACT_VERIFIED: document.getElementById('ataTranscriptionVerified').value,
+    SUMMARIZER_PROXY_CONTRACT_VERIFIED: document.getElementById('ataSummarizerVerified').value
+  };
+  const secrets = {};
+  const clear_secrets = [];
+  for (const [key, [inputId, , clearId]] of Object.entries(ATA_SECRET_FIELDS)) {
+    const secret = document.getElementById(inputId).value.trim();
+    if (secret) secrets[key] = secret;
+    if (document.getElementById(clearId).checked) clear_secrets.push(key);
+  }
+  const button = document.getElementById('ataSettingsSave');
+  button.disabled = true;
+  try {
+    await api('/api/admin/audio-assistant-settings', { method:'PUT', body:JSON.stringify({ values, secrets, clear_secrets }) });
+    toast('Настройки Audio Text Assistant сохранены');
+    await loadAudioAssistantSettings();
+  } catch (error) {
+    toast('Ошибка сохранения: ' + error.message, 'err');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+document.querySelector('[data-tab="audioassistant"]')?.addEventListener('click', () => {
+  if (!ataSettingsLoaded) loadAudioAssistantSettings();
+});
+document.getElementById('ataSettingsSave')?.addEventListener('click', saveAudioAssistantSettings);
+document.getElementById('ataSettingsReload')?.addEventListener('click', loadAudioAssistantSettings);
+for (const [, [inputId, , clearId]] of Object.entries(ATA_SECRET_FIELDS)) {
+  document.getElementById(inputId)?.addEventListener('input', () => {
+    if (document.getElementById(inputId).value) document.getElementById(clearId).checked = false;
+  });
+}
 
 // TABS
 document.querySelectorAll('.tabbtn').forEach(btn => {

@@ -24,6 +24,7 @@ const pages = {
   '/chat': 'chat.html',
   '/knowledge': 'knowledge.html',
   '/knowledgev2': 'knowledgev2.html',
+  '/audio-assistant': 'audio-assistant.html',
 };
 
 const types = {

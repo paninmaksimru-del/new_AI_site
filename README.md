@@ -22,6 +22,8 @@ npm start
 - **/dashboard** — аналитический дашборд
 - **/admin** — админ-панель (сущности)
 - **/profile** — личный профиль
+- **/audio-assistant** — расшифровка аудио/видео и суммаризация текста
+- **/admin → Audio Text Assistant** — admin-only настройка i.moscow и режимов сервиса
 
 При первом запуске БД создаётся автоматически и заполняется дефолтными подразделениями, кейсами, промптами, инструментами и задачами.
 
@@ -44,6 +46,10 @@ docker compose up -d
 - `POST /api/analytics/events` — запись событий
 - `POST /api/analytics/kv` — ключ-значение для дашборда
 - `GET /api/health` — проверка работы
+- `GET/POST /api/transcriptions` — история и создание расшифровок
+- `GET /api/transcriptions/:id` — статус и результат расшифровки
+- `POST /api/summarizer/summaries` — суммаризация произвольного текста
+- `GET/PUT /api/admin/audio-assistant-settings` — защищённые настройки Audio Text Assistant (только admin)
 
 ## Деплой на сервер
 

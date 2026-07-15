@@ -107,7 +107,10 @@ async function requestSummary(url, settings) {
     const result=await api(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     renderSummary(result); await loadHistory(); if(currentTranscription) renderTranscription(await api(`/api/transcriptions/${currentTranscription.id}`));
   } catch(error) {
-    $("#summaryStatus").textContent="Ошибка"; $("#summaryAnswer").textContent=error.message; $("#summaryActions").hidden=true; $("#progressPanel").hidden=true;
+    const diagnosticId = error.details?.request_id;
+    $("#summaryStatus").textContent="Ошибка";
+    $("#summaryAnswer").textContent = diagnosticId ? `${error.message}\n\nID диагностики: ${diagnosticId}` : error.message;
+    $("#summaryActions").hidden=true; $("#progressPanel").hidden=true;
   } finally { stopProgress(); }
 }
 

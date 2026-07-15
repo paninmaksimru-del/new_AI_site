@@ -150,6 +150,9 @@ function redactLogValue(value, depth = 0) {
     const output = {};
     for (const [key, item] of Object.entries(value)) {
       if (/token|cookie|session|authorization|phpsessid|secret/i.test(key)) output[key] = '[REDACTED]';
+      else if (/^(text|content|prompt|user_prompt|source_text|transcript|transcription|answer|summary)$/i.test(key)) {
+        output[key] = typeof item === 'string' ? `[REDACTED:${item.length}_CHARS]` : '[REDACTED]';
+      }
       else output[key] = redactLogValue(item, depth + 1);
     }
     return output;
@@ -218,6 +221,15 @@ async function recordExternalLog(entry) {
   }
 }
 
+async function markExternalLogError(requestId, errorCode) {
+  if (!requestId || !errorCode) return;
+  try {
+    await query('UPDATE audio_external_logs SET error_code = $2 WHERE request_id = $1', [requestId, errorCode]);
+  } catch (error) {
+    console.warn('[audio-assistant.external-log-update-failed]', error.message);
+  }
+}
+
 async function externalFetch({ operation, url, method, headers, body, timeoutMs, requestMeta, context = {} }) {
   const requestId = crypto.randomUUID();
   const started = Date.now();
@@ -234,6 +246,7 @@ async function externalFetch({ operation, url, method, headers, body, timeoutMs,
       response_status: response.status,
       response_headers: safeResponseHeaders(response),
       response_body: responseForLog(parsedBody, response.ok),
+      error_code: response.ok ? null : `http_${response.status}`,
       duration_ms: Date.now() - started
     });
     return { response, body: parsedBody, requestId };
@@ -268,6 +281,19 @@ function iMoscowHeaders(extra = {}) {
   const session = getAudioSetting('IMOSCOW_SESSION_COOKIE') || '';
   const cookie = [phpsessid && `PHPSESSID=${phpsessid}`, session && `session-cookie=${session}`].filter(Boolean).join('; ');
   return { ...(cookie ? { Cookie: cookie } : {}), ...extra };
+}
+
+function summarizerUrl() {
+  const base = process.env.IMOSCOW_SUMMARIZER_PROXY_URL || 'https://i.moscow/api/dit/proxy/operation/structurizer/invocations';
+  const url = new URL(base);
+  const token = getAudioSetting('IMOSCOW_PROXY_TOKEN');
+  if (token) url.searchParams.set('token', token);
+  return url;
+}
+
+function summarizerLogUrl() {
+  try { return summarizerUrl(); }
+  catch { return new URL('https://i.moscow/api/dit/proxy/operation/structurizer/invocations'); }
 }
 
 function ensureRealModeConfigured(kind) {
@@ -412,9 +438,7 @@ function mockSummary(text, taskType) {
 
 async function realSummary(payload) {
   ensureRealModeConfigured('summary');
-  const base = process.env.IMOSCOW_SUMMARIZER_PROXY_URL || 'https://i.moscow/api/dit/proxy/operation/structurizer/invocations';
-  const url = new URL(base);
-  url.searchParams.set('token', getAudioSetting('IMOSCOW_PROXY_TOKEN'));
+  const url = summarizerUrl();
   const body = {
     id: payload.request_id || 'AudioTextAssistant_Service',
     route: payload.route || 'structuring',
@@ -426,11 +450,60 @@ async function realSummary(payload) {
       kwargs: { temperature: Number(payload.temperature ?? 0), max_tokens: Number(payload.max_tokens ?? 800) }
     }
   };
-  const response = await fetch(url, { method: process.env.IMOSCOW_SUMMARIZER_METHOD || 'POST', headers: iMoscowHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(body), signal: AbortSignal.timeout(Number(process.env.IMOSCOW_SUMMARIZER_TIMEOUT_MS) || 90000) });
-  const raw = await responseBody(response);
-  if (!response.ok) throw Object.assign(new Error('Внешний сервис суммаризации вернул ошибку.'), { code: 'external_error', status: response.status === 400 ? 400 : 502, details: { external_status: response.status } });
+  const method = process.env.IMOSCOW_SUMMARIZER_METHOD || 'POST';
+  let response;
+  let raw;
+  let requestId;
+  try {
+    const externalResult = await externalFetch({
+      operation: 'summary.create',
+      url,
+      method,
+      headers: iMoscowHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body),
+      timeoutMs: Number(process.env.IMOSCOW_SUMMARIZER_TIMEOUT_MS) || 90000,
+      requestMeta: {
+        task_type: payload.task_type,
+        route: body.route,
+        text_chars: payload.text.length,
+        text_sha256: crypto.createHash('sha256').update(payload.text).digest('hex'),
+        task_source: payload.task ? 'custom' : 'preset',
+        task_chars: body.data_route.task.length,
+        user_prompt_chars: body.data_route.user_prompt.length,
+        temperature: body.data_route.kwargs.temperature,
+        max_tokens: body.data_route.kwargs.max_tokens
+      },
+      context: payload.log_context || {}
+    });
+    response = externalResult.response;
+    raw = externalResult.body;
+    requestId = externalResult.requestId;
+  } catch (error) {
+    const timedOut = ['AbortError', 'TimeoutError'].includes(error.name);
+    const wrapped = new Error(timedOut ? 'Внешний сервис не успел обработать запрос.' : 'Не удалось соединиться с внешним сервисом суммаризации.');
+    wrapped.code = timedOut ? 'external_timeout' : 'external_transport_error';
+    wrapped.status = timedOut ? 504 : 502;
+    wrapped.details = error.details || {};
+    throw wrapped;
+  }
+  if (!response.ok) {
+    const statusMap = {
+      400: ['external_request_rejected', 'Внешний сервис отклонил параметры запроса.', 502],
+      401: ['external_auth_failed', 'Внешний сервис отклонил учетные данные.', 502],
+      403: ['external_auth_failed', 'Внешний сервис запретил доступ к суммаризатору.', 502],
+      404: ['external_endpoint_not_found', 'Endpoint внешнего суммаризатора не найден.', 502],
+      408: ['external_timeout', 'Внешний сервис не успел обработать запрос.', 504],
+      429: ['external_rate_limited', 'Внешний сервис временно ограничил количество запросов.', 503]
+    };
+    const [code, message, status] = statusMap[response.status] || ['external_unavailable', 'Внешний сервис суммаризации временно недоступен.', 502];
+    await markExternalLogError(requestId, code);
+    throw Object.assign(new Error(message), { code, status, details: { external_status: response.status, request_id: requestId } });
+  }
   const answer = textFromUnknown(raw);
-  if (!answer) throw Object.assign(new Error('Ответ получен, но формат результата не распознан.'), { code: 'invalid_external_response', status: 502 });
+  if (!answer) {
+    await markExternalLogError(requestId, 'invalid_external_response');
+    throw Object.assign(new Error('Ответ получен, но формат результата не распознан.'), { code: 'invalid_external_response', status: 502, details: { request_id: requestId } });
+  }
   return { answer, explain: explanationFromUnknown(raw) };
 }
 
@@ -668,13 +741,40 @@ export async function setupAudioRoutes(app) {
     const progressId = req.body?.progress_id;
     if (progressId) progressById.set(`${req.user.id}:${progressId}`, { status: 'running', stage: 'request', current: 0, total: 1, message: 'Запрос к сервису суммаризации' });
     try {
-      const result = mockMode() ? mockSummary(text, taskType) : await realSummary({ ...req.body, text, task_type: taskType });
+      const result = mockMode() ? mockSummary(text, taskType) : await realSummary({
+        ...req.body,
+        text,
+        task_type: taskType,
+        log_context: { user_id: req.user.id, transcription_id: sourceTranscriptionId }
+      });
       const id = crypto.randomUUID();
       await query(`INSERT INTO audio_summaries (id,user_id,task_type,source_text,text_chars,answer,explain,source_transcription_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, [id, req.user.id, taskType, text, text.length, result.answer, result.explain || '', sourceTranscriptionId]);
       if (progressId) progressById.set(`${req.user.id}:${progressId}`, { status: 'completed', stage: 'completed', current: 1, total: 1, message: 'Готово' });
       return res.status(201).json({ id, status: 'completed', source_transcription_id: sourceTranscriptionId, result: { answer: result.answer, explain: result.explain || '', result_kind: taskType, raw_status: 200 } });
     } catch (error) {
-      if (progressId) progressById.set(`${req.user.id}:${progressId}`, { status: 'failed', stage: 'failed', current: 0, total: 1, message: error.message });
+      if (!mockMode() && !error.details?.request_id) {
+        const requestId = crypto.randomUUID();
+        await recordExternalLog({
+          request_id: requestId,
+          user_id: req.user.id,
+          transcription_id: sourceTranscriptionId,
+          operation: 'summary.preflight',
+          method: process.env.IMOSCOW_SUMMARIZER_METHOD || 'POST',
+          url: summarizerLogUrl(),
+          request_meta: {
+            task_type: taskType,
+            text_chars: text.length,
+            text_sha256: crypto.createHash('sha256').update(text).digest('hex'),
+            stage: 'before_external_request'
+          },
+          response_body: { message: error.message },
+          error_code: error.code || error.name || 'summary_failed',
+          duration_ms: 0
+        });
+        error.details = { ...(error.details || {}), request_id: requestId };
+      }
+      const diagnosticMessage = error.details?.request_id ? `${error.message} ID диагностики: ${error.details.request_id}` : error.message;
+      if (progressId) progressById.set(`${req.user.id}:${progressId}`, { status: 'failed', stage: 'failed', current: 0, total: 1, message: diagnosticMessage });
       return apiError(res, error.status || 502, error.code || 'summary_failed', error.message, error.details);
     }
   }

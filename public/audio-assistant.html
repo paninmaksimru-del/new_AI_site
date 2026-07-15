@@ -11,22 +11,31 @@
 <a class="skip-link" href="#workspace">Перейти к рабочей области</a>
 <div class="page-aurora" aria-hidden="true"></div>
 
-<header class="site-header">
-  <div class="header-inner">
-    <a class="brand" href="/" aria-label="Вернуться на портал">
-      <span class="brand-mark" aria-hidden="true">AT</span>
-      <span class="brand-copy"><strong>Audio Text</strong><small>Assistant</small></span>
+<header>
+  <div class="topbar">
+    <a class="brand" href="/">
+      <span class="logo"><img src="/mik_logo_white.svg" alt="МИК"></span>
     </a>
-    <nav class="main-nav" aria-label="Основная навигация">
-      <a href="/">Портал</a>
-      <a href="#workspace">Обработка</a>
-      <a href="#results">Результаты</a>
-      <a href="#history">История</a>
+    <nav aria-label="Основная навигация">
+      <a class="navlink" href="/education" data-section="education">Обучение</a>
+      <a class="navlink" href="/cases" data-section="cases">Кейсы</a>
+      <a class="navlink" href="/knowledge" data-section="knowledge">База знаний</a>
+      <a class="navlink active" href="/audio-assistant" data-section="audio" aria-current="page">Аудио в текст</a>
+      <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
+      <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a>
+      <a class="profile-btn" href="/profile" id="profileBtn"><span class="nowrap">Личный кабинет</span></a>
     </nav>
-    <span id="serviceState" class="service-state" data-mode="loading">
-      <span class="status-dot" aria-hidden="true"></span>
-      <span id="serviceStatus">Подключение</span>
-    </span>
+    <button class="burger" id="burgerBtn" aria-label="Открыть меню" aria-controls="mobileMenu" aria-expanded="false">
+      <i aria-hidden="true"></i>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu" aria-label="Мобильное меню" role="dialog">
+    <a class="navlink" href="/education" data-section="education">Обучение</a>
+    <a class="navlink" href="/cases" data-section="cases">Кейсы</a>
+    <a class="navlink active" href="/audio-assistant" data-section="audio" aria-current="page">Аудио в текст</a>
+    <a class="navlink" href="/dashboard" data-section="stats">Статистика</a>
+    <a class="navlink" href="/cases#feedback" data-section="feedback">Обратная связь</a>
+    <a class="profile-btn" href="/profile"><span class="nowrap">Личный кабинет</span></a>
   </div>
 </header>
 
@@ -47,9 +56,16 @@
   </section>
 
   <section id="workspace" class="page-section" aria-labelledby="workspaceTitle">
-    <div class="section-heading">
+    <div class="section-heading workspace-heading">
       <div><p class="section-kicker">Рабочая область</p><h2 id="workspaceTitle">Начните с исходного материала</h2></div>
-      <p>Два независимых сценария: расшифровка записи или резюме готового текста.</p>
+      <div class="workspace-meta">
+        <span id="serviceState" class="service-state" data-mode="loading">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span class="service-state-label">Статус подключения:</span>
+          <span id="serviceStatus">Подключение</span>
+        </span>
+        <p>Два независимых сценария: расшифровка записи или резюме готового текста.</p>
+      </div>
     </div>
 
     <div class="grid tools">
@@ -129,6 +145,37 @@
     </div>
   </section>
 </main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <p class="footer-col-title">Платформа</p>
+      <ul class="footer-links">
+        <li><a href="/education">Материалы</a></li>
+        <li><a href="/cases">Кейсы и промпты</a></li>
+        <li><a href="/dashboard">Статистика</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="footer-col-title">Аккаунт</p>
+      <ul class="footer-links">
+        <li><a href="/profile">Личный кабинет</a></li>
+        <li><a href="/login">Войти</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="footer-col-title">Контакты</p>
+      <ul class="footer-links">
+        <li><a href="/cases#feedback">Написать нам</a></li>
+        <li><a href="/cases#feedback">Обратная связь</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-copy">2026 Фонд МИК</span>
+    <span class="footer-copy">Внутренний ресурс для сотрудников</span>
+  </div>
+</footer>
 <script>
   (() => {
     const token = localStorage.getItem('auth_token');

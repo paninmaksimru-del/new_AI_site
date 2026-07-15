@@ -5,6 +5,28 @@ let currentTranscription = null;
 let pollTimer = null;
 let progressTimer = null;
 
+const burger = $("#burgerBtn");
+const mobileMenu = $("#mobileMenu");
+if (burger && mobileMenu) {
+  burger.addEventListener("click", () => {
+    const isOpen = mobileMenu.classList.toggle("show");
+    burger.setAttribute("aria-expanded", String(isOpen));
+  });
+  mobileMenu.addEventListener("click", event => {
+    if (!event.target.closest("a")) return;
+    mobileMenu.classList.remove("show");
+    burger.setAttribute("aria-expanded", "false");
+  });
+}
+
+try {
+  const auth = JSON.parse(localStorage.getItem("mikAuth"));
+  const fullName = localStorage.getItem("auth_full_name") || auth?.full_name;
+  if (fullName) {
+    for (const label of document.querySelectorAll('.profile-btn .nowrap')) label.textContent = fullName;
+  }
+} catch (_) {}
+
 for (const select of document.querySelectorAll(".task-type")) {
   for (const [value, label] of Object.entries(taskLabels)) {
     const option = document.createElement("option"); option.value = value; option.textContent = label; select.appendChild(option);

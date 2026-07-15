@@ -38,6 +38,13 @@ function parseJson(value, fallback) {
   try { return JSON.parse(value); } catch { return fallback; }
 }
 
+function normalizeUploadFilename(value) {
+  const filename = String(value || 'audio');
+  if (!/[ÃÐÑ]/.test(filename)) return filename;
+  const decoded = Buffer.from(filename, 'latin1').toString('utf8');
+  return decoded.includes('\uFFFD') ? filename : decoded;
+}
+
 function asIso(value) {
   return value instanceof Date ? value.toISOString() : value;
 }
@@ -337,17 +344,35 @@ async function submitTranscription(file, context = {}) {
   return { status: 'processing', jobId };
 }
 
-async function pollExternalTranscription(jobId) {
+async function pollExternalTranscription(jobId, context = {}) {
   ensureRealModeConfigured('transcription');
-  const statusResponse = await fetch(iMoscowUrl(`process/${encodeURIComponent(jobId)}`), { method: process.env.IMOSCOW_STATUS_METHOD || 'GET', headers: iMoscowHeaders(), signal: AbortSignal.timeout(Number(process.env.IMOSCOW_TIMEOUT_MS) || 300000) });
-  const statusBody = await responseBody(statusResponse);
-  if (!statusResponse.ok) throw Object.assign(new Error('Не удалось получить статус обработки.'), { code: 'external_unavailable', status: 502 });
+  const statusMethod = process.env.IMOSCOW_STATUS_METHOD || 'GET';
+  const statusUrl = iMoscowUrl(`process/${encodeURIComponent(jobId)}`);
+  const { response: statusResponse, body: statusBody, requestId: statusRequestId } = await externalFetch({
+    operation: 'transcription.status',
+    url: statusUrl,
+    method: statusMethod,
+    headers: iMoscowHeaders(),
+    timeoutMs: Number(process.env.IMOSCOW_TIMEOUT_MS) || 300000,
+    requestMeta: { task_id: jobId },
+    context
+  });
+  if (!statusResponse.ok) throw Object.assign(new Error('Не удалось получить статус обработки.'), { code: 'external_unavailable', status: 502, details: { external_status: statusResponse.status, request_id: statusRequestId } });
   const externalStatus = String(statusBody.status || statusBody.data?.status || '').toLowerCase();
   if (['created', 'pending', 'processing', 'running', 'queued', ''].includes(externalStatus)) return { status: 'processing' };
   if (['failed', 'error', 'cancelled'].includes(externalStatus)) throw Object.assign(new Error('Внешний сервис не смог обработать файл.'), { code: 'external_processing_failed', status: 502 });
-  const resultResponse = await fetch(iMoscowUrl(`result/${encodeURIComponent(jobId)}`), { method: process.env.IMOSCOW_RESULT_METHOD || 'GET', headers: iMoscowHeaders(), signal: AbortSignal.timeout(Number(process.env.IMOSCOW_TIMEOUT_MS) || 300000) });
-  const resultBody = await responseBody(resultResponse);
-  if (!resultResponse.ok) throw Object.assign(new Error('Не удалось получить результат обработки.'), { code: 'external_unavailable', status: 502 });
+  const resultMethod = process.env.IMOSCOW_RESULT_METHOD || 'GET';
+  const resultUrl = iMoscowUrl(`result/${encodeURIComponent(jobId)}`);
+  const { response: resultResponse, body: resultBody, requestId: resultRequestId } = await externalFetch({
+    operation: 'transcription.result',
+    url: resultUrl,
+    method: resultMethod,
+    headers: iMoscowHeaders(),
+    timeoutMs: Number(process.env.IMOSCOW_TIMEOUT_MS) || 300000,
+    requestMeta: { task_id: jobId },
+    context
+  });
+  if (!resultResponse.ok) throw Object.assign(new Error('Не удалось получить результат обработки.'), { code: 'external_unavailable', status: 502, details: { external_status: resultResponse.status, request_id: resultRequestId } });
   const transcript = textFromUnknown(resultBody);
   if (!transcript) throw Object.assign(new Error('Внешний сервис вернул результат неизвестного формата.'), { code: 'unknown_external_response', status: 502 });
   return { status: 'completed', transcript, language: resultBody.language || resultBody.detected_language || null, segments: normalizedSegments(resultBody) };
@@ -551,6 +576,7 @@ export async function setupAudioRoutes(app) {
 
   app.post('/api/transcriptions', auth, upload.single('audio'), async (req, res) => {
     if (!req.file?.buffer?.length) return apiError(res, 422, 'validation_error', 'Загрузите непустой аудиофайл.');
+    req.file.originalname = normalizeUploadFilename(req.file.originalname);
     const mediaType = String(req.file.mimetype || 'application/octet-stream').toLowerCase();
     if (!mediaType.startsWith('audio/') && !mediaType.startsWith('video/') && !mockMode()) return apiError(res, 422, 'unsupported_media_type', 'Поддерживаются аудио- и видеофайлы.');
     let media;
@@ -580,10 +606,11 @@ export async function setupAudioRoutes(app) {
     if (!row) return apiError(res, 404, 'not_found', 'Транскрибация не найдена.');
     if (!mockMode() && ['created', 'pending', 'processing'].includes(row.status) && row.external_job_id) {
       try {
-        const result = await pollExternalTranscription(row.external_job_id);
+        const result = await pollExternalTranscription(row.external_job_id, { user_id: req.user.id, transcription_id: row.id });
         if (result.status === 'completed') await query(`UPDATE audio_transcriptions SET status='completed', transcript=$2, detected_language=$3, segments=$4, updated_at=NOW(), completed_at=NOW() WHERE id=$1`, [row.id, result.transcript, result.language, JSON.stringify(result.segments || [])]);
       } catch (error) {
-        await query(`UPDATE audio_transcriptions SET status='failed', error_code=$2, error_message=$3, updated_at=NOW() WHERE id=$1`, [row.id, error.code || 'processing_failed', error.message]);
+        const diagnosticMessage = error.details?.request_id ? `${error.message} ID диагностики: ${error.details.request_id}` : error.message;
+        await query(`UPDATE audio_transcriptions SET status='failed', error_code=$2, error_message=$3, updated_at=NOW() WHERE id=$1`, [row.id, error.code || 'processing_failed', diagnosticMessage]);
       }
       row = await getOwnedTranscription(req.params.id, req.user);
     }

@@ -5,7 +5,7 @@
 ## Стек
 
 - **Backend:** Node.js 18+, Express
-- **БД:** SQLite (better-sqlite3)
+- **БД:** PostgreSQL (pg, опционально pgvector для базы знаний)
 - **Фронт:** статический HTML/CSS/JS (без сборки)
 
 ## Запуск локально
@@ -23,7 +23,9 @@ npm start
 - **/admin** — админ-панель (сущности)
 - **/profile** — личный профиль
 - **/audio-assistant** — расшифровка аудио/видео и суммаризация текста
+- **/chat** — персональный чат с Qwen3.6-27B и Qwen3.6-35B-A3B
 - **/admin → Audio Text Assistant** — admin-only настройка i.moscow и режимов сервиса
+- **/admin → Qwen Chat** — admin-only endpoint’ы, учётные данные и токены Qwen
 
 При первом запуске БД создаётся автоматически и заполняется дефолтными подразделениями, кейсами, промптами, инструментами и задачами.
 
@@ -33,7 +35,7 @@ npm start
 docker compose up -d
 ```
 
-Сайт: **http://localhost:19080**. Используется нестандартный порт 19080 для инфраструктуры с ограниченным числом портов. Чтобы изменить порт на хосте, в `docker-compose.yml` задайте маппинг `"<хост>:19080"` (внутри контейнера приложение всегда слушает значение `PORT`). Данные SQLite хранятся в volume `platform_data`.
+Сайт: **http://localhost:19080**. Используется нестандартный порт 19080 для инфраструктуры с ограниченным числом портов. Чтобы изменить порт на хосте, в `docker-compose.yml` задайте маппинг `"<хост>:19080"` (внутри контейнера приложение всегда слушает значение `PORT`). Данные PostgreSQL хранятся в volume `pg_data`.
 
 ## API
 
@@ -51,6 +53,10 @@ docker compose up -d
 - `POST /api/summarizer/summaries` — суммаризация произвольного текста
 - `GET/PUT /api/admin/audio-assistant-settings` — защищённые настройки Audio Text Assistant (только admin)
 - `GET /api/admin/audio-assistant-logs` — очищенный журнал внешних запросов (только admin)
+- `GET/PUT /api/admin/qwen-settings` — зашифрованные настройки двух Qwen-моделей (только admin)
+- `GET /api/chat/models` — доступные модели и возможности
+- `GET/POST/PATCH/DELETE /api/chat/sessions` — персональная история диалогов
+- `POST /api/chat/completions` — потоковый Qwen-ответ и обработка вложений
 
 ### Диагностика суммаризатора
 
@@ -61,7 +67,7 @@ docker compose up -d
 ## Деплой на сервер
 
 1. Клонировать репозиторий, перейти в каталог проекта.
-2. Задать переменные (опционально): `PORT` (по умолчанию 19080), `DATABASE_PATH` (см. `.env.example`).
+2. Задать `DATABASE_URL` и при необходимости остальные переменные из `.env.example`.
 3. Запуск через Docker:
    ```bash
    docker compose up -d
@@ -73,4 +79,4 @@ docker compose up -d
    ```
 4. Проксировать через nginx/caddy на порт **19080** при необходимости (или на свой `PORT`).
 
-Данные хранятся в `data/platform.db` (или в volume в Docker). Регулярно делайте бэкап этого файла.
+Данные хранятся в PostgreSQL. Регулярно делайте резервную копию базы данных.

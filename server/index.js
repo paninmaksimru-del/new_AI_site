@@ -6,6 +6,7 @@ import { setupAuth, requireAuth, requireAdmin } from './auth.js';
 import { setupKbRoutes } from './kb-routes.js';
 import { startPipelineWorker } from './kb-pipeline.js';
 import { setupAudioRoutes } from './audio-routes.js';
+import { setupQwenChatRoutes } from './qwen-chat-routes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, '..', 'public');
@@ -27,9 +28,10 @@ app.get('/logo.png', (req, res) => {
 
 // ----- Init DB and start -----
 async function start() {
-  await initSchema();
   await setupAuth(app);
+  await initSchema();
   await setupAudioRoutes(app);
+  await setupQwenChatRoutes(app);
   await import('./seed.js');
 
   // Knowledge Base routes + background pipeline worker

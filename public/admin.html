@@ -114,6 +114,7 @@
     <button class="tabbtn" data-tab="tools">Инструменты</button>
     <button class="tabbtn" data-tab="tasks">Задачи</button>
     <button class="tabbtn" data-tab="audioassistant">Audio Text Assistant</button>
+    <button class="tabbtn" data-tab="qwenchat">Qwen Chat</button>
     <button class="tabbtn" data-tab="browser">Браузер</button>
     <button class="tabbtn" data-tab="instructions">Инструкции</button>
     <button class="tabbtn" data-tab="videos">Видеоматериалы</button>
@@ -399,6 +400,41 @@
         <button class="btn small" id="ataLogsCopy" type="button" disabled>Копировать JSON</button>
       </div>
       <pre class="diagnostic-log" id="ataLogsOutput">Журнал ещё не загружен. После ошибки нажмите «Загрузить последние запросы» и передайте JSON в задачу Codex.</pre>
+    </div>
+  </div>
+  <div id="tab_qwenchat" class="tabpane">
+    <div class="panel">
+      <h2>Qwen Chat</h2>
+      <p class="muted">Серверное подключение двух моделей для страницы <b>/chat</b>. Настройки и секреты доступны только администраторам.</p>
+      <div class="settings-note">Секреты зашифрованы в БД и не загружаются обратно в браузер. Можно использовать либо логин/пароль Платформы ИИ, либо готовую пару aip_token/aip_refresh_token.</div>
+
+      <h3>Endpoint’ы и модели</h3>
+      <div class="field"><label>QWEN_LOGIN_URL</label><input id="qwenLoginUrl" type="url" /></div>
+      <div class="field-row">
+        <div class="field"><label>QWEN_27B_BASE_URL</label><input id="qwen27Url" type="url" /></div>
+        <div class="field"><label>QWEN_27B_MODEL</label><input id="qwen27Model" type="text" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>QWEN_35B_BASE_URL</label><input id="qwen35Url" type="url" /></div>
+        <div class="field"><label>QWEN_35B_MODEL</label><input id="qwen35Model" type="text" /></div>
+      </div>
+      <div class="field" style="max-width:320px;"><label>QWEN_REQUEST_TIMEOUT_MS</label><input id="qwenTimeout" type="number" min="1000" max="2400000" /></div>
+
+      <h3>Учётные данные и токены</h3>
+      <div class="field-row">
+        <div class="field"><label>QWEN_PLATFORM_LOGIN</label><input id="qwenLogin" type="password" autocomplete="new-password" placeholder="Введите новое значение" /><span class="secret-state" id="qwenLoginState">Не настроено</span><label class="secret-clear"><input id="qwenLoginClear" type="checkbox" /> Очистить сохранённое значение</label></div>
+        <div class="field"><label>QWEN_PLATFORM_PASSWORD</label><input id="qwenPassword" type="password" autocomplete="new-password" placeholder="Введите новое значение" /><span class="secret-state" id="qwenPasswordState">Не настроено</span><label class="secret-clear"><input id="qwenPasswordClear" type="checkbox" /> Очистить сохранённое значение</label></div>
+        <div class="field"><label>QWEN_API_KEY</label><input id="qwenApiKey" type="password" autocomplete="new-password" placeholder="По документации: token-abc123" /><span class="secret-state" id="qwenApiKeyState">Не настроено</span><label class="secret-clear"><input id="qwenApiKeyClear" type="checkbox" /> Очистить сохранённое значение</label></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>QWEN_AIP_TOKEN</label><input id="qwenAipToken" type="password" autocomplete="new-password" placeholder="Необязательно при наличии логина/пароля" /><span class="secret-state" id="qwenAipTokenState">Не настроено</span><label class="secret-clear"><input id="qwenAipTokenClear" type="checkbox" /> Очистить сохранённое значение</label></div>
+        <div class="field"><label>QWEN_AIP_REFRESH_TOKEN</label><input id="qwenAipRefresh" type="password" autocomplete="new-password" placeholder="Необязательно при наличии логина/пароля" /><span class="secret-state" id="qwenAipRefreshState">Не настроено</span><label class="secret-clear"><input id="qwenAipRefreshClear" type="checkbox" /> Очистить сохранённое значение</label></div>
+      </div>
+      <div class="actions-bar" style="margin-top:18px;">
+        <button class="btn ok" id="qwenSettingsSave" type="button">Сохранить настройки</button>
+        <button class="btn small" id="qwenSettingsReload" type="button">Перезагрузить</button>
+        <span class="badge" id="qwenSettingsStatus">Не загружено</span>
+      </div>
     </div>
   </div>
   <div id="tab_browser" class="tabpane">
@@ -735,6 +771,91 @@ document.getElementById('ataSettingsReload')?.addEventListener('click', loadAudi
 document.getElementById('ataLogsLoad')?.addEventListener('click', loadAudioAssistantLogs);
 document.getElementById('ataLogsCopy')?.addEventListener('click', copyAudioAssistantLogs);
 for (const [, [inputId, , clearId]] of Object.entries(ATA_SECRET_FIELDS)) {
+  document.getElementById(inputId)?.addEventListener('input', () => {
+    if (document.getElementById(inputId).value) document.getElementById(clearId).checked = false;
+  });
+}
+
+// ── QWEN CHAT SETTINGS ─────────────────────────────────────────────────────
+const QWEN_SECRET_FIELDS = {
+  QWEN_PLATFORM_LOGIN: ['qwenLogin', 'qwenLoginState', 'qwenLoginClear'],
+  QWEN_PLATFORM_PASSWORD: ['qwenPassword', 'qwenPasswordState', 'qwenPasswordClear'],
+  QWEN_API_KEY: ['qwenApiKey', 'qwenApiKeyState', 'qwenApiKeyClear'],
+  QWEN_AIP_TOKEN: ['qwenAipToken', 'qwenAipTokenState', 'qwenAipTokenClear'],
+  QWEN_AIP_REFRESH_TOKEN: ['qwenAipRefresh', 'qwenAipRefreshState', 'qwenAipRefreshClear']
+};
+let qwenSettingsLoaded = false;
+
+function renderQwenSecretState(key, configured, source) {
+  const [, stateId] = QWEN_SECRET_FIELDS[key];
+  const state = document.getElementById(stateId);
+  if (!state) return;
+  state.classList.toggle('configured', configured);
+  const sourceLabel = source === 'database' ? 'БД' : source === 'environment' ? 'переменная окружения' : '';
+  state.textContent = configured ? `● Значение настроено${sourceLabel ? ` · ${sourceLabel}` : ''}` : '○ Не настроено';
+}
+
+async function loadQwenSettings() {
+  const status = document.getElementById('qwenSettingsStatus');
+  status.textContent = 'Загрузка…'; status.className = 'badge';
+  try {
+    const config = await api('/api/admin/qwen-settings');
+    const v = config.values || {};
+    document.getElementById('qwenLoginUrl').value = v.QWEN_LOGIN_URL || '';
+    document.getElementById('qwen27Url').value = v.QWEN_27B_BASE_URL || '';
+    document.getElementById('qwen27Model').value = v.QWEN_27B_MODEL || '';
+    document.getElementById('qwen35Url').value = v.QWEN_35B_BASE_URL || '';
+    document.getElementById('qwen35Model').value = v.QWEN_35B_MODEL || '';
+    document.getElementById('qwenTimeout').value = v.QWEN_REQUEST_TIMEOUT_MS || '2400000';
+    for (const [key, [inputId, , clearId]] of Object.entries(QWEN_SECRET_FIELDS)) {
+      document.getElementById(inputId).value = '';
+      document.getElementById(clearId).checked = false;
+      renderQwenSecretState(key, Boolean(config.secrets?.[key]), config.sources?.[key]);
+    }
+    const ready = (config.secrets?.QWEN_AIP_TOKEN && config.secrets?.QWEN_AIP_REFRESH_TOKEN) ||
+      (config.secrets?.QWEN_PLATFORM_LOGIN && config.secrets?.QWEN_PLATFORM_PASSWORD);
+    status.textContent = ready ? 'Подключение настроено' : 'Нужны учётные данные';
+    status.className = `badge ${ready ? 'accent' : 'warn'}`;
+    qwenSettingsLoaded = true;
+  } catch (error) {
+    status.textContent = 'Ошибка загрузки'; status.className = 'badge danger';
+    toast('Настройки Qwen Chat: ' + error.message, 'err');
+  }
+}
+
+async function saveQwenSettings() {
+  const values = {
+    QWEN_LOGIN_URL: document.getElementById('qwenLoginUrl').value.trim(),
+    QWEN_27B_BASE_URL: document.getElementById('qwen27Url').value.trim(),
+    QWEN_27B_MODEL: document.getElementById('qwen27Model').value.trim(),
+    QWEN_35B_BASE_URL: document.getElementById('qwen35Url').value.trim(),
+    QWEN_35B_MODEL: document.getElementById('qwen35Model').value.trim(),
+    QWEN_REQUEST_TIMEOUT_MS: document.getElementById('qwenTimeout').value
+  };
+  const secrets = {};
+  const clear_secrets = [];
+  for (const [key, [inputId, , clearId]] of Object.entries(QWEN_SECRET_FIELDS)) {
+    const value = document.getElementById(inputId).value.trim();
+    if (value) secrets[key] = value;
+    if (document.getElementById(clearId).checked) clear_secrets.push(key);
+  }
+  const button = document.getElementById('qwenSettingsSave');
+  button.disabled = true;
+  try {
+    await api('/api/admin/qwen-settings', { method:'PUT', body:JSON.stringify({ values, secrets, clear_secrets }) });
+    toast('Настройки Qwen Chat сохранены');
+    await loadQwenSettings();
+  } catch (error) {
+    toast('Ошибка сохранения Qwen: ' + error.message, 'err');
+  } finally { button.disabled = false; }
+}
+
+document.querySelector('[data-tab="qwenchat"]')?.addEventListener('click', () => {
+  if (!qwenSettingsLoaded) loadQwenSettings();
+});
+document.getElementById('qwenSettingsSave')?.addEventListener('click', saveQwenSettings);
+document.getElementById('qwenSettingsReload')?.addEventListener('click', loadQwenSettings);
+for (const [, [inputId, , clearId]] of Object.entries(QWEN_SECRET_FIELDS)) {
   document.getElementById(inputId)?.addEventListener('input', () => {
     if (document.getElementById(inputId).value) document.getElementById(clearId).checked = false;
   });

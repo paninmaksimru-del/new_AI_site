@@ -13,7 +13,7 @@ RUN npm ci --omit=dev
 COPY server ./server
 COPY public ./public
 
-# данные SQLite будут в volume; нестандартный порт для ограниченной инфраструктуры
+# PostgreSQL подключается через DATABASE_URL; нестандартный порт для инфраструктуры
 ENV NODE_ENV=production
 ENV PORT=19080
 

@@ -443,13 +443,15 @@ async function realSummary(payload) {
     id: payload.request_id || 'AudioTextAssistant_Service',
     route: payload.route || 'structuring',
     data_route: {
-      dataframe_records: '',
-      text: payload.text,
-      task: payload.task || TASK_PROMPTS[payload.task_type] || TASK_PROMPTS.default,
-      user_prompt: payload.user_prompt || '',
-      kwargs: { temperature: Number(payload.temperature ?? 0), max_tokens: Number(payload.max_tokens ?? 800) }
+      dataframe_records: [{
+        text: payload.text,
+        task: payload.task || TASK_PROMPTS[payload.task_type] || TASK_PROMPTS.default,
+        user_prompt: payload.user_prompt || '',
+        kwargs: { temperature: Number(payload.temperature ?? 0), max_tokens: Number(payload.max_tokens ?? 800) }
+      }]
     }
   };
+  const summaryRecord = body.data_route.dataframe_records[0];
   const method = process.env.IMOSCOW_SUMMARIZER_METHOD || 'POST';
   let response;
   let raw;
@@ -468,10 +470,12 @@ async function realSummary(payload) {
         text_chars: payload.text.length,
         text_sha256: crypto.createHash('sha256').update(payload.text).digest('hex'),
         task_source: payload.task ? 'custom' : 'preset',
-        task_chars: body.data_route.task.length,
-        user_prompt_chars: body.data_route.user_prompt.length,
-        temperature: body.data_route.kwargs.temperature,
-        max_tokens: body.data_route.kwargs.max_tokens
+        request_format: 'dataframe_records',
+        record_count: body.data_route.dataframe_records.length,
+        task_chars: summaryRecord.task.length,
+        user_prompt_chars: summaryRecord.user_prompt.length,
+        temperature: summaryRecord.kwargs.temperature,
+        max_tokens: summaryRecord.kwargs.max_tokens
       },
       context: payload.log_context || {}
     });

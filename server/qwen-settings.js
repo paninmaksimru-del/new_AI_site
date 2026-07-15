@@ -4,7 +4,6 @@ import { query } from './db.js';
 const STORAGE_KEY = 'qwen_chat_settings';
 
 export const QWEN_VALUE_KEYS = Object.freeze([
-  'QWEN_LOGIN_URL',
   'QWEN_27B_BASE_URL',
   'QWEN_35B_BASE_URL',
   'QWEN_27B_MODEL',
@@ -13,17 +12,12 @@ export const QWEN_VALUE_KEYS = Object.freeze([
 ]);
 
 export const QWEN_SECRET_KEYS = Object.freeze([
-  'QWEN_PLATFORM_LOGIN',
-  'QWEN_PLATFORM_PASSWORD',
-  'QWEN_API_KEY',
-  'QWEN_AIP_TOKEN',
-  'QWEN_AIP_REFRESH_TOKEN'
+  'QWEN_PROXY_TOKEN'
 ]);
 
 const DEFAULTS = Object.freeze({
-  QWEN_LOGIN_URL: 'https://aiplatform.mos.ru/app_login',
-  QWEN_27B_BASE_URL: 'https://models.aiplatform.mos.ru/operation/openqwen/model-v43/v1',
-  QWEN_35B_BASE_URL: 'https://models.aiplatform.mos.ru/operation/openqwen/model-v41/v1',
+  QWEN_27B_BASE_URL: 'https://i.moscow/api/dit/proxy/operation/openqwen/model-v43/v1',
+  QWEN_35B_BASE_URL: 'https://i.moscow/api/dit/proxy/operation/openqwen/model-v41/v1',
   QWEN_27B_MODEL: 'local_huggingface/Qwen3.6-27B',
   QWEN_35B_MODEL: 'local_huggingface/Qwen3.6-35B-A3B',
   QWEN_REQUEST_TIMEOUT_MS: '2400000'
@@ -32,8 +26,14 @@ const DEFAULTS = Object.freeze({
 let stored = { values: {}, secrets: {} };
 
 function envValue(key) {
-  if (Object.hasOwn(DEFAULTS, key)) return process.env[key] || DEFAULTS[key];
-  if (key === 'QWEN_API_KEY') return process.env.QWEN_API_KEY || 'token-abc123';
+  if (Object.hasOwn(DEFAULTS, key)) {
+    const value = process.env[key] || DEFAULTS[key];
+    if (key.endsWith('_BASE_URL')) {
+      try { return validateUrl(value, key); }
+      catch { return DEFAULTS[key]; }
+    }
+    return value;
+  }
   return process.env[key] || '';
 }
 
@@ -71,7 +71,15 @@ function sanitize(value) {
   if (!value || typeof value !== 'object') return { values: {}, secrets: {} };
   const values = {};
   const secrets = {};
-  for (const key of QWEN_VALUE_KEYS) if (value.values?.[key] != null) values[key] = String(value.values[key]);
+  for (const key of QWEN_VALUE_KEYS) {
+    if (value.values?.[key] == null) continue;
+    const candidate = String(value.values[key]);
+    if (key.endsWith('_BASE_URL')) {
+      try { values[key] = validateUrl(candidate, key); } catch { /* Ignore legacy non-proxy endpoints. */ }
+    } else {
+      values[key] = candidate;
+    }
+  }
   for (const key of QWEN_SECRET_KEYS) if (value.secrets?.[key]) secrets[key] = value.secrets[key];
   return { values, secrets };
 }
@@ -116,8 +124,16 @@ export function getAdminQwenSettings() {
 function validateUrl(value, key) {
   let url;
   try { url = new URL(value); } catch { throw new Error(`${key} must be a valid URL`); }
-  if (url.protocol !== 'https:' && url.hostname !== 'localhost') throw new Error(`${key} must use HTTPS`);
-  return value.replace(/\/$/, '');
+  if (url.origin !== 'https://i.moscow' || url.username || url.password) {
+    throw new Error(`${key} must use the https://i.moscow proxy`);
+  }
+  if (!url.pathname.startsWith('/api/dit/proxy/operation/openqwen/')) {
+    throw new Error(`${key} must use the i.moscow OpenQwen proxy path`);
+  }
+  url.search = '';
+  url.hash = '';
+  url.pathname = url.pathname.replace(/\/+$/, '');
+  return url.toString().replace(/\/$/, '');
 }
 
 export async function saveAdminQwenSettings(payload = {}) {

@@ -406,10 +406,9 @@
     <div class="panel">
       <h2>Qwen Chat</h2>
       <p class="muted">Серверное подключение двух моделей для страницы <b>/chat</b>. Настройки и секреты доступны только администраторам.</p>
-      <div class="settings-note">Секреты зашифрованы в БД и не загружаются обратно в браузер. Можно использовать либо логин/пароль Платформы ИИ, либо готовую пару aip_token/aip_refresh_token.</div>
+      <div class="settings-note">Все запросы к моделям идут только через прокси <b>i.moscow</b>. Токен зашифрован в БД, не загружается обратно в браузер и добавляется сервером в параметр <code>?token=…</code>.</div>
 
-      <h3>Endpoint’ы и модели</h3>
-      <div class="field"><label>QWEN_LOGIN_URL</label><input id="qwenLoginUrl" type="url" /></div>
+      <h3>Прокси endpoint’ы и модели</h3>
       <div class="field-row">
         <div class="field"><label>QWEN_27B_BASE_URL</label><input id="qwen27Url" type="url" /></div>
         <div class="field"><label>QWEN_27B_MODEL</label><input id="qwen27Model" type="text" /></div>
@@ -420,16 +419,8 @@
       </div>
       <div class="field" style="max-width:320px;"><label>QWEN_REQUEST_TIMEOUT_MS</label><input id="qwenTimeout" type="number" min="1000" max="2400000" /></div>
 
-      <h3>Учётные данные и токены</h3>
-      <div class="field-row">
-        <div class="field"><label>QWEN_PLATFORM_LOGIN</label><input id="qwenLogin" type="password" autocomplete="new-password" placeholder="Введите новое значение" /><span class="secret-state" id="qwenLoginState">Не настроено</span><label class="secret-clear"><input id="qwenLoginClear" type="checkbox" /> Очистить сохранённое значение</label></div>
-        <div class="field"><label>QWEN_PLATFORM_PASSWORD</label><input id="qwenPassword" type="password" autocomplete="new-password" placeholder="Введите новое значение" /><span class="secret-state" id="qwenPasswordState">Не настроено</span><label class="secret-clear"><input id="qwenPasswordClear" type="checkbox" /> Очистить сохранённое значение</label></div>
-        <div class="field"><label>QWEN_API_KEY</label><input id="qwenApiKey" type="password" autocomplete="new-password" placeholder="По документации: token-abc123" /><span class="secret-state" id="qwenApiKeyState">Не настроено</span><label class="secret-clear"><input id="qwenApiKeyClear" type="checkbox" /> Очистить сохранённое значение</label></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>QWEN_AIP_TOKEN</label><input id="qwenAipToken" type="password" autocomplete="new-password" placeholder="Необязательно при наличии логина/пароля" /><span class="secret-state" id="qwenAipTokenState">Не настроено</span><label class="secret-clear"><input id="qwenAipTokenClear" type="checkbox" /> Очистить сохранённое значение</label></div>
-        <div class="field"><label>QWEN_AIP_REFRESH_TOKEN</label><input id="qwenAipRefresh" type="password" autocomplete="new-password" placeholder="Необязательно при наличии логина/пароля" /><span class="secret-state" id="qwenAipRefreshState">Не настроено</span><label class="secret-clear"><input id="qwenAipRefreshClear" type="checkbox" /> Очистить сохранённое значение</label></div>
-      </div>
+      <h3>Токен прокси</h3>
+      <div class="field" style="max-width:680px;"><label>QWEN_PROXY_TOKEN</label><input id="qwenProxyToken" type="password" autocomplete="new-password" placeholder="Вставьте токен i.moscow" /><span class="secret-state" id="qwenProxyTokenState">Не настроено</span><label class="secret-clear"><input id="qwenProxyTokenClear" type="checkbox" /> Очистить сохранённый токен</label></div>
       <div class="actions-bar" style="margin-top:18px;">
         <button class="btn ok" id="qwenSettingsSave" type="button">Сохранить настройки</button>
         <button class="btn small" id="qwenSettingsReload" type="button">Перезагрузить</button>
@@ -778,11 +769,7 @@ for (const [, [inputId, , clearId]] of Object.entries(ATA_SECRET_FIELDS)) {
 
 // ── QWEN CHAT SETTINGS ─────────────────────────────────────────────────────
 const QWEN_SECRET_FIELDS = {
-  QWEN_PLATFORM_LOGIN: ['qwenLogin', 'qwenLoginState', 'qwenLoginClear'],
-  QWEN_PLATFORM_PASSWORD: ['qwenPassword', 'qwenPasswordState', 'qwenPasswordClear'],
-  QWEN_API_KEY: ['qwenApiKey', 'qwenApiKeyState', 'qwenApiKeyClear'],
-  QWEN_AIP_TOKEN: ['qwenAipToken', 'qwenAipTokenState', 'qwenAipTokenClear'],
-  QWEN_AIP_REFRESH_TOKEN: ['qwenAipRefresh', 'qwenAipRefreshState', 'qwenAipRefreshClear']
+  QWEN_PROXY_TOKEN: ['qwenProxyToken', 'qwenProxyTokenState', 'qwenProxyTokenClear']
 };
 let qwenSettingsLoaded = false;
 
@@ -801,7 +788,6 @@ async function loadQwenSettings() {
   try {
     const config = await api('/api/admin/qwen-settings');
     const v = config.values || {};
-    document.getElementById('qwenLoginUrl').value = v.QWEN_LOGIN_URL || '';
     document.getElementById('qwen27Url').value = v.QWEN_27B_BASE_URL || '';
     document.getElementById('qwen27Model').value = v.QWEN_27B_MODEL || '';
     document.getElementById('qwen35Url').value = v.QWEN_35B_BASE_URL || '';
@@ -812,9 +798,8 @@ async function loadQwenSettings() {
       document.getElementById(clearId).checked = false;
       renderQwenSecretState(key, Boolean(config.secrets?.[key]), config.sources?.[key]);
     }
-    const ready = (config.secrets?.QWEN_AIP_TOKEN && config.secrets?.QWEN_AIP_REFRESH_TOKEN) ||
-      (config.secrets?.QWEN_PLATFORM_LOGIN && config.secrets?.QWEN_PLATFORM_PASSWORD);
-    status.textContent = ready ? 'Подключение настроено' : 'Нужны учётные данные';
+    const ready = Boolean(config.secrets?.QWEN_PROXY_TOKEN);
+    status.textContent = ready ? 'Прокси-токен настроен' : 'Нужен прокси-токен';
     status.className = `badge ${ready ? 'accent' : 'warn'}`;
     qwenSettingsLoaded = true;
   } catch (error) {
@@ -825,7 +810,6 @@ async function loadQwenSettings() {
 
 async function saveQwenSettings() {
   const values = {
-    QWEN_LOGIN_URL: document.getElementById('qwenLoginUrl').value.trim(),
     QWEN_27B_BASE_URL: document.getElementById('qwen27Url').value.trim(),
     QWEN_27B_MODEL: document.getElementById('qwen27Model').value.trim(),
     QWEN_35B_BASE_URL: document.getElementById('qwen35Url').value.trim(),

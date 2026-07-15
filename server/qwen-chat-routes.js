@@ -39,9 +39,6 @@ const MAX_FILE_TEXT_CHARS = 160000;
 const MAX_CONTEXT_CHARS = 300000;
 const TEXT_EXTENSIONS = new Set(['.txt', '.md', '.csv', '.json', '.xml', '.html', '.log', '.yaml', '.yml']);
 
-let cachedCookies = null;
-let cookieExpiresAt = 0;
-
 function publicModels() {
   return Object.values(MODEL_DEFINITIONS).map(model => ({
     ...model,
@@ -59,9 +56,7 @@ function publicModels() {
 }
 
 function settingsConfigured() {
-  const direct = getQwenSetting('QWEN_AIP_TOKEN') && getQwenSetting('QWEN_AIP_REFRESH_TOKEN');
-  const credentials = getQwenSetting('QWEN_PLATFORM_LOGIN') && getQwenSetting('QWEN_PLATFORM_PASSWORD');
-  return Boolean(direct || credentials);
+  return Boolean(String(getQwenSetting('QWEN_PROXY_TOKEN') || '').trim());
 }
 
 function clamp(value, fallback, min, max, integer = false) {
@@ -90,78 +85,32 @@ function normalizedParameters(body = {}) {
   };
 }
 
-function parseCookies(headers) {
-  const raw = typeof headers.getSetCookie === 'function'
-    ? headers.getSetCookie().join(', ')
-    : (headers.get('set-cookie') || '');
-  const found = {};
-  for (const match of raw.matchAll(/(?:^|[,;]\s*)(aip_token|aip_refresh_token)=([^;,\s]+)/gi)) {
-    found[match[1].toLowerCase()] = match[2];
-  }
-  return found;
-}
-
-async function authenticatePlatform(force = false) {
-  if (!force && cachedCookies && Date.now() < cookieExpiresAt) return cachedCookies;
-
-  const directToken = getQwenSetting('QWEN_AIP_TOKEN');
-  const directRefresh = getQwenSetting('QWEN_AIP_REFRESH_TOKEN');
-  if (directToken && directRefresh) {
-    cachedCookies = `aip_token=${directToken}; aip_refresh_token=${directRefresh}`;
-    cookieExpiresAt = Date.now() + 5.5 * 60 * 60 * 1000;
-    return cachedCookies;
-  }
-
-  const login = getQwenSetting('QWEN_PLATFORM_LOGIN');
-  const password = getQwenSetting('QWEN_PLATFORM_PASSWORD');
-  if (!login || !password) {
-    const error = new Error('Подключение Qwen не настроено. Администратору нужно заполнить учётные данные в /admin.');
+async function requestModel(model, payload, signal) {
+  const token = String(getQwenSetting('QWEN_PROXY_TOKEN') || '').trim();
+  if (!token) {
+    const error = new Error('Подключение Qwen не настроено. Администратору нужно указать токен прокси i.moscow в /admin.');
     error.status = 503;
     throw error;
   }
 
-  const response = await fetch(getQwenSetting('QWEN_LOGIN_URL'), {
+  const url = new URL(getQwenSetting(model.endpointKey));
+  if (url.origin !== 'https://i.moscow' || !url.pathname.startsWith('/api/dit/proxy/operation/openqwen/')) {
+    const error = new Error('Endpoint Qwen должен использовать прокси i.moscow. Проверьте настройки в /admin.');
+    error.status = 503;
+    throw error;
+  }
+  const pathname = url.pathname.replace(/\/+$/, '');
+  if (!pathname.endsWith('/chat/completions')) url.pathname = `${pathname}/chat/completions`;
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('token', token);
+
+  return fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ login, password }),
-    signal: AbortSignal.timeout(60000)
-  });
-  if (!response.ok) {
-    const error = new Error(`Платформа ИИ отклонила авторизацию (HTTP ${response.status}).`);
-    error.status = 502;
-    throw error;
-  }
-  const cookies = parseCookies(response.headers);
-  if (!cookies.aip_token || !cookies.aip_refresh_token) {
-    const error = new Error('Платформа ИИ не вернула aip_token и aip_refresh_token.');
-    error.status = 502;
-    throw error;
-  }
-  cachedCookies = `aip_token=${cookies.aip_token}; aip_refresh_token=${cookies.aip_refresh_token}`;
-  cookieExpiresAt = Date.now() + 5.5 * 60 * 60 * 1000;
-  return cachedCookies;
-}
-
-async function requestModel(model, payload, signal, retry = true) {
-  const cookies = await authenticatePlatform();
-  const baseUrl = getQwenSetting(model.endpointKey).replace(/\/$/, '');
-  const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${getQwenSetting('QWEN_API_KEY') || 'token-abc123'}`,
-      'Content-Type': 'application/json',
-      'Cookie': cookies
-    },
     body: JSON.stringify(payload),
     signal
   });
-  if (retry && (response.status === 401 || response.status === 403)) {
-    cachedCookies = null;
-    cookieExpiresAt = 0;
-    await authenticatePlatform(true);
-    return requestModel(model, payload, signal, false);
-  }
-  return response;
 }
 
 async function extractFileText(file) {
@@ -307,8 +256,6 @@ export async function setupQwenChatRoutes(app) {
   app.put('/api/admin/qwen-settings', requireAdmin(), async (req, res) => {
     try {
       const result = await saveAdminQwenSettings(req.body || {});
-      cachedCookies = null;
-      cookieExpiresAt = 0;
       res.json(result);
     } catch (error) {
       res.status(400).json({ error: error.message });

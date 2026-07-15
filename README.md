@@ -50,6 +50,7 @@ docker compose up -d
 - `GET /api/transcriptions/:id` — статус и результат расшифровки
 - `POST /api/summarizer/summaries` — суммаризация произвольного текста
 - `GET/PUT /api/admin/audio-assistant-settings` — защищённые настройки Audio Text Assistant (только admin)
+- `GET /api/admin/audio-assistant-logs` — очищенный журнал внешних запросов (только admin)
 
 ## Деплой на сервер
 

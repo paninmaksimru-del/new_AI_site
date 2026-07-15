@@ -123,6 +123,121 @@ async function responseBody(response) {
   try { return JSON.parse(text); } catch { return { text }; }
 }
 
+function safeExternalUrl(url) {
+  const safe = new URL(url);
+  safe.search = '';
+  return safe.toString();
+}
+
+function redactLogString(value) {
+  return String(value)
+    .replace(/([?&]token=)[^&\s]+/gi, '$1[REDACTED]')
+    .replace(/(PHPSESSID=)[^;\s]+/gi, '$1[REDACTED]')
+    .replace(/(session-cookie=)[^;\s]+/gi, '$1[REDACTED]')
+    .replace(/(Bearer\s+)[A-Za-z0-9._~+\/-]+/gi, '$1[REDACTED]')
+    .slice(0, 12000);
+}
+
+function redactLogValue(value, depth = 0) {
+  if (depth > 8) return '[MAX_DEPTH]';
+  if (typeof value === 'string') return redactLogString(value);
+  if (Array.isArray(value)) return value.slice(0, 100).map(item => redactLogValue(item, depth + 1));
+  if (value && typeof value === 'object') {
+    const output = {};
+    for (const [key, item] of Object.entries(value)) {
+      if (/token|cookie|session|authorization|phpsessid|secret/i.test(key)) output[key] = '[REDACTED]';
+      else output[key] = redactLogValue(item, depth + 1);
+    }
+    return output;
+  }
+  return value;
+}
+
+function safeResponseHeaders(response) {
+  const output = {};
+  for (const name of ['content-type', 'content-length', 'x-request-id', 'x-correlation-id', 'date', 'server']) {
+    const value = response.headers.get(name);
+    if (value) output[name] = redactLogString(value);
+  }
+  return output;
+}
+
+function responseForLog(body, ok) {
+  if (!ok) return redactLogValue(body);
+  if (!body || typeof body !== 'object') return { kind: typeof body };
+  const output = {};
+  for (const key of ['id', 'job_id', 'task_id', 'status', 'code', 'message', 'detail']) {
+    if (body[key] != null) output[key] = redactLogValue(body[key]);
+  }
+  return output;
+}
+
+async function recordExternalLog(entry) {
+  const safeEntry = {
+    request_id: entry.request_id,
+    user_id: entry.user_id || null,
+    transcription_id: entry.transcription_id || null,
+    operation: entry.operation,
+    method: entry.method,
+    url: safeExternalUrl(entry.url),
+    request_meta: redactLogValue(entry.request_meta || {}),
+    response_status: entry.response_status || null,
+    response_headers: redactLogValue(entry.response_headers || {}),
+    response_body: redactLogValue(entry.response_body || {}),
+    error_code: entry.error_code || null,
+    duration_ms: entry.duration_ms
+  };
+  const consoleMethod = safeEntry.response_status && safeEntry.response_status < 400 && !safeEntry.error_code ? 'info' : 'warn';
+  console[consoleMethod]('[audio-assistant.external]', JSON.stringify(safeEntry));
+  try {
+    await query(
+      `INSERT INTO audio_external_logs
+        (request_id, user_id, transcription_id, operation, method, url, request_meta, response_status, response_headers, response_body, error_code, duration_ms)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [safeEntry.request_id, safeEntry.user_id, safeEntry.transcription_id, safeEntry.operation, safeEntry.method, safeEntry.url, JSON.stringify(safeEntry.request_meta), safeEntry.response_status, JSON.stringify(safeEntry.response_headers), JSON.stringify(safeEntry.response_body), safeEntry.error_code, safeEntry.duration_ms]
+    );
+    await query(`DELETE FROM audio_external_logs WHERE id NOT IN (SELECT id FROM audio_external_logs ORDER BY id DESC LIMIT 500)`);
+  } catch (error) {
+    console.warn('[audio-assistant.external-log-failed]', error.message);
+  }
+}
+
+async function externalFetch({ operation, url, method, headers, body, timeoutMs, requestMeta, context = {} }) {
+  const requestId = crypto.randomUUID();
+  const started = Date.now();
+  try {
+    const response = await fetch(url, { method, headers, body, signal: AbortSignal.timeout(timeoutMs) });
+    const parsedBody = await responseBody(response);
+    await recordExternalLog({
+      request_id: requestId,
+      ...context,
+      operation,
+      method,
+      url,
+      request_meta: requestMeta,
+      response_status: response.status,
+      response_headers: safeResponseHeaders(response),
+      response_body: responseForLog(parsedBody, response.ok),
+      duration_ms: Date.now() - started
+    });
+    return { response, body: parsedBody, requestId };
+  } catch (error) {
+    await recordExternalLog({
+      request_id: requestId,
+      ...context,
+      operation,
+      method,
+      url,
+      request_meta: requestMeta,
+      error_code: error.name || 'transport_error',
+      response_body: { message: redactLogString(error.message) },
+      duration_ms: Date.now() - started
+    });
+    error.details = { ...(error.details || {}), request_id: requestId };
+    throw error;
+  }
+}
+
 function iMoscowUrl(suffix = '') {
   const base = (process.env.IMOSCOW_BASE_URL || 'https://i.moscow').replace(/\/$/, '');
   const operation = (process.env.IMOSCOW_TRANSCRIPTION_OPERATION_PATH || '/api/dit/proxy/operation/voice-log-server').replace(/^\/?/, '/').replace(/\/$/, '');
@@ -197,13 +312,24 @@ function normalizedSegments(body) {
   })).filter(item => item.text);
 }
 
-async function submitTranscription(file) {
+async function submitTranscription(file, context = {}) {
   ensureRealModeConfigured('transcription');
   const form = new FormData();
-  form.append('audio', new Blob([file.buffer], { type: file.mimetype || 'application/octet-stream' }), file.originalname || 'audio');
-  const response = await fetch(iMoscowUrl(), { method: process.env.IMOSCOW_UPLOAD_METHOD || 'POST', headers: iMoscowHeaders(), body: form, signal: AbortSignal.timeout(Number(process.env.IMOSCOW_TIMEOUT_MS) || 300000) });
-  const body = await responseBody(response);
-  if (!response.ok) throw Object.assign(new Error('Внешний сервис отклонил аудиофайл.'), { code: 'external_unavailable', status: 502, details: { external_status: response.status } });
+  const fieldName = process.env.IMOSCOW_UPLOAD_FIELD || 'file';
+  form.append(fieldName, new Blob([file.buffer], { type: file.mimetype || 'application/octet-stream' }), file.originalname || 'audio');
+  const method = process.env.IMOSCOW_UPLOAD_METHOD || 'POST';
+  const url = iMoscowUrl('upload');
+  const { response, body, requestId } = await externalFetch({
+    operation: 'transcription.upload',
+    url,
+    method,
+    headers: iMoscowHeaders(),
+    body: form,
+    timeoutMs: Number(process.env.IMOSCOW_TIMEOUT_MS) || 300000,
+    requestMeta: { multipart_field: fieldName, filename: file.originalname || 'audio', content_type: file.mimetype || 'application/octet-stream', size_bytes: file.size, sha256_prefix: crypto.createHash('sha256').update(file.buffer).digest('hex').slice(0, 16) },
+    context
+  });
+  if (!response.ok) throw Object.assign(new Error('Внешний сервис отклонил аудиофайл.'), { code: 'external_unavailable', status: 502, details: { external_status: response.status, request_id: requestId } });
   const transcript = textFromUnknown(body);
   if (transcript) return { status: 'completed', transcript, language: body.language || body.detected_language || null, segments: normalizedSegments(body) };
   const jobId = findJobId(body);
@@ -365,6 +491,23 @@ export async function setupAudioRoutes(app) {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_audio_summaries_user ON audio_summaries(user_id, created_at DESC);
+    CREATE TABLE IF NOT EXISTS audio_external_logs (
+      id BIGSERIAL PRIMARY KEY,
+      request_id TEXT NOT NULL UNIQUE,
+      user_id INTEGER,
+      transcription_id TEXT,
+      operation TEXT NOT NULL,
+      method TEXT NOT NULL,
+      url TEXT NOT NULL,
+      request_meta JSONB NOT NULL DEFAULT '{}'::jsonb,
+      response_status INTEGER,
+      response_headers JSONB NOT NULL DEFAULT '{}'::jsonb,
+      response_body TEXT,
+      error_code TEXT,
+      duration_ms INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_audio_external_logs_created ON audio_external_logs(created_at DESC);
   `);
 
   const auth = requireKbAuth();
@@ -379,6 +522,19 @@ export async function setupAudioRoutes(app) {
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
+  });
+
+  app.get('/api/admin/audio-assistant-logs', requireAdmin(), async (req, res) => {
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+    const { rows } = await query(
+      `SELECT request_id, user_id, transcription_id, operation, method, url, request_meta,
+              response_status, response_headers, response_body, error_code, duration_ms, created_at
+         FROM audio_external_logs
+        ORDER BY created_at DESC
+        LIMIT $1`,
+      [limit]
+    );
+    res.json(rows.map(row => ({ ...row, response_body: parseJson(row.response_body, row.response_body) })));
   });
 
   app.get('/api/audio-assistant/health', auth, (req, res) => {
@@ -404,10 +560,11 @@ export async function setupAudioRoutes(app) {
     if ((parameters.context_hint || '').length > 1000) return apiError(res, 422, 'validation_error', 'Контекстная подсказка слишком длинная.');
     await query(`INSERT INTO audio_transcriptions (id, user_id, status, parameters, audio_sha256, audio_media_type, audio_size_bytes, original_filename) VALUES ($1,$2,'processing',$3,$4,$5,$6,$7)`, [id, req.user.id, JSON.stringify(parameters), crypto.createHash('sha256').update(media.buffer).digest('hex'), media.mimetype, media.size, req.file.originalname || 'audio']);
     try {
-      const result = mockMode() ? { status: 'completed', transcript: MOCK_TRANSCRIPT, language: parameters.language || 'ru', segments: parameters.timestamp_granularity === 'segment' ? [{ text: MOCK_TRANSCRIPT, start_seconds: 0, end_seconds: 6, speaker: parameters.speaker_labels ? 'speaker-1' : null }] : [] } : await submitTranscription(media);
+      const result = mockMode() ? { status: 'completed', transcript: MOCK_TRANSCRIPT, language: parameters.language || 'ru', segments: parameters.timestamp_granularity === 'segment' ? [{ text: MOCK_TRANSCRIPT, start_seconds: 0, end_seconds: 6, speaker: parameters.speaker_labels ? 'speaker-1' : null }] : [] } : await submitTranscription(media, { user_id: req.user.id, transcription_id: id });
       await query(`UPDATE audio_transcriptions SET status=$2, transcript=$3, detected_language=$4, segments=$5, external_job_id=$6, updated_at=NOW(), completed_at=CASE WHEN $2='completed' THEN NOW() ELSE NULL END WHERE id=$1`, [id, result.status, result.transcript || null, result.language || null, JSON.stringify(result.segments || []), result.jobId || null]);
     } catch (error) {
-      await query(`UPDATE audio_transcriptions SET status='failed', error_code=$2, error_message=$3, updated_at=NOW() WHERE id=$1`, [id, error.code || 'processing_failed', error.message]);
+      const diagnosticMessage = error.details?.request_id ? `${error.message} ID диагностики: ${error.details.request_id}` : error.message;
+      await query(`UPDATE audio_transcriptions SET status='failed', error_code=$2, error_message=$3, updated_at=NOW() WHERE id=$1`, [id, error.code || 'processing_failed', diagnosticMessage]);
     }
     const row = await getOwnedTranscription(id, req.user);
     res.status(201).json(await publicTranscription(row, req.user.id));

@@ -74,6 +74,7 @@
     .secret-clear{ display:flex !important; align-items:center; gap:8px; margin-top:8px; color:var(--muted); font-size:12px; cursor:pointer; }
     .secret-clear input{ width:auto !important; margin:0; accent-color:var(--danger); }
     .settings-note{ padding:12px 14px; border:1px solid rgba(78,135,255,.25); border-radius:11px; background:rgba(78,135,255,.08); color:var(--muted); font-size:13px; }
+    .diagnostic-log{ max-height:420px; overflow:auto; margin:10px 0 0; padding:12px; border:1px solid var(--stroke); border-radius:11px; background:rgba(0,0,0,.35); color:rgba(255,255,255,.78); font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; white-space:pre-wrap; word-break:break-word; }
   </style>
 </head>
 <body>
@@ -390,6 +391,14 @@
         <button class="btn small" id="ataSettingsReload" type="button">Перезагрузить</button>
         <span class="badge" id="ataSettingsStatus">Не загружено</span>
       </div>
+
+      <h3>Диагностика внешних запросов</h3>
+      <p class="muted">Журнал содержит URL без query-параметров, метаданные файла, HTTP-статус и очищенный ответ i.moscow. Токены, cookies и содержимое аудио в журнал не попадают.</p>
+      <div class="actions-bar">
+        <button class="btn small" id="ataLogsLoad" type="button">Загрузить последние запросы</button>
+        <button class="btn small" id="ataLogsCopy" type="button" disabled>Копировать JSON</button>
+      </div>
+      <pre class="diagnostic-log" id="ataLogsOutput">Журнал ещё не загружен. После ошибки нажмите «Загрузить последние запросы» и передайте JSON в задачу Codex.</pre>
     </div>
   </div>
   <div id="tab_browser" class="tabpane">
@@ -624,6 +633,7 @@ const ATA_SECRET_FIELDS = {
   IMOSCOW_SESSION_COOKIE: ['ataSessionCookie', 'ataSessionCookieState', 'ataSessionCookieClear']
 };
 let ataSettingsLoaded = false;
+let ataExternalLogs = [];
 
 function renderAtaSecretState(key, configured, source) {
   const [, stateId] = ATA_SECRET_FIELDS[key];
@@ -688,11 +698,42 @@ async function saveAudioAssistantSettings() {
   }
 }
 
+async function loadAudioAssistantLogs() {
+  const output = document.getElementById('ataLogsOutput');
+  const copyButton = document.getElementById('ataLogsCopy');
+  output.textContent = 'Загрузка…';
+  copyButton.disabled = true;
+  try {
+    ataExternalLogs = await api('/api/admin/audio-assistant-logs?limit=50');
+    output.textContent = ataExternalLogs.length ? JSON.stringify(ataExternalLogs, null, 2) : 'Внешних запросов пока нет.';
+    copyButton.disabled = !ataExternalLogs.length;
+  } catch (error) {
+    output.textContent = 'Ошибка загрузки журнала: ' + error.message;
+    toast('Не удалось загрузить журнал: ' + error.message, 'err');
+  }
+}
+
+async function copyAudioAssistantLogs() {
+  if (!ataExternalLogs.length) return;
+  const text = JSON.stringify(ataExternalLogs, null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('Диагностический JSON скопирован');
+  } catch (_) {
+    const area = document.createElement('textarea');
+    area.value = text; area.style.position = 'fixed'; area.style.opacity = '0';
+    document.body.appendChild(area); area.select(); document.execCommand('copy'); area.remove();
+    toast('Диагностический JSON скопирован');
+  }
+}
+
 document.querySelector('[data-tab="audioassistant"]')?.addEventListener('click', () => {
   if (!ataSettingsLoaded) loadAudioAssistantSettings();
 });
 document.getElementById('ataSettingsSave')?.addEventListener('click', saveAudioAssistantSettings);
 document.getElementById('ataSettingsReload')?.addEventListener('click', loadAudioAssistantSettings);
+document.getElementById('ataLogsLoad')?.addEventListener('click', loadAudioAssistantLogs);
+document.getElementById('ataLogsCopy')?.addEventListener('click', copyAudioAssistantLogs);
 for (const [, [inputId, , clearId]] of Object.entries(ATA_SECRET_FIELDS)) {
   document.getElementById(inputId)?.addEventListener('input', () => {
     if (document.getElementById(inputId).value) document.getElementById(clearId).checked = false;

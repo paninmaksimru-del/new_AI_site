@@ -283,12 +283,23 @@ export async function setupQwenChatRoutes(app) {
     res.status(201).json(rows[0]);
   });
 
+  app.delete('/api/chat/projects/:id', auth, async (req, res) => {
+    if (!isUuid(req.params.id)) return res.status(400).json({ error: 'Некорректный идентификатор проекта.' });
+    const { rows } = await query(
+      'DELETE FROM ai_chat_projects WHERE id = $1 AND user_id = $2 RETURNING id',
+      [req.params.id, req.user.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Проект не найден.' });
+    res.json({ ok: true });
+  });
+
   app.get('/api/chat/sessions', auth, async (req, res) => {
     const { rows } = await query(`
       SELECT c.id, c.project_id, c.title, c.model, c.parameters, c.created_at, c.updated_at,
              (SELECT COUNT(*)::int FROM ai_messages m WHERE m.chat_id = c.id) AS message_count
         FROM ai_chats c
        WHERE c.user_id = $1
+         AND EXISTS (SELECT 1 FROM ai_messages m WHERE m.chat_id = c.id)
        ORDER BY c.updated_at DESC
        LIMIT 200`, [req.user.id]);
     res.json(rows);
@@ -360,11 +371,17 @@ export async function setupQwenChatRoutes(app) {
       const parameters = normalizedParameters(req.body);
 
       if (!chat) {
+        const projectId = req.body?.project_id || null;
+        if (projectId && !isUuid(projectId)) return res.status(400).json({ error: 'Некорректный идентификатор проекта.' });
+        if (projectId) {
+          const { rows } = await query('SELECT id FROM ai_chat_projects WHERE id = $1 AND user_id = $2', [projectId, req.user.id]);
+          if (!rows[0]) return res.status(404).json({ error: 'Проект не найден.' });
+        }
         const id = crypto.randomUUID();
         const title = (message || req.files?.[0]?.originalname || 'Новый чат').split(/\s+/).slice(0, 8).join(' ').slice(0, 120);
         const { rows } = await query(
-          `INSERT INTO ai_chats (id, user_id, title, model, parameters) VALUES ($1,$2,$3,$4,$5::jsonb) RETURNING *`,
-          [id, req.user.id, title, requestedModel, JSON.stringify(parameters)]
+          `INSERT INTO ai_chats (id, user_id, project_id, title, model, parameters) VALUES ($1,$2,$3,$4,$5,$6::jsonb) RETURNING *`,
+          [id, req.user.id, projectId, title, requestedModel, JSON.stringify(parameters)]
         );
         chat = rows[0];
       } else {

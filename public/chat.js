@@ -18,7 +18,7 @@ const state = {
   modelLabel: 'Qwen3.6-27B',
   modelDot: 'dot-green',
   projects: [{ id: DEFAULT_PROJECT, name: null, open: true }],
-  chats: [], messages: [], pendingFiles: [], activeChatId: null, isLoading: false
+  chats: [], messages: [], pendingFiles: [], activeChatId: null, draftProjectId: null, isLoading: false
 };
 
 function headers(json = true) {
@@ -40,6 +40,15 @@ async function api(path, options = {}) {
 
 function escHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c]));
+}
+
+const messageDateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+});
+
+function formatMessageDate(value) {
+  const date = value ? new Date(value) : new Date();
+  return messageDateFormatter.format(Number.isNaN(date.getTime()) ? new Date() : date);
 }
 
 function setProgress(value) {
@@ -127,7 +136,7 @@ function renderSidebar() {
     group.className = `project-group${project.open !== false ? ' open' : ''}`;
     group.dataset.pid = project.id;
     if (!isDefault) {
-      group.innerHTML = `<div class="project-head"><div class="project-head-left"><span class="project-arrow">›</span><span class="project-name">${escHtml(project.name)}</span><span class="project-badge">${chats.length}</span></div><button class="project-add-btn" data-proj-new="${project.id}" type="button" title="Новый чат">＋</button></div>`;
+      group.innerHTML = `<div class="project-head"><div class="project-head-left"><span class="project-arrow">›</span><span class="project-name">${escHtml(project.name)}</span><span class="project-badge">${chats.length}</span></div><div class="project-actions"><button class="project-add-btn" data-proj-new="${project.id}" type="button" title="Новый чат в проекте">＋</button><button class="project-delete-btn" data-proj-delete="${project.id}" type="button" title="Удалить проект">×</button></div></div>`;
     } else {
       group.innerHTML = '<div class="sb-section-label">Мои диалоги</div>';
     }
@@ -146,7 +155,7 @@ function renderSidebar() {
     sidebar.appendChild(group);
   }
   sidebar.querySelectorAll('.project-head').forEach(head => head.addEventListener('click', event => {
-    if (event.target.closest('.project-add-btn')) return;
+    if (event.target.closest('.project-actions')) return;
     const group = head.closest('.project-group');
     group.classList.toggle('open');
     const project = state.projects.find(item => item.id === group.dataset.pid);
@@ -156,6 +165,10 @@ function renderSidebar() {
     event.stopPropagation();
     createNewChat(button.dataset.projNew).catch(error => showToast(`⚠️ ${error.message}`));
   }));
+  sidebar.querySelectorAll('[data-proj-delete]').forEach(button => button.addEventListener('click', event => {
+    event.stopPropagation();
+    deleteProject(button.dataset.projDelete).catch(error => showToast(`⚠️ ${error.message}`));
+  }));
   sidebar.querySelectorAll('.chat-item').forEach(item => item.addEventListener('click', event => {
     if (!event.target.closest('.chat-item-menu')) openChat(item.dataset.cid);
   }));
@@ -164,19 +177,27 @@ function renderSidebar() {
   }));
 }
 
-async function createNewChat(projectId = null, { allowWhileLoading = false } = {}) {
-  if (state.isLoading && !allowWhileLoading) throw new Error('Дождитесь завершения текущего ответа.');
-  const chat = await api('/api/chat/sessions', {
-    method: 'POST',
-    body: JSON.stringify({ model: state.model, project_id: projectId === DEFAULT_PROJECT ? null : projectId, parameters: currentParameters() })
-  });
-  state.chats.unshift(chat);
-  state.activeChatId = chat.id;
+async function createNewChat(projectId = null) {
+  if (state.isLoading) throw new Error('Дождитесь завершения текущего ответа.');
+  state.activeChatId = null;
+  state.draftProjectId = !projectId || projectId === DEFAULT_PROJECT ? null : projectId;
   state.messages = [];
   clearChatUI();
   renderSidebar();
   document.getElementById('userInput').focus();
-  return chat;
+}
+
+async function deleteProject(projectId) {
+  if (state.isLoading) return showToast('Дождитесь завершения текущего ответа.');
+  const project = state.projects.find(item => item.id === projectId);
+  if (!project) return;
+  if (!confirm(`Удалить проект «${project.name}»? Чаты из него будут перемещены в «Мои диалоги».`)) return;
+  await api(`/api/chat/projects/${projectId}`, { method: 'DELETE' });
+  state.projects = state.projects.filter(item => item.id !== projectId);
+  state.chats.forEach(chat => { if (chat.project_id === projectId) chat.project_id = null; });
+  if (state.draftProjectId === projectId) state.draftProjectId = null;
+  renderSidebar();
+  showToast('Проект удалён, чаты сохранены в «Моих диалогах».');
 }
 
 async function openChat(chatId) {
@@ -184,6 +205,7 @@ async function openChat(chatId) {
   try {
     const data = await api(`/api/chat/sessions/${chatId}`);
     state.activeChatId = data.chat.id;
+    state.draftProjectId = null;
     state.messages = data.messages || [];
     setModel(data.chat.model);
     applyParameters(data.chat.parameters || {});
@@ -210,16 +232,16 @@ function replayChatUI() {
     return;
   }
   empty.style.display = 'none';
-  for (const message of state.messages) appendMessage(message.role, message.content, message.attachments || [], message.model);
+  for (const message of state.messages) appendMessage(message.role, message.content, message.attachments || [], message.model, message.created_at);
 }
 
-function appendMessage(role, text, attachments = [], messageModel = state.model) {
+function appendMessage(role, text, attachments = [], messageModel = state.model, createdAt = null) {
   const area = document.getElementById('messagesArea');
   const wrap = document.createElement('div');
   wrap.className = `msg ${role}`;
   const modelLabel = MODEL_META[messageModel]?.label || state.modelLabel;
   const files = attachments.length ? `<div class="message-files">${attachments.map(file => `<span>📄 ${escHtml(file.name)}</span>`).join('')}</div>` : '';
-  wrap.innerHTML = `<div class="msg-avatar">${role === 'assistant' ? '✦' : '○'}</div><div class="msg-body"><div class="msg-label">${role === 'assistant' ? escHtml(modelLabel) : 'Вы'}</div><div class="msg-bubble">${files}<span class="message-text">${escHtml(text)}</span></div><div class="msg-actions"><button class="msg-action-btn" type="button">Копировать</button></div></div>`;
+  wrap.innerHTML = `<div class="msg-avatar">${role === 'assistant' ? '✦' : '○'}</div><div class="msg-body"><div class="msg-meta"><span class="msg-label">${role === 'assistant' ? escHtml(modelLabel) : 'Вы'}</span><time class="msg-time" datetime="${escHtml(createdAt || new Date().toISOString())}">${escHtml(formatMessageDate(createdAt))}</time></div><div class="msg-bubble">${files}<span class="message-text">${escHtml(text)}</span></div><div class="msg-actions"><button class="msg-action-btn" type="button">Копировать</button></div></div>`;
   wrap.querySelector('.msg-action-btn').addEventListener('click', () => {
     const currentText = wrap.querySelector('.message-text')?.textContent || '';
     navigator.clipboard.writeText(currentText).then(() => showToast('✅ Скопировано')).catch(() => showToast('Не удалось скопировать'));
@@ -297,7 +319,7 @@ function updateSendButton() {
   document.getElementById('sendBtn').disabled = state.isLoading || (!document.getElementById('userInput').value.trim() && !state.pendingFiles.length);
   document.getElementById('newChatBtn').disabled = state.isLoading;
   document.getElementById('modelSelectorBtn').disabled = state.isLoading;
-  document.querySelectorAll('.project-add-btn, .chat-item-menu').forEach(button => { button.disabled = state.isLoading; });
+  document.querySelectorAll('.project-add-btn, .project-delete-btn, .chat-item-menu').forEach(button => { button.disabled = state.isLoading; });
 }
 
 async function consumeStream(response, streamMessage) {
@@ -315,7 +337,7 @@ async function consumeStream(response, streamMessage) {
       if (!line) continue;
       let event;
       try { event = JSON.parse(line.slice(5).trim()); } catch { continue; }
-      if (event.type === 'meta') state.activeChatId = event.chat_id;
+      if (event.type === 'meta') { state.activeChatId = event.chat_id; state.draftProjectId = null; }
       if (event.type === 'delta') {
         streamMessage.value += event.text;
         streamMessage.text.textContent = streamMessage.value;
@@ -335,8 +357,6 @@ async function sendMessage() {
   const files = [...state.pendingFiles];
   const requestModel = state.model;
   try {
-    if (!state.activeChatId) await createNewChat(DEFAULT_PROJECT, { allowWhileLoading: true });
-    if (!state.activeChatId) throw new Error('Не удалось создать чат.');
     const empty = document.getElementById('emptyState');
     if (empty) empty.style.display = 'none';
     appendMessage('user', message, files.map(file => ({ name: file.name })), requestModel);
@@ -345,7 +365,8 @@ async function sendMessage() {
     state.pendingFiles = []; renderFilePills();
     const streamMessage = createStreamingMessage(requestModel);
     const form = new FormData();
-    form.append('chat_id', state.activeChatId);
+    if (state.activeChatId) form.append('chat_id', state.activeChatId);
+    else if (state.draftProjectId) form.append('project_id', state.draftProjectId);
     form.append('model', requestModel);
     form.append('message', message);
     const parameters = currentParameters();

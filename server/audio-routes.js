@@ -9,9 +9,10 @@ import { query } from './db.js';
 import { optionalAuth, requireAdmin, requireKbAuth } from './auth.js';
 import { getAdminAudioSettings, getAudioSetting, loadAudioSettings, saveAdminAudioSettings } from './audio-settings.js';
 
+const MAX_UPLOAD_BYTES = Math.max(1, Number(process.env.AUDIO_ASSISTANT_MAX_UPLOAD_BYTES) || 200 * 1024 * 1024);
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 200 * 1024 * 1024, files: 1 }
+  limits: { fileSize: MAX_UPLOAD_BYTES, files: 1 }
 });
 
 const progressById = new Map();
@@ -198,6 +199,40 @@ function redactLogValue(value, depth = 0) {
   return value;
 }
 
+function normalizedDiagnosticId(value) {
+  const candidate = String(value || '').trim();
+  return /^[A-Za-z0-9._:-]{8,128}$/.test(candidate) ? candidate : crypto.randomUUID();
+}
+
+async function recordAudioDiagnostic(entry) {
+  const safeEntry = {
+    event_id: entry.event_id || crypto.randomUUID(),
+    diagnostic_id: normalizedDiagnosticId(entry.diagnostic_id),
+    user_id: entry.user_id || null,
+    transcription_id: entry.transcription_id || null,
+    source: entry.source || 'platform',
+    stage: entry.stage || 'unknown',
+    severity: entry.severity || 'info',
+    code: entry.code || null,
+    message: redactLogString(entry.message || ''),
+    details: redactLogValue(entry.details || {})
+  };
+  const consoleMethod = safeEntry.severity === 'error' ? 'error' : safeEntry.severity === 'warning' ? 'warn' : 'info';
+  console[consoleMethod]('[audio-assistant.diagnostic]', JSON.stringify(safeEntry));
+  try {
+    await query(
+      `INSERT INTO audio_diagnostic_logs
+        (event_id, diagnostic_id, user_id, transcription_id, source, stage, severity, code, message, details)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [safeEntry.event_id, safeEntry.diagnostic_id, safeEntry.user_id, safeEntry.transcription_id, safeEntry.source, safeEntry.stage, safeEntry.severity, safeEntry.code, safeEntry.message, JSON.stringify(safeEntry.details)]
+    );
+    await query(`DELETE FROM audio_diagnostic_logs WHERE id NOT IN (SELECT id FROM audio_diagnostic_logs ORDER BY id DESC LIMIT 1000)`);
+  } catch (error) {
+    console.warn('[audio-assistant.diagnostic-log-failed]', error.message);
+  }
+  return safeEntry;
+}
+
 function safeResponseHeaders(response) {
   const output = {};
   for (const name of ['content-type', 'content-length', 'x-request-id', 'x-correlation-id', 'date', 'server']) {
@@ -257,6 +292,28 @@ async function recordExternalLog(entry) {
   } catch (error) {
     console.warn('[audio-assistant.external-log-failed]', error.message);
   }
+  await recordAudioDiagnostic({
+    diagnostic_id: entry.diagnostic_id || entry.request_id,
+    user_id: safeEntry.user_id,
+    transcription_id: safeEntry.transcription_id,
+    source: 'external',
+    stage: safeEntry.operation,
+    severity: safeEntry.error_code || (safeEntry.response_status && safeEntry.response_status >= 400) ? 'error' : 'info',
+    code: safeEntry.error_code,
+    message: safeEntry.response_status
+      ? `i.moscow ответил HTTP ${safeEntry.response_status}`
+      : 'Запрос к i.moscow завершился транспортной ошибкой',
+    details: {
+      external_request_id: safeEntry.request_id,
+      method: safeEntry.method,
+      url: safeEntry.url,
+      request: safeEntry.request_meta,
+      response_status: safeEntry.response_status,
+      response_headers: safeEntry.response_headers,
+      response_body: safeEntry.response_body,
+      duration_ms: safeEntry.duration_ms
+    }
+  });
 }
 
 async function markExternalLogError(requestId, errorCode) {
@@ -276,6 +333,7 @@ async function externalFetch({ operation, url, method, headers, body, timeoutMs,
     const parsedBody = await responseBody(response);
     await recordExternalLog({
       request_id: requestId,
+      diagnostic_id: context.diagnostic_id,
       ...context,
       operation,
       method,
@@ -291,6 +349,7 @@ async function externalFetch({ operation, url, method, headers, body, timeoutMs,
   } catch (error) {
     await recordExternalLog({
       request_id: requestId,
+      diagnostic_id: context.diagnostic_id,
       ...context,
       operation,
       method,
@@ -667,6 +726,22 @@ export async function setupAudioRoutes(app) {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
     CREATE INDEX IF NOT EXISTS idx_audio_external_logs_created ON audio_external_logs(created_at DESC);
+    CREATE TABLE IF NOT EXISTS audio_diagnostic_logs (
+      id BIGSERIAL PRIMARY KEY,
+      event_id TEXT NOT NULL UNIQUE,
+      diagnostic_id TEXT NOT NULL,
+      user_id INTEGER,
+      transcription_id TEXT,
+      source TEXT NOT NULL,
+      stage TEXT NOT NULL,
+      severity TEXT NOT NULL DEFAULT 'info',
+      code TEXT,
+      message TEXT NOT NULL DEFAULT '',
+      details JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_audio_diagnostic_logs_created ON audio_diagnostic_logs(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_audio_diagnostic_logs_diagnostic ON audio_diagnostic_logs(diagnostic_id, created_at);
   `);
 
   const auth = requireKbAuth();
@@ -697,6 +772,91 @@ export async function setupAudioRoutes(app) {
     res.json(rows.map(row => ({ ...row, response_body: parseJson(row.response_body, row.response_body) })));
   });
 
+  app.get('/api/admin/audio-assistant-diagnostics', requireAdmin(), async (req, res) => {
+    const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 100));
+    const { rows } = await query(
+      `SELECT event_id, diagnostic_id, user_id, transcription_id, source, stage,
+              severity, code, message, details, created_at
+         FROM audio_diagnostic_logs
+        ORDER BY created_at DESC
+        LIMIT $1`,
+      [limit]
+    );
+    const attempts = new Map();
+    for (const row of rows) {
+      if (!attempts.has(row.diagnostic_id)) attempts.set(row.diagnostic_id, []);
+      attempts.get(row.diagnostic_id).push(row);
+    }
+    const items = [...attempts.entries()].map(([diagnostic_id, events]) => {
+      const chronological = events.slice().reverse();
+      const failedIndex = chronological.findLastIndex(event => event.severity === 'error');
+      const completedIndex = chronological.findLastIndex(event => event.stage === 'request.completed');
+      const failed = failedIndex >= 0 ? chronological[failedIndex] : null;
+      const externalReached = chronological.some(event => event.source === 'external');
+      const serviceFailure = chronological.find(event =>
+        (event.source === 'external' && event.severity === 'error') ||
+        /^(unknown_external_response|invalid_external_response)$/.test(event.code || '') ||
+        (externalReached && /^external_/.test(event.code || ''))
+      );
+      const platformFailure = chronological.find(event => event.source === 'platform' && event.severity === 'error');
+      const completed = completedIndex >= 0 && completedIndex > failedIndex;
+      let classification = 'in_progress';
+      let conclusion = 'Обработка началась, итоговое событие пока не записано.';
+      if (completed) {
+        classification = 'success';
+        conclusion = 'Платформа и внешний сервис завершили обработку успешно.';
+      } else if (serviceFailure) {
+        classification = 'external_service';
+        conclusion = 'Сбой произошёл при обращении к внешнему сервису или в его ответе.';
+      } else if (platformFailure) {
+        classification = 'platform';
+        conclusion = externalReached
+          ? 'Внешний сервис был доступен, но дальнейшая обработка завершилась ошибкой платформы.'
+          : 'Сбой произошёл на платформе до обращения к внешнему сервису.';
+      } else if (chronological.some(event => event.source === 'client')) {
+        classification = 'client_or_proxy';
+        conclusion = 'Браузер сообщил о сбое; сервер мог не получить сам файл (сеть или внешний прокси).';
+      } else if (failed) {
+        classification = 'platform';
+        conclusion = 'Обработка завершилась ошибкой без ответа внешнего сервиса.';
+      }
+      return {
+        diagnostic_id,
+        classification,
+        conclusion,
+        started_at: chronological[0]?.created_at,
+        updated_at: chronological.at(-1)?.created_at,
+        user_id: chronological.find(event => event.user_id)?.user_id || null,
+        transcription_id: chronological.find(event => event.transcription_id)?.transcription_id || null,
+        events: chronological
+      };
+    });
+    res.json({ items, event_count: rows.length });
+  });
+
+  app.post('/api/audio-assistant/client-diagnostics', optionalUser, async (req, res) => {
+    const diagnosticId = normalizedDiagnosticId(req.body?.diagnostic_id);
+    await recordAudioDiagnostic({
+      diagnostic_id: diagnosticId,
+      user_id: req.user?.id || null,
+      source: 'client',
+      stage: String(req.body?.stage || 'upload.client').slice(0, 80),
+      severity: req.body?.severity === 'info' ? 'info' : 'error',
+      code: String(req.body?.code || 'client_upload_error').slice(0, 120),
+      message: String(req.body?.message || 'Браузер сообщил об ошибке загрузки.'),
+      details: {
+        filename: String(req.body?.filename || '').slice(0, 255),
+        size_bytes: Number(req.body?.size_bytes) || 0,
+        content_type: String(req.body?.content_type || '').slice(0, 160),
+        http_status: Number(req.body?.http_status) || null,
+        duration_ms: Number(req.body?.duration_ms) || null,
+        online: req.body?.online !== false,
+        user_agent: String(req.get('user-agent') || '').slice(0, 500)
+      }
+    });
+    res.status(202).json({ diagnostic_id: diagnosticId });
+  });
+
   app.get('/api/audio-assistant/health', optionalUser, (req, res) => {
     res.json({
       status: 'ok',
@@ -706,20 +866,69 @@ export async function setupAudioRoutes(app) {
       setup_mode: getAudioSetting('AUDIO_TEXT_ASSISTANT_SETUP_MODE'),
       mock_mode: mockMode(),
       transcription_real_mode_allowed: !mockMode() && String(getAudioSetting('TRANSCRIPTION_PROXY_CONTRACT_VERIFIED')).toLowerCase() === 'true',
-      summarizer_real_mode_allowed: !mockMode() && String(getAudioSetting('SUMMARIZER_PROXY_CONTRACT_VERIFIED')).toLowerCase() === 'true'
+      summarizer_real_mode_allowed: !mockMode() && String(getAudioSetting('SUMMARIZER_PROXY_CONTRACT_VERIFIED')).toLowerCase() === 'true',
+      max_upload_bytes: MAX_UPLOAD_BYTES
     });
   });
 
-  app.post('/api/transcriptions', optionalUser, upload.single('audio'), async (req, res) => {
-    if (!req.file?.buffer?.length) return apiError(res, 422, 'validation_error', 'Загрузите непустой аудиофайл.');
+  app.post('/api/transcriptions', optionalUser, (req, res, next) => {
+    req.audioDiagnosticId = normalizedDiagnosticId(req.get('x-audio-diagnostic-id'));
+    req.audioUploadStartedAt = Date.now();
+    upload.single('audio')(req, res, async error => {
+      if (!error) return next();
+      const tooLarge = error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE';
+      await recordAudioDiagnostic({
+        diagnostic_id: req.audioDiagnosticId,
+        user_id: req.user?.id || null,
+        source: 'platform',
+        stage: 'upload.middleware',
+        severity: 'error',
+        code: tooLarge ? 'payload_too_large' : (error.code || 'upload_parse_failed'),
+        message: tooLarge ? `Файл превышает лимит ${MAX_UPLOAD_BYTES} байт.` : error.message,
+        details: { multer_code: error.code || null, max_upload_bytes: MAX_UPLOAD_BYTES, duration_ms: Date.now() - req.audioUploadStartedAt }
+      });
+      return apiError(
+        res,
+        tooLarge ? 413 : 400,
+        tooLarge ? 'payload_too_large' : 'upload_parse_failed',
+        tooLarge ? `Файл слишком большой. Максимальный размер — ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} МБ.` : 'Не удалось принять загружаемый файл.',
+        { diagnostic_id: req.audioDiagnosticId, max_upload_bytes: MAX_UPLOAD_BYTES }
+      );
+    });
+  }, async (req, res) => {
+    const diagnosticId = req.audioDiagnosticId;
+    const diagnosticContext = { diagnostic_id: diagnosticId, user_id: req.user?.id || null };
+    try {
+    if (!req.file?.buffer?.length) {
+      await recordAudioDiagnostic({ ...diagnosticContext, source: 'platform', stage: 'upload.validation', severity: 'error', code: 'validation_error', message: 'Получен пустой запрос или пустой файл.' });
+      return apiError(res, 422, 'validation_error', 'Загрузите непустой аудиофайл.', { diagnostic_id: diagnosticId });
+    }
     req.file.originalname = normalizeUploadFilename(req.file.originalname);
+    await recordAudioDiagnostic({
+      ...diagnosticContext,
+      source: 'platform',
+      stage: 'upload.received',
+      message: 'Файл полностью принят приложением.',
+      details: { filename: req.file.originalname, size_bytes: req.file.size, content_type: req.file.mimetype, duration_ms: Date.now() - req.audioUploadStartedAt, max_upload_bytes: MAX_UPLOAD_BYTES }
+    });
     const mediaType = String(req.file.mimetype || 'application/octet-stream').toLowerCase();
-    if (!mediaType.startsWith('audio/') && !mediaType.startsWith('video/') && !mockMode()) return apiError(res, 422, 'unsupported_media_type', 'Поддерживаются аудио- и видеофайлы.');
+    if (!mediaType.startsWith('audio/') && !mediaType.startsWith('video/') && !mockMode()) {
+      await recordAudioDiagnostic({ ...diagnosticContext, source: 'platform', stage: 'upload.validation', severity: 'error', code: 'unsupported_media_type', message: 'Тип файла не поддерживается.', details: { content_type: mediaType } });
+      return apiError(res, 422, 'unsupported_media_type', 'Поддерживаются аудио- и видеофайлы.', { diagnostic_id: diagnosticId });
+    }
     let media;
-    try { media = await prepareMedia(req.file); } catch (error) { return apiError(res, error.status || 422, error.code || 'media_conversion_failed', error.message); }
+    const conversionStarted = Date.now();
+    try { media = await prepareMedia(req.file); } catch (error) {
+      await recordAudioDiagnostic({ ...diagnosticContext, source: 'platform', stage: 'media.conversion', severity: 'error', code: error.code || 'media_conversion_failed', message: error.message, details: { duration_ms: Date.now() - conversionStarted, source_type: mediaType, source_size_bytes: req.file.size } });
+      return apiError(res, error.status || 422, error.code || 'media_conversion_failed', error.message, { diagnostic_id: diagnosticId });
+    }
+    await recordAudioDiagnostic({ ...diagnosticContext, source: 'platform', stage: 'media.prepared', message: media.converted ? 'Медиафайл успешно преобразован.' : 'Конвертация медиафайла не потребовалась.', details: { converted: media.converted, duration_ms: Date.now() - conversionStarted, output_size_bytes: media.size, output_type: media.mimetype } });
     const id = crypto.randomUUID();
-    const parameters = { language: req.body.language || null, context_hint: req.body.context_hint || null, speaker_labels: req.body.speaker_labels === 'true', timestamp_granularity: req.body.timestamp_granularity === 'segment' ? 'segment' : 'none', converted: media.converted, source_media_type: media.sourceType, source_size_bytes: media.sourceSize };
-    if ((parameters.context_hint || '').length > 1000) return apiError(res, 422, 'validation_error', 'Контекстная подсказка слишком длинная.');
+    const parameters = { language: req.body.language || null, context_hint: req.body.context_hint || null, speaker_labels: req.body.speaker_labels === 'true', timestamp_granularity: req.body.timestamp_granularity === 'segment' ? 'segment' : 'none', converted: media.converted, source_media_type: media.sourceType, source_size_bytes: media.sourceSize, diagnostic_id: diagnosticId };
+    if ((parameters.context_hint || '').length > 1000) {
+      await recordAudioDiagnostic({ ...diagnosticContext, source: 'platform', stage: 'parameters.validation', severity: 'error', code: 'validation_error', message: 'Контекстная подсказка превышает 1000 символов.' });
+      return apiError(res, 422, 'validation_error', 'Контекстная подсказка слишком длинная.', { diagnostic_id: diagnosticId });
+    }
     const guestItem = req.user ? null : {
       id,
       status: 'processing',
@@ -744,24 +953,40 @@ export async function setupAudioRoutes(app) {
       }
       guestTranscriptions.set(id, guestItem);
     }
+    await recordAudioDiagnostic({ ...diagnosticContext, transcription_id: req.user ? id : null, source: 'platform', stage: 'transcription.created', message: 'Задание транскрибации создано.', details: { mock_mode: mockMode(), transcription_id: id } });
     try {
-      const result = mockMode() ? { status: 'completed', transcript: MOCK_TRANSCRIPT, language: parameters.language || 'ru', segments: parameters.timestamp_granularity === 'segment' ? [{ text: MOCK_TRANSCRIPT, start_seconds: 0, end_seconds: 6, speaker: parameters.speaker_labels ? 'speaker-1' : null }] : [] } : await submitTranscription(media, { user_id: req.user?.id || null, transcription_id: req.user ? id : null });
+      const result = mockMode() ? { status: 'completed', transcript: MOCK_TRANSCRIPT, language: parameters.language || 'ru', segments: parameters.timestamp_granularity === 'segment' ? [{ text: MOCK_TRANSCRIPT, start_seconds: 0, end_seconds: 6, speaker: parameters.speaker_labels ? 'speaker-1' : null }] : [] } : await submitTranscription(media, { diagnostic_id: diagnosticId, user_id: req.user?.id || null, transcription_id: req.user ? id : null });
       if (req.user) {
         await query(`UPDATE audio_transcriptions SET status=$2, transcript=$3, detected_language=$4, segments=$5, external_job_id=$6, error_code=NULL, error_message=NULL, updated_at=NOW(), completed_at=CASE WHEN $2='completed' THEN NOW() ELSE NULL END WHERE id=$1`, [id, result.status, result.transcript || null, result.language || null, JSON.stringify(result.segments || []), result.jobId || null]);
       } else {
         Object.assign(guestItem, { status: result.status, transcript: result.transcript || null, detected_language: result.language || null, segments: result.segments || [], external_job_id: result.jobId || null, touched_at: Date.now() });
       }
+      await recordAudioDiagnostic({ ...diagnosticContext, transcription_id: req.user ? id : null, source: 'platform', stage: result.status === 'completed' ? 'request.completed' : 'request.pending', message: result.status === 'completed' ? 'Расшифровка завершена.' : 'Внешний сервис принял файл в асинхронную обработку.', details: { status: result.status, external_job_id: result.jobId || null, total_duration_ms: Date.now() - req.audioUploadStartedAt } });
     } catch (error) {
-      const diagnosticMessage = error.details?.request_id ? `${error.message} ID диагностики: ${error.details.request_id}` : error.message;
+      const diagnosticMessage = `${error.message} ID диагностики: ${diagnosticId}`;
       if (req.user) {
         await query(`UPDATE audio_transcriptions SET status='failed', error_code=$2, error_message=$3, updated_at=NOW() WHERE id=$1`, [id, error.code || 'processing_failed', diagnosticMessage]);
       } else {
         Object.assign(guestItem, { status: 'failed', error: { code: error.code || 'processing_failed', message: diagnosticMessage }, touched_at: Date.now() });
       }
+      await recordAudioDiagnostic({ ...diagnosticContext, transcription_id: req.user ? id : null, source: 'platform', stage: 'request.failed', severity: 'error', code: error.code || 'processing_failed', message: error.message, details: { external_request_id: error.details?.request_id || null, total_duration_ms: Date.now() - req.audioUploadStartedAt } });
     }
     if (!req.user) return res.status(201).json(publicGuestTranscription(guestItem));
     const row = await getOwnedTranscription(id, req.user.id);
-    res.status(201).json(await publicTranscription(row, req.user.id));
+    return res.status(201).json(await publicTranscription(row, req.user.id));
+    } catch (error) {
+      await recordAudioDiagnostic({
+        ...diagnosticContext,
+        source: 'platform',
+        stage: 'request.platform_exception',
+        severity: 'error',
+        code: error.code || 'internal_platform_error',
+        message: error.message,
+        details: { total_duration_ms: Date.now() - req.audioUploadStartedAt }
+      });
+      if (res.headersSent) return res.end();
+      return apiError(res, 500, 'internal_platform_error', 'Внутренняя ошибка платформы при обработке файла.', { diagnostic_id: diagnosticId });
+    }
   });
 
   app.get('/api/transcriptions', auth, async (req, res) => {
@@ -775,11 +1000,16 @@ export async function setupAudioRoutes(app) {
       if (!item) return apiError(res, 404, 'not_found', 'Временная расшифровка не найдена или уже удалена.');
       if (!mockMode() && item.status === 'processing' && item.external_job_id) {
         try {
-          const result = await pollExternalTranscription(item.external_job_id, { user_id: null, transcription_id: null });
-          if (result.status === 'completed') Object.assign(item, { status: 'completed', transcript: result.transcript, detected_language: result.language, segments: result.segments || [], error: null });
+          const pollDiagnosticId = item.parameters?.diagnostic_id;
+          const result = await pollExternalTranscription(item.external_job_id, { diagnostic_id: pollDiagnosticId, user_id: null, transcription_id: null });
+          if (result.status === 'completed') {
+            Object.assign(item, { status: 'completed', transcript: result.transcript, detected_language: result.language, segments: result.segments || [], error: null });
+            await recordAudioDiagnostic({ diagnostic_id: pollDiagnosticId, source: 'platform', stage: 'request.completed', message: 'Расшифровка завершена после фоновой обработки.', details: { external_job_id: item.external_job_id } });
+          }
         } catch (error) {
-          const diagnosticMessage = error.details?.request_id ? `${error.message} ID диагностики: ${error.details.request_id}` : error.message;
+          const diagnosticMessage = `${error.message}${item.parameters?.diagnostic_id ? ` ID диагностики: ${item.parameters.diagnostic_id}` : ''}`;
           Object.assign(item, { status: 'failed', error: { code: error.code || 'processing_failed', message: diagnosticMessage } });
+          await recordAudioDiagnostic({ diagnostic_id: item.parameters?.diagnostic_id, source: 'platform', stage: 'request.failed', severity: 'error', code: error.code || 'processing_failed', message: error.message, details: { external_request_id: error.details?.request_id || null } });
         }
         item.touched_at = Date.now();
       }
@@ -790,11 +1020,17 @@ export async function setupAudioRoutes(app) {
     const canRecoverCompletedResult = row.status === 'failed' && row.error_code === 'unknown_external_response';
     if (!mockMode() && (['created', 'pending', 'processing'].includes(row.status) || canRecoverCompletedResult) && row.external_job_id) {
       try {
-        const result = await pollExternalTranscription(row.external_job_id, { user_id: req.user.id, transcription_id: row.id });
-        if (result.status === 'completed') await query(`UPDATE audio_transcriptions SET status='completed', transcript=$2, detected_language=$3, segments=$4, error_code=NULL, error_message=NULL, updated_at=NOW(), completed_at=NOW() WHERE id=$1`, [row.id, result.transcript, result.language, JSON.stringify(result.segments || [])]);
+        const pollDiagnosticId = parseJson(row.parameters, {}).diagnostic_id;
+        const result = await pollExternalTranscription(row.external_job_id, { diagnostic_id: pollDiagnosticId, user_id: req.user.id, transcription_id: row.id });
+        if (result.status === 'completed') {
+          await query(`UPDATE audio_transcriptions SET status='completed', transcript=$2, detected_language=$3, segments=$4, error_code=NULL, error_message=NULL, updated_at=NOW(), completed_at=NOW() WHERE id=$1`, [row.id, result.transcript, result.language, JSON.stringify(result.segments || [])]);
+          await recordAudioDiagnostic({ diagnostic_id: pollDiagnosticId, user_id: req.user.id, transcription_id: row.id, source: 'platform', stage: 'request.completed', message: 'Расшифровка завершена после фоновой обработки.', details: { external_job_id: row.external_job_id } });
+        }
       } catch (error) {
-        const diagnosticMessage = error.details?.request_id ? `${error.message} ID диагностики: ${error.details.request_id}` : error.message;
+        const storedDiagnosticId = parseJson(row.parameters, {}).diagnostic_id;
+        const diagnosticMessage = `${error.message}${storedDiagnosticId ? ` ID диагностики: ${storedDiagnosticId}` : ''}`;
         await query(`UPDATE audio_transcriptions SET status='failed', error_code=$2, error_message=$3, updated_at=NOW() WHERE id=$1`, [row.id, error.code || 'processing_failed', diagnosticMessage]);
+        await recordAudioDiagnostic({ diagnostic_id: parseJson(row.parameters, {}).diagnostic_id, user_id: req.user.id, transcription_id: row.id, source: 'platform', stage: 'request.failed', severity: 'error', code: error.code || 'processing_failed', message: error.message, details: { external_request_id: error.details?.request_id || null } });
       }
       row = await getOwnedTranscription(req.params.id, req.user.id);
     }

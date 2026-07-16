@@ -6,6 +6,7 @@ let pollTimer = null;
 let progressTimer = null;
 let isAuthenticated = Boolean(localStorage.getItem("auth_token"));
 let profileName = "";
+let maxUploadBytes = 200 * 1024 * 1024;
 
 function activeTranscriptionStorageKey() {
   const login = localStorage.getItem("auth_login") || "anonymous";
@@ -66,13 +67,45 @@ async function api(url, options = {}) {
   const token = localStorage.getItem("auth_token");
   const response = await fetch(url, { ...options, headers: { Accept: "application/json", ...(token ? { "X-Auth-Token": token } : {}), ...(options.headers || {}) } });
   const type = response.headers.get("content-type") || "";
-  const body = type.includes("json") ? await response.json() : null;
+  const body = type.includes("json") ? await response.json() : await response.text().catch(() => "");
   if (response.status === 401) throw new Error("Требуется авторизация");
   if (!response.ok) {
-    const error = new Error(body?.error?.message || body?.message || body?.detail || "Запрос не выполнен");
+    const error = new Error(body?.error?.message || body?.message || body?.detail || (typeof body === "string" && body.trim() ? body.trim().slice(0, 300) : "Запрос не выполнен"));
     error.status = response.status; error.code = body?.error?.code || body?.error; error.details = body?.details || {}; throw error;
   }
   return body;
+}
+
+function diagnosticId() {
+  return globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `audio-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+async function reportUploadDiagnostic(payload) {
+  try {
+    await api("/api/audio-assistant/client-diagnostics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch (_) {}
+}
+
+function renderFileHint(file = $("#audioFile")?.files?.[0]) {
+  const hint = $("#audioFileHint");
+  if (!hint) return;
+  const limit = bytes(maxUploadBytes);
+  hint.dataset.state = "";
+  if (!file) {
+    hint.textContent = `Максимальный размер файла — ${limit}.`;
+    return;
+  }
+  if (file.size > maxUploadBytes) {
+    hint.dataset.state = "error";
+    hint.textContent = `${bytes(file.size)} — файл превышает лимит ${limit}.`;
+  } else {
+    hint.dataset.state = "ok";
+    hint.textContent = `${bytes(file.size)} из допустимых ${limit}.`;
+  }
 }
 
 function setBusy(button, busy, normal) { button.disabled = busy; button.toggleAttribute("aria-busy", busy); button.textContent = busy ? "Обработка…" : normal; }
@@ -116,10 +149,32 @@ function schedulePoll(id, delay=2500) { if (pollTimer) return; pollTimer=setTime
 
 $("#transcriptionForm").addEventListener("submit", async event => {
   event.preventDefault(); const file=$("#audioFile").files[0]; if (!file) return;
+  const attemptId=diagnosticId();
+  if (file.size > maxUploadBytes) {
+    const message=`Файл слишком большой. Максимальный размер — ${bytes(maxUploadBytes)}. ID диагностики: ${attemptId}`;
+    $("#transcriptionStatus").textContent="Ошибка";
+    $("#transcriptionMessage").textContent=message;
+    await reportUploadDiagnostic({ diagnostic_id:attemptId, stage:"upload.client_validation", code:"payload_too_large", message, filename:file.name, size_bytes:file.size, content_type:file.type, online:navigator.onLine });
+    return;
+  }
   const data=new FormData(); data.append("audio",file); data.append("language",$("#language").value); data.append("timestamp_granularity",$("#timestamps").value); data.append("speaker_labels",$("#speakers").checked ? "true":"false"); if ($("#contextHint").value.trim()) data.append("context_hint",$("#contextHint").value.trim());
   const button=$("#transcribeButton"); setBusy(button,true,"Транскрибировать");
-  try { renderTranscription(await api("/api/transcriptions",{method:"POST",body:data})); if (isAuthenticated) await loadHistory(); } catch(error) { $("#transcriptionMessage").textContent=error.message; } finally { setBusy(button,false,"Транскрибировать"); }
+  const started=Date.now();
+  $("#transcriptionStatus").textContent="Загрузка";
+  $("#transcriptionMessage").textContent=`Файл отправляется на платформу… ID диагностики: ${attemptId}`;
+  try {
+    renderTranscription(await api("/api/transcriptions",{method:"POST",headers:{"X-Audio-Diagnostic-Id":attemptId},body:data}));
+    if (isAuthenticated) await loadHistory();
+  } catch(error) {
+    const serverDiagnosticId=error.details?.diagnostic_id || attemptId;
+    $("#transcriptionStatus").textContent="Ошибка";
+    $("#transcriptionMessage").textContent=`${error.message} ID диагностики: ${serverDiagnosticId}`;
+    await reportUploadDiagnostic({ diagnostic_id:serverDiagnosticId, stage:"upload.client_response", code:error.code || "client_upload_error", message:error.message, filename:file.name, size_bytes:file.size, content_type:file.type, http_status:error.status, duration_ms:Date.now()-started, online:navigator.onLine });
+  } finally { setBusy(button,false,"Транскрибировать"); }
 });
+
+$("#audioFile").addEventListener("change", () => renderFileHint());
+renderFileHint();
 
 function makeProgressId() { return globalThis.crypto?.randomUUID ? crypto.randomUUID() : `p-${Date.now()}-${Math.random()}`; }
 function startProgress(id) {
@@ -196,6 +251,8 @@ $("#refreshHistory").addEventListener("click",()=>{ if (isAuthenticated) loadHis
 async function initialize() {
   try {
     const health=await api("/api/audio-assistant/health");
+    maxUploadBytes=Number(health.max_upload_bytes) || maxUploadBytes;
+    renderFileHint();
     applyAuthState(Boolean(health.authenticated));
     const mode=health.mock_mode?"mock":"real";
     $("#serviceStatus").textContent=mode==="mock"?"Mock":"Real";

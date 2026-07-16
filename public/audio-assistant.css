@@ -249,6 +249,9 @@ header nav { display: flex; align-items: center; gap: 6px; }
 .service-state[data-mode="real"] .status-dot { background: var(--green); box-shadow: 0 0 0 4px rgba(38, 210, 152, 0.12), 0 0 14px rgba(38, 210, 152, 0.48); }
 .service-state[data-mode="mock"] .status-dot { background: var(--blue); box-shadow: 0 0 0 4px rgba(78, 135, 255, 0.12); }
 .service-state[data-mode="offline"] .status-dot { background: var(--danger); box-shadow: 0 0 0 4px rgba(255, 115, 115, 0.12); }
+.file-hint { margin: -8px 0 4px; color: var(--muted-soft); font-size: 13px; }
+.file-hint[data-state="error"] { color: var(--danger); }
+.file-hint[data-state="ok"] { color: var(--green); }
 
 .shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 38px 0 64px; }
 .hero {

@@ -75,6 +75,18 @@
     .secret-clear input{ width:auto !important; margin:0; accent-color:var(--danger); }
     .settings-note{ padding:12px 14px; border:1px solid rgba(78,135,255,.25); border-radius:11px; background:rgba(78,135,255,.08); color:var(--muted); font-size:13px; }
     .diagnostic-log{ max-height:420px; overflow:auto; margin:10px 0 0; padding:12px; border:1px solid var(--stroke); border-radius:11px; background:rgba(0,0,0,.35); color:rgba(255,255,255,.78); font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; white-space:pre-wrap; word-break:break-word; }
+    .diagnostic-list{ display:grid; gap:10px; margin-top:12px; }
+    .diagnostic-card{ padding:12px; border:1px solid var(--stroke); border-radius:12px; background:rgba(0,0,0,.24); }
+    .diagnostic-card[data-kind="success"]{ border-color:rgba(38,210,152,.35); }
+    .diagnostic-card[data-kind="external_service"],.diagnostic-card[data-kind="platform"],.diagnostic-card[data-kind="client_or_proxy"]{ border-color:rgba(255,96,96,.4); }
+    .diagnostic-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .diagnostic-id{ font:12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace; color:rgba(255,255,255,.8); word-break:break-all; }
+    .diagnostic-conclusion{ margin:8px 0; font-size:13px; }
+    .diagnostic-events{ margin:8px 0 0; padding-left:20px; color:var(--muted); font-size:12px; }
+    .diagnostic-events li{ margin:5px 0; }
+    .diagnostic-events code{ color:rgba(255,255,255,.78); }
+    details.diagnostic-raw{ margin-top:12px; }
+    details.diagnostic-raw summary{ color:var(--muted); cursor:pointer; font-size:13px; }
   </style>
 </head>
 <body>
@@ -392,13 +404,18 @@
         <span class="badge" id="ataSettingsStatus">Не загружено</span>
       </div>
 
-      <h3>Диагностика внешних запросов</h3>
-      <p class="muted">Журнал содержит операции расшифровки и суммаризации: URL без query-параметров, безопасные метаданные запроса, HTTP-статус, длительность и очищенный ответ i.moscow. Токены, cookies, исходный текст, расшифровка и готовое резюме в журнал не попадают.</p>
+      <h3>Расширенная диагностика</h3>
+      <p class="muted">Сквозной журнал показывает этапы от браузера и приёма файла до конвертации и ответа i.moscow. Для каждой попытки выводится вывод: ошибка платформы, сети/прокси или внешнего сервиса. Токены, cookies, исходный текст, расшифровка и готовое резюме в журнал не попадают.</p>
       <div class="actions-bar">
-        <button class="btn small" id="ataLogsLoad" type="button">Загрузить последние запросы</button>
+        <button class="btn small" id="ataLogsLoad" type="button">Обновить диагностику</button>
         <button class="btn small" id="ataLogsCopy" type="button" disabled>Копировать JSON</button>
+        <input id="ataLogsFilter" type="search" placeholder="Найти по ID диагностики" aria-label="Найти по ID диагностики" style="min-width:230px;padding:7px 10px;border-radius:9px;border:1px solid var(--stroke);background:rgba(0,0,0,.3);color:var(--text);" />
       </div>
-      <pre class="diagnostic-log" id="ataLogsOutput">Журнал ещё не загружен. После ошибки нажмите «Загрузить последние запросы» и передайте JSON в задачу Codex.</pre>
+      <div class="diagnostic-list" id="ataLogsSummary"><p class="muted">Журнал ещё не загружен.</p></div>
+      <details class="diagnostic-raw">
+        <summary>Технический JSON</summary>
+        <pre class="diagnostic-log" id="ataLogsOutput">После ошибки нажмите «Обновить диагностику» и при необходимости скопируйте JSON.</pre>
+      </details>
     </div>
   </div>
   <div id="tab_qwenchat" class="tabpane">
@@ -659,7 +676,7 @@ const ATA_SECRET_FIELDS = {
   IMOSCOW_SESSION_COOKIE: ['ataSessionCookie', 'ataSessionCookieState', 'ataSessionCookieClear']
 };
 let ataSettingsLoaded = false;
-let ataExternalLogs = [];
+let ataDiagnosticPayload = null;
 
 function renderAtaSecretState(key, configured, source) {
   const [, stateId] = ATA_SECRET_FIELDS[key];
@@ -726,22 +743,58 @@ async function saveAudioAssistantSettings() {
 
 async function loadAudioAssistantLogs() {
   const output = document.getElementById('ataLogsOutput');
+  const summary = document.getElementById('ataLogsSummary');
   const copyButton = document.getElementById('ataLogsCopy');
   output.textContent = 'Загрузка…';
+  summary.innerHTML = '<p class="muted">Загрузка…</p>';
   copyButton.disabled = true;
   try {
-    ataExternalLogs = await api('/api/admin/audio-assistant-logs?limit=50');
-    output.textContent = ataExternalLogs.length ? JSON.stringify(ataExternalLogs, null, 2) : 'Внешних запросов пока нет.';
-    copyButton.disabled = !ataExternalLogs.length;
+    ataDiagnosticPayload = await api('/api/admin/audio-assistant-diagnostics?limit=200');
+    output.textContent = ataDiagnosticPayload.items?.length ? JSON.stringify(ataDiagnosticPayload, null, 2) : 'Диагностических событий пока нет.';
+    copyButton.disabled = !ataDiagnosticPayload.items?.length;
+    renderAudioAssistantDiagnostics();
   } catch (error) {
     output.textContent = 'Ошибка загрузки журнала: ' + error.message;
+    summary.innerHTML = `<p class="muted">${esc('Ошибка загрузки журнала: ' + error.message)}</p>`;
     toast('Не удалось загрузить журнал: ' + error.message, 'err');
   }
 }
 
+function renderAudioAssistantDiagnostics() {
+  const summary = document.getElementById('ataLogsSummary');
+  const filter = document.getElementById('ataLogsFilter').value.trim().toLowerCase();
+  const items = (ataDiagnosticPayload?.items || []).filter(item => !filter || item.diagnostic_id.toLowerCase().includes(filter));
+  if (!items.length) {
+    summary.innerHTML = `<p class="muted">${filter ? 'Совпадений не найдено.' : 'Диагностических событий пока нет.'}</p>`;
+    return;
+  }
+  const labels = {
+    success: ['Успешно', 'ok'],
+    external_service: ['Внешний сервис', 'danger'],
+    platform: ['Платформа', 'danger'],
+    client_or_proxy: ['Браузер / прокси', 'danger'],
+    in_progress: ['В процессе', 'warn']
+  };
+  summary.innerHTML = items.map(item => {
+    const [label, badge] = labels[item.classification] || labels.in_progress;
+    const events = item.events.map(event => {
+      const timestamp = new Date(event.created_at).toLocaleString('ru-RU');
+      const code = event.code ? ` · ${esc(event.code)}` : '';
+      const status = event.details?.response_status ? ` · HTTP ${esc(event.details.response_status)}` : '';
+      return `<li><span>${esc(timestamp)}</span> · <code>${esc(event.source)} / ${esc(event.stage)}</code>${code}${status}<br>${esc(event.message)}</li>`;
+    }).join('');
+    return `<article class="diagnostic-card" data-kind="${esc(item.classification)}">
+      <div class="diagnostic-head"><span class="diagnostic-id">${esc(item.diagnostic_id)}</span><span class="badge ${badge}">${label}</span></div>
+      <p class="diagnostic-conclusion">${esc(item.conclusion)}</p>
+      <div class="hint">${esc(new Date(item.updated_at).toLocaleString('ru-RU'))}${item.user_id ? ` · user ${esc(item.user_id)}` : ' · гость'}${item.transcription_id ? ` · transcription ${esc(item.transcription_id)}` : ''}</div>
+      <ol class="diagnostic-events">${events}</ol>
+    </article>`;
+  }).join('');
+}
+
 async function copyAudioAssistantLogs() {
-  if (!ataExternalLogs.length) return;
-  const text = JSON.stringify(ataExternalLogs, null, 2);
+  if (!ataDiagnosticPayload?.items?.length) return;
+  const text = JSON.stringify(ataDiagnosticPayload, null, 2);
   try {
     await navigator.clipboard.writeText(text);
     toast('Диагностический JSON скопирован');
@@ -755,11 +808,13 @@ async function copyAudioAssistantLogs() {
 
 document.querySelector('[data-tab="audioassistant"]')?.addEventListener('click', () => {
   if (!ataSettingsLoaded) loadAudioAssistantSettings();
+  if (!ataDiagnosticPayload) loadAudioAssistantLogs();
 });
 document.getElementById('ataSettingsSave')?.addEventListener('click', saveAudioAssistantSettings);
 document.getElementById('ataSettingsReload')?.addEventListener('click', loadAudioAssistantSettings);
 document.getElementById('ataLogsLoad')?.addEventListener('click', loadAudioAssistantLogs);
 document.getElementById('ataLogsCopy')?.addEventListener('click', copyAudioAssistantLogs);
+document.getElementById('ataLogsFilter')?.addEventListener('input', renderAudioAssistantDiagnostics);
 for (const [, [inputId, , clearId]] of Object.entries(ATA_SECRET_FIELDS)) {
   document.getElementById(inputId)?.addEventListener('input', () => {
     if (document.getElementById(inputId).value) document.getElementById(clearId).checked = false;

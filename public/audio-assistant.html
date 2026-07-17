@@ -71,9 +71,9 @@
       <form id="transcriptionForm" class="panel panel--transcription">
         <div class="panel-intro">
           <span class="step-number">01</span>
-          <div><h3>Расшифровать запись</h3><p>Поддерживаются аудио и видео; неподходящий формат будет преобразован автоматически.</p></div>
+          <div><h3>Расшифровать запись</h3><p>Поддерживаются аудио и видео; большие файлы будут автоматически сжаты перед отправкой.</p></div>
         </div>
-        <label>Аудио или видео<input id="audioFile" name="audio" type="file" accept="audio/*,video/*" required></label>
+        <label class="file-field">Аудио или видео<input id="audioFile" name="audio" type="file" accept="audio/*,video/*" required></label>
         <p id="audioFileHint" class="file-hint">Максимальный размер файла уточняется…</p>
         <div class="row">
           <label>Язык<select id="language"><option value="">Авто</option><option value="ru">Русский</option><option value="en">English</option></select></label>
@@ -109,6 +109,17 @@
       <article class="panel result-panel">
         <div class="panel-head"><h3>Расшифровка</h3><span id="transcriptionStatus" class="pill muted">Нет задания</span></div>
         <div id="transcriptionMeta" class="chips"></div>
+        <div id="transcriptionProgressPanel" class="progress transcription-progress" data-status="running" hidden>
+          <div class="progress-head">
+            <span id="transcriptionProgressLabel" aria-live="polite">Подготовка файла</span>
+            <span class="progress-state" aria-hidden="true"><i></i> В работе</span>
+          </div>
+          <progress id="transcriptionProgressBar" max="5" value="0" aria-labelledby="transcriptionProgressLabel"></progress>
+          <div class="progress-meta">
+            <span id="transcriptionProgressStage">Этап 1 из 5</span>
+            <time id="transcriptionProgressTime">0:00</time>
+          </div>
+        </div>
         <textarea id="transcriptOutput" rows="11" readonly placeholder="Здесь появится текст расшифровки"></textarea>
         <div id="segments" class="segments" hidden></div>
         <div id="downloadActions" class="actions" hidden>

@@ -252,6 +252,7 @@ header nav { display: flex; align-items: center; gap: 6px; }
 .file-hint { margin: -8px 0 4px; color: var(--muted-soft); font-size: 13px; }
 .file-hint[data-state="error"] { color: var(--danger); }
 .file-hint[data-state="ok"] { color: var(--green); }
+.file-hint[data-state="compress"] { color: #8de8c9; }
 
 .shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 38px 0 64px; }
 .hero {
@@ -426,6 +427,7 @@ input[type="file"]::file-selector-button {
   font-weight: 650;
   cursor: pointer;
 }
+.file-field { margin-bottom: 15px !important; }
 select { color-scheme: dark; }
 
 button,
@@ -507,10 +509,47 @@ button:disabled { cursor: wait; filter: saturate(0.45); opacity: 0.66; }
   font-size: 14px;
   line-height: 1.62;
 }
-.progress { display: grid; margin: 14px 0 10px; gap: 8px; color: var(--muted); font-size: 13px; }
+.progress {
+  display: grid;
+  margin: 14px 0 10px;
+  padding: 12px;
+  gap: 9px;
+  border-radius: 14px;
+  background: rgba(1, 14, 9, 0.48);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.075);
+  color: var(--muted);
+  font-size: 13px;
+}
+.progress-head,
+.progress-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.progress-head > span:first-child { color: rgba(255, 255, 255, 0.86); font-weight: 650; text-wrap: pretty; }
+.progress-state { display: inline-flex; align-items: center; gap: 7px; color: var(--muted-soft); font-size: 11px; white-space: nowrap; }
+.progress-state i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px rgba(38, 210, 152, 0.7); }
+.progress-meta { color: var(--muted-soft); font-size: 11px; font-variant-numeric: tabular-nums; }
 .progress progress { width: 100%; height: 8px; overflow: hidden; border: 0; border-radius: 999px; accent-color: var(--green); }
 .progress progress::-webkit-progress-bar { border-radius: 999px; background: rgba(255, 255, 255, 0.08); }
-.progress progress::-webkit-progress-value { border-radius: 999px; background: linear-gradient(90deg, var(--blue), var(--green)); }
+.progress progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--blue), var(--green), #7af0c7, var(--green));
+  background-size: 220% 100%;
+  transition: width 260ms cubic-bezier(0.2, 0, 0, 1);
+}
+.progress progress::-moz-progress-bar {
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  transition: width 260ms cubic-bezier(0.2, 0, 0, 1);
+}
+.progress.is-active progress::-webkit-progress-value { animation: progress-flow 1.4s linear infinite; }
+.progress[data-status="completed"] .progress-state { color: var(--green); font-size: 0; }
+.progress[data-status="completed"] .progress-state::after { content: "Готово"; font-size: 11px; }
+.progress[data-status="failed"] .progress-state { color: #ff9b9b; font-size: 0; }
+.progress[data-status="failed"] .progress-state i { background: var(--danger); box-shadow: 0 0 12px rgba(255, 115, 115, 0.5); }
+.progress[data-status="failed"] .progress-state::after { content: "Ошибка"; font-size: 11px; }
+
+@keyframes progress-flow {
+  from { background-position: 100% 0; }
+  to { background-position: -120% 0; }
+}
 .linked { margin-top: 16px; }
 .linked h3 { margin-bottom: 10px; font-size: 14px; }
 

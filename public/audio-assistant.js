@@ -3,10 +3,17 @@ const taskLabels = { default: "Обычное резюме", abstractive: "Аб�
 const activeStatuses = new Set(["created", "processing", "pending"]);
 let currentTranscription = null;
 let pollTimer = null;
-let progressTimer = null;
+let summaryProgressTimer = null;
+let transcriptionProgressTimer = null;
+let transcriptionProgressPollingId = null;
+let transcriptionElapsedTimer = null;
+let transcriptionStartedAt = 0;
+let transcriptionProgressHideTimer = null;
+let activeTranscriptionProgressId = null;
 let isAuthenticated = Boolean(localStorage.getItem("auth_token"));
 let profileName = "";
 let maxUploadBytes = 200 * 1024 * 1024;
+let compressionThresholdBytes = 50 * 1024 * 1024;
 
 function activeTranscriptionStorageKey() {
   const login = localStorage.getItem("auth_login") || "anonymous";
@@ -19,6 +26,11 @@ function rememberActiveTranscription(id) {
 
 function forgetActiveTranscription() {
   localStorage.removeItem(activeTranscriptionStorageKey());
+  localStorage.removeItem(`${activeTranscriptionStorageKey()}:progress`);
+}
+
+function activeTranscriptionProgressStorageKey() {
+  return `${activeTranscriptionStorageKey()}:progress`;
 }
 
 const burger = $("#burgerBtn");
@@ -96,15 +108,18 @@ function renderFileHint(file = $("#audioFile")?.files?.[0]) {
   const limit = bytes(maxUploadBytes);
   hint.dataset.state = "";
   if (!file) {
-    hint.textContent = `Максимальный размер файла — ${limit}.`;
+    hint.textContent = `Максимальный размер — ${limit}; сжатие включается от ${bytes(compressionThresholdBytes)}.`;
     return;
   }
   if (file.size > maxUploadBytes) {
     hint.dataset.state = "error";
     hint.textContent = `${bytes(file.size)} — файл превышает лимит ${limit}.`;
+  } else if (file.size >= compressionThresholdBytes) {
+    hint.dataset.state = "compress";
+    hint.textContent = `${bytes(file.size)} из допустимых ${limit} · файл будет сжат перед отправкой.`;
   } else {
     hint.dataset.state = "ok";
-    hint.textContent = `${bytes(file.size)} из допустимых ${limit}.`;
+    hint.textContent = `${bytes(file.size)} из допустимых ${limit} · готов к загрузке.`;
   }
 }
 
@@ -113,11 +128,110 @@ function statusLabel(value) { return ({created:"Создано",processing:"В �
 function bytes(value) { return value < 1048576 ? `${(value/1024).toFixed(1)} КБ` : `${(value/1048576).toFixed(1)} МБ`; }
 function time(value) { if (value == null) return "--:--"; const n=Math.max(0,Math.floor(Number(value))); return `${Math.floor(n/60)}:${String(n%60).padStart(2,"0")}`; }
 
-function renderTranscription(item) {
+function startTranscriptionClock() {
+  if (!transcriptionStartedAt) transcriptionStartedAt=Date.now();
+  if (transcriptionElapsedTimer) return;
+  const update=()=>{$("#transcriptionProgressTime").textContent=time((Date.now()-transcriptionStartedAt)/1000);};
+  update(); transcriptionElapsedTimer=setInterval(update,1000);
+}
+
+function stopTranscriptionClock() {
+  if (transcriptionElapsedTimer) clearInterval(transcriptionElapsedTimer);
+  transcriptionElapsedTimer=null;
+}
+
+function showTranscriptionProgress({message,status="running",current=0,total=1,detail=null}) {
+  const panel=$("#transcriptionProgressPanel"), bar=$("#transcriptionProgressBar");
+  if (transcriptionProgressHideTimer) clearTimeout(transcriptionProgressHideTimer);
+  transcriptionProgressHideTimer=null; panel.hidden=false;
+  panel.classList.toggle("is-active",status==="running");
+  panel.dataset.status=status;
+  $("#transcriptionProgressLabel").textContent=message;
+  bar.max=Math.max(1,total); bar.value=Math.min(Math.max(0,current),bar.max);
+  $("#transcriptionProgressStage").textContent=detail || (status==="completed" ? "Готово" : status==="failed" ? "Остановлено" : `Этап ${Math.max(1,current)} из ${Math.max(1,total)}`);
+  if (status==="running") startTranscriptionClock();
+}
+
+function revealTranscriptionProgress() {
+  const behavior=matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  $("#transcriptionProgressPanel").scrollIntoView({behavior,block:"center"});
+}
+
+function stopTranscriptionProgressPolling() {
+  if (transcriptionProgressTimer) clearInterval(transcriptionProgressTimer);
+  transcriptionProgressTimer=null; transcriptionProgressPollingId=null;
+}
+
+function finishTranscriptionProgress(message="Расшифровка готова") {
+  stopTranscriptionProgressPolling();
+  showTranscriptionProgress({message,status:"completed",current:5,total:5});
+  stopTranscriptionClock();
+  transcriptionProgressHideTimer=setTimeout(()=>{$("#transcriptionProgressPanel").hidden=true;},2200);
+}
+
+function failTranscriptionProgress(message) {
+  stopTranscriptionProgressPolling(); stopTranscriptionClock();
+  showTranscriptionProgress({message,status:"failed",current:3,total:5});
+}
+
+function startTranscriptionProgressPolling(progressId) {
+  if (!progressId || (transcriptionProgressPollingId===progressId && transcriptionProgressTimer)) return;
+  stopTranscriptionProgressPolling();
+  activeTranscriptionProgressId=progressId;
+  transcriptionProgressPollingId=progressId;
+  const refresh=async()=>{
+    try {
+      const progress=await api(`/api/transcriptions/progress/${encodeURIComponent(progressId)}`);
+      showTranscriptionProgress(progress);
+      if (progress.status==="completed") finishTranscriptionProgress(progress.message);
+      if (progress.status==="failed") failTranscriptionProgress(progress.message);
+    } catch {}
+  };
+  refresh(); transcriptionProgressTimer=setInterval(refresh,650);
+}
+
+function transcriptionRequest(data, progressId, attemptId) {
+  return new Promise((resolve,reject)=>{
+    const request=new XMLHttpRequest();
+    request.open("POST","/api/transcriptions");
+    request.setRequestHeader("Accept","application/json");
+    request.setRequestHeader("X-Audio-Diagnostic-Id",attemptId);
+    const token=localStorage.getItem("auth_token");
+    if (token) request.setRequestHeader("X-Auth-Token",token);
+    request.upload.addEventListener("progress",event=>{
+      if (!event.lengthComputable) return;
+      const percent=Math.min(100,Math.round((event.loaded/event.total)*100));
+      showTranscriptionProgress({message:percent<100 ? "Загружаем файл в сервис" : "Файл загружен. Проверяем формат",status:"running",current:percent,total:100,detail:`Загрузка ${percent}%`});
+    });
+    request.upload.addEventListener("load",()=>{
+      showTranscriptionProgress({message:"Файл загружен. Проверяем формат",status:"running",current:1,total:5,detail:"Этап 1 из 5"});
+      setTimeout(()=>{if(activeTranscriptionProgressId===progressId)startTranscriptionProgressPolling(progressId);},350);
+    });
+    request.addEventListener("load",()=>{
+      let body=null;
+      try { body=request.responseText ? JSON.parse(request.responseText) : null; } catch {}
+      if (request.status>=200&&request.status<300) { resolve(body); return; }
+      const error=new Error(body?.error?.message||body?.message||body?.detail||"Запрос не выполнен");
+      error.status=request.status; error.code=body?.error?.code||body?.error; error.details=body?.details||{}; reject(error);
+    });
+    request.addEventListener("error",()=>reject(new Error("Не удалось связаться с сервисом.")));
+    request.addEventListener("abort",()=>reject(new Error("Загрузка файла отменена.")));
+    request.send(data);
+  });
+}
+
+function renderTranscription(item, progressId=activeTranscriptionProgressId) {
   currentTranscription = item;
   $("#transcriptionStatus").textContent = statusLabel(item.status);
   $("#transcriptOutput").value = item.transcript || "";
-  $("#transcriptionMeta").replaceChildren(...[item.original_filename,item.parameters?.converted?"Конвертировано в MP3":null,item.audio_media_type,bytes(item.audio_size_bytes)].filter(Boolean).map(value => { const span=document.createElement("span"); span.textContent=value; return span; }));
+  const preparation=item.parameters?.converted&&item.parameters?.compressed
+    ? "Конвертировано и сжато в MP3"
+    : item.parameters?.converted
+      ? "Конвертировано в MP3"
+      : item.parameters?.compressed
+        ? `Сжато в MP3${item.parameters?.compression_bitrate?` · ${item.parameters.compression_bitrate}`:""}`
+        : null;
+  $("#transcriptionMeta").replaceChildren(...[item.original_filename,preparation,item.audio_media_type,bytes(item.audio_size_bytes)].filter(Boolean).map(value => { const span=document.createElement("span"); span.textContent=value; return span; }));
   const segmentBox = $("#segments"); segmentBox.replaceChildren();
   for (const segment of item.segments || []) {
     const row=document.createElement("div"); row.className="segment";
@@ -133,9 +247,19 @@ function renderTranscription(item) {
   renderLinked(item.summaries || []);
   if (activeStatuses.has(item.status)) {
     if (isAuthenticated) rememberActiveTranscription(item.id);
-    schedulePoll(item.id);
+    if (progressId) {
+      localStorage.setItem(activeTranscriptionProgressStorageKey(),progressId);
+      startTranscriptionProgressPolling(progressId);
+    } else showTranscriptionProgress({message:"Внешний сервис обрабатывает запись",status:"running",current:3,total:5});
+    schedulePoll(item.id,progressId);
   }
-  else { if (isAuthenticated) forgetActiveTranscription(); if (pollTimer) clearTimeout(pollTimer); pollTimer=null; }
+  else {
+    if (isAuthenticated) forgetActiveTranscription();
+    if (pollTimer) clearTimeout(pollTimer); pollTimer=null;
+    activeTranscriptionProgressId=null;
+    if (item.status==="completed") finishTranscriptionProgress();
+    else if (item.error?.message) failTranscriptionProgress(item.error.message);
+  }
 }
 
 function renderLinked(items) {
@@ -145,7 +269,7 @@ function renderLinked(items) {
   for (const item of items) { const button=document.createElement("button"); button.className="history-item"; button.textContent=`${taskLabels[item.task_type]} · ${item.created_at.slice(0,16)}`; button.onclick=()=>openSummary(item.id); box.appendChild(button); }
 }
 
-function schedulePoll(id, delay=2500) { if (pollTimer) return; pollTimer=setTimeout(async()=>{ pollTimer=null; try { renderTranscription(await api(`/api/transcriptions/${id}`)); if (isAuthenticated) await loadHistory(); } catch(error) { if(error.status===404){if(isAuthenticated)forgetActiveTranscription();return;} schedulePoll(id,5000); } },delay); }
+function schedulePoll(id, progressId=null, delay=2500) { if (pollTimer) return; pollTimer=setTimeout(async()=>{ pollTimer=null; try { renderTranscription(await api(`/api/transcriptions/${id}${progressId?`?progress_id=${encodeURIComponent(progressId)}`:""}`),progressId); if (isAuthenticated) await loadHistory(); } catch(error) { if(error.status===404){if(isAuthenticated)forgetActiveTranscription();return;} schedulePoll(id,progressId,5000); } },delay); }
 
 $("#transcriptionForm").addEventListener("submit", async event => {
   event.preventDefault(); const file=$("#audioFile").files[0]; if (!file) return;
@@ -157,18 +281,25 @@ $("#transcriptionForm").addEventListener("submit", async event => {
     await reportUploadDiagnostic({ diagnostic_id:attemptId, stage:"upload.client_validation", code:"payload_too_large", message, filename:file.name, size_bytes:file.size, content_type:file.type, online:navigator.onLine });
     return;
   }
-  const data=new FormData(); data.append("audio",file); data.append("language",$("#language").value); data.append("timestamp_granularity",$("#timestamps").value); data.append("speaker_labels",$("#speakers").checked ? "true":"false"); if ($("#contextHint").value.trim()) data.append("context_hint",$("#contextHint").value.trim());
+  const progressId=makeProgressId();
+  const data=new FormData(); data.append("audio",file); data.append("language",$("#language").value); data.append("timestamp_granularity",$("#timestamps").value); data.append("speaker_labels",$("#speakers").checked ? "true":"false"); data.append("progress_id",progressId); if ($("#contextHint").value.trim()) data.append("context_hint",$("#contextHint").value.trim());
   const button=$("#transcribeButton"); setBusy(button,true,"Транскрибировать");
   const started=Date.now();
+  transcriptionStartedAt=Date.now(); activeTranscriptionProgressId=progressId;
   $("#transcriptionStatus").textContent="Загрузка";
   $("#transcriptionMessage").textContent=`Файл отправляется на платформу… ID диагностики: ${attemptId}`;
+  showTranscriptionProgress({message:"Начинаем загрузку файла",status:"running",current:0,total:100,detail:"Загрузка 0%"});
+  revealTranscriptionProgress();
   try {
-    renderTranscription(await api("/api/transcriptions",{method:"POST",headers:{"X-Audio-Diagnostic-Id":attemptId},body:data}));
+    renderTranscription(await transcriptionRequest(data,progressId,attemptId),progressId);
     if (isAuthenticated) await loadHistory();
   } catch(error) {
     const serverDiagnosticId=error.details?.diagnostic_id || attemptId;
     $("#transcriptionStatus").textContent="Ошибка";
     $("#transcriptionMessage").textContent=`${error.message} ID диагностики: ${serverDiagnosticId}`;
+    failTranscriptionProgress(error.message);
+    if(isAuthenticated)forgetActiveTranscription();
+    activeTranscriptionProgressId=null;
     await reportUploadDiagnostic({ diagnostic_id:serverDiagnosticId, stage:"upload.client_response", code:error.code || "client_upload_error", message:error.message, filename:file.name, size_bytes:file.size, content_type:file.type, http_status:error.status, duration_ms:Date.now()-started, online:navigator.onLine });
   } finally { setBusy(button,false,"Транскрибировать"); }
 });
@@ -179,10 +310,10 @@ renderFileHint();
 function makeProgressId() { return globalThis.crypto?.randomUUID ? crypto.randomUUID() : `p-${Date.now()}-${Math.random()}`; }
 function startProgress(id) {
   $("#progressPanel").hidden=false; $("#progressBar").value=0;
-  if (progressTimer) clearInterval(progressTimer);
-  progressTimer=setInterval(async()=>{ try { const p=await api(`/api/summarizer/progress/${encodeURIComponent(id)}`); $("#progressLabel").textContent=p.message; $("#progressBar").max=p.total; $("#progressBar").value=p.current; } catch {} },750);
+  if (summaryProgressTimer) clearInterval(summaryProgressTimer);
+  summaryProgressTimer=setInterval(async()=>{ try { const p=await api(`/api/summarizer/progress/${encodeURIComponent(id)}`); $("#progressLabel").textContent=p.message; $("#progressBar").max=p.total; $("#progressBar").value=p.current; } catch {} },750);
 }
-function stopProgress() { if(progressTimer) clearInterval(progressTimer); progressTimer=null; }
+function stopProgress() { if(summaryProgressTimer) clearInterval(summaryProgressTimer); summaryProgressTimer=null; }
 
 async function requestSummary(url, settings) {
   const progressId=makeProgressId(); const payload={...settings,progress_id:progressId};
@@ -252,6 +383,7 @@ async function initialize() {
   try {
     const health=await api("/api/audio-assistant/health");
     maxUploadBytes=Number(health.max_upload_bytes) || maxUploadBytes;
+    compressionThresholdBytes=Number(health.compression_threshold_bytes) || compressionThresholdBytes;
     renderFileHint();
     applyAuthState(Boolean(health.authenticated));
     const mode=health.mock_mode?"mock":"real";
@@ -261,7 +393,7 @@ async function initialize() {
       localStorage.removeItem("activeTranscription");
       await loadHistory();
       const id=localStorage.getItem(activeTranscriptionStorageKey());
-      if(id)renderTranscription(await api(`/api/transcriptions/${id}`));
+      if(id){const progressId=localStorage.getItem(activeTranscriptionProgressStorageKey());renderTranscription(await api(`/api/transcriptions/${id}${progressId?`?progress_id=${encodeURIComponent(progressId)}`:""}`),progressId);}
     }
   } catch {
     $("#serviceStatus").textContent="Offline";

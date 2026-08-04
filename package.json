@@ -9,7 +9,7 @@
     "dev": "node --env-file=.env --watch server/index.js",
     "preview": "node server/preview-static.mjs",
     "test:audio-media": "node scripts/test-audio-media.mjs",
-    "test": "node --test",
+    "test": "node --test test/*.test.js",
     "init-db": "node server/init-db.js",
     "export-db": "node server/export-db.js"
   },

@@ -89,12 +89,13 @@
           </div>
         </div>
 
-        <div class="saved-strip">
-          <div><strong>Сохранённые черновики</strong><span id="savedSessionsHint">Черновик содержит исходный документ и данные для восстановления. Не сохраняйте его на чужом компьютере.</span></div>
-          <select id="savedSessionSelect" aria-label="Сохранённый черновик"><option value="">Выберите черновик</option></select>
-          <button class="btn ghost" id="loadSavedSessionButton" type="button" disabled>Открыть</button>
-          <button class="btn ghost danger-text" id="clearSavedSessionsButton" type="button" disabled>Удалить все</button>
-        </div>
+        <section class="draft-manager" aria-labelledby="draftManagerTitle">
+          <div class="draft-manager-head">
+            <div><strong id="draftManagerTitle">Сохранённые черновики</strong><span id="savedSessionsHint">Черновики хранятся в этом браузере до ручного удаления.</span></div>
+            <b class="draft-count" id="savedDraftCount">0</b>
+          </div>
+          <div class="draft-list" id="savedDraftList"><p class="draft-empty">Сохранённых черновиков пока нет.</p></div>
+        </section>
       </section>
 
       <section class="view hidden" id="processingView" aria-live="polite">
@@ -150,14 +151,21 @@
         <div class="document-preview-grid">
           <article class="preview-card document-window protected-document">
             <header><span><i class="word-mark safe-mark" aria-hidden="true">✓</i> Безопасная копия</span><span id="safeLength"></span></header>
-            <div class="document-desk"><div class="preview-text safe document-page" id="safePreview" role="document" tabindex="0" aria-label="Безопасная копия"></div></div>
+            <div class="document-desk">
+              <div class="occurrence-navigator hidden" id="occurrenceNavigator" role="group" aria-label="Навигация по вхождениям">
+                <span id="occurrenceNavigatorLabel">Вхождение</span>
+                <button id="occurrencePreviousButton" type="button" title="Предыдущее вхождение" aria-label="Предыдущее вхождение">←</button>
+                <button id="occurrenceNextButton" type="button" title="Следующее вхождение" aria-label="Следующее вхождение">→</button>
+                <button class="occurrence-close" id="occurrenceCloseButton" type="button" title="Закрыть" aria-label="Закрыть">×</button>
+              </div>
+              <div class="preview-text safe document-page" id="safePreview" role="document" tabindex="0" aria-label="Безопасная копия"></div>
+            </div>
           </article>
         </div>
+        <div class="selection-banner" id="selectionBanner"><span id="selectionBannerText">Если что-то пропущено, выделите фрагмент в безопасной копии: тип определится, а текст сразу заменится токеном.</span><button class="btn ghost compact hidden" id="undoSelectionButton" type="button">Отменить</button></div>
         <details class="advanced-panel">
           <summary><span>Изменить автоматическую обработку</span><small>Необязательно</small></summary>
           <div class="advanced-body">
-          <div class="selection-banner" id="selectionBanner">Если что-то пропущено, выделите фрагмент в безопасной копии: тип определится, а текст сразу заменится токеном.</div>
-
           <details class="source-details">
             <summary>Показать исходный документ</summary>
             <div class="document-desk"><div class="preview-text document-page" id="sourcePreview" role="document" aria-label="Исходный документ"></div></div>
@@ -178,12 +186,12 @@
           </div>
 
           <div class="entity-tools">
-            <textarea id="manualValue" rows="2" placeholder="Выбранный или пропущенный фрагмент"></textarea>
-            <select id="manualType" aria-label="Тип данных"></select>
-            <select id="manualScope" aria-label="Где скрыть">
+            <label class="entity-tool-field entity-tool-value"><span>Фрагмент</span><textarea id="manualValue" rows="3" placeholder="Выбранный или пропущенный текст"></textarea></label>
+            <label class="entity-tool-field"><span>Тип</span><select id="manualType" aria-label="Тип данных"></select></label>
+            <label class="entity-tool-field"><span>Где скрыть</span><select id="manualScope" aria-label="Где скрыть">
               <option value="all">Во всех местах</option>
-              <option value="one">Только в выбранном месте</option>
-            </select>
+              <option value="one">Только это место</option>
+            </select></label>
             <button class="btn secondary compact" id="addManualButton" type="button">Скрыть</button>
             <button class="btn ghost compact" id="findSimilarButton" type="button">Похожие</button>
           </div>
@@ -212,11 +220,11 @@
         <section class="session-panel">
           <div>
             <strong>Черновик работы</strong>
-            <span id="sessionStatus">Текущий черновик хранится только до закрытия вкладки.</span>
+            <span id="sessionStatus">Пока черновик не сохранён. После сохранения он останется в этом браузере.</span>
           </div>
           <label class="draft-name-field"><span>Название</span><input id="draftNameInput" type="text" maxlength="80" placeholder="Например, договор с подрядчиком"></label>
           <button class="btn ghost" id="saveSessionButton" type="button">Сохранить черновик</button>
-          <button class="btn ghost danger-text" id="deleteCurrentSessionButton" type="button">Удалить сохранённый черновик</button>
+          <button class="btn ghost danger-text" id="deleteCurrentSessionButton" type="button">Удалить этот черновик</button>
         </section>
 
         <label class="confirmation warning-confirm hidden" id="warningOverrideLabel">
@@ -238,27 +246,18 @@
           <div>
             <span class="eyebrow">Этап 4</span>
             <h2>Восстановите реальные данные</h2>
-            <p>Загрузите защищённый текст и ключ восстановления. Результат можно вернуть в исходный Word или оформить как новый документ.</p>
+            <p>Загрузите защищённый текст и ключ восстановления. Сервис создаст новый аккуратный Word в классическом офисном формате.</p>
           </div>
           <button class="btn ghost" id="backToAnonymizeButton" type="button">Вернуться к обезличиванию</button>
         </div>
 
-        <div class="restore-mode-picker" role="radiogroup" aria-label="Формат восстановленного документа">
-          <label class="restore-mode-option disabled" id="restoreOriginalModeLabel">
-            <input id="restoreOriginalMode" type="radio" name="restoreOutputMode" value="original" disabled>
-            <span><strong>Сохранить исходную вёрстку</strong><small>Для защищённого DOCX, текст которого не меняли после обезличивания.</small></span>
-          </label>
-          <label class="restore-mode-option">
-            <input id="restoreClassicMode" type="radio" name="restoreOutputMode" value="classic" checked>
-            <span><strong>Создать новый Word</strong><small>Для текста после обработки: классическое офисное оформление, Times New Roman 14.</small></span>
-          </label>
-        </div>
+        <div class="restore-output-note"><strong>Новый Word</strong><span>Восстановленный текст будет оформлен в Times New Roman 14 с обычными полями, абзацами и списками.</span></div>
         <div class="local-model-stub">Смысловая обработка моделью пока не подключена. Сервис локально восстанавливает токены и оформляет уже готовый текст.</div>
 
         <div class="restore-input-grid">
           <article class="restore-card restore-dropzone" id="restoreSourceDropzone">
             <div class="card-title"><strong>1. Защищённый текст</strong><label class="btn ghost compact" for="restoreFileInput">Загрузить файл<input id="restoreFileInput" type="file" accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden></label></div>
-            <p class="restore-drop-hint">Перетащите сюда TXT или DOCX либо вставьте текст ниже.</p>
+            <p class="restore-drop-hint">Перетащите сюда TXT, DOCX или PDF либо вставьте текст ниже.</p>
             <textarea class="large-input restore-input" id="restoreInput" placeholder="Вставьте защищённый текст с обозначениями вроде [[ФИО_001]]…"></textarea>
             <div class="restore-file-status"><span class="muted" id="restoreCharCount">0 знаков</span><span class="muted" id="restoreSourceStatus">Файл не выбран</span></div>
           </article>

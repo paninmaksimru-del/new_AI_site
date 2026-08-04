@@ -18,12 +18,21 @@ test("цветные токены и чёрный восстановленный
   assert.match(css, /\.preview-text\.restored\s*\{\s*color:\s*#111827/);
 });
 
-test("показ в документе прокручивает к токену и включает временную подсветку", async () => {
-  const script = await readFile(new URL("anonymizer.js", root), "utf8");
+test("показ в документе использует плавающую навигацию, прокрутку и временную подсветку", async () => {
+  const [html, script, css] = await Promise.all([
+    readFile(new URL("anonymizer.html", root), "utf8"),
+    readFile(new URL("anonymizer.js", root), "utf8"),
+    readFile(new URL("anonymizer.css", root), "utf8")
+  ]);
+  assert.match(html, /id="occurrenceNavigator"/);
+  assert.match(html, /id="occurrencePreviousButton"/);
+  assert.match(html, /id="occurrenceNextButton"/);
   assert.match(script, /target\.scrollIntoView\(\{ behavior: "smooth", block: "center" \}\)/);
   assert.match(script, /target\.classList\.add\("token-flash"\)/);
-  assert.match(script, /position\.textContent = `\$\{index \+ 1\} из \$\{targets\.length\}`/);
-  assert.match(script, /focusOccurrence\(group, index \+ 1\)/);
+  assert.match(script, /occurrenceNavigation = \{ groupId: activeGroup\.id, index, total: targets\.length \}/);
+  assert.match(script, /focusOccurrence\(group, occurrenceNavigation\.index \+ 1\)/);
+  assert.match(css, /\.occurrence-navigator\s*\{[^}]*position:\s*absolute/);
+  assert.doesNotMatch(script, /insertBefore\([^\n]*occurrence/);
 });
 
 test("большие выделения, именованные черновики и одиночный результат восстановления доступны в интерфейсе", async () => {
@@ -32,6 +41,7 @@ test("большие выделения, именованные черновик
     readFile(new URL("anonymizer.js", root), "utf8")
   ]);
   assert.match(html, /id="draftNameInput"/);
+  assert.match(html, /id="savedDraftList"/);
   assert.match(html, /textarea id="manualValue"/);
   assert.doesNotMatch(html, /id="restoreBeforePreview"/);
   assert.equal((html.match(/id="restoreAfterPreview"/g) || []).length, 1);
@@ -40,7 +50,23 @@ test("большие выделения, именованные черновик
   assert.match(script, /Из черновика: \$\{snapshot\.draftName \|\| snapshot\.source\?\.name/);
 });
 
-test("DOCX хранится в IndexedDB и скачивается отдельной кнопкой Word", async () => {
+test("черновики открываются, переименовываются и удаляются по одному с автосохранением", async () => {
+  const [html, script] = await Promise.all([
+    readFile(new URL("anonymizer.html", root), "utf8"),
+    readFile(new URL("anonymizer.js", root), "utf8")
+  ]);
+  assert.match(script, /async function openDraftById\(id\)/);
+  assert.match(script, /async function renameDraftById\(id\)/);
+  assert.match(script, /async function deleteDraftById\(id\)/);
+  assert.match(script, /persistCurrentDraft\(true\)/);
+  assert.match(script, /suppressNextPersistentAutoSave/);
+  assert.match(script, /sessionStorage\.removeItem\(SESSION_KEY\);\s*refreshSavedSessions\(\)/);
+  assert.match(script, /Последние изменения сохраняются автоматически/);
+  assert.doesNotMatch(html, /Удалить все сохранённые черновики/);
+  assert.doesNotMatch(html, /id="clearSavedSessionsButton"/);
+});
+
+test("исходный DOCX хранится в IndexedDB, а Word доступен для любого входного формата", async () => {
   const [html, script, docx, storage, css] = await Promise.all([
     readFile(new URL("anonymizer.html", root), "utf8"),
     readFile(new URL("anonymizer.js", root), "utf8"),
@@ -50,6 +76,8 @@ test("DOCX хранится в IndexedDB и скачивается отдель�
   ]);
   assert.match(html, /id="downloadWordButton"[^>]*>Скачать Word \(\.docx\)/);
   assert.match(script, /createAnonymizedDocx\(state\.docxModel/);
+  assert.match(script, /if \(!state\.docxModel\) return createClassicDocx\(state\.result\.text/);
+  assert.match(script, /files\[`\$\{base\}_обезличено\.docx`\] = safeDocxBytes\(\)/);
   assert.match(script, /new Blob\(\[state\.sourceBinary\]/);
   assert.match(docx, /word\/document\.xml/);
   assert.match(docx, /header\\d\+/);
@@ -82,7 +110,23 @@ test("выделение связано с координатами исходн
   assert.doesNotMatch(script, /state\.text\.includes\(value\).*Выделенный фрагмент не найден/);
 });
 
-test("восстановление поддерживает перетаскивание, два режима и скачивание Word", async () => {
+test("выделение с готовыми токенами объединяется в один фрагмент и может быть отменено", async () => {
+  const [html, script] = await Promise.all([
+    readFile(new URL("anonymizer.html", root), "utf8"),
+    readFile(new URL("anonymizer.js", root), "utf8")
+  ]);
+  assert.match(html, /id="undoSelectionButton"/);
+  assert.ok(html.indexOf('id="selectionBanner"') < html.indexOf('<details class="advanced-panel">'));
+  assert.match(script, /atomic:\s*true/);
+  assert.match(script, /overlappingReplacements/);
+  assert.match(script, /uncoveredSelectionText\(start, end, overlappingReplacements\)/);
+  assert.match(script, /\? "FRAGMENT"/);
+  assert.match(script, /state\.lastManualChange = \{/);
+  assert.match(script, /function undoLastManualChange\(\)/);
+  assert.match(script, /Этот фрагмент уже скрыт/);
+});
+
+test("восстановление поддерживает перетаскивание и всегда создаёт новый классический Word", async () => {
   const [html, script, css] = await Promise.all([
     readFile(new URL("anonymizer.html", root), "utf8"),
     readFile(new URL("anonymizer.js", root), "utf8"),
@@ -90,11 +134,13 @@ test("восстановление поддерживает перетаскив
   ]);
   assert.match(html, /id="restoreSourceDropzone"/);
   assert.match(html, /id="restoreMapDropzone"/);
-  assert.match(html, /id="restoreOriginalMode"/);
-  assert.match(html, /id="restoreClassicMode"/);
+  assert.doesNotMatch(html, /id="restoreOriginalMode"/);
+  assert.doesNotMatch(html, /id="restoreClassicMode"/);
+  assert.match(html, /Восстановленный текст будет оформлен в Times New Roman 14/);
   assert.match(html, /id="downloadRestoredWordButton"/);
-  assert.match(script, /createRestoredDocx\(state\.restoreDocxModel/);
   assert.match(script, /createClassicDocx\(state\.restoreResult\.restored/);
+  assert.doesNotMatch(script, /createRestoredDocx/);
+  assert.doesNotMatch(script, /restoreDocxModel/);
   assert.match(script, /bindRestoreDropzone/);
   assert.match(css, /Times New Roman/);
 });

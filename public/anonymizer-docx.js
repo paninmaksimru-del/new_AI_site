@@ -380,10 +380,6 @@ export function createAnonymizedDocx(model, replacements, fflate, DOMParserCtor 
   return createModifiedDocx(model, replacements, fflate, DOMParserCtor, XMLSerializerCtor);
 }
 
-export function createRestoredDocx(model, replacements, fflate, DOMParserCtor = globalThis.DOMParser, XMLSerializerCtor = globalThis.XMLSerializer) {
-  return createModifiedDocx(model, replacements, fflate, DOMParserCtor, XMLSerializerCtor);
-}
-
 function escapeXml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")

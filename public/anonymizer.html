@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Анонимайзер документов — Фонд МИК</title>
+  <link rel="stylesheet" href="/anonymizer.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="topbar">
+      <a class="brand" href="/" aria-label="На главную"><img src="/logo.png" alt="МИК"></a>
+      <nav class="main-nav" aria-label="Основная навигация">
+        <a class="navlink" href="/education">Обучение</a>
+        <a class="navlink" href="/cases">Кейсы</a>
+        <a class="navlink active" href="/anonymizer" aria-current="page">Анонимайзер</a>
+        <a class="navlink" href="/#how-it-works">База знаний</a>
+        <a class="navlink profile-link" href="/profile" id="profileLink">Личный кабинет</a>
+      </nav>
+      <button class="burger" id="burgerButton" type="button" aria-label="Открыть меню" aria-expanded="false">☰</button>
+    </div>
+    <nav class="mobile-menu" id="mobileMenu" aria-label="Мобильная навигация">
+      <a class="navlink" href="/education">Обучение</a>
+      <a class="navlink" href="/cases">Кейсы</a>
+      <a class="navlink active" href="/anonymizer" aria-current="page">Анонимайзер</a>
+      <a class="navlink" href="/#how-it-works">База знаний</a>
+      <a class="navlink" href="/profile">Личный кабинет</a>
+    </nav>
+  </header>
+
+  <main class="page-shell">
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <span class="eyebrow">Защитный контур работы с ИИ</span>
+        <h1 id="pageTitle">Обезличьте данные — восстановите их после работы</h1>
+        <p>Полный локальный цикл: документ или текст → токены → работа во внешнем ИИ → обратное восстановление по карте замен.</p>
+      </div>
+      <div class="privacy-badge">
+        <strong>Правила и OCR работают в браузере</strong>
+        <span>Документ не передаётся во внешний OCR. Qwen вызывается только после отдельного согласия.</span>
+      </div>
+    </section>
+
+    <section class="workspace" aria-label="Рабочая область анонимайзера">
+      <div class="mode-switch" role="tablist" aria-label="Режим работы">
+        <button class="mode-button active" id="anonymizeModeButton" type="button" role="tab" aria-selected="true">Обезличить</button>
+        <button class="mode-button" id="restoreModeButton" type="button" role="tab" aria-selected="false">Восстановить данные</button>
+      </div>
+
+      <div class="steps" aria-label="Этапы работы">
+        <div class="step active" data-step="input"><b>1</b> Ввод</div>
+        <div class="step" data-step="process"><b>2</b> Поиск</div>
+        <div class="step" data-step="result"><b>3</b> Проверка</div>
+        <div class="step" data-step="restore"><b>4</b> Восстановление</div>
+      </div>
+
+      <section class="view" id="inputView">
+        <div class="view-head">
+          <div>
+            <h2>Добавьте исходный материал</h2>
+            <p>Загрузите файл или вставьте текст вручную. Обработка начнётся только после вашей команды.</p>
+          </div>
+          <span class="format-pill">TXT · DOCX · PDF · до 10 МБ</span>
+        </div>
+
+        <div class="input-tabs" role="tablist" aria-label="Способ ввода">
+          <button class="input-tab active" id="fileTabButton" type="button" role="tab" aria-selected="true">Загрузить документ</button>
+          <button class="input-tab" id="textTabButton" type="button" role="tab" aria-selected="false">Вставить текст</button>
+        </div>
+
+        <div class="analysis-options">
+          <article>
+            <span class="option-mark local">Локально</span>
+            <strong>OCR для PDF-сканов</strong>
+            <p>Страницы без текстового слоя распознаются Tesseract.js на этом устройстве.</p>
+          </article>
+          <label class="qwen-option" for="qwenCheckbox">
+            <input id="qwenCheckbox" type="checkbox" disabled>
+            <span>
+              <span class="option-mark qwen">Qwen</span>
+              <strong>Поиск пропусков моделью</strong>
+              <p id="qwenStatus">Qwen пока не настроен администратором.</p>
+              <small>При включении извлечённый текст будет передан в настроенный Qwen-endpoint. Карта замен не передаётся.</small>
+            </span>
+          </label>
+        </div>
+
+        <div id="fileInputPanel">
+          <label class="dropzone" id="dropzone" for="fileInput">
+            <span class="drop-icon" aria-hidden="true">⇧</span>
+            <strong>Перетащите файл сюда</strong>
+            <p>или выберите его на компьютере</p>
+            <span class="btn primary">Выбрать документ</span>
+            <input id="fileInput" type="file" accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+          </label>
+          <div class="support-note">PDF-сканы без текстового слоя распознаются автоматически. Первый запуск OCR может занять больше времени.</div>
+        </div>
+
+        <div class="hidden" id="textInputPanel">
+          <label class="field-label" for="pasteInput">Исходный текст</label>
+          <textarea class="large-input" id="pasteInput" placeholder="Вставьте договор, протокол, письмо или другой текст…"></textarea>
+          <div class="input-footer">
+            <span class="muted" id="pasteCharCount">0 знаков</span>
+            <button class="btn primary" id="processTextButton" type="button">Найти чувствительные данные</button>
+          </div>
+        </div>
+
+        <div class="saved-strip">
+          <div><strong>Сохранённые на этом устройстве сессии</strong><span id="savedSessionsHint">Пока ничего не сохранено.</span></div>
+          <select id="savedSessionSelect" aria-label="Сохранённая сессия"><option value="">Выберите сессию</option></select>
+          <button class="btn ghost" id="loadSavedSessionButton" type="button" disabled>Открыть</button>
+          <button class="btn ghost danger-text" id="clearSavedSessionsButton" type="button" disabled>Удалить все</button>
+        </div>
+      </section>
+
+      <section class="view hidden" id="processingView" aria-live="polite">
+        <div class="view-head">
+          <div>
+            <h2>Строим реестр сущностей</h2>
+            <p>Извлекаем текст, связываем варианты написания и формируем устойчивые токены.</p>
+          </div>
+        </div>
+        <div class="progress-card">
+          <div class="file-row">
+            <span class="file-icon" aria-hidden="true">▤</span>
+            <div><strong id="processingFileName">Материал</strong><span id="processingFileMeta"></span></div>
+          </div>
+          <div class="progress-line"><i id="progressBar"></i></div>
+          <div class="processing-list">
+            <div data-task="read">Извлечение текста</div>
+            <div data-task="ocr">OCR страниц без текстового слоя</div>
+            <div data-task="detect">Детерминированные правила</div>
+            <div data-task="qwen">Qwen: поиск пропусков по согласию</div>
+            <div data-task="replace">Подготовка безопасной копии</div>
+            <div data-task="validate">Контроль целостности</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view hidden" id="resultView">
+        <div class="view-head">
+          <div>
+            <span class="eyebrow">Проверка человеком</span>
+            <h2>Проверьте сущности и карту замен</h2>
+            <p id="resultFileName"></p>
+          </div>
+          <div class="head-actions">
+            <button class="btn ghost" id="openRestoreButton" type="button">Перейти к восстановлению</button>
+            <button class="btn ghost" id="newDocumentButton" type="button">Другой документ</button>
+          </div>
+        </div>
+
+        <div id="resultNotice" class="notice success"></div>
+        <div class="integrity-actions hidden" id="integrityActions">
+          <button class="btn secondary" id="recalculateButton" type="button">Пересчитать результат</button>
+          <details><summary>Показать отличие</summary><pre id="integrityDetails"></pre></details>
+        </div>
+
+        <div class="summary-grid">
+          <div class="metric"><b id="foundCount">0</b><span>вхождений найдено</span></div>
+          <div class="metric ok"><b id="entityCount">0</b><span>сущностей в реестре</span></div>
+          <div class="metric warning"><b id="reviewCount">0</b><span>нужно проверить</span></div>
+          <div class="metric"><b id="categoryCount">0</b><span>категорий</span></div>
+        </div>
+
+        <div class="preview-grid">
+          <article class="preview-card">
+            <header><span>Исходный текст</span><span id="sourceLength"></span></header>
+            <textarea class="preview-text" id="sourcePreview" readonly aria-label="Исходный текст"></textarea>
+          </article>
+          <article class="preview-card">
+            <header><span>Безопасная копия</span><span id="safeLength"></span></header>
+            <textarea class="preview-text safe" id="safePreview" readonly aria-label="Безопасная копия"></textarea>
+          </article>
+        </div>
+        <div class="selection-banner" id="selectionBanner">Выделите мышью пропущенный фрагмент в любом окне — он автоматически появится в поле ниже.</div>
+
+        <section class="map-section" id="mapSection">
+          <div class="map-header">
+            <div>
+              <span class="eyebrow">Карта замен</span>
+              <h3>Какое значение заменено каким токеном</h3>
+              <p>Одна строка — одна сущность. Варианты написания объединены внутри строки.</p>
+            </div>
+            <div class="map-actions">
+              <button class="btn ghost" id="toggleOriginalsButton" type="button">Скрыть исходные значения</button>
+              <button class="btn secondary" id="mergeEntitiesButton" type="button" disabled>Объединить выбранные</button>
+            </div>
+          </div>
+
+          <div class="entity-tools">
+            <input id="manualValue" type="text" placeholder="Выделите или введите пропущенный фрагмент">
+            <select id="manualType" aria-label="Категория фрагмента"></select>
+            <select id="manualScope" aria-label="Количество замен">
+              <option value="all">Все точные вхождения</option>
+              <option value="one">Только первое вхождение</option>
+            </select>
+            <button class="btn secondary" id="addManualButton" type="button">Добавить в карту</button>
+            <button class="btn ghost" id="findSimilarButton" type="button">Найти похожие написания</button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="entity-table">
+              <thead><tr><th aria-label="Выбрать"></th><th>Исходное значение</th><th>Источник</th><th>Токен</th><th>Категория</th><th>Вхождений</th><th>Решение</th><th>Правка</th></tr></thead>
+              <tbody id="entityRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="session-panel">
+          <div>
+            <strong>Сессия и карта замен</strong>
+            <span id="sessionStatus">Текущая сессия автоматически хранится до закрытия вкладки.</span>
+          </div>
+          <button class="btn ghost" id="saveSessionButton" type="button">Сохранить на этом устройстве</button>
+          <button class="btn ghost danger-text" id="deleteCurrentSessionButton" type="button">Удалить локальную копию</button>
+        </section>
+
+        <label class="confirmation">
+          <input id="confirmationCheckbox" type="checkbox">
+          <span><strong>Я просмотрел результат</strong>Автоматическая обработка снижает риск, но не заменяет проверку человеком и соблюдение требований к ПДн и информационной безопасности.</span>
+        </label>
+        <label class="confirmation warning-confirm hidden" id="warningOverrideLabel">
+          <input id="warningOverrideCheckbox" type="checkbox">
+          <span><strong>Скачать несмотря на предупреждение</strong>Я понимаю, что контроль целостности требует внимания, и принимаю решение продолжить.</span>
+        </label>
+
+        <div class="actions">
+          <button class="btn primary" id="downloadTextButton" type="button" disabled>Скачать безопасный текст</button>
+          <button class="btn secondary" id="copyTextButton" type="button" disabled>Скопировать текст</button>
+          <button class="btn ghost" id="downloadMapButton" type="button" disabled>Скачать карту JSON</button>
+          <button class="btn ghost" id="downloadBundleButton" type="button" disabled>Скачать комплект ZIP</button>
+        </div>
+      </section>
+
+      <section class="view hidden" id="restoreView">
+        <div class="view-head">
+          <div>
+            <span class="eyebrow">Этап 4</span>
+            <h2>Восстановите реальные данные</h2>
+            <p>Верните текст после работы во внешнем ИИ и примените к нему карту замен текущей или сохранённой сессии.</p>
+          </div>
+          <button class="btn ghost" id="backToAnonymizeButton" type="button">Вернуться к обезличиванию</button>
+        </div>
+
+        <div class="restore-input-grid">
+          <article class="restore-card">
+            <div class="card-title"><strong>1. Текст с токенами</strong><label class="btn ghost compact" for="restoreFileInput">Загрузить файл<input id="restoreFileInput" type="file" accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden></label></div>
+            <textarea class="large-input restore-input" id="restoreInput" placeholder="Вставьте текст, содержащий токены вида [[ФИО_001]]…"></textarea>
+            <span class="muted" id="restoreCharCount">0 знаков</span>
+          </article>
+          <article class="restore-card">
+            <div class="card-title"><strong>2. Карта замен</strong><label class="btn ghost compact" for="restoreMapFileInput">Загрузить JSON<input id="restoreMapFileInput" type="file" accept=".json,application/json" hidden></label></div>
+            <select id="restoreMapSelect" aria-label="Источник карты замен">
+              <option value="current">Карта текущей сессии</option>
+            </select>
+            <div class="map-source-status" id="restoreMapStatus">Карта текущей сессии пока не создана.</div>
+            <button class="btn primary" id="restoreRunButton" type="button">Проверить и восстановить</button>
+          </article>
+        </div>
+
+        <div class="notice hidden" id="restoreNotice"></div>
+        <div class="summary-grid restore-metrics hidden" id="restoreMetrics">
+          <div class="metric ok"><b id="restoredCount">0</b><span>замен восстановлено</span></div>
+          <div class="metric warning"><b id="unknownTokenCount">0</b><span>неизвестных токенов</span></div>
+          <div class="metric"><b id="unusedTokenCount">0</b><span>токенов карты не использовано</span></div>
+          <div class="metric"><b id="mapEntryCount">0</b><span>записей в карте</span></div>
+        </div>
+
+        <div class="preview-grid hidden" id="restorePreviewGrid">
+          <article class="preview-card">
+            <header><span>Текст с токенами</span><span></span></header>
+            <textarea class="preview-text" id="restoreBeforePreview" readonly></textarea>
+          </article>
+          <article class="preview-card">
+            <header><span>Восстановленный текст</span><span></span></header>
+            <textarea class="preview-text restored" id="restoreAfterPreview" readonly></textarea>
+          </article>
+        </div>
+        <div class="actions hidden" id="restoreActions">
+          <button class="btn primary" id="downloadRestoredButton" type="button">Скачать восстановленный текст</button>
+          <button class="btn secondary" id="copyRestoredButton" type="button">Скопировать результат</button>
+        </div>
+      </section>
+    </section>
+
+    <p class="footer-note">Модуль снижает риск передачи персональных и конфиденциальных данных в ИИ-сервисы, но не отменяет обязанности соблюдать требования законодательства о персональных данных и информационной безопасности.</p>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/vendor/fflate.min.js"></script>
+  <script src="/vendor/tesseract/tesseract.min.js"></script>
+  <script type="module" src="/anonymizer.js"></script>
+</body>
+</html>

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { getDb } from './db.js';
 import './seed.js';
 import { setupAuth, requireAuth, requireAdmin } from './auth.js';
+import { setupAnonymizerQwen } from './anonymizer-qwen.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, '..', 'public');
@@ -26,6 +27,7 @@ app.get('/logo.png', (req, res) => {
 
 // Auth setup
 setupAuth(app, getDb);
+setupAnonymizerQwen(app, getDb);
 
 // Pretty URLs
 app.get('/', (req, res) => res.sendFile(join(publicDir, 'index.html')));
@@ -36,6 +38,7 @@ app.get('/profile', (req, res) => res.sendFile(join(publicDir, 'profile.html')))
 app.get('/training', (req, res) => res.sendFile(join(publicDir, 'education.html')));
 app.get('/education', (req, res) => res.sendFile(join(publicDir, 'education.html')));
 app.get('/cases', (req, res) => res.sendFile(join(publicDir, 'cases.html')));
+app.get('/anonymizer', (req, res) => res.sendFile(join(publicDir, 'anonymizer.html')));
 app.get('/chat', (req, res) => res.sendFile(join(publicDir, 'chat.html')));
 
 // ----- API -----

@@ -8,7 +8,7 @@ test('OCR включается для пустой или почти пусто�
   assert.equal(pageNeedsOcr('Это полноценный текстовый слой документа.', 12), false);
 });
 
-test('Qwen добавляет только непересекающиеся кандидаты и не маскирует их без человека', () => {
+test('Qwen добавляет только непересекающиеся кандидаты в автоматическую маскировку', () => {
   const rules = [{ id: 'rule-1', type: 'EMAIL', value: 'a@b.ru', start: 10, end: 16, action: 'MASK', source: 'rules' }];
   const qwen = [
     { id: 'qwen-1', type: 'PERSON', value: 'Иванов', start: 0, end: 6, action: 'MASK', source: 'qwen' },
@@ -16,6 +16,6 @@ test('Qwen добавляет только непересекающиеся ка
   ];
   const merged = mergeEntityCandidates(rules, qwen);
   assert.equal(merged.length, 2);
-  assert.equal(merged.find((item) => item.source === 'qwen').action, 'REVIEW');
+  assert.equal(merged.find((item) => item.source === 'qwen').action, 'MASK');
   assert.equal(merged.some((item) => item.id === 'qwen-2'), false);
 });

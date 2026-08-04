@@ -32,13 +32,13 @@
   <main class="page-shell">
     <section class="hero" aria-labelledby="pageTitle">
       <div>
-        <span class="eyebrow">Защитный контур работы с ИИ</span>
+        <span class="eyebrow">Защита конфиденциальных данных</span>
         <h1 id="pageTitle">Обезличьте данные — восстановите их после работы</h1>
-        <p>Полный локальный цикл: документ или текст → токены → работа во внешнем ИИ → обратное восстановление по карте замен.</p>
+        <p>Загрузите документ — сервис автоматически скроет личные и конфиденциальные данные и подготовит защищённую копию.</p>
       </div>
       <div class="privacy-badge">
-        <strong>Правила и OCR работают в браузере</strong>
-        <span>Документ не передаётся во внешний OCR. Qwen вызывается только после отдельного согласия.</span>
+        <strong>Просто и автоматически</strong>
+        <span>PDF-сканы распознаются автоматически. Перед скачиванием результат можно посмотреть и при необходимости изменить.</span>
       </div>
     </section>
 
@@ -49,9 +49,9 @@
       </div>
 
       <div class="steps" aria-label="Этапы работы">
-        <div class="step active" data-step="input"><b>1</b> Ввод</div>
-        <div class="step" data-step="process"><b>2</b> Поиск</div>
-        <div class="step" data-step="result"><b>3</b> Проверка</div>
+        <div class="step active" data-step="input"><b>1</b> Документ</div>
+        <div class="step" data-step="process"><b>2</b> Обработка</div>
+        <div class="step" data-step="result"><b>3</b> Результат</div>
         <div class="step" data-step="restore"><b>4</b> Восстановление</div>
       </div>
 
@@ -59,7 +59,7 @@
         <div class="view-head">
           <div>
             <h2>Добавьте исходный материал</h2>
-            <p>Загрузите файл или вставьте текст вручную. Обработка начнётся только после вашей команды.</p>
+            <p>Загрузите файл или вставьте текст. Всё остальное сервис сделает автоматически.</p>
           </div>
           <span class="format-pill">TXT · DOCX · PDF · до 10 МБ</span>
         </div>
@@ -69,22 +69,7 @@
           <button class="input-tab" id="textTabButton" type="button" role="tab" aria-selected="false">Вставить текст</button>
         </div>
 
-        <div class="analysis-options">
-          <article>
-            <span class="option-mark local">Локально</span>
-            <strong>OCR для PDF-сканов</strong>
-            <p>Страницы без текстового слоя распознаются Tesseract.js на этом устройстве.</p>
-          </article>
-          <label class="qwen-option" for="qwenCheckbox">
-            <input id="qwenCheckbox" type="checkbox" disabled>
-            <span>
-              <span class="option-mark qwen">Qwen</span>
-              <strong>Поиск пропусков моделью</strong>
-              <p id="qwenStatus">Qwen пока не настроен администратором.</p>
-              <small>При включении извлечённый текст будет передан в настроенный Qwen-endpoint. Карта замен не передаётся.</small>
-            </span>
-          </label>
-        </div>
+        <div class="automatic-info"><span aria-hidden="true">✓</span><div><strong>Автоматическая защита</strong><p>Сервис сам прочитает документ, найдёт чувствительные данные и создаст защищённую копию.</p></div></div>
 
         <div id="fileInputPanel">
           <label class="dropzone" id="dropzone" for="fileInput">
@@ -102,13 +87,13 @@
           <textarea class="large-input" id="pasteInput" placeholder="Вставьте договор, протокол, письмо или другой текст…"></textarea>
           <div class="input-footer">
             <span class="muted" id="pasteCharCount">0 знаков</span>
-            <button class="btn primary" id="processTextButton" type="button">Найти чувствительные данные</button>
+            <button class="btn primary" id="processTextButton" type="button">Защитить текст</button>
           </div>
         </div>
 
         <div class="saved-strip">
-          <div><strong>Сохранённые на этом устройстве сессии</strong><span id="savedSessionsHint">Пока ничего не сохранено.</span></div>
-          <select id="savedSessionSelect" aria-label="Сохранённая сессия"><option value="">Выберите сессию</option></select>
+          <div><strong>Сохранённые черновики</strong><span id="savedSessionsHint">Черновик содержит исходный документ и данные для восстановления. Не сохраняйте его на чужом компьютере.</span></div>
+          <select id="savedSessionSelect" aria-label="Сохранённый черновик"><option value="">Выберите черновик</option></select>
           <button class="btn ghost" id="loadSavedSessionButton" type="button" disabled>Открыть</button>
           <button class="btn ghost danger-text" id="clearSavedSessionsButton" type="button" disabled>Удалить все</button>
         </div>
@@ -117,8 +102,8 @@
       <section class="view hidden" id="processingView" aria-live="polite">
         <div class="view-head">
           <div>
-            <h2>Строим реестр сущностей</h2>
-            <p>Извлекаем текст, связываем варианты написания и формируем устойчивые токены.</p>
+            <h2>Защищаем документ</h2>
+            <p>Обычно это занимает несколько секунд. PDF-скан может обрабатываться дольше.</p>
           </div>
         </div>
         <div class="progress-card">
@@ -128,12 +113,12 @@
           </div>
           <div class="progress-line"><i id="progressBar"></i></div>
           <div class="processing-list">
-            <div data-task="read">Извлечение текста</div>
-            <div data-task="ocr">OCR страниц без текстового слоя</div>
-            <div data-task="detect">Детерминированные правила</div>
-            <div data-task="qwen">Qwen: поиск пропусков по согласию</div>
-            <div data-task="replace">Подготовка безопасной копии</div>
-            <div data-task="validate">Контроль целостности</div>
+            <div data-task="read">Читаем документ</div>
+            <div data-task="ocr">Распознаём страницы-сканы</div>
+            <div data-task="detect">Ищем личные и конфиденциальные данные</div>
+            <div data-task="qwen">Проводим дополнительную проверку</div>
+            <div data-task="replace">Создаём защищённую копию</div>
+            <div data-task="validate">Проверяем готовый результат</div>
           </div>
         </div>
       </section>
@@ -141,8 +126,8 @@
       <section class="view hidden" id="resultView">
         <div class="view-head">
           <div>
-            <span class="eyebrow">Проверка человеком</span>
-            <h2>Проверьте сущности и карту замен</h2>
+            <span class="eyebrow">Готово</span>
+            <h2>Защищённая копия создана</h2>
             <p id="resultFileName"></p>
           </div>
           <div class="head-actions">
@@ -158,79 +143,91 @@
         </div>
 
         <div class="summary-grid">
-          <div class="metric"><b id="foundCount">0</b><span>вхождений найдено</span></div>
-          <div class="metric ok"><b id="entityCount">0</b><span>сущностей в реестре</span></div>
-          <div class="metric warning"><b id="reviewCount">0</b><span>нужно проверить</span></div>
-          <div class="metric"><b id="categoryCount">0</b><span>категорий</span></div>
+          <div class="metric ok"><b id="foundCount">0</b><span>фрагментов скрыто</span></div>
+          <div class="metric"><b id="entityCount">0</b><span>разных значений</span></div>
+          <div class="metric"><b id="categoryCount">0</b><span>типов данных</span></div>
+          <div class="metric hidden"><b id="reviewCount">0</b><span>ожидают решения</span></div>
         </div>
 
-        <div class="preview-grid">
-          <article class="preview-card">
-            <header><span>Исходный текст</span><span id="sourceLength"></span></header>
-            <textarea class="preview-text" id="sourcePreview" readonly aria-label="Исходный текст"></textarea>
+        <div class="preview-grid document-preview-grid">
+          <article class="preview-card document-window">
+            <header><span><i class="word-mark" aria-hidden="true">W</i> Исходный документ</span><span id="sourceLength"></span></header>
+            <div class="document-desk"><textarea class="preview-text document-page" id="sourcePreview" readonly aria-label="Исходный документ"></textarea></div>
           </article>
-          <article class="preview-card">
-            <header><span>Безопасная копия</span><span id="safeLength"></span></header>
-            <textarea class="preview-text safe" id="safePreview" readonly aria-label="Безопасная копия"></textarea>
+          <article class="preview-card document-window protected-document">
+            <header><span><i class="word-mark safe-mark" aria-hidden="true">✓</i> Защищённая копия</span><span id="safeLength"></span></header>
+            <div class="document-desk"><textarea class="preview-text safe document-page" id="safePreview" readonly aria-label="Защищённая копия"></textarea></div>
           </article>
         </div>
-        <div class="selection-banner" id="selectionBanner">Выделите мышью пропущенный фрагмент в любом окне — он автоматически появится в поле ниже.</div>
+        <details class="advanced-panel">
+          <summary><span>Изменить автоматическую обработку</span><small>Необязательно</small></summary>
+          <div class="advanced-body">
+          <div class="selection-banner" id="selectionBanner">Если сервис что-то пропустил, выделите этот фрагмент в документе — он появится в поле ниже.</div>
 
-        <section class="map-section" id="mapSection">
+          <section class="map-section" id="mapSection">
           <div class="map-header">
             <div>
-              <span class="eyebrow">Карта замен</span>
-              <h3>Какое значение заменено каким токеном</h3>
-              <p>Одна строка — одна сущность. Варианты написания объединены внутри строки.</p>
+              <span class="eyebrow">Расширенные настройки</span>
+              <h3>Найденные данные</h3>
+              <p>Здесь можно отменить отдельную замену, изменить тип данных или исправить автоматический результат.</p>
             </div>
             <div class="map-actions">
-              <button class="btn ghost" id="toggleOriginalsButton" type="button">Скрыть исходные значения</button>
-              <button class="btn secondary" id="mergeEntitiesButton" type="button" disabled>Объединить выбранные</button>
+              <button class="btn ghost" id="toggleOriginalsButton" type="button">Скрыть исходные данные</button>
+              <button class="btn secondary" id="mergeEntitiesButton" type="button" disabled>Использовать одну замену</button>
             </div>
           </div>
 
           <div class="entity-tools">
-            <input id="manualValue" type="text" placeholder="Выделите или введите пропущенный фрагмент">
-            <select id="manualType" aria-label="Категория фрагмента"></select>
-            <select id="manualScope" aria-label="Количество замен">
-              <option value="all">Все точные вхождения</option>
-              <option value="one">Только первое вхождение</option>
+            <input id="manualValue" type="text" placeholder="Введите пропущенный фрагмент">
+            <select id="manualType" aria-label="Тип данных"></select>
+            <select id="manualScope" aria-label="Где скрыть">
+              <option value="all">Во всех местах</option>
+              <option value="one">Только в выбранном месте</option>
             </select>
-            <button class="btn secondary" id="addManualButton" type="button">Добавить в карту</button>
-            <button class="btn ghost" id="findSimilarButton" type="button">Найти похожие написания</button>
+            <button class="btn secondary" id="addManualButton" type="button">Скрыть этот фрагмент</button>
+            <button class="btn ghost" id="findSimilarButton" type="button">Найти похожие варианты</button>
           </div>
 
           <div class="table-wrap">
             <table class="entity-table">
-              <thead><tr><th aria-label="Выбрать"></th><th>Исходное значение</th><th>Источник</th><th>Токен</th><th>Категория</th><th>Вхождений</th><th>Решение</th><th>Правка</th></tr></thead>
+              <thead><tr><th aria-label="Выбрать"></th><th>Что скрыто</th><th>Чем заменено</th><th>Тип данных</th><th>Найдено раз</th><th>Что сделать</th><th>Действия</th></tr></thead>
               <tbody id="entityRows"></tbody>
             </table>
           </div>
+          </section>
+          </div>
+        </details>
+
+        <section class="plain-help-grid">
+          <article class="plain-help-card">
+            <strong>Черновик работы</strong>
+            <p>Содержит исходный документ, защищённую копию и данные для восстановления. Без сохранения удалится после закрытия вкладки.</p>
+          </article>
+          <article class="plain-help-card">
+            <strong>Ключ восстановления</strong>
+            <p>Запоминает, какие данные скрыты за обозначениями. Храните его отдельно от защищённого документа: вместе они позволяют вернуть исходный текст.</p>
+          </article>
         </section>
 
         <section class="session-panel">
           <div>
-            <strong>Сессия и карта замен</strong>
-            <span id="sessionStatus">Текущая сессия автоматически хранится до закрытия вкладки.</span>
+            <strong>Черновик работы</strong>
+            <span id="sessionStatus">Текущий черновик хранится только до закрытия вкладки.</span>
           </div>
-          <button class="btn ghost" id="saveSessionButton" type="button">Сохранить на этом устройстве</button>
-          <button class="btn ghost danger-text" id="deleteCurrentSessionButton" type="button">Удалить локальную копию</button>
+          <button class="btn ghost" id="saveSessionButton" type="button">Сохранить черновик</button>
+          <button class="btn ghost danger-text" id="deleteCurrentSessionButton" type="button">Удалить сохранённый черновик</button>
         </section>
 
-        <label class="confirmation">
-          <input id="confirmationCheckbox" type="checkbox">
-          <span><strong>Я просмотрел результат</strong>Автоматическая обработка снижает риск, но не заменяет проверку человеком и соблюдение требований к ПДн и информационной безопасности.</span>
-        </label>
         <label class="confirmation warning-confirm hidden" id="warningOverrideLabel">
           <input id="warningOverrideCheckbox" type="checkbox">
           <span><strong>Скачать несмотря на предупреждение</strong>Я понимаю, что контроль целостности требует внимания, и принимаю решение продолжить.</span>
         </label>
 
         <div class="actions">
-          <button class="btn primary" id="downloadTextButton" type="button" disabled>Скачать безопасный текст</button>
+          <button class="btn primary" id="downloadTextButton" type="button" disabled>Скачать защищённый текст</button>
           <button class="btn secondary" id="copyTextButton" type="button" disabled>Скопировать текст</button>
-          <button class="btn ghost" id="downloadMapButton" type="button" disabled>Скачать карту JSON</button>
-          <button class="btn ghost" id="downloadBundleButton" type="button" disabled>Скачать комплект ZIP</button>
+          <button class="btn ghost" id="downloadMapButton" type="button" disabled>Скачать ключ восстановления</button>
+          <button class="btn ghost" id="downloadBundleButton" type="button" disabled>Скачать всё одним ZIP</button>
         </div>
       </section>
 
@@ -239,38 +236,39 @@
           <div>
             <span class="eyebrow">Этап 4</span>
             <h2>Восстановите реальные данные</h2>
-            <p>Верните текст после работы во внешнем ИИ и примените к нему карту замен текущей или сохранённой сессии.</p>
+            <p>Загрузите защищённый текст и ключ восстановления, чтобы вернуть исходные данные.</p>
           </div>
           <button class="btn ghost" id="backToAnonymizeButton" type="button">Вернуться к обезличиванию</button>
         </div>
 
         <div class="restore-input-grid">
           <article class="restore-card">
-            <div class="card-title"><strong>1. Текст с токенами</strong><label class="btn ghost compact" for="restoreFileInput">Загрузить файл<input id="restoreFileInput" type="file" accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden></label></div>
-            <textarea class="large-input restore-input" id="restoreInput" placeholder="Вставьте текст, содержащий токены вида [[ФИО_001]]…"></textarea>
+            <div class="card-title"><strong>1. Защищённый текст</strong><label class="btn ghost compact" for="restoreFileInput">Загрузить файл<input id="restoreFileInput" type="file" accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden></label></div>
+            <textarea class="large-input restore-input" id="restoreInput" placeholder="Вставьте защищённый текст с обозначениями вроде [[ФИО_001]]…"></textarea>
             <span class="muted" id="restoreCharCount">0 знаков</span>
           </article>
           <article class="restore-card">
-            <div class="card-title"><strong>2. Карта замен</strong><label class="btn ghost compact" for="restoreMapFileInput">Загрузить JSON<input id="restoreMapFileInput" type="file" accept=".json,application/json" hidden></label></div>
-            <select id="restoreMapSelect" aria-label="Источник карты замен">
-              <option value="current">Карта текущей сессии</option>
+            <div class="card-title"><strong>2. Ключ восстановления</strong><label class="btn ghost compact" for="restoreMapFileInput">Загрузить ключ<input id="restoreMapFileInput" type="file" accept=".json,application/json" hidden></label></div>
+            <p class="key-help">Ключ содержит исходные значения. Храните его отдельно от защищённого документа.</p>
+            <select id="restoreMapSelect" aria-label="Ключ восстановления">
+              <option value="current">Ключ текущего документа</option>
             </select>
-            <div class="map-source-status" id="restoreMapStatus">Карта текущей сессии пока не создана.</div>
-            <button class="btn primary" id="restoreRunButton" type="button">Проверить и восстановить</button>
+            <div class="map-source-status" id="restoreMapStatus">Ключ для текущего документа пока не создан.</div>
+            <button class="btn primary" id="restoreRunButton" type="button">Восстановить данные</button>
           </article>
         </div>
 
         <div class="notice hidden" id="restoreNotice"></div>
         <div class="summary-grid restore-metrics hidden" id="restoreMetrics">
           <div class="metric ok"><b id="restoredCount">0</b><span>замен восстановлено</span></div>
-          <div class="metric warning"><b id="unknownTokenCount">0</b><span>неизвестных токенов</span></div>
-          <div class="metric"><b id="unusedTokenCount">0</b><span>токенов карты не использовано</span></div>
-          <div class="metric"><b id="mapEntryCount">0</b><span>записей в карте</span></div>
+          <div class="metric warning"><b id="unknownTokenCount">0</b><span>неизвестных обозначений</span></div>
+          <div class="metric"><b id="unusedTokenCount">0</b><span>замен не использовано</span></div>
+          <div class="metric"><b id="mapEntryCount">0</b><span>значений в ключе</span></div>
         </div>
 
         <div class="preview-grid hidden" id="restorePreviewGrid">
           <article class="preview-card">
-            <header><span>Текст с токенами</span><span></span></header>
+            <header><span>Защищённый текст</span><span></span></header>
             <textarea class="preview-text" id="restoreBeforePreview" readonly></textarea>
           </article>
           <article class="preview-card">
@@ -285,7 +283,7 @@
       </section>
     </section>
 
-    <p class="footer-note">Модуль снижает риск передачи персональных и конфиденциальных данных в ИИ-сервисы, но не отменяет обязанности соблюдать требования законодательства о персональных данных и информационной безопасности.</p>
+    <p class="footer-note">Автоматическая обработка снижает риск раскрытия персональных и конфиденциальных данных. Перед использованием результата убедитесь, что важные сведения скрыты корректно.</p>
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

@@ -151,7 +151,7 @@
 
         <div class="preview-grid document-preview-grid">
           <article class="preview-card document-window">
-            <header><span><i class="word-mark" aria-hidden="true">W</i> Исходный документ</span><span id="sourceLength"></span></header>
+            <header><span>Исходный документ</span><span id="sourceLength"></span></header>
             <div class="document-desk"><textarea class="preview-text document-page" id="sourcePreview" readonly aria-label="Исходный документ"></textarea></div>
           </article>
           <article class="preview-card document-window protected-document">
@@ -266,14 +266,14 @@
           <div class="metric"><b id="mapEntryCount">0</b><span>значений в ключе</span></div>
         </div>
 
-        <div class="preview-grid hidden" id="restorePreviewGrid">
-          <article class="preview-card">
-            <header><span>Защищённый текст</span><span></span></header>
-            <textarea class="preview-text" id="restoreBeforePreview" readonly></textarea>
+        <div class="preview-grid document-preview-grid hidden" id="restorePreviewGrid">
+          <article class="preview-card document-window">
+            <header><span>Защищённый документ</span><span></span></header>
+            <div class="document-desk"><textarea class="preview-text document-page" id="restoreBeforePreview" readonly aria-label="Защищённый документ"></textarea></div>
           </article>
-          <article class="preview-card">
-            <header><span>Восстановленный текст</span><span></span></header>
-            <textarea class="preview-text restored" id="restoreAfterPreview" readonly></textarea>
+          <article class="preview-card document-window protected-document">
+            <header><span><i class="word-mark safe-mark" aria-hidden="true">✓</i> Восстановленный документ</span><span></span></header>
+            <div class="document-desk"><textarea class="preview-text restored document-page" id="restoreAfterPreview" readonly aria-label="Восстановленный документ"></textarea></div>
           </article>
         </div>
         <div class="actions hidden" id="restoreActions">

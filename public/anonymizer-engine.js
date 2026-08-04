@@ -10,10 +10,11 @@ const TYPE_DEFINITIONS = {
   BIK: { label: "БИК", token: "БИК", defaultAction: "MASK", critical: true, priority: 130 },
   CARD: { label: "Номер карты", token: "КАРТА", defaultAction: "MASK", critical: true, priority: 132 },
   CONTRACT_NUMBER: { label: "Номер договора", token: "ДОГОВОР", defaultAction: "MASK", critical: false, priority: 85 },
-  ORGANIZATION: { label: "Организация", token: "ОРГ", defaultAction: "REVIEW", critical: false, priority: 60 },
-  MONEY: { label: "Сумма", token: "СУММА", defaultAction: "REVIEW", critical: false, priority: 55 },
+  ORGANIZATION: { label: "Организация", token: "ОРГ", defaultAction: "MASK", critical: false, priority: 60 },
+  MONEY: { label: "Сумма", token: "СУММА", defaultAction: "MASK", critical: false, priority: 55 },
   BIRTH_DATE: { label: "Дата рождения", token: "ДАТА", defaultAction: "MASK", critical: true, priority: 90 },
-  OTHER: { label: "Другое", token: "ДАННЫЕ", defaultAction: "REVIEW", critical: false, priority: 10 }
+  FRAGMENT: { label: "Фрагмент текста", token: "ФРАГМЕНТ", defaultAction: "MASK", critical: false, priority: 12 },
+  OTHER: { label: "Другое", token: "ДАННЫЕ", defaultAction: "MASK", critical: false, priority: 10 }
 };
 
 const PUBLIC_ORGANIZATIONS = [
@@ -98,7 +99,7 @@ function addMatches(text, type, regex, output, options = {}) {
       value: captured,
       start,
       end: start + captured.length,
-      action: options.action || TYPE_DEFINITIONS[type]?.defaultAction || "REVIEW",
+      action: options.action || TYPE_DEFINITIONS[type]?.defaultAction || "MASK",
       confidence: options.confidence || "medium",
       source: options.source || "rules"
     });
@@ -123,17 +124,45 @@ function resolveOverlaps(items) {
   return accepted.sort((left, right) => left.start - right.start);
 }
 
+function normalizeSurnameForm(value) {
+  const surname = String(value || "")
+    .trim()
+    .toLocaleLowerCase("ru-RU")
+    .replace(/[‐‑‒–—]/gu, "-");
+
+  // Притяжательные русские фамилии: Дерюгин, Дерюгина, Дерюгиным,
+  // Сергунина, Сергуниной. Сначала сохраняем значимую часть -ов/-ев/-ин,
+  // затем отбрасываем только падежное/родовое окончание.
+  let match = surname.match(/^(.{2,}?)(ов|ев|ёв|ин|ын)(?:а|у|ым|им|ом|е|ой|ою)?$/u);
+  if (match) return `${match[1]}${match[2]}#possessive`;
+
+  // Прилагательные фамилии: Ивановский, Ивановского, Ивановским и т. п.
+  match = surname.match(/^(.{2,}?)(?:ский|ская|ское|ского|ской|скому|ским|ском|ские|ских|скими)$/u);
+  if (match) return `${match[1]}ск#adjective`;
+
+  // Ограниченная модель фамилий на -а/-я. Она нужна для форм вроде
+  // Кострома / Костромы / Костроме / Костромой и применяется только вместе
+  // с совпадающими инициалами, поэтому не объединяет однофамильцев вслепую.
+  match = surname.match(/^(.{3,}?)(?:а|ы|у|е|ой|ою)$/u);
+  if (match) return `${match[1]}#a-family`;
+  match = surname.match(/^(.{3,}?)(?:я|и|ю|ей|ею)$/u);
+  if (match) return `${match[1]}#ya-family`;
+
+  return surname;
+}
+
 function personIdentity(value) {
   const compact = String(value || "")
     .trim()
     .toLocaleLowerCase("ru-RU")
+    .replace(/[\u00A0\u202F]/gu, " ")
     .replace(/\s+/g, " ");
   let match = compact.match(/^([а-яё])\.\s*([а-яё])\.\s*([а-яё-]{2,})$/u);
-  if (match) return `${match[3]}|${match[1]}|${match[2]}`;
+  if (match) return `${normalizeSurnameForm(match[3])}|${match[1]}|${match[2]}`;
   match = compact.match(/^([а-яё-]{2,})\s+([а-яё])\.\s*([а-яё])\.$/u);
-  if (match) return `${match[1]}|${match[2]}|${match[3]}`;
+  if (match) return `${normalizeSurnameForm(match[1])}|${match[2]}|${match[3]}`;
   const words = compact.replace(/[.]/g, " ").split(/\s+/u).filter(Boolean);
-  if (words.length >= 3) return `${words[0]}|${words[1][0]}|${words[2][0]}`;
+  if (words.length >= 3) return `${normalizeSurnameForm(words[0])}|${words[1][0]}|${words[2][0]}`;
   return compact.replace(/[.\s]/g, "");
 }
 
@@ -163,7 +192,9 @@ export function detectEntities(input) {
   const found = [];
 
   addMatches(text, "EMAIL", /[A-ZА-ЯЁ0-9._%+-]+@[A-ZА-ЯЁ0-9.-]+\.[A-ZА-ЯЁ]{2,}/giu, found, { confidence: "high" });
-  addMatches(text, "PHONE", /(?<!\d)(?:\+7|8)[ \t\-(]*(?:\d[ \t\-()]*){10}(?!\d)/g, found, { confidence: "high" });
+  // OCR can split a phone number between lines. Keep the separator window small
+  // so that unrelated digits in neighbouring paragraphs are not joined together.
+  addMatches(text, "PHONE", /(?<!\d)(?:\+7|8)(?:[\s\-()]{0,6}\d){10}(?!\d)/g, found, { confidence: "high" });
   addMatches(text, "PASSPORT", /(?:паспорт(?:\s+гражданина)?(?:\s+РФ)?|серия)\s*[:№]?\s*((?:\d{2}\s*\d{2}|\d{4})\s*№?\s*\d{6})/giu, found, { group: 1, confidence: "high" });
   addMatches(text, "SNILS", /(?:СНИЛС\s*[:№]?\s*)?(?<!\d)(\d{3}[\s-]?\d{3}[\s-]?\d{3}[\s-]?\d{2})(?!\d)/giu, found, { group: 1, validate: validSnils, confidence: "high" });
   addMatches(text, "INN", /(?:ИНН\s*[:№]?\s*)?(\d{10}|\d{12})(?!\d)/giu, found, { group: 1, validate: validInn, confidence: "high" });
@@ -173,9 +204,11 @@ export function detectEntities(input) {
   addMatches(text, "BIRTH_DATE", /(?:дата\s+рождения|родил(?:ся|ась))\s*[:\-]?\s*((?:0?[1-9]|[12]\d|3[01])[.\/-](?:0?[1-9]|1[0-2])[.\/-](?:19|20)\d{2})/giu, found, { group: 1, confidence: "high" });
 
   addMatches(text, "PERSON", /(?<![А-ЯЁа-яё-])([А-ЯЁ][а-яё-]{2,30}\s+[А-ЯЁ][а-яё-]{2,30}\s+(?:[А-ЯЁ][а-яё-]{1,24}(?:ович|евич|ич|овна|евна|ична|инична)|[А-ЯЁ][а-яё-]{1,24}\s+(?:оглы|кызы)))(?![А-ЯЁа-яё-])/gu, found, { group: 1, confidence: "medium" });
+  addMatches(text, "PERSON", /(?<![А-ЯЁа-яё-])([А-ЯЁ]{2,30}\s+[А-ЯЁ]{2,30}\s+[А-ЯЁ]{2,24}(?:ОВИЧ|ЕВИЧ|ИЧ|ОВНА|ЕВНА|ИЧНА|ИНИЧНА))(?![А-ЯЁа-яё-])/gu, found, { group: 1, confidence: "medium", source: "rules-ocr" });
   addMatches(text, "PERSON", /(?<![А-ЯЁа-яё-])([А-ЯЁ]\.\s*[А-ЯЁ]\.\s*[А-ЯЁ][а-яё-]{2,30})(?![А-ЯЁа-яё-])/gu, found, { group: 1, confidence: "medium" });
   addMatches(text, "PERSON", /(?<![А-ЯЁа-яё-])([А-ЯЁ][а-яё-]{2,30}\s+[А-ЯЁ]\.\s*[А-ЯЁ]\.)(?![А-ЯЁа-яё-])/gu, found, { group: 1, confidence: "medium" });
   addMatches(text, "PERSON", /(?:ФИО|заявитель|гражданин(?:ка)?|представитель|директор|подписант)\s*[:\-]?\s*([А-ЯЁ][а-яё-]{1,30}\s+[А-ЯЁ][а-яё-]{1,30}(?:\s+[А-ЯЁ][а-яё-]{1,30})?)/gu, found, { group: 1, confidence: "medium" });
+  addMatches(text, "PERSON", /(?:ФИО|заявитель|гражданин(?:ка)?|представитель|директор|подписант|руководитель|начальник)\s*[:\-]?\s*([А-ЯЁ]\.?\s*[А-ЯЁ]\.?\s*[А-ЯЁ][а-яё-]{2,30}|[А-ЯЁ][а-яё-]{2,30}\s+[А-ЯЁ]\.?\s*[А-ЯЁ]\.?)\b/giu, found, { group: 1, confidence: "medium", source: "rules-ocr" });
   addMatches(text, "ADDRESS", /(?:адрес(?:\s+регистрации|\s+места\s+жительства)?|прожива(?:ет|ющий)|зарегистрирован(?:а)?)\s*[:\-]?\s*([^\n;]{8,160})/giu, found, { group: 1, confidence: "medium" });
 
   addMatches(text, "CONTRACT_NUMBER", /(?:договор[а-яё]*|контракт[а-яё]*|соглашени[а-яё]*|доверенност[а-яё]*)\s*(?:от\s*\d{1,2}[.\/-]\d{1,2}[.\/-]\d{2,4}\s*)?№\s*([A-ZА-ЯЁ0-9](?:[A-ZА-ЯЁ0-9_.\/-]{0,39}[A-ZА-ЯЁ0-9])?)/giu, found, { group: 1, confidence: "medium" });
@@ -215,6 +248,32 @@ export function addManualEntity(text, value, type = "OTHER", scope = "all") {
     if (scope === "one") break;
   }
   return items;
+}
+
+export function inferEntityType(value) {
+  const text = String(value || "").trim();
+  if (!text || /^\[\[[А-ЯЁA-Z_]+_\d{3,}\]\]$/u.test(text)) return null;
+  const exact = detectEntities(text).find((item) => item.start === 0 && item.end === text.length);
+  if (exact) return exact.type;
+  if (/^(?:ООО|АО|ПАО|НКО|Фонд|ГБУ|ГКУ)\b/iu.test(text)) return "ORGANIZATION";
+  if (/^[А-ЯЁ][а-яё-]{1,30}(?:\s+[А-ЯЁ][а-яё-]{1,30}){1,2}$/u.test(text)) return "PERSON";
+  if (/^\d{1,3}(?:[ \u00a0]\d{3})*(?:[.,]\d{1,2})?\s*(?:₽|руб)/iu.test(text)) return "MONEY";
+  return "OTHER";
+}
+
+export function appendUniqueEntities(existing, additions) {
+  const entities = [...(existing || [])];
+  const occupied = new Set(entities.map((item) => `${item.start}:${item.end}`));
+  let added = 0;
+  for (const item of additions || []) {
+    const key = `${item.start}:${item.end}`;
+    if (occupied.has(key)) continue;
+    entities.push(item);
+    occupied.add(key);
+    added += 1;
+  }
+  entities.sort((left, right) => left.start - right.start);
+  return { entities, added };
 }
 
 function preferredOriginal(current, candidate) {
@@ -279,7 +338,7 @@ export function buildEntityRegistry(entities, options = {}) {
 
   registry.forEach((group) => {
     group.original = canonicalOverrides[group.id] || group.original;
-    if (group.action !== "MASK") return;
+    if (group.action === "KEEP") return;
     let token = tokenAssignments[group.id];
     const expectedPrefix = `[[${TYPE_DEFINITIONS[group.type]?.token || TYPE_DEFINITIONS.OTHER.token}_`;
     if (!String(token || "").startsWith(expectedPrefix)) {
@@ -303,7 +362,9 @@ function replaceRanges(text, replacements) {
 
 export function applyReplacements(input, entities, options = {}) {
   const text = String(input || "");
-  const selected = resolveOverlaps(assignEntityGroups(entities).filter((item) => item.action === "MASK"));
+  // Безопасность по умолчанию: REVIEW — только отметка уверенности, а не разрешение
+  // оставить исходные данные. Не маскируется только явное действие KEEP.
+  const selected = resolveOverlaps(assignEntityGroups(entities).filter((item) => item.action !== "KEEP"));
   const { registry, tokenAssignments } = buildEntityRegistry(selected, options);
   const groupById = new Map(registry.map((group) => [group.id, group]));
   const replacements = selected.map((item) => ({ ...item, token: groupById.get(item.groupId).token }));
@@ -332,6 +393,31 @@ export function extractTokens(input) {
   return [...new Set(String(input || "").match(TOKEN_PATTERN) || [])];
 }
 
+export function tokenType(token) {
+  const prefix = String(token || "").match(/^\[\[([А-ЯЁA-Z_]+)_\d{3,}\]\]$/u)?.[1] || "";
+  return Object.entries(TYPE_DEFINITIONS).find(([, definition]) => definition.token === prefix)?.[0] || "OTHER";
+}
+
+export function splitTokenizedText(input) {
+  const text = String(input || "");
+  const parts = [];
+  let cursor = 0;
+  for (const match of text.matchAll(new RegExp(TOKEN_PATTERN.source, TOKEN_PATTERN.flags))) {
+    if (match.index > cursor) parts.push({ text: text.slice(cursor, match.index), token: false, type: null });
+    parts.push({ text: match[0], token: true, type: tokenType(match[0]) });
+    cursor = match.index + match[0].length;
+  }
+  if (cursor < text.length) parts.push({ text: text.slice(cursor), token: false, type: null });
+  return parts;
+}
+
+export function resultSafetyStatus(sourceLength, replacementCount) {
+  if (Number(sourceLength) >= 500 && Number(replacementCount) === 0) {
+    return { level: "warning", title: "Нужна проверка", message: "Документ обработан, но чувствительные данные не найдены. Проверьте безопасную копию и при необходимости выделите пропущенный фрагмент." };
+  }
+  return { level: "success", title: "Готово", message: "Безопасная копия создана и проверена автоматически." };
+}
+
 export function validateMap(map) {
   const errors = [];
   if (!map || map.format !== "mik-anonymizer-map") errors.push("Неизвестный формат карты.");
@@ -348,26 +434,36 @@ export function validateMap(map) {
 export function restoreWithDiagnostics(input, map) {
   const text = String(input || "");
   const validation = validateMap(map);
-  if (!validation.ok) return { ok: false, text, restored: text, errors: validation.errors, unknownTokens: [], unusedTokens: [] };
+  if (!validation.ok) return { ok: false, text, restored: text, replacements: [], errors: validation.errors, unknownTokens: [], unusedTokens: [] };
   const entriesByToken = new Map(map.entries.map((entry) => [entry.token, entry]));
   const foundTokens = extractTokens(text);
   const unknownTokens = foundTokens.filter((token) => !entriesByToken.has(token));
   const usedTokens = foundTokens.filter((token) => entriesByToken.has(token));
   const unusedTokens = map.entries.map((entry) => entry.token).filter((token) => !foundTokens.includes(token));
-  let restored = text;
-  [...map.entries].sort((left, right) => right.token.length - left.token.length).forEach((entry) => {
-    restored = restored.split(entry.token).join(entry.original);
+  const sourceMatchesMap = !map.safeFingerprint || map.safeFingerprint === fingerprintText(text);
+  const occurrenceIndexes = new Map();
+  const replacements = [];
+  const restored = text.replace(new RegExp(TOKEN_PATTERN.source, TOKEN_PATTERN.flags), (token, offset) => {
+    const entry = entriesByToken.get(token);
+    if (!entry) return token;
+    const index = occurrenceIndexes.get(token) || 0;
+    occurrenceIndexes.set(token, index + 1);
+    const occurrences = [...(entry.occurrences || [])].sort((left, right) => left.start - right.start);
+    const replacement = sourceMatchesMap ? (occurrences[index]?.original || entry.original) : entry.original;
+    replacements.push({ token, replacement, start: offset, end: offset + token.length, entryId: entry.id || null });
+    return replacement;
   });
   return {
     ok: unknownTokens.length === 0,
     text,
     restored,
+    replacements,
     errors: [],
     unknownTokens,
     usedTokens,
     unusedTokens,
     replacedCount: usedTokens.reduce((sum, token) => sum + text.split(token).length - 1, 0),
-    sourceMatchesMap: !map.safeFingerprint || map.safeFingerprint === fingerprintText(text)
+    sourceMatchesMap
   };
 }
 
@@ -399,7 +495,15 @@ export function validateIntegrity(original, anonymized, replacements) {
 }
 
 export function scanResidual(input) {
-  const remaining = detectEntities(String(input || ""));
+  const text = String(input || "");
+  // Context rules may rediscover a placeholder after labels such as "адрес:".
+  // Ignore it when removing placeholders leaves only punctuation or a short
+  // grammatical tail (for example "по адресу [[EMAIL_001]]" -> "у").
+  const remaining = detectEntities(text).filter((item) => {
+    const withoutTokens = item.value.replace(new RegExp(TOKEN_PATTERN.source, TOKEN_PATTERN.flags), "");
+    if (withoutTokens === item.value) return true;
+    return withoutTokens.replace(/[^\p{L}\p{N}]/gu, "").length >= 4;
+  });
   return {
     critical: remaining.filter((item) => TYPE_DEFINITIONS[item.type]?.critical).length,
     warnings: remaining.filter((item) => !TYPE_DEFINITIONS[item.type]?.critical).length,

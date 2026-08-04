@@ -114,7 +114,7 @@
             <div data-task="read">Читаем документ</div>
             <div data-task="ocr">Распознаём страницы-сканы</div>
             <div data-task="detect">Ищем личные и конфиденциальные данные</div>
-            <div data-task="qwen">Проводим дополнительную проверку</div>
+            <div data-task="qwen">Проверяем локальными правилами</div>
             <div data-task="replace">Создаём защищённую копию</div>
             <div data-task="validate">Проверяем готовый результат</div>
           </div>
@@ -124,8 +124,8 @@
       <section class="view hidden" id="resultView">
         <div class="view-head">
           <div>
-            <span class="eyebrow">Готово</span>
-            <h2>Защищённая копия создана</h2>
+            <span class="eyebrow" id="resultEyebrow">Готово</span>
+            <h2 id="resultTitle">Безопасная копия создана</h2>
             <p id="resultFileName"></p>
           </div>
           <div class="head-actions">
@@ -147,27 +147,29 @@
           <div class="metric hidden"><b id="reviewCount">0</b><span>ожидают решения</span></div>
         </div>
 
-        <div class="preview-grid document-preview-grid">
-          <article class="preview-card document-window">
-            <header><span>Исходный документ</span><span id="sourceLength"></span></header>
-            <div class="document-desk"><textarea class="preview-text document-page" id="sourcePreview" readonly aria-label="Исходный документ"></textarea></div>
-          </article>
+        <div class="document-preview-grid">
           <article class="preview-card document-window protected-document">
-            <header><span><i class="word-mark safe-mark" aria-hidden="true">✓</i> Защищённая копия</span><span id="safeLength"></span></header>
-            <div class="document-desk"><textarea class="preview-text safe document-page" id="safePreview" readonly aria-label="Защищённая копия"></textarea></div>
+            <header><span><i class="word-mark safe-mark" aria-hidden="true">✓</i> Безопасная копия</span><span id="safeLength"></span></header>
+            <div class="document-desk"><div class="preview-text safe document-page" id="safePreview" role="document" tabindex="0" aria-label="Безопасная копия"></div></div>
           </article>
         </div>
         <details class="advanced-panel">
           <summary><span>Изменить автоматическую обработку</span><small>Необязательно</small></summary>
           <div class="advanced-body">
-          <div class="selection-banner" id="selectionBanner">Если сервис что-то пропустил, выделите этот фрагмент в документе — он появится в поле ниже.</div>
+          <div class="selection-banner" id="selectionBanner">Если что-то пропущено, выделите фрагмент в безопасной копии: тип определится, а текст сразу заменится токеном.</div>
+
+          <details class="source-details">
+            <summary>Показать исходный документ</summary>
+            <div class="document-desk"><div class="preview-text document-page" id="sourcePreview" role="document" aria-label="Исходный документ"></div></div>
+            <span class="muted" id="sourceLength"></span>
+          </details>
 
           <section class="map-section" id="mapSection">
           <div class="map-header">
             <div>
               <span class="eyebrow">Расширенные настройки</span>
               <h3>Найденные данные</h3>
-              <p>Здесь можно отменить отдельную замену, изменить тип данных или исправить автоматический результат.</p>
+              <p>Здесь можно явно не скрывать отдельное значение, изменить тип или исправить результат.</p>
             </div>
             <div class="map-actions">
               <button class="btn ghost" id="toggleOriginalsButton" type="button">Скрыть исходные данные</button>
@@ -176,14 +178,14 @@
           </div>
 
           <div class="entity-tools">
-            <input id="manualValue" type="text" placeholder="Введите пропущенный фрагмент">
+            <textarea id="manualValue" rows="2" placeholder="Выбранный или пропущенный фрагмент"></textarea>
             <select id="manualType" aria-label="Тип данных"></select>
             <select id="manualScope" aria-label="Где скрыть">
               <option value="all">Во всех местах</option>
               <option value="one">Только в выбранном месте</option>
             </select>
-            <button class="btn secondary" id="addManualButton" type="button">Скрыть этот фрагмент</button>
-            <button class="btn ghost" id="findSimilarButton" type="button">Найти похожие варианты</button>
+            <button class="btn secondary compact" id="addManualButton" type="button">Скрыть</button>
+            <button class="btn ghost compact" id="findSimilarButton" type="button">Похожие</button>
           </div>
 
           <div class="table-wrap">
@@ -199,11 +201,11 @@
         <section class="plain-help-grid">
           <article class="plain-help-card">
             <strong>Черновик работы</strong>
-            <p>Содержит исходный документ, защищённую копию и данные для восстановления. Без сохранения удалится после закрытия вкладки.</p>
+            <p>Сохранённое состояние обработки, к которому можно вернуться позже. Без сохранения оно удалится после закрытия вкладки.</p>
           </article>
           <article class="plain-help-card">
             <strong>Ключ восстановления</strong>
-            <p>Запоминает, какие данные скрыты за обозначениями. Храните его отдельно от защищённого документа: вместе они позволяют вернуть исходный текст.</p>
+            <p>Файл с соответствиями токенов исходным данным. Он необходим для восстановления; храните его отдельно от безопасной копии.</p>
           </article>
         </section>
 
@@ -212,6 +214,7 @@
             <strong>Черновик работы</strong>
             <span id="sessionStatus">Текущий черновик хранится только до закрытия вкладки.</span>
           </div>
+          <label class="draft-name-field"><span>Название</span><input id="draftNameInput" type="text" maxlength="80" placeholder="Например, договор с подрядчиком"></label>
           <button class="btn ghost" id="saveSessionButton" type="button">Сохранить черновик</button>
           <button class="btn ghost danger-text" id="deleteCurrentSessionButton" type="button">Удалить сохранённый черновик</button>
         </section>
@@ -222,7 +225,8 @@
         </label>
 
         <div class="actions">
-          <button class="btn primary" id="downloadTextButton" type="button" disabled>Скачать защищённый текст</button>
+          <button class="btn primary" id="downloadWordButton" type="button" disabled>Скачать Word (.docx)</button>
+          <button class="btn ghost" id="downloadTextButton" type="button" disabled>Скачать защищённый текст</button>
           <button class="btn secondary" id="copyTextButton" type="button" disabled>Скопировать текст</button>
           <button class="btn ghost" id="downloadMapButton" type="button" disabled>Скачать ключ восстановления</button>
           <button class="btn ghost" id="downloadBundleButton" type="button" disabled>Скачать всё одним ZIP</button>
@@ -234,19 +238,33 @@
           <div>
             <span class="eyebrow">Этап 4</span>
             <h2>Восстановите реальные данные</h2>
-            <p>Загрузите защищённый текст и ключ восстановления, чтобы вернуть исходные данные.</p>
+            <p>Загрузите защищённый текст и ключ восстановления. Результат можно вернуть в исходный Word или оформить как новый документ.</p>
           </div>
           <button class="btn ghost" id="backToAnonymizeButton" type="button">Вернуться к обезличиванию</button>
         </div>
 
+        <div class="restore-mode-picker" role="radiogroup" aria-label="Формат восстановленного документа">
+          <label class="restore-mode-option disabled" id="restoreOriginalModeLabel">
+            <input id="restoreOriginalMode" type="radio" name="restoreOutputMode" value="original" disabled>
+            <span><strong>Сохранить исходную вёрстку</strong><small>Для защищённого DOCX, текст которого не меняли после обезличивания.</small></span>
+          </label>
+          <label class="restore-mode-option">
+            <input id="restoreClassicMode" type="radio" name="restoreOutputMode" value="classic" checked>
+            <span><strong>Создать новый Word</strong><small>Для текста после обработки: классическое офисное оформление, Times New Roman 14.</small></span>
+          </label>
+        </div>
+        <div class="local-model-stub">Смысловая обработка моделью пока не подключена. Сервис локально восстанавливает токены и оформляет уже готовый текст.</div>
+
         <div class="restore-input-grid">
-          <article class="restore-card">
+          <article class="restore-card restore-dropzone" id="restoreSourceDropzone">
             <div class="card-title"><strong>1. Защищённый текст</strong><label class="btn ghost compact" for="restoreFileInput">Загрузить файл<input id="restoreFileInput" type="file" accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden></label></div>
+            <p class="restore-drop-hint">Перетащите сюда TXT или DOCX либо вставьте текст ниже.</p>
             <textarea class="large-input restore-input" id="restoreInput" placeholder="Вставьте защищённый текст с обозначениями вроде [[ФИО_001]]…"></textarea>
-            <span class="muted" id="restoreCharCount">0 знаков</span>
+            <div class="restore-file-status"><span class="muted" id="restoreCharCount">0 знаков</span><span class="muted" id="restoreSourceStatus">Файл не выбран</span></div>
           </article>
-          <article class="restore-card">
+          <article class="restore-card restore-dropzone" id="restoreMapDropzone">
             <div class="card-title"><strong>2. Ключ восстановления</strong><label class="btn ghost compact" for="restoreMapFileInput">Загрузить ключ<input id="restoreMapFileInput" type="file" accept=".json,application/json" hidden></label></div>
+            <p class="restore-drop-hint">Перетащите сюда JSON-ключ.</p>
             <p class="key-help">Ключ содержит исходные значения. Храните его отдельно от защищённого документа.</p>
             <select id="restoreMapSelect" aria-label="Ключ восстановления">
               <option value="current">Ключ текущего документа</option>
@@ -264,18 +282,15 @@
           <div class="metric"><b id="mapEntryCount">0</b><span>значений в ключе</span></div>
         </div>
 
-        <div class="preview-grid document-preview-grid hidden" id="restorePreviewGrid">
-          <article class="preview-card document-window">
-            <header><span>Защищённый документ</span><span></span></header>
-            <div class="document-desk"><textarea class="preview-text document-page" id="restoreBeforePreview" readonly aria-label="Защищённый документ"></textarea></div>
-          </article>
+        <div class="document-preview-grid hidden" id="restorePreviewGrid">
           <article class="preview-card document-window protected-document">
             <header><span><i class="word-mark safe-mark" aria-hidden="true">✓</i> Восстановленный документ</span><span></span></header>
-            <div class="document-desk"><textarea class="preview-text restored document-page" id="restoreAfterPreview" readonly aria-label="Восстановленный документ"></textarea></div>
+            <div class="document-desk"><div class="preview-text restored document-page" id="restoreAfterPreview" role="document" aria-label="Восстановленный документ"></div></div>
           </article>
         </div>
         <div class="actions hidden" id="restoreActions">
-          <button class="btn primary" id="downloadRestoredButton" type="button">Скачать восстановленный текст</button>
+          <button class="btn primary" id="downloadRestoredWordButton" type="button">Скачать восстановленный Word</button>
+          <button class="btn ghost" id="downloadRestoredButton" type="button">Скачать восстановленный текст</button>
           <button class="btn secondary" id="copyRestoredButton" type="button">Скопировать результат</button>
         </div>
       </section>

@@ -2,22 +2,43 @@ import * as pdfjsLib from "./vendor/pdf.min.mjs";
 import {
   ENTITY_TYPES,
   addManualEntity,
+  appendUniqueEntities,
   applyReplacements,
   assignEntityGroups,
   buildEntityRegistry,
   detectEntities,
   entityIdentity,
   fingerprintText,
+  inferEntityType,
+  resultSafetyStatus,
   restoreWithDiagnostics,
   scanResidual,
+  splitTokenizedText,
   validateIntegrity,
   validateMap
 } from "./anonymizer-engine.js";
 import { mergeEntityCandidates, pageNeedsOcr } from "./anonymizer-pipeline.js";
+import {
+  createAnonymizedDocx,
+  createClassicDocx,
+  createRestoredDocx,
+  locateDocxRange,
+  parseClassicDocument,
+  parseDocxPackage
+} from "./anonymizer-docx.js";
+import {
+  clearDraftRecords,
+  deleteDraftRecord,
+  getDraftRecord,
+  listDraftRecords,
+  migrateLegacyDrafts,
+  saveDraftRecord
+} from "./anonymizer-storage.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdf.worker.min.mjs";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_MANUAL_SELECTION = 20_000;
 const SESSION_KEY = "mik-anonymizer-current-v2";
 const SAVED_KEY = "mik-anonymizer-sessions-v2";
 
@@ -34,19 +55,28 @@ const state = {
   canonicalOverrides: {},
   sessionId: null,
   createdAt: null,
+  draftName: "",
   selectedGroups: new Set(),
   manualSelection: null,
   hideOriginals: false,
   uploadedMap: null,
   uploadedMapName: "",
   restoreResult: null,
+  restoreSourceName: "",
+  restoreSourceFormat: "text",
+  restoreLoadedText: "",
+  restoreDocxModel: null,
   ocrPages: [],
   qwenUsed: false,
-  qwenModel: null
+  qwenModel: null,
+  sourceBinary: null,
+  docxModel: null
 };
 
 let activeOcrWorker = null;
-let qwenConfiguration = { configured: false, model: null, promptVersion: null };
+let qwenConfiguration = { configured: false, model: null, promptVersion: null, localOnly: true };
+let savedSessionsCache = {};
+const sourceRangeByTextNode = new WeakMap();
 
 const $ = (id) => document.getElementById(id);
 const sleep = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
@@ -117,6 +147,7 @@ function setMode(mode) {
   $("anonymizeModeButton").setAttribute("aria-selected", String(!restore));
   $("restoreModeButton").setAttribute("aria-selected", String(restore));
   if (restore) {
+    seedRestoreFromCurrent();
     refreshRestoreMapSources();
     setView("restore");
   } else {
@@ -135,36 +166,9 @@ function setInputTab(name) {
   if (!fileMode) $("pasteInput").focus();
 }
 
-function extractParagraphText(xmlText) {
-  const xml = new DOMParser().parseFromString(xmlText, "application/xml");
-  if (xml.querySelector("parsererror")) throw new Error("DOCX_PARSE");
-  const paragraphs = Array.from(xml.getElementsByTagNameNS("*", "p"));
-  return paragraphs.map((paragraph) => {
-    const chunks = [];
-    paragraph.querySelectorAll("t, tab, br, cr").forEach((node) => {
-      if (node.localName === "tab") chunks.push("\t");
-      else if (node.localName === "br" || node.localName === "cr") chunks.push("\n");
-      else chunks.push(node.textContent || "");
-    });
-    return chunks.join("");
-  }).filter((line) => line.trim()).join("\n");
-}
-
 async function extractDocx(file) {
-  if (!window.fflate?.unzipSync) throw new Error("DOCX_LIBRARY");
-  const archive = window.fflate.unzipSync(new Uint8Array(await file.arrayBuffer()));
-  const preferredParts = [
-    "word/document.xml",
-    ...Object.keys(archive).filter((name) => /^word\/(?:header|footer)\d+\.xml$/i.test(name)).sort(),
-    "word/footnotes.xml",
-    "word/endnotes.xml",
-    "word/comments.xml"
-  ];
-  const parts = preferredParts.filter((name) => archive[name]);
-  if (!parts.length) throw new Error("DOCX_STRUCTURE");
-  const text = parts.map((name) => extractParagraphText(window.fflate.strFromU8(archive[name]))).filter(Boolean).join("\n\n");
-  if (!text.trim()) throw new Error("EMPTY_DOCUMENT");
-  return text;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  return parseDocxPackage(bytes, window.fflate).text;
 }
 
 async function getOcrWorker() {
@@ -286,6 +290,13 @@ function prepareProcessing(source) {
   state.ocrPages = [];
   state.qwenUsed = false;
   state.qwenModel = null;
+  state.sourceBinary = null;
+  state.docxModel = null;
+  state.restoreResult = null;
+  state.restoreSourceName = "";
+  state.restoreSourceFormat = "text";
+  state.restoreLoadedText = "";
+  state.restoreDocxModel = null;
   $("processingFileName").textContent = source.name;
   $("processingFileMeta").textContent = source.kind === "text" ? "Подготовка текста" : formatBytes(source.size);
   setView("processing");
@@ -293,33 +304,22 @@ function prepareProcessing(source) {
 }
 
 async function requestQwenEntities(text, ruleEntities) {
-  const response = await fetch("/api/anonymizer/qwen/entities", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-auth-token": localStorage.getItem("auth_token") || ""
-    },
-    body: JSON.stringify({ text, ruleCandidates: ruleEntities, confirmed: true })
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || `QWEN_HTTP_${response.status}`);
-  state.qwenUsed = true;
-  state.qwenModel = payload.model || qwenConfiguration.model;
-  return Array.isArray(payload.entities) ? payload.entities : [];
+  void text;
+  void ruleEntities;
+  // Заглушка для будущей браузерной модели. Исходный документ не отправляется
+  // ни на сервер приложения, ни внешнему поставщику.
+  return [];
 }
 
 async function loadQwenStatus() {
-  try {
-    const response = await fetch("/api/anonymizer/qwen/status");
-    qwenConfiguration = await response.json();
-  } catch {
-    qwenConfiguration = { configured: false, model: null, promptVersion: null };
-  }
+  // Этап работает полностью локально. Контракт смысловой проверки сохранён,
+  // но удалённая модель не вызывается до подключения браузерной реализации.
+  qwenConfiguration = { configured: false, model: null, promptVersion: "local-stub-v1", localOnly: true };
 }
 
 function sessionSnapshot() {
   return {
-    schema: 2,
+    schema: 3,
     source: state.source,
     text: state.text,
     entities: state.entities,
@@ -327,6 +327,7 @@ function sessionSnapshot() {
     canonicalOverrides: state.canonicalOverrides,
     sessionId: state.sessionId,
     createdAt: state.createdAt,
+    draftName: state.draftName,
     map: state.result?.map || null,
     updatedAt: new Date().toISOString()
   };
@@ -343,18 +344,7 @@ function autoSaveSession() {
 }
 
 function getSavedSessions() {
-  try {
-    const value = JSON.parse(localStorage.getItem(SAVED_KEY) || "{}");
-    return value && typeof value === "object" ? value : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeSavedSessions(sessions) {
-  localStorage.setItem(SAVED_KEY, JSON.stringify(sessions));
-  refreshSavedSessions();
-  refreshRestoreMapSources();
+  return savedSessionsCache;
 }
 
 function refreshSavedSessions() {
@@ -365,7 +355,7 @@ function refreshSavedSessions() {
   items.forEach((snapshot) => {
     const option = document.createElement("option");
     option.value = snapshot.sessionId;
-    option.textContent = `${snapshot.source?.name || "Без названия"} · ${new Date(snapshot.updatedAt).toLocaleString("ru-RU")}`;
+    option.textContent = `${snapshot.draftName || snapshot.source?.name || "Без названия"} · ${new Date(snapshot.updatedAt).toLocaleString("ru-RU")}`;
     select.appendChild(option);
   });
   $("savedSessionsHint").textContent = items.length
@@ -375,7 +365,7 @@ function refreshSavedSessions() {
   $("loadSavedSessionButton").disabled = !select.value;
 }
 
-function restoreSnapshot(snapshot) {
+async function restoreSnapshot(snapshot, sourceBlob = null) {
   if (!snapshot?.text || !Array.isArray(snapshot.entities)) throw new Error("Повреждённый черновик.");
   state.source = snapshot.source || { name: "Восстановленный черновик.txt", size: snapshot.text.length, kind: "text" };
   state.text = snapshot.text;
@@ -384,9 +374,17 @@ function restoreSnapshot(snapshot) {
   state.canonicalOverrides = snapshot.canonicalOverrides || {};
   state.sessionId = snapshot.sessionId || makeId();
   state.createdAt = snapshot.createdAt || new Date().toISOString();
+  state.draftName = snapshot.draftName || "";
+  $("draftNameInput").value = state.draftName;
   state.ocrPages = snapshot.source?.analysis?.ocrPages || [];
   state.qwenUsed = Boolean(snapshot.source?.analysis?.qwenUsed);
   state.qwenModel = snapshot.source?.analysis?.qwenModel || null;
+  state.sourceBinary = null;
+  state.docxModel = null;
+  if (sourceBlob && state.source?.format === "docx") {
+    state.sourceBinary = new Uint8Array(await sourceBlob.arrayBuffer());
+    state.docxModel = parseDocxPackage(state.sourceBinary, window.fflate);
+  }
   state.selectedGroups.clear();
   recalculate(false);
   renderResult();
@@ -394,13 +392,21 @@ function restoreSnapshot(snapshot) {
   showToast("Черновик открыт.");
 }
 
-function savePersistentSession() {
+async function savePersistentSession() {
   if (!state.result) return;
+  const enteredName = $("draftNameInput").value.trim();
+  state.draftName = enteredName || String(state.source?.name || "Черновик").replace(/\.[^.]+$/u, "");
+  $("draftNameInput").value = state.draftName;
   if (!window.confirm("Сохранить черновик на этом устройстве? Он содержит исходный текст и данные для восстановления.")) return;
   try {
-    const sessions = getSavedSessions();
-    sessions[state.sessionId] = sessionSnapshot();
-    writeSavedSessions(sessions);
+    const snapshot = sessionSnapshot();
+    const sourceBlob = state.sourceBinary
+      ? new Blob([state.sourceBinary], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })
+      : null;
+    await saveDraftRecord(snapshot, sourceBlob);
+    savedSessionsCache[state.sessionId] = snapshot;
+    refreshSavedSessions();
+    refreshRestoreMapSources();
     $("sessionStatus").textContent = "Черновик сохранён на этом устройстве до ручного удаления.";
     showToast("Черновик сохранён на этом устройстве.");
   } catch {
@@ -408,14 +414,38 @@ function savePersistentSession() {
   }
 }
 
-function deletePersistentSession() {
-  const sessions = getSavedSessions();
-  if (!sessions[state.sessionId]) return showToast("Этот черновик не был сохранён на устройстве.");
+async function deletePersistentSession() {
+  if (!savedSessionsCache[state.sessionId]) return showToast("Этот черновик не был сохранён на устройстве.");
   if (!window.confirm("Удалить сохранённый черновик с этого устройства?")) return;
-  delete sessions[state.sessionId];
-  writeSavedSessions(sessions);
-  $("sessionStatus").textContent = "Сохранённая копия удалена. Черновик останется открыт до закрытия вкладки.";
-  showToast("Сохранённый черновик удалён.");
+  try {
+    await deleteDraftRecord(state.sessionId);
+    delete savedSessionsCache[state.sessionId];
+    refreshSavedSessions();
+    refreshRestoreMapSources();
+    $("sessionStatus").textContent = "Сохранённая копия удалена. Черновик останется открыт до закрытия вкладки.";
+    showToast("Сохранённый черновик удалён.");
+  } catch {
+    showToast("Не удалось удалить черновик из хранилища браузера.");
+  }
+}
+
+async function initializeDraftStorage() {
+  try {
+    let legacy = {};
+    try { legacy = JSON.parse(localStorage.getItem(SAVED_KEY) || "{}"); } catch { legacy = {}; }
+    if (legacy && typeof legacy === "object") {
+      await migrateLegacyDrafts(legacy);
+      localStorage.removeItem(SAVED_KEY);
+    }
+    const records = await listDraftRecords();
+    savedSessionsCache = Object.fromEntries(records.map((record) => [record.id, record.snapshot]));
+  } catch (error) {
+    console.error("Draft storage initialization failed:", error?.message);
+    savedSessionsCache = {};
+    $("savedSessionsHint").textContent = "Локальное хранилище черновиков недоступно в этом браузере.";
+  }
+  refreshSavedSessions();
+  refreshRestoreMapSources();
 }
 
 function recalculate(save = true) {
@@ -431,6 +461,15 @@ function recalculate(save = true) {
     sessionId: state.sessionId,
     createdAt: state.createdAt
   });
+  if (state.docxModel) {
+    state.result.map.source = { format: "docx", name: state.source?.name || "document.docx" };
+    state.result.map.entries.forEach((entry) => {
+      entry.occurrences = (entry.occurrences || []).map((occurrence) => ({
+        ...occurrence,
+        docx: locateDocxRange(state.docxModel, occurrence.start, occurrence.end)
+      }));
+    });
+  }
   state.tokenAssignments = state.result.tokenAssignments;
   state.integrity = validateIntegrity(state.text, state.result.text, state.result.replacements);
   state.residual = scanResidual(state.result.text);
@@ -450,6 +489,16 @@ async function processSource(text, source, options = {}) {
   state.manualSelection = null;
   state.sessionId = makeId();
   state.createdAt = new Date().toISOString();
+  state.draftName = "";
+  state.sourceBinary = options.sourceBinary || null;
+  state.docxModel = options.docxModel || null;
+  $("draftNameInput").value = "";
+  $("restoreInput").value = "";
+  $("restoreCharCount").textContent = "0 знаков";
+  $("restoreSourceStatus").textContent = "Файл не выбран";
+  $("restoreClassicMode").checked = true;
+  updateRestoreModeAvailability();
+  clearRestoreResult();
   $("processingFileName").textContent = source.name;
   $("processingFileMeta").textContent = source.kind === "text" ? `${text.length.toLocaleString("ru-RU")} знаков` : formatBytes(source.size);
 
@@ -488,10 +537,17 @@ async function processSource(text, source, options = {}) {
 async function processFile(file) {
   try {
     validateFile(file);
-    const source = { name: file.name, size: file.size, kind: "file", mime: file.type || "" };
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    const source = { name: file.name, size: file.size, kind: "file", mime: file.type || "", format: extension };
     prepareProcessing(source);
-    const text = await extractText(file);
-    await processSource(text, source, { prepared: true });
+    if (extension === "docx") {
+      const sourceBinary = new Uint8Array(await file.arrayBuffer());
+      const docxModel = parseDocxPackage(sourceBinary, window.fflate);
+      await processSource(docxModel.text, source, { prepared: true, sourceBinary, docxModel });
+    } else {
+      const text = await extractText(file);
+      await processSource(text, source, { prepared: true });
+    }
   } catch (error) {
     console.error(error);
     setView("input");
@@ -540,30 +596,286 @@ function splitGroup(group) {
   showToast("Для разных вариантов теперь используются разные замены.");
 }
 
-function focusOccurrence(group) {
-  const occurrence = group.occurrences[0];
-  if (!occurrence) return;
-  const textarea = $("sourcePreview");
-  textarea.focus();
-  textarea.setSelectionRange(occurrence.start, occurrence.end);
-  const lineHeight = 20;
-  textarea.scrollTop = Math.max(0, state.text.slice(0, occurrence.start).split("\n").length * lineHeight - 80);
+function focusOccurrence(group, requestedIndex = 0) {
+  const token = state.tokenAssignments[group.id] || group.token;
+  const targets = [...$("safePreview").querySelectorAll(".document-token")]
+    .filter((element) => element.textContent === token);
+  if (!targets.length) return showToast("Для этих данных нет токена в безопасной копии.");
+  const index = Math.min(Math.max(0, requestedIndex), targets.length - 1);
+  $("safePreview").querySelector(".token-occurrence-nav")?.remove();
+  $("safePreview").querySelectorAll(".token-active").forEach((element) => element.classList.remove("token-active"));
+  const target = targets[index];
+  target.classList.add("token-active");
+  const navigator = document.createElement("span");
+  navigator.className = "token-occurrence-nav";
+  navigator.setAttribute("aria-label", `Вхождение ${index + 1} из ${targets.length}`);
+  const previous = document.createElement("button");
+  previous.type = "button";
+  previous.textContent = "←";
+  previous.title = "Предыдущее вхождение";
+  previous.disabled = index === 0;
+  previous.addEventListener("click", () => focusOccurrence(group, index - 1));
+  const position = document.createElement("span");
+  position.textContent = `${index + 1} из ${targets.length}`;
+  const next = document.createElement("button");
+  next.type = "button";
+  next.textContent = "→";
+  next.title = "Следующее вхождение";
+  next.disabled = index === targets.length - 1;
+  next.addEventListener("click", () => focusOccurrence(group, index + 1));
+  navigator.append(previous, position, next);
+  target.after(navigator);
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  target.classList.remove("token-flash");
+  window.requestAnimationFrame(() => target.classList.add("token-flash"));
+  window.setTimeout(() => target.classList.remove("token-flash"), 2200);
 }
 
-function renderAliasDetails(group) {
-  const details = document.createElement("details");
-  details.className = "alias-details";
-  const summary = document.createElement("summary");
-  summary.textContent = group.aliases.length > 1 ? `Вариантов написания: ${group.aliases.length}` : "Показать места в документе";
-  const list = document.createElement("ul");
-  list.className = "alias-list";
-  group.aliases.forEach((alias) => {
-    const item = document.createElement("li");
-    item.textContent = `${alias.value} — ${alias.count}`;
-    list.appendChild(item);
+function appendMappedText(parent, value, start = null, end = null, style = null) {
+  if (!value) return;
+  const textNode = document.createTextNode(value);
+  if (Number.isInteger(start) && Number.isInteger(end)) sourceRangeByTextNode.set(textNode, { start, end });
+  if (!style) {
+    parent.appendChild(textNode);
+    return;
+  }
+  const span = document.createElement("span");
+  applyRunStyle(span, style);
+  span.appendChild(textNode);
+  parent.appendChild(span);
+}
+
+function appendToken(parent, value, replacement = null) {
+  const part = splitTokenizedText(value).find((item) => item.token);
+  const token = document.createElement("span");
+  token.className = `document-token token-${(part?.type || "OTHER").toLowerCase()}`;
+  token.textContent = value;
+  token.dataset.type = part?.type || "OTHER";
+  if (replacement) {
+    token.dataset.sourceStart = String(replacement.start);
+    token.dataset.sourceEnd = String(replacement.end);
+  }
+  parent.appendChild(token);
+}
+
+function renderPlainSafeDocument(element, sourceText, replacements) {
+  let cursor = 0;
+  [...(replacements || [])].sort((left, right) => left.start - right.start).forEach((replacement) => {
+    appendMappedText(element, sourceText.slice(cursor, replacement.start), cursor, replacement.start);
+    appendToken(element, replacement.token, replacement);
+    cursor = replacement.end;
   });
-  details.append(summary, list);
-  return details;
+  appendMappedText(element, sourceText.slice(cursor), cursor, sourceText.length);
+}
+
+function renderClassicDocumentPage(element, text) {
+  element.classList.add("classic-document");
+  parseClassicDocument(text).forEach((block) => {
+    if (block.type === "table") {
+      const table = document.createElement("table");
+      table.className = "classic-table";
+      const body = document.createElement("tbody");
+      block.rows.forEach((row, rowIndex) => {
+        const rowElement = document.createElement("tr");
+        row.forEach((cell) => {
+          const cellElement = document.createElement(rowIndex === 0 ? "th" : "td");
+          cellElement.textContent = cell;
+          rowElement.appendChild(cellElement);
+        });
+        body.appendChild(rowElement);
+      });
+      table.appendChild(body);
+      element.appendChild(table);
+      return;
+    }
+    const tagName = block.type === "heading" ? (block.level === 1 ? "h1" : "h2") : "p";
+    const paragraph = document.createElement(tagName);
+    paragraph.className = block.type === "list" ? `classic-list ${block.ordered ? "ordered" : "bullet"}` : "classic-paragraph";
+    paragraph.textContent = block.text;
+    element.appendChild(paragraph);
+  });
+}
+
+function renderDocumentPage(element, text, options = {}) {
+  element.replaceChildren();
+  element.classList.remove("docx-structured", "classic-document");
+  const docxModel = options.docxModel || null;
+  element.classList.toggle("docx-structured", Boolean(docxModel));
+  if (docxModel) {
+    renderDocxDocument(element, docxModel, options);
+    return;
+  }
+  if (options.classic) {
+    renderClassicDocumentPage(element, text);
+    return;
+  }
+  if (options.tokens && options.sourceText && options.replacements) {
+    renderPlainSafeDocument(element, options.sourceText, options.replacements);
+    return;
+  }
+  if (!options.tokens) {
+    element.textContent = String(text || "");
+    return;
+  }
+  splitTokenizedText(text).forEach((part) => {
+    if (!part.token) return element.appendChild(document.createTextNode(part.text));
+    appendToken(element, part.text);
+  });
+}
+
+function applyRunStyle(element, style = {}) {
+  if (style.bold) element.style.fontWeight = "700";
+  if (style.italic) element.style.fontStyle = "italic";
+  const decorations = [];
+  if (style.underline) decorations.push("underline");
+  if (style.strike) decorations.push("line-through");
+  if (decorations.length) element.style.textDecoration = decorations.join(" ");
+  if (style.sizePt) element.style.fontSize = `${Math.min(36, Math.max(8, style.sizePt))}pt`;
+  if (/^[0-9a-f]{6}$/iu.test(style.color || "")) element.style.color = `#${style.color}`;
+}
+
+function appendStyledRange(parent, paragraph, start, end) {
+  if (end <= start) return;
+  paragraph.runs.forEach((run) => {
+    const overlapStart = Math.max(start, run.start);
+    const overlapEnd = Math.min(end, run.end);
+    if (overlapEnd <= overlapStart) return;
+    const value = run.text.slice(overlapStart - run.start, overlapEnd - run.start);
+    if (!value) return;
+    appendMappedText(parent, value, overlapStart, overlapEnd, run.style);
+  });
+}
+
+function applyParagraphStyle(element, paragraph) {
+  const style = paragraph.style || {};
+  const twipsToPt = (value) => `${Math.round((Number(value) || 0) / 20 * 10) / 10}pt`;
+  const alignment = { both: "justify", center: "center", right: "right", left: "left", distribute: "justify" }[style.alignment];
+  if (alignment) element.style.textAlign = alignment;
+  if (style.leftTwips) element.style.marginLeft = twipsToPt(style.leftTwips);
+  if (style.rightTwips) element.style.marginRight = twipsToPt(style.rightTwips);
+  if (style.beforeTwips) element.style.marginTop = twipsToPt(style.beforeTwips);
+  if (style.afterTwips) element.style.marginBottom = twipsToPt(style.afterTwips);
+  if (style.firstLineTwips || style.hangingTwips) element.style.textIndent = twipsToPt(style.firstLineTwips - style.hangingTwips);
+  if (style.lineTwips) element.style.lineHeight = style.lineRule === "exact" || style.lineRule === "atLeast"
+    ? twipsToPt(style.lineTwips)
+    : String(Math.max(1, Math.round(style.lineTwips / 240 * 100) / 100));
+  if (/heading|заголов/iu.test(style.styleId || "")) element.classList.add("docx-heading");
+  if (style.numbered) element.classList.add("docx-numbered");
+}
+
+function renderDocxParagraph(paragraph, options = {}) {
+  const element = document.createElement("p");
+  element.className = "docx-paragraph";
+  applyParagraphStyle(element, paragraph);
+  if (!paragraph.text) {
+    element.appendChild(document.createElement("br"));
+    return element;
+  }
+  const replacements = (options.replacements || [])
+    .filter((replacement) => replacement.start < paragraph.end && paragraph.start < replacement.end)
+    .sort((left, right) => left.start - right.start);
+  if (!replacements.length) {
+    appendStyledRange(element, paragraph, paragraph.start, paragraph.end);
+    return element;
+  }
+  let cursor = paragraph.start;
+  replacements.forEach((replacement) => {
+    const overlapStart = Math.max(paragraph.start, replacement.start);
+    const overlapEnd = Math.min(paragraph.end, replacement.end);
+    appendStyledRange(element, paragraph, cursor, overlapStart);
+    if (replacement.start >= paragraph.start && replacement.start < paragraph.end) {
+      if (options.tokens) appendToken(element, replacement.token, replacement);
+      else appendMappedText(element, replacement.replacement || replacement.token, replacement.start, replacement.end);
+    }
+    cursor = Math.max(cursor, overlapEnd);
+  });
+  appendStyledRange(element, paragraph, cursor, paragraph.end);
+  if (!element.childNodes.length) element.appendChild(document.createElement("br"));
+  return element;
+}
+
+function renderDocxDocument(element, model, options = {}) {
+  const main = model.parts.find((part) => part.name === "word/document.xml");
+  const renderBlocks = (container, blocks) => {
+    blocks.forEach((block) => {
+      if (block.type === "paragraph") {
+        container.appendChild(renderDocxParagraph(block.paragraph, options));
+        return;
+      }
+      const table = document.createElement("table");
+      table.className = "docx-table";
+      if (!block.style?.bordered) table.classList.add("docx-table-borderless");
+      if (block.style?.widthTwips) {
+        table.style.width = `${Math.round(block.style.widthTwips / 20 * 10) / 10}pt`;
+        table.style.maxWidth = "100%";
+      } else if (block.style?.widthPercent) {
+        table.style.width = `${Math.min(100, block.style.widthPercent)}%`;
+      }
+      if (block.style?.alignment === "center") table.style.marginInline = "auto";
+      if (block.style?.grid?.length) {
+        const total = block.style.grid.reduce((sum, width) => sum + width, 0);
+        const columnGroup = document.createElement("colgroup");
+        block.style.grid.forEach((width) => {
+          const column = document.createElement("col");
+          column.style.width = `${Math.round(width / total * 10000) / 100}%`;
+          columnGroup.appendChild(column);
+        });
+        table.appendChild(columnGroup);
+      }
+      const body = document.createElement("tbody");
+      block.rows.forEach((row) => {
+        const rowElement = document.createElement("tr");
+        row.cells.forEach((cell) => {
+          if (cell.hidden) return;
+          const cellElement = document.createElement("td");
+          if (cell.colSpan > 1) cellElement.colSpan = cell.colSpan;
+          if (cell.rowSpan > 1) cellElement.rowSpan = cell.rowSpan;
+          if (cell.widthTwips) cellElement.style.width = `${Math.round(cell.widthTwips / 20 * 10) / 10}pt`;
+          cellElement.style.verticalAlign = cell.verticalAlign === "center" ? "middle" : cell.verticalAlign;
+          cell.paragraphs.forEach((paragraph) => cellElement.appendChild(renderDocxParagraph(paragraph, options)));
+          if (!cellElement.childNodes.length) cellElement.appendChild(document.createElement("br"));
+          rowElement.appendChild(cellElement);
+        });
+        body.appendChild(rowElement);
+      });
+      table.appendChild(body);
+      container.appendChild(table);
+    });
+  };
+
+  const headers = model.parts.filter((part) => /\/header\d+\.xml$/iu.test(part.name));
+  if (headers.length) {
+    const header = document.createElement("div");
+    header.className = "docx-header";
+    headers.forEach((part) => renderBlocks(header, part.blocks));
+    element.appendChild(header);
+  }
+  renderBlocks(element, main?.blocks || []);
+  const footers = model.parts.filter((part) => /\/footer\d+\.xml$/iu.test(part.name));
+  if (footers.length) {
+    const footer = document.createElement("div");
+    footer.className = "docx-footer";
+    footers.forEach((part) => renderBlocks(footer, part.blocks));
+    element.appendChild(footer);
+  }
+  const notes = model.parts.filter((part) => /\/(?:footnotes|endnotes|comments)\.xml$/iu.test(part.name));
+  if (notes.some((part) => part.paragraphs.some((paragraph) => paragraph.text.trim()))) {
+    const details = document.createElement("details");
+    details.className = "docx-notes";
+    const summary = document.createElement("summary");
+    summary.textContent = "Сноски и примечания";
+    details.appendChild(summary);
+    notes.forEach((part) => renderBlocks(details, part.blocks));
+    element.appendChild(details);
+  }
+}
+function renderAliasDetails(group) {
+  if (group.aliases.length < 2) return null;
+  const note = document.createElement("div");
+  note.className = "alias-details";
+  note.textContent = `Вариантов написания: ${group.aliases.length}`;
+  note.title = group.aliases.map((alias) => `${alias.value} — ${alias.count}`).join("\n");
+  return note;
 }
 
 function renderEntityRows() {
@@ -610,7 +922,9 @@ function renderEntityRows() {
       renderResult();
     });
     editor.appendChild(originalInput);
-    originalCell.append(editor, renderAliasDetails(group));
+    const aliasDetails = renderAliasDetails(group);
+    originalCell.appendChild(editor);
+    if (aliasDetails) originalCell.appendChild(aliasDetails);
 
     const tokenCell = document.createElement("td");
     const token = document.createElement("code");
@@ -637,8 +951,8 @@ function renderEntityRows() {
     const actionCell = document.createElement("td");
     const actionSelect = document.createElement("select");
     actionSelect.className = "action-select";
-    actionSelect.innerHTML = '<option value="MASK">Скрыть</option><option value="KEEP">Не скрывать</option><option value="REVIEW">Решить позже</option>';
-    actionSelect.value = group.action;
+    actionSelect.innerHTML = '<option value="MASK">Скрыть</option><option value="KEEP">Не скрывать</option>';
+    actionSelect.value = group.action === "KEEP" ? "KEEP" : "MASK";
     actionSelect.addEventListener("change", () => setGroupAction(group.id, actionSelect.value));
     actionCell.appendChild(actionSelect);
 
@@ -669,23 +983,33 @@ function renderIntegrityNotice() {
   const notice = $("resultNotice");
   const actions = $("integrityActions");
   const override = $("warningOverrideLabel");
-  const review = state.registry.filter((group) => group.action === "REVIEW");
+  $("resultEyebrow").textContent = "Готово";
+  $("resultTitle").textContent = "Безопасная копия создана";
   actions.classList.toggle("hidden", state.integrity.ok);
   override.classList.toggle("hidden", state.integrity.ok);
 
   if (!state.integrity.ok) {
+    $("resultEyebrow").textContent = "Нужна проверка";
+    $("resultTitle").textContent = "Проверьте безопасную копию";
     notice.className = "notice error";
     notice.textContent = "При проверке результата обнаружено отличие. Пересчитайте документ или откройте расширенные настройки.";
     $("integrityDetails").textContent = `Первое отличие: позиция ${state.integrity.firstDifference}\n\nОжидалось:\n${state.integrity.expectedSnippet}\n\nПолучено:\n${state.integrity.actualSnippet}`;
   } else if (state.residual.critical > 0) {
+    $("resultEyebrow").textContent = "Нужна проверка";
+    $("resultTitle").textContent = "Проверьте безопасную копию";
     notice.className = "notice";
     notice.textContent = `В защищённой копии могут остаться чувствительные данные: ${state.residual.critical}. Откройте расширенные настройки и проверьте результат.`;
-  } else if (review.length > 0) {
+  } else if (state.docxModel?.mediaCount > 0) {
+    $("resultEyebrow").textContent = "Проверьте изображения";
+    $("resultTitle").textContent = "Текст Word защищён";
     notice.className = "notice";
-    notice.textContent = `Некоторые данные ожидают решения: ${review.length}. Откройте расширенные настройки.`;
+    notice.textContent = `В Word сохранены изображения: ${state.docxModel.mediaCount}. Текст внутри изображений пока не распознаётся — проверьте их перед использованием файла.`;
   } else {
-    notice.className = "notice success";
-    notice.textContent = "Готово: защищённая копия создана и проверена автоматически.";
+    const status = resultSafetyStatus(state.text.length, state.result.replacements.length);
+    notice.className = status.level === "warning" ? "notice zero-warning" : "notice success";
+    notice.textContent = status.message;
+    $("resultEyebrow").textContent = status.title;
+    $("resultTitle").textContent = status.level === "warning" ? "Проверьте безопасную копию" : "Безопасная копия создана";
   }
 }
 
@@ -695,14 +1019,19 @@ function renderResult(renderRows = true) {
   const methods = ["обработано автоматически"];
   if (state.ocrPages.length) methods.push(`OCR: ${state.ocrPages.length} стр.`);
   $("resultFileName").textContent = `${state.source?.name || "Материал"} · ${methods.join(" · ")}`;
-  $("foundCount").textContent = state.entities.length;
+  $("foundCount").textContent = state.result.replacements.length;
   $("entityCount").textContent = state.registry.length;
   $("reviewCount").textContent = review.length;
   $("categoryCount").textContent = categories.size;
   $("sourceLength").textContent = `${state.text.length.toLocaleString("ru-RU")} знаков`;
   $("safeLength").textContent = `${state.result.text.length.toLocaleString("ru-RU")} знаков`;
-  $("sourcePreview").value = state.text;
-  $("safePreview").value = state.result.text;
+  renderDocumentPage($("sourcePreview"), state.text, { docxModel: state.docxModel });
+  renderDocumentPage($("safePreview"), state.result.text, {
+    tokens: true,
+    docxModel: state.docxModel,
+    sourceText: state.text,
+    replacements: state.result.replacements
+  });
   $("mapSection").classList.toggle("hide-originals", state.hideOriginals);
   $("toggleOriginalsButton").textContent = state.hideOriginals ? "Показать исходные данные" : "Скрыть исходные данные";
   renderIntegrityNotice();
@@ -715,6 +1044,7 @@ function renderResult(renderRows = true) {
 function updateDownloadState() {
   const warningAccepted = state.integrity?.ok || $("warningOverrideCheckbox").checked;
   const enabled = Boolean(state.result) && warningAccepted;
+  $("downloadWordButton").disabled = !enabled || !state.docxModel;
   $("downloadTextButton").disabled = !enabled;
   $("copyTextButton").disabled = !enabled;
   $("downloadMapButton").disabled = !enabled || !state.result?.map?.entries?.length;
@@ -733,15 +1063,30 @@ function resetApplication() {
   state.canonicalOverrides = {};
   state.sessionId = null;
   state.createdAt = null;
+  state.draftName = "";
   state.selectedGroups.clear();
   state.manualSelection = null;
   state.ocrPages = [];
   state.qwenUsed = false;
   state.qwenModel = null;
+  state.sourceBinary = null;
+  state.docxModel = null;
+  state.restoreResult = null;
+  state.restoreSourceName = "";
+  state.restoreSourceFormat = "text";
+  state.restoreLoadedText = "";
+  state.restoreDocxModel = null;
   $("fileInput").value = "";
   $("pasteInput").value = "";
   $("pasteCharCount").textContent = "0 знаков";
   $("manualValue").value = "";
+  $("draftNameInput").value = "";
+  $("restoreInput").value = "";
+  $("restoreCharCount").textContent = "0 знаков";
+  $("restoreSourceStatus").textContent = "Файл не выбран";
+  $("restoreClassicMode").checked = true;
+  updateRestoreModeAvailability();
+  clearRestoreResult();
   $("warningOverrideCheckbox").checked = false;
   sessionStorage.removeItem(SESSION_KEY);
   setMode("anonymize");
@@ -765,17 +1110,9 @@ function selectedManualEntity(value, type) {
 }
 
 function appendNewEntities(additions) {
-  const occupied = new Set(state.entities.map((item) => `${item.start}:${item.end}`));
-  let added = 0;
-  additions.forEach((item) => {
-    if (!occupied.has(`${item.start}:${item.end}`)) {
-      state.entities.push(item);
-      occupied.add(`${item.start}:${item.end}`);
-      added += 1;
-    }
-  });
-  state.entities.sort((left, right) => left.start - right.start);
-  return added;
+  const result = appendUniqueEntities(state.entities, additions);
+  state.entities = result.entities;
+  return result.added;
 }
 
 function addManualValue() {
@@ -807,21 +1144,68 @@ function findSimilarValues() {
   showToast(added ? `Добавлено похожих вариантов: ${added}.` : "Все похожие варианты уже учтены.");
 }
 
-function captureSelection(textarea, source) {
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-  if (!Number.isInteger(start) || end <= start) return;
-  let value = textarea.value.slice(start, end).trim();
-  if (!value || value.length > 250) return;
-  if (source === "safe") {
-    const entry = state.result?.map?.entries?.find((candidate) => candidate.token === value);
-    if (entry) value = entry.original;
-    else if (!state.text.includes(value)) return showToast("Выделите значение в исходном документе или целое обозначение в защищённой копии.");
+function mappedBoundaryOffset(container, offset, endBoundary = false) {
+  if (container?.nodeType === Node.TEXT_NODE) {
+    const mapped = sourceRangeByTextNode.get(container);
+    if (!mapped) return null;
+    return Math.min(mapped.end, mapped.start + Math.max(0, offset));
   }
+  if (container?.nodeType !== Node.ELEMENT_NODE) return null;
+  const children = Array.from(container.childNodes || []);
+  const candidate = endBoundary
+    ? children[Math.max(0, Math.min(children.length - 1, offset - 1))]
+    : children[Math.min(children.length - 1, Math.max(0, offset))];
+  if (!candidate) return null;
+  const walker = document.createTreeWalker(candidate, NodeFilter.SHOW_TEXT);
+  const mappedNodes = [];
+  let node = walker.nextNode();
+  while (node) {
+    if (sourceRangeByTextNode.has(node)) mappedNodes.push(node);
+    node = walker.nextNode();
+  }
+  const mapped = sourceRangeByTextNode.get(endBoundary ? mappedNodes.at(-1) : mappedNodes[0]);
+  return mapped ? (endBoundary ? mapped.end : mapped.start) : null;
+}
+
+function selectionIntersectsToken(range) {
+  const fragment = range.cloneContents();
+  return Boolean(fragment.querySelector?.(".document-token"));
+}
+
+function captureSelection(container, source) {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || !selection.rangeCount) return;
+  const range = selection.getRangeAt(0);
+  if (!container.contains(range.commonAncestorContainer)) return;
+  if (selectionIntersectsToken(range)) return;
+  let start = mappedBoundaryOffset(range.startContainer, range.startOffset, false);
+  let end = mappedBoundaryOffset(range.endContainer, range.endOffset, true);
+  if (!Number.isInteger(start) || !Number.isInteger(end) || end <= start) {
+    return showToast("Не удалось определить границы выделения. Выделите фрагмент ещё раз.");
+  }
+  let value = state.text.slice(start, end);
+  const leading = value.match(/^\s+/u)?.[0].length || 0;
+  const trailing = value.match(/\s+$/u)?.[0].length || 0;
+  start += leading;
+  end -= trailing;
+  value = state.text.slice(start, end);
+  if (!value) return;
+  if (value.length > MAX_MANUAL_SELECTION) return showToast("Можно скрыть не более 20 000 знаков за одно выделение.");
+  if ((state.result?.replacements || []).some((replacement) => replacement.start < end && start < replacement.end)) return;
+  const type = value.length > 250 || value.includes("\n") ? "FRAGMENT" : (inferEntityType(value) || "OTHER");
   $("manualValue").value = value;
-  state.manualSelection = { source, start, end, value };
-  $("selectionBanner").textContent = `Выбрано: «${value}». Укажите категорию и добавьте в карту.`;
-  $("manualValue").scrollIntoView({ behavior: "smooth", block: "center" });
+  $("manualType").value = type;
+  $("manualScope").value = "one";
+  state.manualSelection = { source: "source", start, end, value };
+  const additions = selectedManualEntity(value, type);
+  const added = appendNewEntities(additions);
+  if (!added) return showToast("Этот фрагмент уже скрыт.");
+  state.manualSelection = null;
+  recalculate();
+  renderResult();
+  const summary = value.length > 160 ? `${value.slice(0, 157)}…` : value;
+  $("selectionBanner").textContent = `Скрыто: «${summary}». Тип определён как «${ENTITY_TYPES[type].label}». Можно выделить следующий фрагмент.`;
+  showToast(`Фрагмент скрыт: ${ENTITY_TYPES[type].label}.`);
 }
 
 function mergeSelectedEntities() {
@@ -847,6 +1231,32 @@ function currentMap() {
   return state.result?.map || null;
 }
 
+function outputBaseName() {
+  return safeBaseName($("draftNameInput")?.value.trim() || state.draftName || state.source?.name);
+}
+
+function safeDocxBytes() {
+  if (!state.docxModel) throw new Error("DOCX_SOURCE_UNAVAILABLE");
+  const created = createAnonymizedDocx(state.docxModel, state.result?.replacements || [], window.fflate);
+  if (created.skipped.length) throw new Error("DOCX_REPLACEMENT_SKIPPED");
+  return created.bytes;
+}
+
+function downloadWord() {
+  try {
+    const bytes = safeDocxBytes();
+    downloadBlob(`${outputBaseName()}_обезличено.docx`, new Blob([bytes], {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    }));
+    showToast("Word с сохранённой структурой документа скачан.");
+  } catch (error) {
+    console.error("DOCX export failed:", error?.message);
+    showToast(error?.message === "DOCX_REPLACEMENT_SKIPPED"
+      ? "Word не скачан: не все замены удалось безопасно перенести в структуру документа."
+      : "Не удалось подготовить Word. Безопасный текст остаётся доступен отдельно.");
+  }
+}
+
 function mapFromSnapshot(snapshot) {
   if (snapshot?.map) return snapshot.map;
   if (!snapshot?.text || !Array.isArray(snapshot.entities)) return null;
@@ -866,7 +1276,7 @@ function refreshRestoreMapSources() {
   Object.values(sessions).forEach((snapshot) => {
     const option = document.createElement("option");
     option.value = `saved:${snapshot.sessionId}`;
-    option.textContent = `Из черновика: ${snapshot.source?.name || snapshot.sessionId}`;
+    option.textContent = `Из черновика: ${snapshot.draftName || snapshot.source?.name || snapshot.sessionId}`;
     select.appendChild(option);
   });
   if (state.uploadedMap) {
@@ -900,6 +1310,76 @@ function updateRestoreMapStatus() {
     : validation.errors.join(" ");
 }
 
+function selectedRestoreMode() {
+  return $("restoreOriginalMode").checked ? "original" : "classic";
+}
+
+function clearRestoreResult() {
+  state.restoreResult = null;
+  $("restoreNotice").classList.add("hidden");
+  $("restoreMetrics").classList.add("hidden");
+  $("restorePreviewGrid").classList.add("hidden");
+  $("restoreActions").classList.add("hidden");
+  $("restoreAfterPreview").replaceChildren();
+}
+
+function updateRestoreModeAvailability(preferOriginal = false) {
+  const originalAvailable = Boolean(state.restoreDocxModel && $("restoreInput").value === state.restoreLoadedText);
+  $("restoreOriginalMode").disabled = !originalAvailable;
+  $("restoreOriginalModeLabel").classList.toggle("disabled", !originalAvailable);
+  if (preferOriginal && originalAvailable) $("restoreOriginalMode").checked = true;
+  if (!originalAvailable && $("restoreOriginalMode").checked) $("restoreClassicMode").checked = true;
+}
+
+function setRestoreInput(text, options = {}) {
+  const value = String(text || "");
+  $("restoreInput").value = value;
+  $("restoreCharCount").textContent = `${value.length.toLocaleString("ru-RU")} знаков`;
+  state.restoreLoadedText = value;
+  state.restoreSourceName = options.name || "";
+  state.restoreSourceFormat = options.format || "text";
+  state.restoreDocxModel = options.docxModel || null;
+  $("restoreSourceStatus").textContent = options.name || "Вставленный текст";
+  updateRestoreModeAvailability(Boolean(options.docxModel));
+  clearRestoreResult();
+}
+
+async function loadRestoreSource(file) {
+  try {
+    validateFile(file);
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (extension === "docx") {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const docxModel = parseDocxPackage(bytes, window.fflate);
+      setRestoreInput(docxModel.text, { name: file.name, format: "docx", docxModel });
+    } else {
+      const text = await extractText(file);
+      setRestoreInput(text, { name: file.name, format: extension || "text" });
+    }
+    showToast("Документ для восстановления загружен.");
+  } catch (error) {
+    showToast(errorMessage(error));
+  }
+}
+
+function seedRestoreFromCurrent() {
+  if (!state.result || $("restoreInput").value.trim()) return;
+  let docxModel = null;
+  let name = `${outputBaseName()}_обезличено.txt`;
+  let format = "text";
+  if (state.docxModel) {
+    try {
+      const bytes = safeDocxBytes();
+      docxModel = parseDocxPackage(bytes, window.fflate);
+      name = `${outputBaseName()}_обезличено.docx`;
+      format = "docx";
+    } catch (error) {
+      console.error("Restore seed DOCX failed:", error?.message);
+    }
+  }
+  setRestoreInput(docxModel?.text || state.result.text, { name, format, docxModel });
+}
+
 async function loadRestoreMap(file) {
   try {
     const map = JSON.parse(await file.text());
@@ -921,14 +1401,19 @@ function runRestoration() {
   const map = selectedRestoreMap();
   if (!text.trim()) return showToast("Вставьте или загрузите защищённый текст.");
   if (!map) return showToast("Выберите или загрузите ключ восстановления.");
+  const mode = selectedRestoreMode();
+  if (mode === "original" && (!state.restoreDocxModel || text !== state.restoreLoadedText)) {
+    return showToast("Исходная вёрстка доступна только для неизменённого защищённого DOCX.");
+  }
   const result = restoreWithDiagnostics(text, map);
-  state.restoreResult = result;
+  state.restoreResult = { ...result, mode };
   $("restoreNotice").classList.remove("hidden");
   $("restoreMetrics").classList.remove("hidden");
   $("restorePreviewGrid").classList.remove("hidden");
   $("restoreActions").classList.remove("hidden");
-  $("restoreBeforePreview").value = text;
-  $("restoreAfterPreview").value = result.restored;
+  renderDocumentPage($("restoreAfterPreview"), result.restored, mode === "original"
+    ? { docxModel: state.restoreDocxModel, replacements: result.replacements }
+    : { classic: true });
   $("restoredCount").textContent = result.replacedCount || 0;
   $("unknownTokenCount").textContent = result.unknownTokens.length;
   $("unusedTokenCount").textContent = result.unusedTokens.length;
@@ -945,14 +1430,43 @@ function runRestoration() {
     notice.textContent = `Часть данных восстановлена, но неизвестные обозначения оставлены без изменения: ${result.unknownTokens.join(", ")}.`;
   } else {
     notice.className = "notice success";
-    notice.textContent = "Все найденные обозначения распознаны, исходные данные восстановлены.";
+    notice.textContent = mode === "original"
+      ? "Данные восстановлены в структуре загруженного Word."
+      : "Данные восстановлены. Будет создан новый Word в классическом офисном оформлении.";
+  }
+}
+
+function restoredOutputBaseName() {
+  const map = selectedRestoreMap();
+  return safeBaseName(state.restoreSourceName || map?.source?.name || "восстановленный_документ");
+}
+
+function downloadRestoredWord() {
+  if (!state.restoreResult?.restored) return showToast("Сначала восстановите данные.");
+  try {
+    let bytes;
+    if (state.restoreResult.mode === "original") {
+      if (!state.restoreDocxModel) throw new Error("DOCX_SOURCE_UNAVAILABLE");
+      const created = createRestoredDocx(state.restoreDocxModel, state.restoreResult.replacements, window.fflate);
+      if (created.skipped.length) throw new Error("DOCX_REPLACEMENT_SKIPPED");
+      bytes = created.bytes;
+    } else {
+      bytes = createClassicDocx(state.restoreResult.restored, window.fflate).bytes;
+    }
+    downloadBlob(`${restoredOutputBaseName()}_восстановлено.docx`, new Blob([bytes], {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    }));
+    showToast("Восстановленный Word скачан.");
+  } catch (error) {
+    console.error("Restored DOCX export failed:", error?.message);
+    showToast("Не удалось подготовить восстановленный Word. Текст остаётся доступен отдельно.");
   }
 }
 
 function downloadBundle() {
   if (!window.fflate?.zipSync || !window.fflate?.strToU8) return showToast("Модуль упаковки ZIP не загружен.");
   if (!window.confirm("ZIP содержит ключ восстановления с исходными данными. Скачать его и хранить в защищённом месте?")) return;
-  const base = safeBaseName(state.source?.name);
+  const base = outputBaseName();
   const manifest = {
     format: "mik-anonymizer-session",
     version: 2,
@@ -963,11 +1477,20 @@ function downloadBundle() {
     safeFingerprint: fingerprintText(state.result.text),
     warning: "Ключ восстановления содержит исходные чувствительные данные. Храните его отдельно от защищённого документа."
   };
-  const archive = window.fflate.zipSync({
+  const files = {
     [`${base}_безопасный.txt`]: window.fflate.strToU8(state.result.text),
     [`${base}_ключ_восстановления.json`]: window.fflate.strToU8(JSON.stringify(state.result.map, null, 2)),
     "информация_о_черновике.json": window.fflate.strToU8(JSON.stringify(manifest, null, 2))
-  }, { level: 6 });
+  };
+  if (state.docxModel) {
+    try {
+      files[`${base}_обезличено.docx`] = safeDocxBytes();
+    } catch (error) {
+      console.error("DOCX bundle export failed:", error?.message);
+      return showToast("ZIP не создан: Word не прошёл проверку безопасной замены.");
+    }
+  }
+  const archive = window.fflate.zipSync(files, { level: 6 });
   downloadBlob(`${base}_комплект.zip`, new Blob([archive], { type: "application/zip" }));
   showToast("ZIP с защищённым текстом и ключом восстановления скачан.");
 }
@@ -984,6 +1507,22 @@ function bindUpload() {
     dropzone.classList.remove("dragging");
   }));
   dropzone.addEventListener("drop", (event) => processFile(event.dataTransfer?.files?.[0]));
+
+  const bindRestoreDropzone = (element, handler) => {
+    ["dragenter", "dragover"].forEach((name) => element.addEventListener(name, (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      element.classList.add("dragging");
+    }));
+    ["dragleave", "drop"].forEach((name) => element.addEventListener(name, (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      element.classList.remove("dragging");
+    }));
+    element.addEventListener("drop", (event) => handler(event.dataTransfer?.files?.[0]));
+  };
+  bindRestoreDropzone($("restoreSourceDropzone"), loadRestoreSource);
+  bindRestoreDropzone($("restoreMapDropzone"), loadRestoreMap);
 }
 
 function bindActions() {
@@ -1004,17 +1543,17 @@ function bindActions() {
   $("addManualButton").addEventListener("click", addManualValue);
   $("findSimilarButton").addEventListener("click", findSimilarValues);
   $("manualValue").addEventListener("keydown", (event) => {
-    if (event.key === "Enter") addManualValue();
+    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      addManualValue();
+    }
   });
   $("mergeEntitiesButton").addEventListener("click", mergeSelectedEntities);
   $("toggleOriginalsButton").addEventListener("click", () => {
     state.hideOriginals = !state.hideOriginals;
     renderResult(false);
   });
-  ["mouseup", "keyup", "select"].forEach((name) => {
-    $("sourcePreview").addEventListener(name, () => captureSelection($("sourcePreview"), "source"));
-    $("safePreview").addEventListener(name, () => captureSelection($("safePreview"), "safe"));
-  });
+  $("safePreview").addEventListener("mouseup", () => captureSelection($("safePreview"), "safe"));
   $("warningOverrideCheckbox").addEventListener("change", updateDownloadState);
   $("recalculateButton").addEventListener("click", () => {
     recalculate();
@@ -1022,13 +1561,14 @@ function bindActions() {
     showToast("Результат пересчитан из исходного текста и текущей карты.");
   });
   $("downloadTextButton").addEventListener("click", () => {
-    downloadFile(`${safeBaseName(state.source?.name)}_обезличено.txt`, state.result.text);
+    downloadFile(`${outputBaseName()}_обезличено.txt`, state.result.text);
     showToast("Безопасный текст скачан.");
   });
+  $("downloadWordButton").addEventListener("click", downloadWord);
   $("copyTextButton").addEventListener("click", () => copyText(state.result.text, "Безопасный текст скопирован."));
   $("downloadMapButton").addEventListener("click", () => {
     if (!window.confirm("Ключ восстановления содержит исходные данные. Скачать его отдельно от защищённого документа?")) return;
-    downloadFile(`${safeBaseName(state.source?.name)}_ключ_восстановления.json`, JSON.stringify(state.result.map, null, 2), "application/json;charset=utf-8");
+    downloadFile(`${outputBaseName()}_ключ_восстановления.json`, JSON.stringify(state.result.map, null, 2), "application/json;charset=utf-8");
     showToast("Ключ восстановления скачан.");
   });
   $("downloadBundleButton").addEventListener("click", downloadBundle);
@@ -1037,37 +1577,42 @@ function bindActions() {
   $("savedSessionSelect").addEventListener("change", () => {
     $("loadSavedSessionButton").disabled = !$("savedSessionSelect").value;
   });
-  $("loadSavedSessionButton").addEventListener("click", () => {
-    const snapshot = getSavedSessions()[$("savedSessionSelect").value];
-    if (snapshot) restoreSnapshot(snapshot);
+  $("loadSavedSessionButton").addEventListener("click", async () => {
+    const id = $("savedSessionSelect").value;
+    try {
+      const record = await getDraftRecord(id);
+      if (record?.snapshot) await restoreSnapshot(record.snapshot, record.sourceBlob);
+    } catch {
+      showToast("Не удалось открыть черновик из хранилища браузера.");
+    }
   });
-  $("clearSavedSessionsButton").addEventListener("click", () => {
+  $("clearSavedSessionsButton").addEventListener("click", async () => {
     if (!window.confirm("Удалить все сохранённые черновики с этого устройства?")) return;
-    localStorage.removeItem(SAVED_KEY);
-    refreshSavedSessions();
-    refreshRestoreMapSources();
-    showToast("Все сохранённые черновики удалены.");
+    try {
+      await clearDraftRecords();
+      savedSessionsCache = {};
+      refreshSavedSessions();
+      refreshRestoreMapSources();
+      showToast("Все сохранённые черновики удалены.");
+    } catch {
+      showToast("Не удалось очистить хранилище черновиков.");
+    }
   });
 
   $("restoreInput").addEventListener("input", () => {
     $("restoreCharCount").textContent = `${$("restoreInput").value.length.toLocaleString("ru-RU")} знаков`;
+    if (!state.restoreSourceName) $("restoreSourceStatus").textContent = "Вставленный текст";
+    updateRestoreModeAvailability();
+    clearRestoreResult();
   });
-  $("restoreFileInput").addEventListener("change", async (event) => {
-    try {
-      const file = event.target.files?.[0];
-      validateFile(file);
-      $("restoreInput").value = await extractText(file);
-      $("restoreCharCount").textContent = `${$("restoreInput").value.length.toLocaleString("ru-RU")} знаков`;
-      showToast("Текст для восстановления загружен.");
-    } catch (error) {
-      showToast(errorMessage(error));
-    }
-  });
+  $("restoreFileInput").addEventListener("change", (event) => loadRestoreSource(event.target.files?.[0]));
   $("restoreMapFileInput").addEventListener("change", (event) => loadRestoreMap(event.target.files?.[0]));
   $("restoreMapSelect").addEventListener("change", updateRestoreMapStatus);
+  [$("restoreOriginalMode"), $("restoreClassicMode")].forEach((input) => input.addEventListener("change", clearRestoreResult));
   $("restoreRunButton").addEventListener("click", runRestoration);
+  $("downloadRestoredWordButton").addEventListener("click", downloadRestoredWord);
   $("downloadRestoredButton").addEventListener("click", () => {
-    downloadFile("восстановленный_текст.txt", state.restoreResult?.restored || "");
+    downloadFile(`${restoredOutputBaseName()}_восстановлено.txt`, state.restoreResult?.restored || "");
     showToast("Восстановленный текст скачан.");
   });
   $("copyRestoredButton").addEventListener("click", () => copyText(state.restoreResult?.restored || "", "Восстановленный текст скопирован."));
@@ -1086,10 +1631,10 @@ function bindNavigation() {
   if (fullName && auth?.isAuthorized) $("profileLink").textContent = fullName;
 }
 
-function loadCurrentSession() {
+async function loadCurrentSession() {
   try {
     const snapshot = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
-    if (snapshot?.schema === 2 && snapshot.text && Array.isArray(snapshot.entities)) restoreSnapshot(snapshot);
+    if ([2, 3].includes(snapshot?.schema) && snapshot.text && Array.isArray(snapshot.entities)) await restoreSnapshot(snapshot);
   } catch {
     sessionStorage.removeItem(SESSION_KEY);
   }
@@ -1100,8 +1645,7 @@ loadQwenStatus();
 bindUpload();
 bindActions();
 bindNavigation();
-refreshSavedSessions();
-refreshRestoreMapSources();
+initializeDraftStorage();
 setInputTab("file");
 setView("input");
 loadCurrentSession();

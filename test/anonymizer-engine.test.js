@@ -2,14 +2,19 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   addManualEntity,
+  appendUniqueEntities,
   applyReplacements,
   assignEntityGroups,
   buildEntityRegistry,
   detectEntities,
   entityIdentity,
   fingerprintText,
+  inferEntityType,
+  resultSafetyStatus,
   restoreText,
   restoreWithDiagnostics,
+  scanResidual,
+  splitTokenizedText,
   validateIntegrity,
   validateMap
 } from "../public/anonymizer-engine.js";
@@ -62,7 +67,58 @@ test("организация в кавычках выделяется без з�
   const { registry } = buildEntityRegistry(detectEntities(text));
   const organization = registry.find((item) => item.type === "ORGANIZATION");
   assert.equal(organization.original, "ООО «Ромашка»");
-  assert.equal(organization.action, "REVIEW");
+  assert.equal(organization.action, "MASK");
+  assert.doesNotMatch(applyReplacements(text, detectEntities(text)).text, /Ромашка/);
+});
+
+test("REVIEW автоматически скрывается и только KEEP оставляет исходный текст", () => {
+  const text = "ООО «Секрет» подписало документ.";
+  const review = [{ id: "1", type: "ORGANIZATION", value: "ООО «Секрет»", start: 0, end: 12, action: "REVIEW" }];
+  assert.equal(applyReplacements(text, review).text, "[[ОРГ_001]] подписало документ.");
+  assert.equal(applyReplacements(text, [{ ...review[0], action: "KEEP" }]).text, text);
+});
+
+test("крупный документ без замен получает заметное предупреждение", () => {
+  assert.equal(resultSafetyStatus(900, 0).level, "warning");
+  assert.equal(resultSafetyStatus(900, 1).level, "success");
+});
+
+test("несколько последовательных ручных выделений добавляются без дублей", () => {
+  const text = "Альфа и Бета, затем Альфа.";
+  let current = appendUniqueEntities([], addManualEntity(text, "Альфа", "OTHER", "all"));
+  assert.equal(current.added, 2);
+  current = appendUniqueEntities(current.entities, addManualEntity(text, "Бета", "OTHER", "all"));
+  assert.equal(current.added, 1);
+  current = appendUniqueEntities(current.entities, addManualEntity(text, "Альфа", "OTHER", "all"));
+  assert.equal(current.added, 0);
+  assert.equal(current.entities.length, 3);
+});
+
+test("тип выделенного фрагмента определяется автоматически", () => {
+  assert.equal(inferEntityType("Иванов Иван Иванович"), "PERSON");
+  assert.equal(inferEntityType("ivanov@example.ru"), "EMAIL");
+  assert.equal(inferEntityType("ООО «Ромашка»"), "ORGANIZATION");
+  assert.equal(inferEntityType("[[ФИО_001]]"), null);
+});
+
+test("токены разбиваются на типизированные плашки без изменения копируемого текста", () => {
+  const text = "Клиент [[ФИО_001]], телефон [[ТЕЛЕФОН_001]].";
+  const parts = splitTokenizedText(text);
+  assert.deepEqual(parts.filter((part) => part.token).map((part) => part.type), ["PERSON", "PHONE"]);
+  assert.equal(parts.map((part) => part.text).join(""), text);
+});
+
+test("большой ручной фрагмент получает отдельный тип токена", () => {
+  const text = "Первый абзац документа.\nВторой абзац нужно скрыть целиком.";
+  const value = "Второй абзац нужно скрыть целиком.";
+  const result = applyReplacements(text, addManualEntity(text, value, "FRAGMENT", "one"));
+  assert.equal(result.text, "Первый абзац документа.\n[[ФРАГМЕНТ_001]]");
+});
+
+test("OCR-вариант ФИО в верхнем регистре распознаётся", () => {
+  const text = "Подписант ИВАНОВ ИВАН ИВАНОВИЧ утвердил документ.";
+  const result = applyReplacements(text, detectEntities(text));
+  assert.match(result.text, /\[\[ФИО_001\]\]/);
 });
 
 test("реквизиты приказа и постановления сохраняются", () => {
@@ -176,6 +232,34 @@ test("идентичность ФИО устойчива к форме запи�
   assert.equal(full, initials);
 });
 
+test("падежные формы фамилии и неразрывный пробел получают одну личность", () => {
+  const variants = [
+    "А.В. Дерюгин",
+    "А.В. Дерюгина",
+    "А.В. Дерюгиным",
+    "А.В.\u00A0Дерюгин"
+  ].map((value) => entityIdentity({ type: "PERSON", value }));
+  assert.equal(new Set(variants).size, 1);
+  assert.equal(
+    entityIdentity({ type: "PERSON", value: "К.Г. Кострома" }),
+    entityIdentity({ type: "PERSON", value: "К.Г. Костромы" })
+  );
+});
+
+test("восстановление возвращает каждой форме ФИО исходный падеж", () => {
+  const source = "А.В. Дерюгин передал документ А.В. Дерюгину и подписал его А.В. Дерюгиным.";
+  const entities = detectEntities(source).filter((item) => item.type === "PERSON");
+  const result = applyReplacements(source, entities, { sessionId: "person-cases" });
+  assert.equal(result.map.entries.filter((item) => item.type === "PERSON").length, 1);
+  const restored = restoreWithDiagnostics(result.text, result.map);
+  assert.equal(restored.restored, source);
+  assert.deepEqual(restored.replacements.map((item) => item.replacement), [
+    "А.В. Дерюгин",
+    "А.В. Дерюгину",
+    "А.В. Дерюгиным"
+  ]);
+});
+
 test("реестр отражает варианты написания и число вхождений", () => {
   const entities = assignEntityGroups([
     { id: "1", type: "PERSON", value: "К.Г. Кострома", start: 0, end: 14, action: "MASK" },
@@ -185,4 +269,16 @@ test("реестр отражает варианты написания и чи�
   assert.equal(registry.length, 1);
   assert.equal(registry[0].aliases.length, 2);
   assert.equal(registry[0].occurrences.length, 2);
+});
+
+test("OCR-перенос внутри телефона не мешает скрыть номер", () => {
+  const source = "Телефон: +7 999\n765-43-21.";
+  const phone = detectEntities(source).find((item) => item.type === "PHONE");
+  assert.ok(phone);
+  assert.equal(phone.value, "+7 999\n765-43-21");
+});
+
+test("повторная проверка не принимает токены за исходные данные", () => {
+  const safe = "Адрес регистрации: [[АДРЕС_001]]\nВ адрес [[АДРЕС_002]]\nДоступна по адресу [[EMAIL_001]].";
+  assert.equal(scanResidual(safe).critical, 0);
 });

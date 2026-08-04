@@ -14,7 +14,7 @@ export function mergeEntityCandidates(ruleEntities = [], qwenEntities = []) {
   for (const candidate of qwenEntities) {
     if (!candidate || !Number.isInteger(candidate.start) || !Number.isInteger(candidate.end)) continue;
     if (merged.some((current) => overlaps(current, candidate))) continue;
-    merged.push({ ...candidate, action: 'REVIEW', source: 'qwen' });
+    merged.push({ ...candidate, action: 'MASK', source: 'qwen' });
   }
   return merged.sort((left, right) => left.start - right.start || left.end - right.end);
 }

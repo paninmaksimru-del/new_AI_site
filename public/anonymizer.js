@@ -309,18 +309,11 @@ async function requestQwenEntities(text, ruleEntities) {
 }
 
 async function loadQwenStatus() {
-  const checkbox = $("qwenCheckbox");
-  const status = $("qwenStatus");
   try {
     const response = await fetch("/api/anonymizer/qwen/status");
     qwenConfiguration = await response.json();
-    checkbox.disabled = !qwenConfiguration.configured;
-    status.textContent = qwenConfiguration.configured
-      ? `Настроена модель ${qwenConfiguration.model}. Включите флажок, чтобы передать ей извлечённый текст.`
-      : "Qwen пока не настроен администратором.";
   } catch {
-    checkbox.disabled = true;
-    status.textContent = "Не удалось проверить настройку Qwen.";
+    qwenConfiguration = { configured: false, model: null, promptVersion: null };
   }
 }
 
@@ -343,9 +336,9 @@ function autoSaveSession() {
   if (!state.text || !state.result) return;
   try {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionSnapshot()));
-    $("sessionStatus").textContent = "Сессия автоматически сохранена до закрытия вкладки.";
+    $("sessionStatus").textContent = "Текущий черновик хранится только до закрытия вкладки.";
   } catch {
-    $("sessionStatus").textContent = "Не удалось сохранить текущую сессию в браузере.";
+    $("sessionStatus").textContent = "Не удалось временно сохранить текущий черновик в браузере.";
   }
 }
 
@@ -368,21 +361,23 @@ function refreshSavedSessions() {
   const sessions = getSavedSessions();
   const items = Object.values(sessions).sort((left, right) => String(right.updatedAt).localeCompare(String(left.updatedAt)));
   const select = $("savedSessionSelect");
-  select.innerHTML = '<option value="">Выберите сессию</option>';
+  select.innerHTML = '<option value="">Выберите черновик</option>';
   items.forEach((snapshot) => {
     const option = document.createElement("option");
     option.value = snapshot.sessionId;
     option.textContent = `${snapshot.source?.name || "Без названия"} · ${new Date(snapshot.updatedAt).toLocaleString("ru-RU")}`;
     select.appendChild(option);
   });
-  $("savedSessionsHint").textContent = items.length ? `Сохранено сессий: ${items.length}.` : "Пока ничего не сохранено.";
+  $("savedSessionsHint").textContent = items.length
+    ? `Сохранено черновиков: ${items.length}. Они содержат исходные данные и доступны только на этом устройстве.`
+    : "Черновик содержит исходный документ и данные для восстановления. Не сохраняйте его на чужом компьютере.";
   $("clearSavedSessionsButton").disabled = items.length === 0;
   $("loadSavedSessionButton").disabled = !select.value;
 }
 
 function restoreSnapshot(snapshot) {
-  if (!snapshot?.text || !Array.isArray(snapshot.entities)) throw new Error("Повреждённая сессия.");
-  state.source = snapshot.source || { name: "Восстановленная сессия.txt", size: snapshot.text.length, kind: "text" };
+  if (!snapshot?.text || !Array.isArray(snapshot.entities)) throw new Error("Повреждённый черновик.");
+  state.source = snapshot.source || { name: "Восстановленный черновик.txt", size: snapshot.text.length, kind: "text" };
   state.text = snapshot.text;
   state.entities = assignEntityGroups(snapshot.entities);
   state.tokenAssignments = snapshot.tokenAssignments || {};
@@ -396,31 +391,31 @@ function restoreSnapshot(snapshot) {
   recalculate(false);
   renderResult();
   setMode("anonymize");
-  showToast("Сессия открыта.");
+  showToast("Черновик открыт.");
 }
 
 function savePersistentSession() {
   if (!state.result) return;
-  if (!window.confirm("Сохранить исходный текст и карту замен в этом браузере? Эти данные могут содержать персональные сведения.")) return;
+  if (!window.confirm("Сохранить черновик на этом устройстве? Он содержит исходный текст и данные для восстановления.")) return;
   try {
     const sessions = getSavedSessions();
     sessions[state.sessionId] = sessionSnapshot();
     writeSavedSessions(sessions);
-    $("sessionStatus").textContent = "Сессия сохранена на этом устройстве до ручного удаления.";
-    showToast("Сессия сохранена на этом устройстве.");
+    $("sessionStatus").textContent = "Черновик сохранён на этом устройстве до ручного удаления.";
+    showToast("Черновик сохранён на этом устройстве.");
   } catch {
-    showToast("Не удалось сохранить сессию: хранилище браузера недоступно или переполнено.");
+    showToast("Не удалось сохранить черновик: хранилище браузера недоступно или переполнено.");
   }
 }
 
 function deletePersistentSession() {
   const sessions = getSavedSessions();
-  if (!sessions[state.sessionId]) return showToast("У этой сессии нет постоянной локальной копии.");
-  if (!window.confirm("Удалить сохранённую локальную копию этой сессии?")) return;
+  if (!sessions[state.sessionId]) return showToast("Этот черновик не был сохранён на устройстве.");
+  if (!window.confirm("Удалить сохранённый черновик с этого устройства?")) return;
   delete sessions[state.sessionId];
   writeSavedSessions(sessions);
-  $("sessionStatus").textContent = "Постоянная копия удалена. Сессия остаётся открытой в текущей вкладке.";
-  showToast("Локальная копия удалена.");
+  $("sessionStatus").textContent = "Сохранённая копия удалена. Черновик останется открыт до закрытия вкладки.";
+  showToast("Сохранённый черновик удалён.");
 }
 
 function recalculate(save = true) {
@@ -468,13 +463,13 @@ async function processSource(text, source, options = {}) {
   markTask("detect");
   await sleep(140);
   $("progressBar").style.width = "66%";
-  if ($("qwenCheckbox").checked && qwenConfiguration.configured) {
+  if (qwenConfiguration.configured) {
     try {
       const qwenEntities = await requestQwenEntities(text, ruleEntities);
       state.entities = assignEntityGroups(mergeEntityCandidates(ruleEntities, qwenEntities));
     } catch (error) {
       console.error("Qwen entity search failed:", error?.message);
-      showToast("Qwen недоступен: продолжаем только с локальными правилами.");
+      showToast("Дополнительная проверка временно недоступна. Документ обработан основным способом.");
     }
   }
   markTask("qwen");
@@ -514,7 +509,6 @@ function setGroupAction(groupId, action) {
     if (entity.groupId === groupId) entity.action = action;
   });
   state.selectedGroups.clear();
-  $("confirmationCheckbox").checked = false;
   $("warningOverrideCheckbox").checked = false;
   recalculate();
   renderResult();
@@ -531,7 +525,7 @@ function setGroupType(groupId, type) {
 }
 
 function splitGroup(group) {
-  if (group.aliases.length < 2) return showToast("У сущности только один вариант написания.");
+  if (group.aliases.length < 2) return showToast("У этих данных только один вариант написания.");
   const stamp = Date.now();
   group.aliases.forEach((alias, index) => {
     state.entities.forEach((entity) => {
@@ -543,7 +537,7 @@ function splitGroup(group) {
   state.selectedGroups.clear();
   recalculate();
   renderResult();
-  showToast("Варианты написания разделены на самостоятельные сущности.");
+  showToast("Для разных вариантов теперь используются разные замены.");
 }
 
 function focusOccurrence(group) {
@@ -560,7 +554,7 @@ function renderAliasDetails(group) {
   const details = document.createElement("details");
   details.className = "alias-details";
   const summary = document.createElement("summary");
-  summary.textContent = group.aliases.length > 1 ? `Вариантов написания: ${group.aliases.length}` : "Показать вхождения";
+  summary.textContent = group.aliases.length > 1 ? `Вариантов написания: ${group.aliases.length}` : "Показать места в документе";
   const list = document.createElement("ul");
   list.className = "alias-list";
   group.aliases.forEach((alias) => {
@@ -578,9 +572,9 @@ function renderEntityRows() {
   if (!state.registry.length) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = 8;
+    cell.colSpan = 7;
     cell.className = "muted";
-    cell.textContent = "Автоматические правила ничего не нашли. Вы можете выделить и добавить значение вручную.";
+    cell.textContent = "Чувствительные данные не найдены. Если сервис что-то пропустил, выделите фрагмент в документе и добавьте его вручную.";
     row.appendChild(cell);
     rows.appendChild(row);
     return;
@@ -593,7 +587,7 @@ function renderEntityRows() {
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = state.selectedGroups.has(group.id);
-    checkbox.setAttribute("aria-label", `Выбрать сущность ${group.original}`);
+    checkbox.setAttribute("aria-label", `Выбрать данные ${group.original}`);
     checkbox.addEventListener("change", () => {
       if (checkbox.checked) state.selectedGroups.add(group.id);
       else state.selectedGroups.delete(group.id);
@@ -607,7 +601,7 @@ function renderEntityRows() {
     editor.className = "original-editor";
     const originalInput = document.createElement("input");
     originalInput.value = state.canonicalOverrides[group.id] || group.original;
-    originalInput.setAttribute("aria-label", `Исходное значение для ${group.token || group.label}`);
+    originalInput.setAttribute("aria-label", `Что скрыто для ${group.token || group.label}`);
     originalInput.addEventListener("change", () => {
       const value = originalInput.value.trim();
       if (!value) return renderResult();
@@ -617,18 +611,6 @@ function renderEntityRows() {
     });
     editor.appendChild(originalInput);
     originalCell.append(editor, renderAliasDetails(group));
-
-    const sourceCell = document.createElement("td");
-    const sourceBadges = document.createElement("div");
-    sourceBadges.className = "source-badges";
-    const sourceLabels = { rules: "Правила", qwen: "Qwen", manual: "Вручную", "manual-selection": "Вручную" };
-    (group.sources || ["rules"]).forEach((source) => {
-      const badge = document.createElement("span");
-      badge.className = `source-badge ${source === "qwen" ? "qwen" : ""}`;
-      badge.textContent = sourceLabels[source] || source;
-      sourceBadges.appendChild(badge);
-    });
-    sourceCell.appendChild(sourceBadges);
 
     const tokenCell = document.createElement("td");
     const token = document.createElement("code");
@@ -655,7 +637,7 @@ function renderEntityRows() {
     const actionCell = document.createElement("td");
     const actionSelect = document.createElement("select");
     actionSelect.className = "action-select";
-    actionSelect.innerHTML = '<option value="MASK">Заменить</option><option value="KEEP">Оставить</option><option value="REVIEW">Проверить</option>';
+    actionSelect.innerHTML = '<option value="MASK">Скрыть</option><option value="KEEP">Не скрывать</option><option value="REVIEW">Решить позже</option>';
     actionSelect.value = group.action;
     actionSelect.addEventListener("change", () => setGroupAction(group.id, actionSelect.value));
     actionCell.appendChild(actionSelect);
@@ -666,18 +648,18 @@ function renderEntityRows() {
     const locateButton = document.createElement("button");
     locateButton.type = "button";
     locateButton.className = "row-button";
-    locateButton.textContent = "В тексте";
+    locateButton.textContent = "Показать в документе";
     locateButton.addEventListener("click", () => focusOccurrence(group));
     const splitButton = document.createElement("button");
     splitButton.type = "button";
     splitButton.className = "row-button";
-    splitButton.textContent = "Разделить";
+    splitButton.textContent = "Использовать разные замены";
     splitButton.disabled = group.aliases.length < 2;
     splitButton.addEventListener("click", () => splitGroup(group));
     buttons.append(locateButton, splitButton);
     editCell.appendChild(buttons);
 
-    row.append(selectCell, originalCell, sourceCell, tokenCell, typeCell, countCell, actionCell, editCell);
+    row.append(selectCell, originalCell, tokenCell, typeCell, countCell, actionCell, editCell);
     rows.appendChild(row);
   });
   $("mergeEntitiesButton").disabled = state.selectedGroups.size < 2;
@@ -693,26 +675,25 @@ function renderIntegrityNotice() {
 
   if (!state.integrity.ok) {
     notice.className = "notice error";
-    notice.textContent = "Контроль целостности требует внимания. Можно пересчитать, продолжить ручную проверку или скачать после отдельного подтверждения.";
+    notice.textContent = "При проверке результата обнаружено отличие. Пересчитайте документ или откройте расширенные настройки.";
     $("integrityDetails").textContent = `Первое отличие: позиция ${state.integrity.firstDifference}\n\nОжидалось:\n${state.integrity.expectedSnippet}\n\nПолучено:\n${state.integrity.actualSnippet}`;
   } else if (state.residual.critical > 0) {
     notice.className = "notice";
-    notice.textContent = `Целостность пройдена, но в безопасном тексте осталось критических находок: ${state.residual.critical}. Проверьте карту и добавьте пропуски вручную.`;
+    notice.textContent = `В защищённой копии могут остаться чувствительные данные: ${state.residual.critical}. Откройте расширенные настройки и проверьте результат.`;
   } else if (review.length > 0) {
     notice.className = "notice";
-    notice.textContent = `Целостность пройдена. Требуют решения спорные сущности: ${review.length}.`;
+    notice.textContent = `Некоторые данные ожидают решения: ${review.length}. Откройте расширенные настройки.`;
   } else {
     notice.className = "notice success";
-    notice.textContent = "Контроль целостности пройден: изменены только подтверждённые фрагменты.";
+    notice.textContent = "Готово: защищённая копия создана и проверена автоматически.";
   }
 }
 
 function renderResult(renderRows = true) {
   const categories = new Set(state.registry.map((group) => group.type));
   const review = state.registry.filter((group) => group.action === "REVIEW");
-  const methods = ["правила"];
+  const methods = ["обработано автоматически"];
   if (state.ocrPages.length) methods.push(`OCR: ${state.ocrPages.length} стр.`);
-  if (state.qwenUsed) methods.push(`Qwen: ${state.qwenModel || "модель"}`);
   $("resultFileName").textContent = `${state.source?.name || "Материал"} · ${methods.join(" · ")}`;
   $("foundCount").textContent = state.entities.length;
   $("entityCount").textContent = state.registry.length;
@@ -723,7 +704,7 @@ function renderResult(renderRows = true) {
   $("sourcePreview").value = state.text;
   $("safePreview").value = state.result.text;
   $("mapSection").classList.toggle("hide-originals", state.hideOriginals);
-  $("toggleOriginalsButton").textContent = state.hideOriginals ? "Показать исходные значения" : "Скрыть исходные значения";
+  $("toggleOriginalsButton").textContent = state.hideOriginals ? "Показать исходные данные" : "Скрыть исходные данные";
   renderIntegrityNotice();
   if (renderRows) renderEntityRows();
   updateDownloadState();
@@ -733,7 +714,7 @@ function renderResult(renderRows = true) {
 
 function updateDownloadState() {
   const warningAccepted = state.integrity?.ok || $("warningOverrideCheckbox").checked;
-  const enabled = $("confirmationCheckbox").checked && warningAccepted;
+  const enabled = Boolean(state.result) && warningAccepted;
   $("downloadTextButton").disabled = !enabled;
   $("copyTextButton").disabled = !enabled;
   $("downloadMapButton").disabled = !enabled || !state.result?.map?.entries?.length;
@@ -761,7 +742,6 @@ function resetApplication() {
   $("pasteInput").value = "";
   $("pasteCharCount").textContent = "0 знаков";
   $("manualValue").value = "";
-  $("confirmationCheckbox").checked = false;
   $("warningOverrideCheckbox").checked = false;
   sessionStorage.removeItem(SESSION_KEY);
   setMode("anonymize");
@@ -809,10 +789,9 @@ function addManualValue() {
   const added = appendNewEntities(additions);
   $("manualValue").value = "";
   state.manualSelection = null;
-  $("confirmationCheckbox").checked = false;
   recalculate();
   renderResult();
-  showToast(added ? `Добавлено вхождений: ${added}.` : "Все такие вхождения уже находятся в карте.");
+  showToast(added ? `Фрагмент скрыт в местах: ${added}.` : "Все такие фрагменты уже скрыты.");
 }
 
 function findSimilarValues() {
@@ -825,7 +804,7 @@ function findSimilarValues() {
   const added = appendNewEntities(matches);
   recalculate();
   renderResult();
-  showToast(added ? `Добавлено похожих вхождений: ${added}.` : "Все похожие вхождения уже связаны.");
+  showToast(added ? `Добавлено похожих вариантов: ${added}.` : "Все похожие варианты уже учтены.");
 }
 
 function captureSelection(textarea, source) {
@@ -837,7 +816,7 @@ function captureSelection(textarea, source) {
   if (source === "safe") {
     const entry = state.result?.map?.entries?.find((candidate) => candidate.token === value);
     if (entry) value = entry.original;
-    else if (!state.text.includes(value)) return showToast("Выделите значение в исходном тексте или целый токен в безопасной копии.");
+    else if (!state.text.includes(value)) return showToast("Выделите значение в исходном документе или целое обозначение в защищённой копии.");
   }
   $("manualValue").value = value;
   state.manualSelection = { source, start, end, value };
@@ -848,7 +827,7 @@ function captureSelection(textarea, source) {
 function mergeSelectedEntities() {
   const groups = state.registry.filter((group) => state.selectedGroups.has(group.id));
   if (groups.length < 2) return;
-  if (new Set(groups.map((group) => group.type)).size > 1) return showToast("Сначала приведите выбранные сущности к одной категории.");
+  if (new Set(groups.map((group) => group.type)).size > 1) return showToast("Сначала выберите для этих данных один тип.");
   const target = groups[0];
   const sourceIds = new Set(groups.slice(1).map((group) => group.id));
   state.entities.forEach((entity) => {
@@ -861,7 +840,7 @@ function mergeSelectedEntities() {
   state.selectedGroups.clear();
   recalculate();
   renderResult();
-  showToast(`Объединено сущностей: ${groups.length}. Используется токен ${state.tokenAssignments[target.id]}.`);
+  showToast(`Теперь для выбранных данных используется одна замена: ${state.tokenAssignments[target.id]}.`);
 }
 
 function currentMap() {
@@ -882,18 +861,18 @@ function mapFromSnapshot(snapshot) {
 function refreshRestoreMapSources() {
   const select = $("restoreMapSelect");
   const previous = select.value;
-  select.innerHTML = '<option value="current">Карта текущей сессии</option>';
+  select.innerHTML = '<option value="current">Ключ текущего документа</option>';
   const sessions = getSavedSessions();
   Object.values(sessions).forEach((snapshot) => {
     const option = document.createElement("option");
     option.value = `saved:${snapshot.sessionId}`;
-    option.textContent = `Сохранённая: ${snapshot.source?.name || snapshot.sessionId}`;
+    option.textContent = `Из черновика: ${snapshot.source?.name || snapshot.sessionId}`;
     select.appendChild(option);
   });
   if (state.uploadedMap) {
     const option = document.createElement("option");
     option.value = "uploaded";
-    option.textContent = `Загруженная: ${state.uploadedMapName}`;
+    option.textContent = `Загруженный ключ: ${state.uploadedMapName}`;
     select.appendChild(option);
   }
   if ([...select.options].some((option) => option.value === previous)) select.value = previous;
@@ -912,12 +891,12 @@ function updateRestoreMapStatus() {
   const map = selectedRestoreMap();
   const status = $("restoreMapStatus");
   if (!map) {
-    status.textContent = "Карта для выбранного источника недоступна. Загрузите JSON или создайте сессию обезличивания.";
+    status.textContent = "Ключ восстановления недоступен. Загрузите ключ или сначала создайте защищённую копию.";
     return;
   }
   const validation = validateMap(map);
   status.textContent = validation.ok
-    ? `Карта готова: ${map.entries.length} записей · сессия ${map.sessionId || "без идентификатора"}.`
+    ? `Ключ готов: сохранено значений — ${map.entries.length}.`
     : validation.errors.join(" ");
 }
 
@@ -931,17 +910,17 @@ async function loadRestoreMap(file) {
     refreshRestoreMapSources();
     $("restoreMapSelect").value = "uploaded";
     updateRestoreMapStatus();
-    showToast("Карта замен загружена.");
+    showToast("Ключ восстановления загружен.");
   } catch (error) {
-    showToast(`Не удалось загрузить карту: ${error.message}`);
+    showToast(`Не удалось загрузить ключ: ${error.message}`);
   }
 }
 
 function runRestoration() {
   const text = $("restoreInput").value;
   const map = selectedRestoreMap();
-  if (!text.trim()) return showToast("Вставьте или загрузите текст с токенами.");
-  if (!map) return showToast("Выберите или загрузите карту замен.");
+  if (!text.trim()) return showToast("Вставьте или загрузите защищённый текст.");
+  if (!map) return showToast("Выберите или загрузите ключ восстановления.");
   const result = restoreWithDiagnostics(text, map);
   state.restoreResult = result;
   $("restoreNotice").classList.remove("hidden");
@@ -960,19 +939,19 @@ function runRestoration() {
     notice.textContent = result.errors.join(" ");
   } else if (!result.usedTokens.length) {
     notice.className = "notice error";
-    notice.textContent = "В тексте не найдено ни одного токена выбранной карты. Проверьте, что карта относится к этому документу.";
+    notice.textContent = "В тексте не найдено обозначений из выбранного ключа. Проверьте, что ключ относится к этому документу.";
   } else if (result.unknownTokens.length) {
     notice.className = "notice";
-    notice.textContent = `Часть данных восстановлена, но неизвестные токены оставлены без изменения: ${result.unknownTokens.join(", ")}.`;
+    notice.textContent = `Часть данных восстановлена, но неизвестные обозначения оставлены без изменения: ${result.unknownTokens.join(", ")}.`;
   } else {
     notice.className = "notice success";
-    notice.textContent = "Все найденные токены распознаны и восстановлены. Проверьте результат перед использованием.";
+    notice.textContent = "Все найденные обозначения распознаны, исходные данные восстановлены.";
   }
 }
 
 function downloadBundle() {
   if (!window.fflate?.zipSync || !window.fflate?.strToU8) return showToast("Модуль упаковки ZIP не загружен.");
-  if (!window.confirm("Комплект содержит карту замен с исходными чувствительными данными. Скачать ZIP и хранить его в защищённом месте?")) return;
+  if (!window.confirm("ZIP содержит ключ восстановления с исходными данными. Скачать его и хранить в защищённом месте?")) return;
   const base = safeBaseName(state.source?.name);
   const manifest = {
     format: "mik-anonymizer-session",
@@ -982,15 +961,15 @@ function downloadBundle() {
     sourceName: state.source?.name,
     sourceFingerprint: fingerprintText(state.text),
     safeFingerprint: fingerprintText(state.result.text),
-    warning: "Карта замен содержит исходные чувствительные данные. Храните комплект в защищённом месте."
+    warning: "Ключ восстановления содержит исходные чувствительные данные. Храните его отдельно от защищённого документа."
   };
   const archive = window.fflate.zipSync({
     [`${base}_безопасный.txt`]: window.fflate.strToU8(state.result.text),
-    [`${base}_карта_замен.json`]: window.fflate.strToU8(JSON.stringify(state.result.map, null, 2)),
-    "информация_о_сессии.json": window.fflate.strToU8(JSON.stringify(manifest, null, 2))
+    [`${base}_ключ_восстановления.json`]: window.fflate.strToU8(JSON.stringify(state.result.map, null, 2)),
+    "информация_о_черновике.json": window.fflate.strToU8(JSON.stringify(manifest, null, 2))
   }, { level: 6 });
   downloadBlob(`${base}_комплект.zip`, new Blob([archive], { type: "application/zip" }));
-  showToast("Комплект с безопасным текстом и картой скачан.");
+  showToast("ZIP с защищённым текстом и ключом восстановления скачан.");
 }
 
 function bindUpload() {
@@ -1036,7 +1015,6 @@ function bindActions() {
     $("sourcePreview").addEventListener(name, () => captureSelection($("sourcePreview"), "source"));
     $("safePreview").addEventListener(name, () => captureSelection($("safePreview"), "safe"));
   });
-  $("confirmationCheckbox").addEventListener("change", updateDownloadState);
   $("warningOverrideCheckbox").addEventListener("change", updateDownloadState);
   $("recalculateButton").addEventListener("click", () => {
     recalculate();
@@ -1049,9 +1027,9 @@ function bindActions() {
   });
   $("copyTextButton").addEventListener("click", () => copyText(state.result.text, "Безопасный текст скопирован."));
   $("downloadMapButton").addEventListener("click", () => {
-    if (!window.confirm("Карта замен содержит исходные персональные данные. Скачать её в отдельный файл?")) return;
-    downloadFile(`${safeBaseName(state.source?.name)}_карта_замен.json`, JSON.stringify(state.result.map, null, 2), "application/json;charset=utf-8");
-    showToast("Карта замен скачана.");
+    if (!window.confirm("Ключ восстановления содержит исходные данные. Скачать его отдельно от защищённого документа?")) return;
+    downloadFile(`${safeBaseName(state.source?.name)}_ключ_восстановления.json`, JSON.stringify(state.result.map, null, 2), "application/json;charset=utf-8");
+    showToast("Ключ восстановления скачан.");
   });
   $("downloadBundleButton").addEventListener("click", downloadBundle);
   $("saveSessionButton").addEventListener("click", savePersistentSession);
@@ -1064,11 +1042,11 @@ function bindActions() {
     if (snapshot) restoreSnapshot(snapshot);
   });
   $("clearSavedSessionsButton").addEventListener("click", () => {
-    if (!window.confirm("Удалить все постоянно сохранённые на этом устройстве сессии анонимайзера?")) return;
+    if (!window.confirm("Удалить все сохранённые черновики с этого устройства?")) return;
     localStorage.removeItem(SAVED_KEY);
     refreshSavedSessions();
     refreshRestoreMapSources();
-    showToast("Все сохранённые сессии удалены.");
+    showToast("Все сохранённые черновики удалены.");
   });
 
   $("restoreInput").addEventListener("input", () => {

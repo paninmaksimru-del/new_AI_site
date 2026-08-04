@@ -2,11 +2,12 @@ import express from 'express';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { initSchema, query } from './db.js';
-import { setupAuth, requireAuth, requireAdmin } from './auth.js';
+import { setupAuth, requireAuth, requireAdmin, requireKbAuth } from './auth.js';
 import { setupKbRoutes } from './kb-routes.js';
 import { startPipelineWorker } from './kb-pipeline.js';
 import { setupAudioRoutes } from './audio-routes.js';
 import { setupQwenChatRoutes } from './qwen-chat-routes.js';
+import { setupAnonymizerQwen } from './anonymizer-qwen.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, '..', 'public');
@@ -32,6 +33,7 @@ async function start() {
   await initSchema();
   await setupAudioRoutes(app);
   await setupQwenChatRoutes(app);
+  setupAnonymizerQwen(app, requireKbAuth());
   await import('./seed.js');
 
   // Knowledge Base routes + background pipeline worker
@@ -48,6 +50,7 @@ async function start() {
   app.get('/training', (req, res) => res.sendFile(join(publicDir, 'education.html')));
   app.get('/education', (req, res) => res.sendFile(join(publicDir, 'education.html')));
   app.get('/cases', (req, res) => res.sendFile(join(publicDir, 'cases.html')));
+  app.get('/anonymizer', (req, res) => res.sendFile(join(publicDir, 'anonymizer.html')));
   app.get('/chat', (req, res) => res.sendFile(join(publicDir, 'chat.html')));
   app.get('/knowledge', (req, res) => res.sendFile(join(publicDir, 'knowledge.html')));
   app.get('/knowledgev2', (req, res) => res.sendFile(join(publicDir, 'knowledgev2.html')));

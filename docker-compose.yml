@@ -27,6 +27,10 @@ services:
       - NODE_ENV=production
       - PORT=19080
       - DATABASE_URL=postgresql://mik:mik_pass@db:5432/mik_platform
+      - QWEN_API_KEY=${QWEN_API_KEY:-}
+      - QWEN_BASE_URL=${QWEN_BASE_URL:-}
+      - QWEN_MODEL=${QWEN_MODEL:-qwen3.7-plus}
+      - QWEN_TIMEOUT_MS=${QWEN_TIMEOUT_MS:-60000}
     volumes:
       - uploads_data:/app/data/uploads
     depends_on:

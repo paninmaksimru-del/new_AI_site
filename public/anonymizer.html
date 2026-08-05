@@ -67,7 +67,7 @@
           <button class="input-tab" id="textTabButton" type="button" role="tab" aria-selected="false">Вставить текст</button>
         </div>
 
-        <div class="automatic-info"><span aria-hidden="true">✓</span><div><strong>Автоматическая защита</strong><p>Сервис сам прочитает документ, найдёт чувствительные данные и создаст защищённую копию. Если администратор подключил Qwen, извлечённый текст дополнительно проверяется через сервер платформы; ключ восстановления модели не передаётся.</p></div></div>
+        <div class="automatic-info"><span aria-hidden="true">✓</span><div><strong>Автоматическая защита</strong><p>Сервис сам прочитает документ, найдёт чувствительные данные и создаст защищённую копию</p></div></div>
 
         <div id="fileInputPanel">
           <label class="dropzone" id="dropzone" for="fileInput">
@@ -84,7 +84,7 @@
           <label class="field-label" for="pasteInput">Исходный текст</label>
           <textarea class="large-input" id="pasteInput" placeholder="Вставьте договор, протокол, письмо или другой текст…"></textarea>
           <div class="input-footer">
-            <span class="muted char-counter" id="pasteCharCount" aria-live="polite">0 / 60 000 знаков для Qwen</span>
+            <span class="muted char-counter" id="pasteCharCount" aria-live="polite">0 / 60 000 знаков лимит для ИИ</span>
             <button class="btn primary" id="processTextButton" type="button">Защитить текст</button>
           </div>
         </div>

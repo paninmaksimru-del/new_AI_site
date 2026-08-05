@@ -156,6 +156,7 @@ test("смысловая проверка использует серверны�
   assert.match(script, /confirmed: true/);
   assert.match(script, /document: \{/);
   assert.match(script, /const qwenEntities = await requestQwenEntities\(text, ruleEntities, source\)/);
+  assert.match(script, /state\.qwenTrace = error\?\.trace \|\| null/);
   assert.match(script, /mergeEntityCandidates\(ruleEntities, qwenEntities\)/);
   assert.match(script, /Дополнительная проверка временно недоступна\. Документ обработан основным способом\./);
   assert.match(script, /Qwen: \$\{state\.qwenModel/);

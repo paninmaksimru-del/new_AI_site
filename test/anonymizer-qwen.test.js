@@ -122,9 +122,42 @@ test('сервер ждёт Qwen и отправляет модели задач
     });
     const result = await pending;
     assert.equal(result.upstreamStatus, 200);
+    assert.equal(result.attempts, 1);
     assert.equal(result.entities.length, 1);
     assert.equal(result.diagnostics.repaired, 1);
     assert.equal(result.diagnostics.addedToResult, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('временный 504 от прокси повторяется один раз перед успешным ответом', async () => {
+  const originalFetch = globalThis.fetch;
+  const config = {
+    proxyToken: 'server-secret',
+    baseUrl: 'https://i.moscow/api/dit/proxy/operation/openqwen/model-v43/v1',
+    model: 'local_huggingface/Qwen3.6-27B',
+    timeoutMs: 5_000,
+    retryDelayMs: 0
+  };
+  let calls = 0;
+  try {
+    globalThis.fetch = async () => {
+      calls += 1;
+      if (calls === 1) return { ok: false, status: 504 };
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { choices: [{ message: { content: '{"entities":[]}' } }] };
+        }
+      };
+    };
+    const result = await findEntitiesWithQwen('Документ без новых данных.', [], config, { format: 'docx' });
+    assert.equal(calls, 2);
+    assert.equal(result.attempts, 2);
+    assert.equal(result.upstreamStatus, 200);
+    assert.equal(result.diagnostics.returned, 0);
   } finally {
     globalThis.fetch = originalFetch;
   }

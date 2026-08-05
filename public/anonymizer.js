@@ -156,6 +156,13 @@ function renderQwenCharacterMetric() {
     status.textContent = "Qwen не настроен — применены локальные правила";
   } else {
     status.textContent = "Qwen недоступен — применены локальные правила";
+    if (state.qwenStatus === "error" && state.qwenTrace) {
+      const upstream = state.qwenTrace.upstreamStatus ? ` · upstream ${state.qwenTrace.upstreamStatus}` : "";
+      const attempts = state.qwenTrace.attempts ? ` · попыток: ${state.qwenTrace.attempts}` : "";
+      details.textContent = `запрос ${state.qwenTrace.requestId}${upstream}${attempts} · ${state.qwenTrace.durationMs} мс`;
+      details.classList.remove("hidden");
+      details.classList.add("has-warning");
+    }
   }
 }
 
@@ -401,7 +408,11 @@ async function requestQwenEntities(text, ruleEntities, source) {
     })
   });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || `QWEN_HTTP_${response.status}`);
+  if (!response.ok) {
+    const error = new Error(payload.error || `QWEN_HTTP_${response.status}`);
+    error.trace = payload.trace || (payload.requestId ? { requestId: payload.requestId } : null);
+    throw error;
+  }
   state.qwenUsed = true;
   state.qwenModel = payload.model || qwenConfiguration.model || null;
   state.qwenTrace = payload.trace || null;
@@ -768,6 +779,7 @@ async function processSource(text, source, options = {}) {
     } catch (error) {
       console.error("Qwen entity search failed:", error?.message);
       state.qwenStatus = "error";
+      state.qwenTrace = error?.trace || null;
       showToast("Дополнительная проверка временно недоступна. Документ обработан основным способом.");
     }
   } else if (qwenOverLimit && qwenConfiguration.configured) {

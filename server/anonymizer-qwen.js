@@ -14,6 +14,8 @@ const ALLOWED_CONFIDENCE = new Set(['high', 'medium', 'low']);
 const MAX_TEXT_LENGTH = 60_000;
 const MAX_ENTITIES = 500;
 const MAX_OCCURRENCES_PER_VALUE = 1_000;
+const MAX_UPSTREAM_ATTEMPTS = 2;
+const RETRYABLE_UPSTREAM_STATUSES = new Set([429, 502, 503, 504]);
 const ANONYMIZER_MODEL_PROFILE = Object.freeze({
   id: 'qwen3.6-27b',
   endpointKey: 'QWEN_27B_BASE_URL',
@@ -222,12 +224,39 @@ function normalizeDocumentContext(value) {
   };
 }
 
+function waitForRetry(milliseconds, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) return reject(new DOMException('Request aborted', 'AbortError'));
+    const onAbort = () => {
+      clearTimeout(timeout);
+      reject(new DOMException('Request aborted', 'AbortError'));
+    };
+    const timeout = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, milliseconds);
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+function qwenHttpError(status, attempts) {
+  const error = new Error(`QWEN_HTTP_${status}`);
+  error.upstreamStatus = status;
+  error.attempts = attempts;
+  return error;
+}
+
 export async function findEntitiesWithQwen(text, ruleCandidates, config = anonymizerQwenConfig(), documentContext = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
   const document = normalizeDocumentContext(documentContext);
+  const configuredRetryDelay = Number(config.retryDelayMs);
+  const retryDelayMs = Number.isFinite(configuredRetryDelay) && configuredRetryDelay >= 0
+    ? Math.min(5_000, configuredRetryDelay)
+    : 750;
   try {
-    const response = await fetch(anonymizerQwenUrl(config), {
+    const url = anonymizerQwenUrl(config);
+    const request = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -251,11 +280,21 @@ export async function findEntitiesWithQwen(text, ruleCandidates, config = anonym
           }
         ]
       })
-    });
-    if (!response.ok) throw new Error(`QWEN_HTTP_${response.status}`);
+    };
+    let response;
+    let attempts = 0;
+    while (attempts < MAX_UPSTREAM_ATTEMPTS) {
+      attempts += 1;
+      response = await fetch(url, request);
+      if (response.ok) break;
+      const shouldRetry = RETRYABLE_UPSTREAM_STATUSES.has(response.status)
+        && attempts < MAX_UPSTREAM_ATTEMPTS;
+      if (!shouldRetry) throw qwenHttpError(response.status, attempts);
+      await waitForRetry(retryDelayMs * attempts, controller.signal);
+    }
     const inspected = inspectQwenEntities(text, parseQwenResponse(await response.json()));
     const entities = selectQwenAdditions(inspected.entities, ruleCandidates, inspected.diagnostics);
-    return { entities, diagnostics: inspected.diagnostics, upstreamStatus: response.status, document };
+    return { entities, diagnostics: inspected.diagnostics, upstreamStatus: response.status, attempts, document };
   } finally {
     clearTimeout(timeout);
   }
@@ -297,6 +336,7 @@ export function setupAnonymizerQwen(app, authMiddleware) {
         textLength: text.length,
         ruleCandidatesSent: ruleCandidates.length,
         upstreamStatus: result.upstreamStatus,
+        attempts: result.attempts,
         durationMs: Date.now() - startedAt
       };
       console.info('Qwen anonymizer completed:', JSON.stringify({
@@ -316,7 +356,7 @@ export function setupAnonymizerQwen(app, authMiddleware) {
       });
     } catch (error) {
       const code = error?.name === 'AbortError' ? 'QWEN_TIMEOUT' : String(error?.message || 'QWEN_FAILED');
-      console.error('Qwen anonymizer failed:', JSON.stringify({
+      const trace = {
         requestId,
         completed: false,
         model: config.model,
@@ -324,10 +364,13 @@ export function setupAnonymizerQwen(app, authMiddleware) {
         documentFormat: document.format,
         textLength: text.length,
         ruleCandidatesSent: ruleCandidates.length,
+        upstreamStatus: Number(error?.upstreamStatus) || null,
+        attempts: Number(error?.attempts) || null,
         durationMs: Date.now() - startedAt,
         error: code
-      }));
-      res.status(502).json({ error: code, requestId });
+      };
+      console.error('Qwen anonymizer failed:', JSON.stringify(trace));
+      res.status(502).json({ error: code, requestId, trace });
     }
   });
 }

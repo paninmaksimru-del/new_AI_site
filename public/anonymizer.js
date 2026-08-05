@@ -69,6 +69,7 @@ const state = {
   qwenUsed: false,
   qwenModel: null,
   qwenStatus: "idle",
+  qwenDiagnostics: null,
   sourceBinary: null,
   docxModel: null
 };
@@ -107,16 +108,44 @@ function renderQwenCharacterMetric() {
   const length = state.text.length;
   const overLimit = length > qwenTextLimit();
   $("qwenCharacterCount").textContent = qwenCounterText(length);
+  const status = $("qwenCharacterStatus");
+  const details = $("qwenDiagnosticsDetails");
+  status.removeAttribute("title");
+  details.textContent = "";
+  details.classList.add("hidden");
   metric.classList.toggle("warning", overLimit || state.qwenStatus === "error");
   metric.classList.toggle("ok", state.qwenUsed);
   if (overLimit) {
-    $("qwenCharacterStatus").textContent = "лимит Qwen превышен — применены локальные правила";
+    status.textContent = "лимит Qwen превышен — применены локальные правила";
   } else if (state.qwenUsed) {
-    $("qwenCharacterStatus").textContent = "весь текст дополнительно проверен Qwen";
+    const diagnostics = state.qwenDiagnostics;
+    status.textContent = diagnostics
+      ? `Qwen: вернул ${diagnostics.returned}, принято ${diagnostics.accepted}, отклонено ${diagnostics.rejected}`
+      : "весь текст дополнительно проверен Qwen";
+    if (diagnostics?.rejected || diagnostics?.responseIssues?.length) {
+      const labels = {
+        invalid_candidate: "некорректный объект",
+        type_not_allowed: "неизвестный тип",
+        indexes_invalid: "некорректные индексы",
+        range_invalid: "диапазон вне текста",
+        value_mismatch: "значение не совпало с текстом",
+        duplicate: "дубликат",
+        entity_limit_exceeded: "превышен лимит сущностей"
+      };
+      const rejectionReasons = Object.entries(diagnostics.reasons || {})
+        .map(([reason, count]) => `${labels[reason] || reason}: ${count}`)
+        .join("; ");
+      const responseIssues = diagnostics.responseIssues?.includes("entities_not_array")
+        ? "ответ не содержит массив entities"
+        : (diagnostics.responseIssues || []).join("; ");
+      details.textContent = [rejectionReasons, responseIssues].filter(Boolean).join("; ");
+      details.classList.remove("hidden");
+      status.title = details.textContent;
+    }
   } else if (!qwenConfiguration.configured) {
-    $("qwenCharacterStatus").textContent = "Qwen не настроен — применены локальные правила";
+    status.textContent = "Qwen не настроен — применены локальные правила";
   } else {
-    $("qwenCharacterStatus").textContent = "Qwen недоступен — применены локальные правила";
+    status.textContent = "Qwen недоступен — применены локальные правила";
   }
 }
 
@@ -329,6 +358,7 @@ function prepareProcessing(source) {
   state.qwenUsed = false;
   state.qwenModel = null;
   state.qwenStatus = "idle";
+  state.qwenDiagnostics = null;
   state.sourceBinary = null;
   state.docxModel = null;
   state.restoreResult = null;
@@ -359,7 +389,14 @@ async function requestQwenEntities(text, ruleEntities) {
   if (!response.ok) throw new Error(payload.error || `QWEN_HTTP_${response.status}`);
   state.qwenUsed = true;
   state.qwenModel = payload.model || qwenConfiguration.model || null;
-  return Array.isArray(payload.entities) ? payload.entities : [];
+  const entities = Array.isArray(payload.entities) ? payload.entities : [];
+  state.qwenDiagnostics = payload.diagnostics || {
+    returned: entities.length,
+    accepted: entities.length,
+    rejected: 0,
+    reasons: {}
+  };
+  return entities;
 }
 
 async function loadQwenStatus() {
@@ -580,6 +617,7 @@ async function restoreSnapshot(snapshot, sourceBlob = null) {
   state.qwenUsed = Boolean(snapshot.source?.analysis?.qwenUsed);
   state.qwenModel = snapshot.source?.analysis?.qwenModel || null;
   state.qwenStatus = snapshot.source?.analysis?.qwenStatus || (state.qwenUsed ? "used" : "local");
+  state.qwenDiagnostics = snapshot.source?.analysis?.qwenDiagnostics || null;
   state.sourceBinary = null;
   state.docxModel = null;
   if (sourceBlob && state.source?.format === "docx") {
@@ -719,7 +757,13 @@ async function processSource(text, source, options = {}) {
     state.qwenStatus = "local";
   }
   markTask("qwen");
-  state.source.analysis = { ocrPages: state.ocrPages, qwenUsed: state.qwenUsed, qwenModel: state.qwenModel, qwenStatus: state.qwenStatus };
+  state.source.analysis = {
+    ocrPages: state.ocrPages,
+    qwenUsed: state.qwenUsed,
+    qwenModel: state.qwenModel,
+    qwenStatus: state.qwenStatus,
+    qwenDiagnostics: state.qwenDiagnostics
+  };
   $("progressBar").style.width = "82%";
   recalculate();
   markTask("replace");
@@ -1270,6 +1314,7 @@ function resetApplication() {
   state.qwenUsed = false;
   state.qwenModel = null;
   state.qwenStatus = "idle";
+  state.qwenDiagnostics = null;
   state.sourceBinary = null;
   state.docxModel = null;
   state.restoreResult = null;

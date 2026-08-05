@@ -169,11 +169,15 @@ test("лимит ИИ показан счётчиком для текста, ф�
   assert.match(html, /id="pasteCharCount"[^>]*>0 \/ 60 000 знаков лимит для ИИ/);
   assert.match(html, /id="qwenCharacterCount">0 \/ 60 000/);
   assert.match(html, /id="qwenCharacterStatus"/);
+  assert.match(html, /id="qwenDiagnosticsDetails"/);
   assert.match(script, /maxTextLength: Number\(payload\.maxTextLength\)/);
   assert.match(script, /text\.length > qwenTextLimit\(\)/);
   assert.match(script, /Qwen пропущен: \$\{qwenCounterText\(text\.length\)\}/);
   assert.match(script, /Лимит Qwen — \$\{qwenTextLimit\(\)\.toLocaleString/);
+  assert.match(script, /Qwen: вернул \$\{diagnostics\.returned\}, принято \$\{diagnostics\.accepted\}, отклонено \$\{diagnostics\.rejected\}/);
+  assert.match(script, /qwenDiagnostics: state\.qwenDiagnostics/);
   assert.match(script, /processingFileMeta[^\n]+qwenCounterText\(text\.length\)/);
   assert.match(css, /\.char-counter\.over-limit/);
   assert.match(css, /\.metric\.qwen-metric b/);
+  assert.match(css, /\.metric \.qwen-diagnostics/);
 });

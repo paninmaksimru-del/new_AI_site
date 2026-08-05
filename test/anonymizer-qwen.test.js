@@ -6,6 +6,7 @@ process.env.DATABASE_URL ||= 'postgresql://localhost/mik_anonymizer_unit_test';
 const {
   anonymizerQwenConfig,
   anonymizerQwenUrl,
+  inspectQwenEntities,
   isQwenConfigured,
   normalizeQwenEntities
 } = await import('../server/anonymizer-qwen.js');
@@ -21,6 +22,33 @@ test('Qwen-ответ принимается только при точном с
   assert.equal(result.length, 1);
   assert.equal(result[0].source, 'qwen');
   assert.equal(result[0].action, 'REVIEW');
+});
+
+test('диагностика Qwen считает принятые ответы и причины отклонения без исходных значений', () => {
+  const text = 'Получатель: Иванов Иван.';
+  const start = text.indexOf('Иванов');
+  const valid = { type: 'PERSON', value: 'Иванов Иван', start, end: text.length - 1, confidence: 'high' };
+  const result = inspectQwenEntities(text, { entities: [
+    valid,
+    { ...valid },
+    { type: 'PERSON', value: 'Петров', start: 0, end: 6 },
+    { type: 'COMMAND', value: 'Получатель', start: 0, end: 10 },
+    { type: 'PERSON', value: 'Иванов', start: 'не индекс', end: 6 }
+  ] });
+
+  assert.equal(result.entities.length, 1);
+  assert.deepEqual(result.diagnostics, {
+    returned: 5,
+    accepted: 1,
+    rejected: 4,
+    reasons: {
+      duplicate: 1,
+      value_mismatch: 1,
+      type_not_allowed: 1,
+      indexes_invalid: 1
+    }
+  });
+  assert.equal(JSON.stringify(result.diagnostics).includes('Иванов'), false);
 });
 
 test('системный промпт трактует документ как данные и запрещает токенизацию', () => {

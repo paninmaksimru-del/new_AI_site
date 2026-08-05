@@ -178,6 +178,7 @@ test("лимит ИИ показан счётчиком для текста, ф�
   assert.match(script, /Qwen пропущен: \$\{qwenCounterText\(text\.length\)\}/);
   assert.match(script, /Лимит Qwen — \$\{qwenTextLimit\(\)\.toLocaleString/);
   assert.match(script, /Qwen: вернул \$\{diagnostics\.returned\}, исправлено \$\{diagnostics\.repaired \|\| 0\}, добавлено/);
+  assert.match(script, /до ИИ вырезано опасных инструкций/);
   assert.match(script, /qwenDiagnostics: state\.qwenDiagnostics/);
   assert.match(script, /qwenTrace: state\.qwenTrace/);
   assert.match(script, /processingFileMeta[^\n]+qwenCounterText\(text\.length\)/);

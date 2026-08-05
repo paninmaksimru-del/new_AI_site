@@ -142,8 +142,11 @@ function renderQwenCharacterMetric() {
         : (diagnostics.responseIssues || []).join("; ");
       const contribution = [
         `прошли проверку: ${diagnostics.accepted || 0}`,
-        `совпали с локальными: ${diagnostics.overlappingRuleCandidates || 0}`
-      ].join("; ");
+        `совпали с локальными: ${diagnostics.overlappingRuleCandidates || 0}`,
+        diagnostics.promptInjectionSegmentsRemoved
+          ? `до ИИ вырезано опасных инструкций: ${diagnostics.promptInjectionSegmentsRemoved}`
+          : ""
+      ].filter(Boolean).join("; ");
       const trace = state.qwenTrace
         ? `запрос ${state.qwenTrace.requestId}; ответ за ${state.qwenTrace.durationMs} мс`
         : "";

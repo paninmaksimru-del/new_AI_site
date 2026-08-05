@@ -16,6 +16,20 @@ const MAX_ENTITIES = 500;
 const MAX_OCCURRENCES_PER_VALUE = 1_000;
 const MAX_UPSTREAM_ATTEMPTS = 2;
 const RETRYABLE_UPSTREAM_STATUSES = new Set([429, 502, 503, 504]);
+const PROMPT_INJECTION_PATTERNS = Object.freeze([
+  /\bsystem\s*(?:override|prompt|message|instruction)\b/iu,
+  /\bignore\s+(?:(?:all|every|any)\s+)?(?:previous|prior|above)\s+instructions?\b/iu,
+  /игнорир(?:уй|уйте)\s+(?:все\s+)?(?:предыдущие|прежние|указанные\s+выше)\s+инструкц/iu,
+  /(?:верни|верните|ответь|ответьте)\s+(?:строго|только)\s*(?:json|\{|\[)/iu,
+  /не\s+(?:скрывай|скрывайте|маскируй|маскируйте|обезличивай|обезличивайте)/iu,
+  /\b(?:do\s+not|don't)\s+(?:mask|redact|anonymize)\b/iu,
+  /(?:покажи|покажите|раскрой|раскройте|выведи|выведите|верни|верните|отправь|отправьте).{0,120}(?:системн[\p{L}-]*\s+(?:промпт|сообщени[\p{L}-]*|инструкц[\p{L}-]*)|qwen\s+proxy\s+token|proxy\s+token|api\s*key|ключ[\p{L}-]*\s+восстановлени[\p{L}-]*)/iu,
+  /\b(?:show|reveal|print|return|send).{0,120}\b(?:system\s+(?:prompt|message|instruction)|qwen\s+proxy\s+token|proxy\s+token|api\s*key|recovery\s+key)\b/iu,
+  /(?:считай|считайте|рассматривай|рассматривайте).{0,120}инструкц[\p{L}-]*.{0,80}(?:высш[\p{L}-]*|наивысш[\p{L}-]*)\s+приоритет[\p{L}-]*/iu,
+  /инструкц[\p{L}-]*.{0,80}(?:высш[\p{L}-]*|наивысш[\p{L}-]*)\s+приоритет[\p{L}-]*/iu,
+  /\b(?:treat|consider).{0,120}\binstruction.{0,80}\bhighest\s+priority\b/iu,
+  /<\|(?:system|assistant|developer)\|>|\[(?:SYSTEM|INST)\]/iu
+]);
 const ANONYMIZER_MODEL_PROFILE = Object.freeze({
   id: 'qwen3.6-27b',
   endpointKey: 'QWEN_27B_BASE_URL',
@@ -47,6 +61,59 @@ export function anonymizerQwenUrl(config) {
   url.hash = '';
   url.searchParams.set('token', config.proxyToken);
   return url;
+}
+
+function promptInjectionSentenceRanges(text) {
+  const ranges = [];
+  const boundaryPattern = /[.!?;]+(?:[ \t]+|[ \t]*\r?\n|$)|(?:\r?\n){2,}/gu;
+  let start = 0;
+  let match;
+  while ((match = boundaryPattern.exec(text)) !== null) {
+    const end = match.index + match[0].length;
+    if (end > start) ranges.push({ start, end });
+    start = end;
+  }
+  if (start < text.length) ranges.push({ start, end: text.length });
+  return ranges;
+}
+
+function isPromptInjectionSegment(value) {
+  return PROMPT_INJECTION_PATTERNS.some((pattern) => pattern.test(value));
+}
+
+export function sanitizeTextForQwen(text) {
+  const sourceText = String(text || '');
+  const suspicious = promptInjectionSentenceRanges(sourceText)
+    .filter(({ start, end }) => isPromptInjectionSegment(sourceText.slice(start, end)));
+  const ranges = [];
+
+  for (const current of suspicious) {
+    const previous = ranges[ranges.length - 1];
+    if (previous && !sourceText.slice(previous.end, current.start).trim()) previous.end = current.end;
+    else ranges.push({ ...current });
+  }
+
+  if (!ranges.length) {
+    return { text: sourceText, segmentsRemoved: 0, charactersRemoved: 0 };
+  }
+
+  let cursor = 0;
+  let sanitized = '';
+  let charactersRemoved = 0;
+  for (const { start, end } of ranges) {
+    const segment = sourceText.slice(start, end);
+    sanitized += sourceText.slice(cursor, start);
+    sanitized += segment.replace(/[^\r\n]/g, ' ');
+    charactersRemoved += segment.replace(/[\r\n]/g, '').length;
+    cursor = end;
+  }
+  sanitized += sourceText.slice(cursor);
+
+  return {
+    text: sanitized,
+    segmentsRemoved: ranges.length,
+    charactersRemoved
+  };
 }
 
 function countRejection(diagnostics, reason, count = 1) {
@@ -247,6 +314,7 @@ function qwenHttpError(status, attempts) {
 }
 
 export async function findEntitiesWithQwen(text, ruleCandidates, config = anonymizerQwenConfig(), documentContext = {}) {
+  const sanitized = sanitizeTextForQwen(text);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
   const document = normalizeDocumentContext(documentContext);
@@ -255,6 +323,27 @@ export async function findEntitiesWithQwen(text, ruleCandidates, config = anonym
     ? Math.min(5_000, configuredRetryDelay)
     : 750;
   try {
+    if (!sanitized.text.trim()) {
+      return {
+        entities: [],
+        diagnostics: {
+          returned: 0,
+          located: 0,
+          repaired: 0,
+          accepted: 0,
+          rejected: 0,
+          reasons: {},
+          overlappingRuleCandidates: 0,
+          overlappingQwenCandidates: 0,
+          addedToResult: 0,
+          promptInjectionSegmentsRemoved: sanitized.segmentsRemoved,
+          promptInjectionCharactersRemoved: sanitized.charactersRemoved
+        },
+        upstreamStatus: null,
+        attempts: 0,
+        document
+      };
+    }
     const url = anonymizerQwenUrl(config);
     const request = {
       method: 'POST',
@@ -274,7 +363,7 @@ export async function findEntitiesWithQwen(text, ruleCandidates, config = anonym
             role: 'user',
             content: JSON.stringify({
               task: 'find_additional_sensitive_entities',
-              document: { format: document.format, text },
+              document: { format: document.format, text: sanitized.text },
               ruleCandidates: ruleCandidates.map(({ type, value, start, end }) => ({ type, value, start, end }))
             })
           }
@@ -292,7 +381,9 @@ export async function findEntitiesWithQwen(text, ruleCandidates, config = anonym
       if (!shouldRetry) throw qwenHttpError(response.status, attempts);
       await waitForRetry(retryDelayMs * attempts, controller.signal);
     }
-    const inspected = inspectQwenEntities(text, parseQwenResponse(await response.json()));
+    const inspected = inspectQwenEntities(sanitized.text, parseQwenResponse(await response.json()));
+    inspected.diagnostics.promptInjectionSegmentsRemoved = sanitized.segmentsRemoved;
+    inspected.diagnostics.promptInjectionCharactersRemoved = sanitized.charactersRemoved;
     const entities = selectQwenAdditions(inspected.entities, ruleCandidates, inspected.diagnostics);
     return { entities, diagnostics: inspected.diagnostics, upstreamStatus: response.status, attempts, document };
   } finally {
@@ -337,6 +428,8 @@ export function setupAnonymizerQwen(app, authMiddleware) {
         ruleCandidatesSent: ruleCandidates.length,
         upstreamStatus: result.upstreamStatus,
         attempts: result.attempts,
+        promptInjectionSegmentsRemoved: result.diagnostics.promptInjectionSegmentsRemoved || 0,
+        promptInjectionCharactersRemoved: result.diagnostics.promptInjectionCharactersRemoved || 0,
         durationMs: Date.now() - startedAt
       };
       console.info('Qwen anonymizer completed:', JSON.stringify({

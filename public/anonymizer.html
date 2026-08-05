@@ -141,6 +141,35 @@
           <details><summary>Показать отличие</summary><pre id="integrityDetails"></pre></details>
         </div>
 
+        <section class="detection-contribution" aria-label="Вклад основной системы и диагностики с ИИ">
+          <div class="detection-contribution-grid">
+            <article class="detection-contribution-card system-contribution">
+              <span>Основная система</span>
+              <b id="systemDetectedCount">0</b>
+              <strong>объектов ПД обнаружила система</strong>
+              <small>До дополнительной диагностики с ИИ</small>
+            </article>
+            <article class="detection-contribution-card ai-contribution">
+              <span>Диагностика с ИИ</span>
+              <b id="aiAddedCount">0</b>
+              <strong>объектов ПД дополнил ИИ</strong>
+              <small id="aiContributionStatus">Новые объекты, которых не было среди находок системы</small>
+            </article>
+          </div>
+          <button class="btn ghost compact detection-details-button" id="detectionDetailsButton" type="button" aria-expanded="false" aria-controls="detectionDetailsPanel">Подробнее</button>
+          <div class="detection-details hidden" id="detectionDetailsPanel">
+            <div class="detection-details-column">
+              <h3>Обнаружила система <span id="systemDetectedDetailsCount">0</span></h3>
+              <ol class="detection-entity-list" id="systemDetectedItems"></ol>
+            </div>
+            <div class="detection-details-column ai-details-column">
+              <h3>Добавила диагностика с ИИ <span id="aiAddedDetailsCount">0</span></h3>
+              <ol class="detection-entity-list" id="aiAddedItems"></ol>
+            </div>
+            <p class="detection-details-note">Показаны отдельные вхождения. Объекты, добавленные пользователем вручную, в эти счётчики не входят.</p>
+          </div>
+        </section>
+
         <div class="summary-grid">
           <div class="metric ok"><b id="foundCount">0</b><span>фрагментов скрыто</span></div>
           <div class="metric"><b id="entityCount">0</b><span>разных значений</span></div>

@@ -61,3 +61,17 @@ export function mergeEntityCandidates(ruleEntities = [], qwenEntities = []) {
   }
   return merged.sort((left, right) => left.start - right.start || left.end - right.end);
 }
+
+export function splitDetectionContributions(entities = []) {
+  const system = [];
+  const ai = [];
+
+  for (const entity of entities) {
+    if (!entity || typeof entity !== 'object') continue;
+    const source = String(entity.source || 'rules').toLowerCase();
+    if (source === 'qwen') ai.push(entity);
+    else if (source === 'rules' || source.startsWith('rules-')) system.push(entity);
+  }
+
+  return { system, ai };
+}

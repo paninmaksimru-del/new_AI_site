@@ -185,3 +185,22 @@ test("лимит ИИ показан счётчиком для текста, ф�
   assert.match(css, /\.metric\.qwen-metric b/);
   assert.match(css, /\.metric \.qwen-diagnostics/);
 });
+
+test("результат отдельно показывает находки системы и дополнения диагностики с ИИ", async () => {
+  const [html, script, css] = await Promise.all([
+    readFile(new URL("anonymizer.html", root), "utf8"),
+    readFile(new URL("anonymizer.js", root), "utf8"),
+    readFile(new URL("anonymizer.css", root), "utf8")
+  ]);
+
+  assert.match(html, /id="systemDetectedCount"/);
+  assert.match(html, /id="aiAddedCount"/);
+  assert.match(html, /id="detectionDetailsButton"[^>]+aria-controls="detectionDetailsPanel"/);
+  assert.match(html, /id="systemDetectedItems"/);
+  assert.match(html, /id="aiAddedItems"/);
+  assert.match(script, /splitDetectionContributions\(state\.entities\)/);
+  assert.match(script, /function renderDetectionEntityList/);
+  assert.match(script, /setDetectionDetailsExpanded/);
+  assert.match(css, /\.detection-contribution-grid/);
+  assert.match(css, /\.detection-entity-list/);
+});

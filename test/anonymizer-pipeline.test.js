@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { looksLikeBrokenOcrText, mergeEntityCandidates, pageNeedsOcr } from '../public/anonymizer-pipeline.js';
+import {
+  looksLikeBrokenOcrText,
+  mergeEntityCandidates,
+  pageNeedsOcr,
+  splitDetectionContributions
+} from '../public/anonymizer-pipeline.js';
 
 test('OCR включается для пустой или почти пустой PDF-страницы', () => {
   assert.equal(pageNeedsOcr('', 0), true);
@@ -41,4 +46,18 @@ test('Qwen добавляет только непересекающиеся ка
   assert.equal(merged.length, 2);
   assert.equal(merged.find((item) => item.source === 'qwen').action, 'MASK');
   assert.equal(merged.some((item) => item.id === 'qwen-2'), false);
+});
+
+test('вклад системы и ИИ считается по источнику без ручных объектов', () => {
+  const contributions = splitDetectionContributions([
+    { id: 'rule-1', source: 'rules' },
+    { id: 'ocr-1', source: 'rules-ocr' },
+    { id: 'legacy-rule' },
+    { id: 'qwen-1', source: 'qwen' },
+    { id: 'manual-1', source: 'manual' },
+    { id: 'manual-2', source: 'manual-selection' }
+  ]);
+
+  assert.deepEqual(contributions.system.map((item) => item.id), ['rule-1', 'ocr-1', 'legacy-rule']);
+  assert.deepEqual(contributions.ai.map((item) => item.id), ['qwen-1']);
 });

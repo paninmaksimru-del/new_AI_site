@@ -17,7 +17,7 @@ import {
   validateIntegrity,
   validateMap
 } from "./anonymizer-engine.js";
-import { mergeEntityCandidates, pageNeedsOcr } from "./anonymizer-pipeline.js";
+import { mergeEntityCandidates, pageNeedsOcr, splitDetectionContributions } from "./anonymizer-pipeline.js";
 import {
   createAnonymizedDocx,
   createClassicDocx,
@@ -164,6 +164,71 @@ function renderQwenCharacterMetric() {
       details.classList.add("has-warning");
     }
   }
+}
+
+function setDetectionDetailsExpanded(expanded) {
+  const button = $("detectionDetailsButton");
+  const panel = $("detectionDetailsPanel");
+  if (!button || !panel) return;
+  button.setAttribute("aria-expanded", String(expanded));
+  button.textContent = expanded ? "Скрыть подробности" : "Подробнее";
+  panel.classList.toggle("hidden", !expanded);
+}
+
+function renderDetectionEntityList(element, entities, emptyMessage) {
+  element.innerHTML = "";
+  if (!entities.length) {
+    const item = document.createElement("li");
+    item.className = "detection-empty";
+    item.textContent = emptyMessage;
+    element.appendChild(item);
+    return;
+  }
+
+  entities.forEach((entity) => {
+    const item = document.createElement("li");
+    const type = document.createElement("span");
+    type.className = "entity-type";
+    type.textContent = ENTITY_TYPES[entity.type]?.label || entity.type || "Другое";
+    const value = document.createElement("code");
+    value.textContent = entity.value || state.text.slice(entity.start, entity.end);
+    item.append(type, value);
+    element.appendChild(item);
+  });
+}
+
+function renderDetectionContributions() {
+  const { system, ai } = splitDetectionContributions(state.entities);
+  $("systemDetectedCount").textContent = system.length.toLocaleString("ru-RU");
+  $("aiAddedCount").textContent = ai.length.toLocaleString("ru-RU");
+  $("systemDetectedDetailsCount").textContent = system.length.toLocaleString("ru-RU");
+  $("aiAddedDetailsCount").textContent = ai.length.toLocaleString("ru-RU");
+
+  const aiStatus = $("aiContributionStatus");
+  if (state.qwenUsed) {
+    aiStatus.textContent = ai.length
+      ? "Новые объекты, которых не было среди находок системы"
+      : "Новых объектов ПД диагностика с ИИ не добавила";
+  } else if (state.qwenStatus === "limit") {
+    aiStatus.textContent = "Диагностика с ИИ пропущена: превышен лимит текста";
+  } else if (state.qwenStatus === "error") {
+    aiStatus.textContent = "Диагностика с ИИ была недоступна";
+  } else {
+    aiStatus.textContent = "Диагностика с ИИ не выполнялась";
+  }
+
+  renderDetectionEntityList(
+    $("systemDetectedItems"),
+    system,
+    "Основная система не обнаружила объектов ПД."
+  );
+  renderDetectionEntityList(
+    $("aiAddedItems"),
+    ai,
+    state.qwenUsed
+      ? "Диагностика с ИИ не добавила новых объектов ПД."
+      : "Диагностика с ИИ не выполнялась или была недоступна."
+  );
 }
 
 function showToast(message) {
@@ -379,6 +444,7 @@ function prepareProcessing(source) {
   state.qwenTrace = null;
   state.sourceBinary = null;
   state.docxModel = null;
+  setDetectionDetailsExpanded(false);
   state.restoreResult = null;
   state.restoreSourceName = "";
   state.restoreSourceFormat = "text";
@@ -1299,6 +1365,7 @@ function renderResult(renderRows = true) {
   $("categoryCount").textContent = categories.size;
   $("sourceLength").textContent = `${state.text.length.toLocaleString("ru-RU")} знаков`;
   $("safeLength").textContent = `${state.result.text.length.toLocaleString("ru-RU")} знаков`;
+  renderDetectionContributions();
   renderQwenCharacterMetric();
   renderDocumentPage($("sourcePreview"), state.text, { docxModel: state.docxModel });
   renderDocumentPage($("safePreview"), state.result.text, {
@@ -1822,6 +1889,9 @@ function bindActions() {
     processSource(text, { name: "Вставленный текст.txt", size: new Blob([text]).size, kind: "text", mime: "text/plain" });
   });
   $("newDocumentButton").addEventListener("click", resetApplication);
+  $("detectionDetailsButton").addEventListener("click", () => {
+    setDetectionDetailsExpanded($("detectionDetailsButton").getAttribute("aria-expanded") !== "true");
+  });
   $("addManualButton").addEventListener("click", addManualValue);
   $("findSimilarButton").addEventListener("click", findSimilarValues);
   $("undoSelectionButton").addEventListener("click", undoLastManualChange);

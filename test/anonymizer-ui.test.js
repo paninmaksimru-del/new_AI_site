@@ -154,6 +154,8 @@ test("смысловая проверка использует серверны�
   assert.match(script, /fetch\("\/api\/anonymizer\/qwen\/entities"/);
   assert.match(script, /"x-auth-token": authToken/);
   assert.match(script, /confirmed: true/);
+  assert.match(script, /document: \{/);
+  assert.match(script, /const qwenEntities = await requestQwenEntities\(text, ruleEntities, source\)/);
   assert.match(script, /mergeEntityCandidates\(ruleEntities, qwenEntities\)/);
   assert.match(script, /Дополнительная проверка временно недоступна\. Документ обработан основным способом\./);
   assert.match(script, /Qwen: \$\{state\.qwenModel/);
@@ -174,8 +176,9 @@ test("лимит ИИ показан счётчиком для текста, ф�
   assert.match(script, /text\.length > qwenTextLimit\(\)/);
   assert.match(script, /Qwen пропущен: \$\{qwenCounterText\(text\.length\)\}/);
   assert.match(script, /Лимит Qwen — \$\{qwenTextLimit\(\)\.toLocaleString/);
-  assert.match(script, /Qwen: вернул \$\{diagnostics\.returned\}, принято \$\{diagnostics\.accepted\}, отклонено \$\{diagnostics\.rejected\}/);
+  assert.match(script, /Qwen: вернул \$\{diagnostics\.returned\}, исправлено \$\{diagnostics\.repaired \|\| 0\}, добавлено/);
   assert.match(script, /qwenDiagnostics: state\.qwenDiagnostics/);
+  assert.match(script, /qwenTrace: state\.qwenTrace/);
   assert.match(script, /processingFileMeta[^\n]+qwenCounterText\(text\.length\)/);
   assert.match(css, /\.char-counter\.over-limit/);
   assert.match(css, /\.metric\.qwen-metric b/);

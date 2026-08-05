@@ -1,7 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import {
   ANONYMIZER_QWEN_PROMPT_VERSION,
   ANONYMIZER_QWEN_SYSTEM_PROMPT
-} from './prompts/anonymizer-qwen-v1.js';
+} from './prompts/anonymizer-qwen-v2.js';
 import { getQwenSetting } from './qwen-settings.js';
 
 const ALLOWED_TYPES = new Set([
@@ -12,6 +13,7 @@ const ALLOWED_TYPES = new Set([
 const ALLOWED_CONFIDENCE = new Set(['high', 'medium', 'low']);
 const MAX_TEXT_LENGTH = 60_000;
 const MAX_ENTITIES = 500;
+const MAX_OCCURRENCES_PER_VALUE = 1_000;
 const ANONYMIZER_MODEL_PROFILE = Object.freeze({
   id: 'qwen3.6-27b',
   endpointKey: 'QWEN_27B_BASE_URL',
@@ -49,6 +51,47 @@ function countRejection(diagnostics, reason, count = 1) {
   diagnostics.reasons[reason] = (diagnostics.reasons[reason] || 0) + count;
 }
 
+function exactOccurrences(text, value) {
+  const starts = [];
+  if (!value) return { starts, truncated: false };
+  let offset = 0;
+  while (offset <= text.length - value.length) {
+    const start = text.indexOf(value, offset);
+    if (start < 0) break;
+    starts.push(start);
+    if (starts.length >= MAX_OCCURRENCES_PER_VALUE) return { starts, truncated: true };
+    offset = start + Math.max(1, value.length);
+  }
+  return { starts, truncated: false };
+}
+
+function resolvedCandidateRange(sourceText, value, type, reportedStart, reportedEnd, seen) {
+  const reportedRangeIsExact = Number.isInteger(reportedStart)
+    && Number.isInteger(reportedEnd)
+    && reportedStart >= 0
+    && reportedEnd > reportedStart
+    && reportedEnd <= sourceText.length
+    && sourceText.slice(reportedStart, reportedEnd) === value;
+  if (reportedRangeIsExact) {
+    return { start: reportedStart, end: reportedEnd, repaired: false };
+  }
+
+  const occurrences = exactOccurrences(sourceText, value);
+  if (occurrences.truncated) return { ambiguous: true };
+  const available = occurrences.starts
+    .map((start) => ({ start, end: start + value.length }))
+    .filter(({ start, end }) => !seen.has(`${start}:${end}:${type}`));
+  if (!available.length) return occurrences.starts.length ? { duplicate: true } : null;
+  if (available.length === 1) return { ...available[0], repaired: true };
+  if (!Number.isInteger(reportedStart)) return { ambiguous: true };
+
+  available.sort((left, right) => {
+    const distance = Math.abs(left.start - reportedStart) - Math.abs(right.start - reportedStart);
+    return distance || left.start - right.start;
+  });
+  return { ...available[0], repaired: true };
+}
+
 export function inspectQwenEntities(text, payload) {
   const sourceText = String(text || '');
   const hasEntityArray = Array.isArray(payload?.entities);
@@ -57,6 +100,8 @@ export function inspectQwenEntities(text, payload) {
   const seen = new Set();
   const diagnostics = {
     returned: entities.length,
+    located: 0,
+    repaired: 0,
     accepted: 0,
     rejected: 0,
     reasons: {}
@@ -68,36 +113,44 @@ export function inspectQwenEntities(text, payload) {
   }
 
   for (const candidate of entities.slice(0, MAX_ENTITIES)) {
-    const type = String(candidate?.type || '').toUpperCase();
-    const start = Number(candidate?.start);
-    const end = Number(candidate?.end);
-    const value = String(candidate?.value || '');
     if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
       countRejection(diagnostics, 'invalid_candidate');
       continue;
     }
+    const type = String(candidate.type || '').toUpperCase();
+    const reportedStart = Number(candidate.start);
+    const reportedEnd = Number(candidate.end);
+    const value = String(candidate.value || '');
     if (!ALLOWED_TYPES.has(type)) {
       countRejection(diagnostics, 'type_not_allowed');
       continue;
     }
-    if (!Number.isInteger(start) || !Number.isInteger(end)) {
-      countRejection(diagnostics, 'indexes_invalid');
+    if (!value) {
+      countRejection(diagnostics, 'value_missing');
       continue;
     }
-    if (start < 0 || end <= start || end > sourceText.length) {
-      countRejection(diagnostics, 'range_invalid');
+    const range = resolvedCandidateRange(sourceText, value, type, reportedStart, reportedEnd, seen);
+    if (range?.duplicate) {
+      countRejection(diagnostics, 'duplicate');
       continue;
     }
-    if (sourceText.slice(start, end) !== value) {
-      countRejection(diagnostics, 'value_mismatch');
+    if (range?.ambiguous) {
+      countRejection(diagnostics, 'occurrence_ambiguous');
       continue;
     }
+    if (!range) {
+      countRejection(diagnostics, 'value_not_found');
+      continue;
+    }
+    const { start, end } = range;
     const key = `${start}:${end}:${type}`;
     if (seen.has(key)) {
       countRejection(diagnostics, 'duplicate');
       continue;
     }
     seen.add(key);
+    diagnostics.located += 1;
+    if (range.repaired) diagnostics.repaired += 1;
     accepted.push({
       id: `qwen-${type}-${start}-${accepted.length}`,
       type,
@@ -129,9 +182,50 @@ function parseQwenResponse(data) {
   return JSON.parse(cleaned);
 }
 
-async function findEntitiesWithQwen(text, ruleCandidates, config = anonymizerQwenConfig()) {
+function overlaps(left, right) {
+  return Number.isInteger(left?.start)
+    && Number.isInteger(left?.end)
+    && Number.isInteger(right?.start)
+    && Number.isInteger(right?.end)
+    && left.start < right.end
+    && right.start < left.end;
+}
+
+function selectQwenAdditions(entities, ruleCandidates, diagnostics) {
+  const additions = [];
+  let overlappingRuleCandidates = 0;
+  let overlappingQwenCandidates = 0;
+  for (const candidate of entities) {
+    if (ruleCandidates.some((ruleCandidate) => overlaps(ruleCandidate, candidate))) {
+      overlappingRuleCandidates += 1;
+      continue;
+    }
+    if (additions.some((current) => overlaps(current, candidate))) {
+      overlappingQwenCandidates += 1;
+      continue;
+    }
+    additions.push(candidate);
+  }
+  diagnostics.overlappingRuleCandidates = overlappingRuleCandidates;
+  diagnostics.overlappingQwenCandidates = overlappingQwenCandidates;
+  diagnostics.addedToResult = additions.length;
+  return additions;
+}
+
+function normalizeDocumentContext(value) {
+  const format = String(value?.format || 'text').toLowerCase();
+  const allowedFormat = ['text', 'txt', 'docx', 'pdf'].includes(format) ? format : 'unknown';
+  const size = Number(value?.size);
+  return {
+    format: allowedFormat,
+    size: Number.isFinite(size) && size >= 0 ? Math.round(size) : null
+  };
+}
+
+export async function findEntitiesWithQwen(text, ruleCandidates, config = anonymizerQwenConfig(), documentContext = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
+  const document = normalizeDocumentContext(documentContext);
   try {
     const response = await fetch(anonymizerQwenUrl(config), {
       method: 'POST',
@@ -150,7 +244,8 @@ async function findEntitiesWithQwen(text, ruleCandidates, config = anonymizerQwe
           {
             role: 'user',
             content: JSON.stringify({
-              text,
+              task: 'find_additional_sensitive_entities',
+              document: { format: document.format, text },
               ruleCandidates: ruleCandidates.map(({ type, value, start, end }) => ({ type, value, start, end }))
             })
           }
@@ -158,7 +253,9 @@ async function findEntitiesWithQwen(text, ruleCandidates, config = anonymizerQwe
       })
     });
     if (!response.ok) throw new Error(`QWEN_HTTP_${response.status}`);
-    return inspectQwenEntities(text, parseQwenResponse(await response.json()));
+    const inspected = inspectQwenEntities(text, parseQwenResponse(await response.json()));
+    const entities = selectQwenAdditions(inspected.entities, ruleCandidates, inspected.diagnostics);
+    return { entities, diagnostics: inspected.diagnostics, upstreamStatus: response.status, document };
   } finally {
     clearTimeout(timeout);
   }
@@ -177,6 +274,9 @@ export function setupAnonymizerQwen(app, authMiddleware) {
   });
 
   app.post('/api/anonymizer/qwen/entities', authMiddleware, async (req, res) => {
+    const requestId = randomUUID();
+    const startedAt = Date.now();
+    res.setHeader('X-Anonymizer-Request-Id', requestId);
     const config = anonymizerQwenConfig();
     if (!isQwenConfigured(config)) return res.status(503).json({ error: 'QWEN_NOT_CONFIGURED' });
     if (req.body?.confirmed !== true) return res.status(400).json({ error: 'QWEN_CONSENT_REQUIRED' });
@@ -184,18 +284,50 @@ export function setupAnonymizerQwen(app, authMiddleware) {
     if (!text.trim()) return res.status(400).json({ error: 'TEXT_REQUIRED' });
     if (text.length > MAX_TEXT_LENGTH) return res.status(413).json({ error: 'TEXT_TOO_LARGE', limit: MAX_TEXT_LENGTH });
     const ruleCandidates = Array.isArray(req.body?.ruleCandidates) ? req.body.ruleCandidates.slice(0, MAX_ENTITIES) : [];
+    const document = normalizeDocumentContext(req.body?.document);
     try {
-      const result = await findEntitiesWithQwen(text, ruleCandidates, config);
+      const result = await findEntitiesWithQwen(text, ruleCandidates, config, document);
+      const trace = {
+        requestId,
+        completed: true,
+        model: config.model,
+        promptVersion: ANONYMIZER_QWEN_PROMPT_VERSION,
+        documentFormat: result.document.format,
+        documentSize: result.document.size,
+        textLength: text.length,
+        ruleCandidatesSent: ruleCandidates.length,
+        upstreamStatus: result.upstreamStatus,
+        durationMs: Date.now() - startedAt
+      };
+      console.info('Qwen anonymizer completed:', JSON.stringify({
+        ...trace,
+        returned: result.diagnostics.returned,
+        repaired: result.diagnostics.repaired,
+        accepted: result.diagnostics.accepted,
+        addedToResult: result.diagnostics.addedToResult,
+        rejected: result.diagnostics.rejected
+      }));
       res.json({
         entities: result.entities,
         diagnostics: result.diagnostics,
+        trace,
         model: config.model,
         promptVersion: ANONYMIZER_QWEN_PROMPT_VERSION
       });
     } catch (error) {
       const code = error?.name === 'AbortError' ? 'QWEN_TIMEOUT' : String(error?.message || 'QWEN_FAILED');
-      console.error('Qwen anonymizer request failed:', code);
-      res.status(502).json({ error: code });
+      console.error('Qwen anonymizer failed:', JSON.stringify({
+        requestId,
+        completed: false,
+        model: config.model,
+        promptVersion: ANONYMIZER_QWEN_PROMPT_VERSION,
+        documentFormat: document.format,
+        textLength: text.length,
+        ruleCandidatesSent: ruleCandidates.length,
+        durationMs: Date.now() - startedAt,
+        error: code
+      }));
+      res.status(502).json({ error: code, requestId });
     }
   });
 }

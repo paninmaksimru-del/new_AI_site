@@ -70,6 +70,7 @@ const state = {
   qwenModel: null,
   qwenStatus: "idle",
   qwenDiagnostics: null,
+  qwenTrace: null,
   sourceBinary: null,
   docxModel: null
 };
@@ -113,6 +114,7 @@ function renderQwenCharacterMetric() {
   status.removeAttribute("title");
   details.textContent = "";
   details.classList.add("hidden");
+  details.classList.remove("has-warning");
   metric.classList.toggle("warning", overLimit || state.qwenStatus === "error");
   metric.classList.toggle("ok", state.qwenUsed);
   if (overLimit) {
@@ -120,15 +122,15 @@ function renderQwenCharacterMetric() {
   } else if (state.qwenUsed) {
     const diagnostics = state.qwenDiagnostics;
     status.textContent = diagnostics
-      ? `Qwen: вернул ${diagnostics.returned}, принято ${diagnostics.accepted}, отклонено ${diagnostics.rejected}`
+      ? `Qwen: вернул ${diagnostics.returned}, исправлено ${diagnostics.repaired || 0}, добавлено ${diagnostics.addedToResult ?? diagnostics.accepted}, отклонено ${diagnostics.rejected}`
       : "весь текст дополнительно проверен Qwen";
-    if (diagnostics?.rejected || diagnostics?.responseIssues?.length) {
+    if (diagnostics) {
       const labels = {
         invalid_candidate: "некорректный объект",
         type_not_allowed: "неизвестный тип",
-        indexes_invalid: "некорректные индексы",
-        range_invalid: "диапазон вне текста",
-        value_mismatch: "значение не совпало с текстом",
+        value_missing: "пустое значение",
+        value_not_found: "значение отсутствует в тексте",
+        occurrence_ambiguous: "неоднозначное вхождение",
         duplicate: "дубликат",
         entity_limit_exceeded: "превышен лимит сущностей"
       };
@@ -138,8 +140,16 @@ function renderQwenCharacterMetric() {
       const responseIssues = diagnostics.responseIssues?.includes("entities_not_array")
         ? "ответ не содержит массив entities"
         : (diagnostics.responseIssues || []).join("; ");
-      details.textContent = [rejectionReasons, responseIssues].filter(Boolean).join("; ");
+      const contribution = [
+        `прошли проверку: ${diagnostics.accepted || 0}`,
+        `совпали с локальными: ${diagnostics.overlappingRuleCandidates || 0}`
+      ].join("; ");
+      const trace = state.qwenTrace
+        ? `запрос ${state.qwenTrace.requestId}; ответ за ${state.qwenTrace.durationMs} мс`
+        : "";
+      details.textContent = [contribution, rejectionReasons, responseIssues, trace].filter(Boolean).join("; ");
       details.classList.remove("hidden");
+      details.classList.toggle("has-warning", Boolean(diagnostics.rejected || diagnostics.responseIssues?.length));
       status.title = details.textContent;
     }
   } else if (!qwenConfiguration.configured) {
@@ -359,6 +369,7 @@ function prepareProcessing(source) {
   state.qwenModel = null;
   state.qwenStatus = "idle";
   state.qwenDiagnostics = null;
+  state.qwenTrace = null;
   state.sourceBinary = null;
   state.docxModel = null;
   state.restoreResult = null;
@@ -370,7 +381,7 @@ function prepareProcessing(source) {
   $("progressBar").style.width = "8%";
 }
 
-async function requestQwenEntities(text, ruleEntities) {
+async function requestQwenEntities(text, ruleEntities, source) {
   const authToken = localStorage.getItem("auth_token") || "";
   if (!authToken) throw new Error("QWEN_AUTH_REQUIRED");
   const response = await fetch("/api/anonymizer/qwen/entities", {
@@ -382,6 +393,10 @@ async function requestQwenEntities(text, ruleEntities) {
     body: JSON.stringify({
       text,
       ruleCandidates: ruleEntities,
+      document: {
+        format: source?.format || (source?.kind === "text" ? "text" : "unknown"),
+        size: Number(source?.size) || 0
+      },
       confirmed: true
     })
   });
@@ -389,10 +404,14 @@ async function requestQwenEntities(text, ruleEntities) {
   if (!response.ok) throw new Error(payload.error || `QWEN_HTTP_${response.status}`);
   state.qwenUsed = true;
   state.qwenModel = payload.model || qwenConfiguration.model || null;
+  state.qwenTrace = payload.trace || null;
   const entities = Array.isArray(payload.entities) ? payload.entities : [];
   state.qwenDiagnostics = payload.diagnostics || {
     returned: entities.length,
+    located: entities.length,
+    repaired: 0,
     accepted: entities.length,
+    addedToResult: entities.length,
     rejected: 0,
     reasons: {}
   };
@@ -618,6 +637,7 @@ async function restoreSnapshot(snapshot, sourceBlob = null) {
   state.qwenModel = snapshot.source?.analysis?.qwenModel || null;
   state.qwenStatus = snapshot.source?.analysis?.qwenStatus || (state.qwenUsed ? "used" : "local");
   state.qwenDiagnostics = snapshot.source?.analysis?.qwenDiagnostics || null;
+  state.qwenTrace = snapshot.source?.analysis?.qwenTrace || null;
   state.sourceBinary = null;
   state.docxModel = null;
   if (sourceBlob && state.source?.format === "docx") {
@@ -742,7 +762,7 @@ async function processSource(text, source, options = {}) {
       : "Завершаем локальную проверку";
   if (qwenConfiguration.configured && !qwenOverLimit) {
     try {
-      const qwenEntities = await requestQwenEntities(text, ruleEntities);
+      const qwenEntities = await requestQwenEntities(text, ruleEntities, source);
       state.entities = assignEntityGroups(mergeEntityCandidates(ruleEntities, qwenEntities));
       state.qwenStatus = "used";
     } catch (error) {
@@ -762,7 +782,8 @@ async function processSource(text, source, options = {}) {
     qwenUsed: state.qwenUsed,
     qwenModel: state.qwenModel,
     qwenStatus: state.qwenStatus,
-    qwenDiagnostics: state.qwenDiagnostics
+    qwenDiagnostics: state.qwenDiagnostics,
+    qwenTrace: state.qwenTrace
   };
   $("progressBar").style.width = "82%";
   recalculate();
@@ -1315,6 +1336,7 @@ function resetApplication() {
   state.qwenModel = null;
   state.qwenStatus = "idle";
   state.qwenDiagnostics = null;
+  state.qwenTrace = null;
   state.sourceBinary = null;
   state.docxModel = null;
   state.restoreResult = null;

@@ -230,7 +230,8 @@ h1 { max-width: 780px; margin-bottom: 14px; font-size: clamp(32px, 5vw, 58px); l
 .metric.warning b { color: var(--warn); }
 .metric.ok b { color: var(--accent); }
 .metric.qwen-metric b { font-size: 18px; font-variant-numeric: tabular-nums; }
-.metric .qwen-diagnostics { display: block; margin-top: 6px; color: var(--warn); font-size: 11px; line-height: 1.35; }
+.metric .qwen-diagnostics { display: block; margin-top: 6px; color: var(--muted-2); font-size: 11px; line-height: 1.35; }
+.metric .qwen-diagnostics.has-warning { color: var(--warn); }
 
 .notice { margin-bottom: 18px; padding: 13px 15px; border: 1px solid rgba(246, 196, 83, .22); border-radius: 13px; color: rgba(255, 235, 185, .9); background: rgba(246, 196, 83, .07); font-size: 13px; }
 .notice.error { border-color: rgba(255, 116, 116, .3); color: #ffd1d1; background: rgba(255, 116, 116, .08); }

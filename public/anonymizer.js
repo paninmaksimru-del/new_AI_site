@@ -700,7 +700,7 @@ async function processSource(text, source, options = {}) {
   if (qwenTask) qwenTask.textContent = qwenOverLimit && qwenConfiguration.configured
     ? `Qwen пропущен: ${qwenCounterText(text.length)} знаков`
     : qwenConfiguration.configured
-      ? "Дополнительно проверяем с помощью Qwen"
+      ? "Дополнительно проверяем с помощью ИИ"
       : "Завершаем локальную проверку";
   if (qwenConfiguration.configured && !qwenOverLimit) {
     try {

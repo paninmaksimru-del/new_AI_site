@@ -1,11 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeEntityCandidates, pageNeedsOcr } from '../public/anonymizer-pipeline.js';
+import { looksLikeBrokenOcrText, mergeEntityCandidates, pageNeedsOcr } from '../public/anonymizer-pipeline.js';
 
 test('OCR включается для пустой или почти пустой PDF-страницы', () => {
   assert.equal(pageNeedsOcr('', 0), true);
   assert.equal(pageNeedsOcr('Стр. 1', 2), true);
   assert.equal(pageNeedsOcr('Это полноценный текстовый слой документа.', 12), false);
+});
+
+test('OCR повторяется для длинного, но повреждённого латинского OCR-слоя', () => {
+  const brokenOcr = `
+    rx peanl{3allurc [por,r3BeAeHHbrx Ha reppHTopr{Ll Poccuficxofi (De4epaqul'I
+    roBapoB 3a rlpeAenbr repprlropl.ru Poccuficxofi- <Deaepaqru, 31crropr
+    pe3yJrbraroB prHrenJreKryalruofi Aef,TeJrbHocrH u (utu) ycnyf B rlenrx
+    rIpeAocraBJIeHI{, rpaHToB us 6loAxera ropoAa Mocxnu, rrpereHAyrouux
+    Ha rrpeAocraBJreHr,re cy6cuauir t43 6roAxera ropoAa MocxsH.
+  `;
+
+  assert.equal(looksLikeBrokenOcrText(brokenOcr), true);
+  assert.equal(pageNeedsOcr(brokenOcr, 120), true);
+});
+
+test('обычный русский и английский текст не считается повреждённым OCR-слоем', () => {
+  const russian = 'В соответствии с постановлением Правительства Москвы объявлен отбор получателей финансовой поддержки из бюджета города.';
+  const english = 'The department published a complete document with normal English sentences, readable words, application dates, contact details, and several paragraphs for review.';
+
+  assert.equal(looksLikeBrokenOcrText(russian), false);
+  assert.equal(looksLikeBrokenOcrText(english), false);
+  assert.equal(pageNeedsOcr(russian, 30), false);
+  assert.equal(pageNeedsOcr(english, 30), false);
 });
 
 test('Qwen добавляет только непересекающиеся кандидаты в автоматическую маскировку', () => {

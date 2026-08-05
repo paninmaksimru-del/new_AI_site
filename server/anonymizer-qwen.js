@@ -2,6 +2,7 @@ import {
   ANONYMIZER_QWEN_PROMPT_VERSION,
   ANONYMIZER_QWEN_SYSTEM_PROMPT
 } from './prompts/anonymizer-qwen-v1.js';
+import { getQwenSetting } from './qwen-settings.js';
 
 const ALLOWED_TYPES = new Set([
   'PERSON', 'ADDRESS', 'PHONE', 'EMAIL', 'PASSPORT', 'SNILS', 'INN',
@@ -11,18 +12,37 @@ const ALLOWED_TYPES = new Set([
 const ALLOWED_CONFIDENCE = new Set(['high', 'medium', 'low']);
 const MAX_TEXT_LENGTH = 60_000;
 const MAX_ENTITIES = 500;
+const ANONYMIZER_MODEL_PROFILE = Object.freeze({
+  id: 'qwen3.6-27b',
+  endpointKey: 'QWEN_27B_BASE_URL',
+  modelKey: 'QWEN_27B_MODEL'
+});
 
-function qwenConfig() {
+export function anonymizerQwenConfig(readSetting = getQwenSetting) {
   return {
-    apiKey: String(process.env.QWEN_API_KEY || '').trim(),
-    baseUrl: String(process.env.QWEN_BASE_URL || '').trim().replace(/\/+$/, ''),
-    model: String(process.env.QWEN_MODEL || 'qwen3.7-plus').trim(),
-    timeoutMs: Math.max(5_000, Math.min(120_000, Number(process.env.QWEN_TIMEOUT_MS) || 60_000))
+    profile: ANONYMIZER_MODEL_PROFILE.id,
+    proxyToken: String(readSetting('QWEN_PROXY_TOKEN') || '').trim(),
+    baseUrl: String(readSetting(ANONYMIZER_MODEL_PROFILE.endpointKey) || '').trim().replace(/\/+$/, ''),
+    model: String(readSetting(ANONYMIZER_MODEL_PROFILE.modelKey) || '').trim(),
+    timeoutMs: Math.max(5_000, Math.min(2_400_000, Number(readSetting('QWEN_REQUEST_TIMEOUT_MS')) || 60_000))
   };
 }
 
-export function isQwenConfigured(config = qwenConfig()) {
-  return Boolean(config.apiKey && config.baseUrl && config.model);
+export function isQwenConfigured(config = anonymizerQwenConfig()) {
+  return Boolean(config.proxyToken && config.baseUrl && config.model);
+}
+
+export function anonymizerQwenUrl(config) {
+  const url = new URL(config.baseUrl);
+  if (url.origin !== 'https://i.moscow' || !url.pathname.startsWith('/api/dit/proxy/operation/openqwen/')) {
+    throw new Error('QWEN_ENDPOINT_INVALID');
+  }
+  const pathname = url.pathname.replace(/\/+$/, '');
+  if (!pathname.endsWith('/chat/completions')) url.pathname = `${pathname}/chat/completions`;
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('token', config.proxyToken);
+  return url;
 }
 
 export function normalizeQwenEntities(text, payload) {
@@ -63,21 +83,22 @@ function parseQwenResponse(data) {
   return JSON.parse(cleaned);
 }
 
-async function findEntitiesWithQwen(text, ruleCandidates, config = qwenConfig()) {
+async function findEntitiesWithQwen(text, ruleCandidates, config = anonymizerQwenConfig()) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
   try {
-    const response = await fetch(`${config.baseUrl}/chat/completions`, {
+    const response = await fetch(anonymizerQwenUrl(config), {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.apiKey}`
+        'Content-Type': 'application/json'
       },
       signal: controller.signal,
       body: JSON.stringify({
         model: config.model,
         temperature: 0,
+        max_tokens: 4096,
         response_format: { type: 'json_object' },
+        chat_template_kwargs: { enable_thinking: false },
         messages: [
           { role: 'system', content: ANONYMIZER_QWEN_SYSTEM_PROMPT },
           {
@@ -99,16 +120,18 @@ async function findEntitiesWithQwen(text, ruleCandidates, config = qwenConfig())
 
 export function setupAnonymizerQwen(app, authMiddleware) {
   app.get('/api/anonymizer/qwen/status', (_req, res) => {
-    const config = qwenConfig();
+    const config = anonymizerQwenConfig();
     res.json({
       configured: isQwenConfigured(config),
       model: isQwenConfigured(config) ? config.model : null,
+      profile: config.profile,
+      maxTextLength: MAX_TEXT_LENGTH,
       promptVersion: ANONYMIZER_QWEN_PROMPT_VERSION
     });
   });
 
   app.post('/api/anonymizer/qwen/entities', authMiddleware, async (req, res) => {
-    const config = qwenConfig();
+    const config = anonymizerQwenConfig();
     if (!isQwenConfigured(config)) return res.status(503).json({ error: 'QWEN_NOT_CONFIGURED' });
     if (req.body?.confirmed !== true) return res.status(400).json({ error: 'QWEN_CONSENT_REQUIRED' });
     const text = String(req.body?.text || '');

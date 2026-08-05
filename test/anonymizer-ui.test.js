@@ -145,8 +145,35 @@ test("восстановление поддерживает перетаскив
   assert.match(css, /Times New Roman/);
 });
 
-test("смысловая модель оставлена локальной заглушкой без отправки документа", async () => {
-  const script = await readFile(new URL("anonymizer.js", root), "utf8");
-  assert.match(script, /local-stub-v1/);
-  assert.doesNotMatch(script, /fetch\("\/api\/anonymizer\/qwen\/entities"/);
+test("смысловая проверка использует серверный Qwen Chat и сохраняет локальный fallback", async () => {
+  const [html, script] = await Promise.all([
+    readFile(new URL("anonymizer.html", root), "utf8"),
+    readFile(new URL("anonymizer.js", root), "utf8")
+  ]);
+  assert.match(script, /fetch\("\/api\/anonymizer\/qwen\/status"/);
+  assert.match(script, /fetch\("\/api\/anonymizer\/qwen\/entities"/);
+  assert.match(script, /"x-auth-token": authToken/);
+  assert.match(script, /confirmed: true/);
+  assert.match(script, /mergeEntityCandidates\(ruleEntities, qwenEntities\)/);
+  assert.match(script, /Дополнительная проверка временно недоступна\. Документ обработан основным способом\./);
+  assert.match(script, /Qwen: \$\{state\.qwenModel/);
+  assert.match(html, /ключ восстановления модели не передаётся/);
+});
+
+test("лимит Qwen показан счётчиком для текста, файлов и готового результата", async () => {
+  const [html, script, css] = await Promise.all([
+    readFile(new URL("anonymizer.html", root), "utf8"),
+    readFile(new URL("anonymizer.js", root), "utf8"),
+    readFile(new URL("anonymizer.css", root), "utf8")
+  ]);
+  assert.match(html, /id="pasteCharCount"[^>]*>0 \/ 60 000 знаков для Qwen/);
+  assert.match(html, /id="qwenCharacterCount">0 \/ 60 000/);
+  assert.match(html, /id="qwenCharacterStatus"/);
+  assert.match(script, /maxTextLength: Number\(payload\.maxTextLength\)/);
+  assert.match(script, /text\.length > qwenTextLimit\(\)/);
+  assert.match(script, /Qwen пропущен: \$\{qwenCounterText\(text\.length\)\}/);
+  assert.match(script, /Лимит Qwen — \$\{qwenTextLimit\(\)\.toLocaleString/);
+  assert.match(script, /processingFileMeta[^\n]+qwenCounterText\(text\.length\)/);
+  assert.match(css, /\.char-counter\.over-limit/);
+  assert.match(css, /\.metric\.qwen-metric b/);
 });

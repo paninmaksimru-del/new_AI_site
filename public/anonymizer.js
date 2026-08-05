@@ -37,6 +37,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdf.worker.min.mjs";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_MANUAL_SELECTION = 20_000;
+const DEFAULT_QWEN_TEXT_LIMIT = 60_000;
 const SESSION_KEY = "mik-anonymizer-current-v2";
 const SAVED_KEY = "mik-anonymizer-sessions-v2";
 
@@ -67,12 +68,14 @@ const state = {
   ocrPages: [],
   qwenUsed: false,
   qwenModel: null,
+  qwenStatus: "idle",
   sourceBinary: null,
   docxModel: null
 };
 
 let activeOcrWorker = null;
-let qwenConfiguration = { configured: false, model: null, promptVersion: null, localOnly: true };
+let qwenConfiguration = { configured: false, model: null, promptVersion: null, maxTextLength: DEFAULT_QWEN_TEXT_LIMIT, localOnly: true };
+let qwenStatusPromise = null;
 let savedSessionsCache = {};
 let occurrenceNavigation = null;
 const sourceRangeByTextNode = new WeakMap();
@@ -80,6 +83,42 @@ const sourceRangeByTextNode = new WeakMap();
 const $ = (id) => document.getElementById(id);
 const sleep = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 const makeId = () => window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+function qwenTextLimit() {
+  const configuredLimit = Number(qwenConfiguration.maxTextLength);
+  return Number.isInteger(configuredLimit) && configuredLimit > 0 ? configuredLimit : DEFAULT_QWEN_TEXT_LIMIT;
+}
+
+function qwenCounterText(length) {
+  return `${Number(length || 0).toLocaleString("ru-RU")} / ${qwenTextLimit().toLocaleString("ru-RU")}`;
+}
+
+function updatePasteCounter() {
+  const counter = $("pasteCharCount");
+  if (!counter) return;
+  const length = $("pasteInput")?.value.length || 0;
+  counter.textContent = `${qwenCounterText(length)} знаков для Qwen`;
+  counter.classList.toggle("over-limit", length > qwenTextLimit());
+}
+
+function renderQwenCharacterMetric() {
+  const metric = $("qwenCharacterMetric");
+  if (!metric) return;
+  const length = state.text.length;
+  const overLimit = length > qwenTextLimit();
+  $("qwenCharacterCount").textContent = qwenCounterText(length);
+  metric.classList.toggle("warning", overLimit || state.qwenStatus === "error");
+  metric.classList.toggle("ok", state.qwenUsed);
+  if (overLimit) {
+    $("qwenCharacterStatus").textContent = "лимит Qwen превышен — применены локальные правила";
+  } else if (state.qwenUsed) {
+    $("qwenCharacterStatus").textContent = "весь текст дополнительно проверен Qwen";
+  } else if (!qwenConfiguration.configured) {
+    $("qwenCharacterStatus").textContent = "Qwen не настроен — применены локальные правила";
+  } else {
+    $("qwenCharacterStatus").textContent = "Qwen недоступен — применены локальные правила";
+  }
+}
 
 function showToast(message) {
   const toast = $("toast");
@@ -289,6 +328,7 @@ function prepareProcessing(source) {
   state.ocrPages = [];
   state.qwenUsed = false;
   state.qwenModel = null;
+  state.qwenStatus = "idle";
   state.sourceBinary = null;
   state.docxModel = null;
   state.restoreResult = null;
@@ -301,17 +341,52 @@ function prepareProcessing(source) {
 }
 
 async function requestQwenEntities(text, ruleEntities) {
-  void text;
-  void ruleEntities;
-  // Заглушка для будущей браузерной модели. Исходный документ не отправляется
-  // ни на сервер приложения, ни внешнему поставщику.
-  return [];
+  const authToken = localStorage.getItem("auth_token") || "";
+  if (!authToken) throw new Error("QWEN_AUTH_REQUIRED");
+  const response = await fetch("/api/anonymizer/qwen/entities", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-auth-token": authToken
+    },
+    body: JSON.stringify({
+      text,
+      ruleCandidates: ruleEntities,
+      confirmed: true
+    })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || `QWEN_HTTP_${response.status}`);
+  state.qwenUsed = true;
+  state.qwenModel = payload.model || qwenConfiguration.model || null;
+  return Array.isArray(payload.entities) ? payload.entities : [];
 }
 
 async function loadQwenStatus() {
-  // Этап работает полностью локально. Контракт смысловой проверки сохранён,
-  // но удалённая модель не вызывается до подключения браузерной реализации.
-  qwenConfiguration = { configured: false, model: null, promptVersion: "local-stub-v1", localOnly: true };
+  try {
+    const response = await fetch("/api/anonymizer/qwen/status", { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`QWEN_STATUS_HTTP_${response.status}`);
+    const payload = await response.json();
+    qwenConfiguration = {
+      configured: Boolean(payload.configured),
+      model: payload.model || null,
+      profile: payload.profile || null,
+      maxTextLength: Number(payload.maxTextLength) || DEFAULT_QWEN_TEXT_LIMIT,
+      promptVersion: payload.promptVersion || null,
+      localOnly: false
+    };
+  } catch (error) {
+    console.error("Qwen status check failed:", error?.message);
+    qwenConfiguration = { configured: false, model: null, promptVersion: null, maxTextLength: DEFAULT_QWEN_TEXT_LIMIT, localOnly: true };
+  }
+  updatePasteCounter();
+  if (state.result) renderQwenCharacterMetric();
+  return qwenConfiguration;
+}
+
+function ensureQwenStatus() {
+  if (!qwenStatusPromise) qwenStatusPromise = loadQwenStatus();
+  return qwenStatusPromise;
 }
 
 function sessionSnapshot() {
@@ -504,6 +579,7 @@ async function restoreSnapshot(snapshot, sourceBlob = null) {
   state.ocrPages = snapshot.source?.analysis?.ocrPages || [];
   state.qwenUsed = Boolean(snapshot.source?.analysis?.qwenUsed);
   state.qwenModel = snapshot.source?.analysis?.qwenModel || null;
+  state.qwenStatus = snapshot.source?.analysis?.qwenStatus || (state.qwenUsed ? "used" : "local");
   state.sourceBinary = null;
   state.docxModel = null;
   if (sourceBlob && state.source?.format === "docx") {
@@ -604,7 +680,8 @@ async function processSource(text, source, options = {}) {
   $("restoreSourceStatus").textContent = "Файл не выбран";
   clearRestoreResult();
   $("processingFileName").textContent = source.name;
-  $("processingFileMeta").textContent = source.kind === "text" ? `${text.length.toLocaleString("ru-RU")} знаков` : formatBytes(source.size);
+  const sourceMeta = source.kind === "text" ? "Вставленный текст" : formatBytes(source.size);
+  $("processingFileMeta").textContent = `${sourceMeta} · Qwen: ${qwenCounterText(text.length)} знаков`;
 
   $("progressBar").style.width = "20%";
   markTask("read");
@@ -616,17 +693,33 @@ async function processSource(text, source, options = {}) {
   markTask("detect");
   await sleep(140);
   $("progressBar").style.width = "66%";
-  if (qwenConfiguration.configured) {
+  await ensureQwenStatus();
+  $("processingFileMeta").textContent = `${sourceMeta} · Qwen: ${qwenCounterText(text.length)} знаков`;
+  const qwenOverLimit = text.length > qwenTextLimit();
+  const qwenTask = document.querySelector('[data-task="qwen"]');
+  if (qwenTask) qwenTask.textContent = qwenOverLimit && qwenConfiguration.configured
+    ? `Qwen пропущен: ${qwenCounterText(text.length)} знаков`
+    : qwenConfiguration.configured
+      ? "Дополнительно проверяем с помощью Qwen"
+      : "Завершаем локальную проверку";
+  if (qwenConfiguration.configured && !qwenOverLimit) {
     try {
       const qwenEntities = await requestQwenEntities(text, ruleEntities);
       state.entities = assignEntityGroups(mergeEntityCandidates(ruleEntities, qwenEntities));
+      state.qwenStatus = "used";
     } catch (error) {
       console.error("Qwen entity search failed:", error?.message);
+      state.qwenStatus = "error";
       showToast("Дополнительная проверка временно недоступна. Документ обработан основным способом.");
     }
+  } else if (qwenOverLimit && qwenConfiguration.configured) {
+    state.qwenStatus = "limit";
+    showToast(`Лимит Qwen — ${qwenTextLimit().toLocaleString("ru-RU")} знаков. Документ обработан локальными правилами.`);
+  } else {
+    state.qwenStatus = "local";
   }
   markTask("qwen");
-  state.source.analysis = { ocrPages: state.ocrPages, qwenUsed: state.qwenUsed, qwenModel: state.qwenModel };
+  state.source.analysis = { ocrPages: state.ocrPages, qwenUsed: state.qwenUsed, qwenModel: state.qwenModel, qwenStatus: state.qwenStatus };
   $("progressBar").style.width = "82%";
   recalculate();
   markTask("replace");
@@ -1121,6 +1214,7 @@ function renderResult(renderRows = true) {
   const review = state.registry.filter((group) => group.action === "REVIEW");
   const methods = ["обработано автоматически"];
   if (state.ocrPages.length) methods.push(`OCR: ${state.ocrPages.length} стр.`);
+  if (state.qwenUsed) methods.push(`Qwen: ${state.qwenModel || "дополнительная проверка"}`);
   $("resultFileName").textContent = `${state.source?.name || "Материал"} · ${methods.join(" · ")}`;
   $("foundCount").textContent = state.result.replacements.length;
   $("entityCount").textContent = state.registry.length;
@@ -1128,6 +1222,7 @@ function renderResult(renderRows = true) {
   $("categoryCount").textContent = categories.size;
   $("sourceLength").textContent = `${state.text.length.toLocaleString("ru-RU")} знаков`;
   $("safeLength").textContent = `${state.result.text.length.toLocaleString("ru-RU")} знаков`;
+  renderQwenCharacterMetric();
   renderDocumentPage($("sourcePreview"), state.text, { docxModel: state.docxModel });
   renderDocumentPage($("safePreview"), state.result.text, {
     tokens: true,
@@ -1174,6 +1269,7 @@ function resetApplication() {
   state.ocrPages = [];
   state.qwenUsed = false;
   state.qwenModel = null;
+  state.qwenStatus = "idle";
   state.sourceBinary = null;
   state.docxModel = null;
   state.restoreResult = null;
@@ -1181,7 +1277,7 @@ function resetApplication() {
   state.restoreSourceFormat = "text";
   $("fileInput").value = "";
   $("pasteInput").value = "";
-  $("pasteCharCount").textContent = "0 знаков";
+  updatePasteCounter();
   $("manualValue").value = "";
   $("draftNameInput").value = "";
   $("restoreInput").value = "";
@@ -1640,7 +1736,7 @@ function bindActions() {
   $("fileTabButton").addEventListener("click", () => setInputTab("file"));
   $("textTabButton").addEventListener("click", () => setInputTab("text"));
   $("pasteInput").addEventListener("input", () => {
-    $("pasteCharCount").textContent = `${$("pasteInput").value.length.toLocaleString("ru-RU")} знаков`;
+    updatePasteCounter();
   });
   $("processTextButton").addEventListener("click", () => {
     const text = $("pasteInput").value;
@@ -1736,7 +1832,8 @@ async function loadCurrentSession() {
 }
 
 renderEntityTypes();
-loadQwenStatus();
+ensureQwenStatus();
+updatePasteCounter();
 bindUpload();
 bindActions();
 bindNavigation();

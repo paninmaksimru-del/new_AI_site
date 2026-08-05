@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeQwenEntities } from '../server/anonymizer-qwen.js';
 import { ANONYMIZER_QWEN_SYSTEM_PROMPT } from '../server/prompts/anonymizer-qwen-v1.js';
+
+process.env.DATABASE_URL ||= 'postgresql://localhost/mik_anonymizer_unit_test';
+const {
+  anonymizerQwenConfig,
+  anonymizerQwenUrl,
+  isQwenConfigured,
+  normalizeQwenEntities
+} = await import('../server/anonymizer-qwen.js');
 
 test('Qwen-ответ принимается только при точном совпадении диапазона и текста', () => {
   const text = 'Получатель: Иванов Иван.';
@@ -19,4 +26,30 @@ test('Qwen-ответ принимается только при точном с
 test('системный промпт трактует документ как данные и запрещает токенизацию', () => {
   assert.match(ANONYMIZER_QWEN_SYSTEM_PROMPT, /недоверенными данными/u);
   assert.match(ANONYMIZER_QWEN_SYSTEM_PROMPT, /не создавай токены/u);
+});
+
+test('анонимайзер использует профиль Qwen Chat из настроек администратора', () => {
+  const values = {
+    QWEN_PROXY_TOKEN: 'server-secret',
+    QWEN_27B_BASE_URL: 'https://i.moscow/api/dit/proxy/operation/openqwen/model-v43/v1',
+    QWEN_27B_MODEL: 'local_huggingface/Qwen3.6-27B',
+    QWEN_REQUEST_TIMEOUT_MS: '2400000'
+  };
+  const config = anonymizerQwenConfig((key) => values[key]);
+  assert.equal(config.profile, 'qwen3.6-27b');
+  assert.equal(config.model, values.QWEN_27B_MODEL);
+  assert.equal(config.timeoutMs, 2_400_000);
+  assert.equal(isQwenConfigured(config), true);
+
+  const url = anonymizerQwenUrl(config);
+  assert.equal(url.pathname, '/api/dit/proxy/operation/openqwen/model-v43/v1/chat/completions');
+  assert.equal(url.searchParams.get('token'), values.QWEN_PROXY_TOKEN);
+});
+
+test('анонимайзер считается выключенным без серверного токена Qwen Chat', () => {
+  const config = anonymizerQwenConfig((key) => ({
+    QWEN_27B_BASE_URL: 'https://i.moscow/api/dit/proxy/operation/openqwen/model-v43/v1',
+    QWEN_27B_MODEL: 'local_huggingface/Qwen3.6-27B'
+  })[key]);
+  assert.equal(isQwenConfigured(config), false);
 });

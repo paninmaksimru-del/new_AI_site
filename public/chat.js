@@ -1,4 +1,10 @@
 const DEFAULT_PROJECT = '__default__';
+const MAX_PENDING_FILES = 5;
+const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024;
+const SUPPORTED_FILE_EXTENSIONS = new Set([
+  '.pdf', '.docx', '.txt', '.md', '.csv', '.json', '.xml', '.html', '.log', '.yaml', '.yml',
+  '.png', '.jpg', '.jpeg', '.webp'
+]);
 const token = localStorage.getItem('auth_token') || '';
 const MODEL_META = {
   'qwen3.6-27b': {
@@ -297,12 +303,16 @@ document.getElementById('ctxMove').addEventListener('click', async () => {
 
 document.getElementById('ctxDelete').addEventListener('click', async () => {
   if (state.isLoading) return showToast('Дождитесь завершения текущего ответа.');
-  if (!confirm('Удалить чат и всю его историю?')) return;
+  const chatId = contextTarget;
+  const chat = state.chats.find(item => item.id === chatId);
+  if (!chat || !confirm(`Удалить чат «${chat.title}» и всю его историю?`)) return;
   try {
-    await api(`/api/chat/sessions/${contextTarget}`, { method:'DELETE' });
-    state.chats = state.chats.filter(chat => chat.id !== contextTarget);
-    if (state.activeChatId === contextTarget) { state.activeChatId = null; state.messages = []; clearChatUI(); }
+    await api(`/api/chat/sessions/${chatId}`, { method:'DELETE' });
+    state.chats = state.chats.filter(item => item.id !== chatId);
+    if (state.activeChatId === chatId) { state.activeChatId = null; state.messages = []; clearChatUI(); }
+    contextTarget = null;
     renderSidebar();
+    showToast('Чат и его история удалены.');
   } catch (error) { showToast(`⚠️ ${error.message}`); }
 });
 
@@ -315,10 +325,40 @@ function renderFilePills() {
   updateSendButton();
 }
 
+function fileExtension(name) {
+  const normalized = String(name || '').toLowerCase();
+  const dotIndex = normalized.lastIndexOf('.');
+  return dotIndex >= 0 ? normalized.slice(dotIndex) : '';
+}
+
+function addPendingFiles(fileList) {
+  if (state.isLoading) {
+    showToast('Дождитесь завершения текущего ответа.');
+    return;
+  }
+  for (const file of Array.from(fileList || [])) {
+    if (state.pendingFiles.length >= MAX_PENDING_FILES) {
+      showToast(`Можно приложить не более ${MAX_PENDING_FILES} файлов.`);
+      break;
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      showToast(`Файл «${file.name}» больше 15 МБ.`);
+      continue;
+    }
+    if (!SUPPORTED_FILE_EXTENSIONS.has(fileExtension(file.name))) {
+      showToast(`Формат файла «${file.name}» не поддерживается.`);
+      continue;
+    }
+    state.pendingFiles.push(file);
+  }
+  renderFilePills();
+}
+
 function updateSendButton() {
   document.getElementById('sendBtn').disabled = state.isLoading || (!document.getElementById('userInput').value.trim() && !state.pendingFiles.length);
   document.getElementById('newChatBtn').disabled = state.isLoading;
   document.getElementById('modelSelectorBtn').disabled = state.isLoading;
+  document.getElementById('attachBtn').disabled = state.isLoading;
   document.querySelectorAll('.project-add-btn, .project-delete-btn, .chat-item-menu').forEach(button => { button.disabled = state.isLoading; });
 }
 
@@ -434,17 +474,60 @@ document.getElementById('userInput').addEventListener('input', event => {
 });
 document.getElementById('attachBtn').addEventListener('click', () => document.getElementById('fileInput').click());
 document.getElementById('fileInput').addEventListener('change', event => {
-  for (const file of event.target.files || []) {
-    if (state.pendingFiles.length >= 5) { showToast('Можно приложить не более 5 файлов.'); break; }
-    if (file.size > 15 * 1024 * 1024) { showToast(`Файл «${file.name}» больше 15 МБ.`); continue; }
-    state.pendingFiles.push(file);
-  }
-  event.target.value = ''; renderFilePills();
+  addPendingFiles(event.target.files);
+  event.target.value = '';
 });
 document.getElementById('filePreviewBar').addEventListener('click', event => {
   const remove = event.target.closest('[data-index]');
   if (!remove) return; state.pendingFiles.splice(Number(remove.dataset.index), 1); renderFilePills();
 });
+
+const chatRoot = document.querySelector('.chat-root');
+const dropZoneOverlay = document.getElementById('dropZoneOverlay');
+let fileDragDepth = 0;
+
+function hasDraggedFiles(event) {
+  return Array.from(event.dataTransfer?.types || []).includes('Files');
+}
+
+function setFileDragging(active) {
+  chatRoot.classList.toggle('is-file-dragging', active);
+  dropZoneOverlay.setAttribute('aria-hidden', active ? 'false' : 'true');
+  if (!active) fileDragDepth = 0;
+}
+
+chatRoot.addEventListener('dragenter', event => {
+  if (!hasDraggedFiles(event)) return;
+  event.preventDefault();
+  fileDragDepth += 1;
+  setFileDragging(true);
+});
+chatRoot.addEventListener('dragover', event => {
+  if (!hasDraggedFiles(event)) return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'copy';
+});
+chatRoot.addEventListener('dragleave', event => {
+  if (!hasDraggedFiles(event)) return;
+  fileDragDepth = Math.max(0, fileDragDepth - 1);
+  if (fileDragDepth === 0) setFileDragging(false);
+});
+chatRoot.addEventListener('drop', event => {
+  if (!hasDraggedFiles(event)) return;
+  event.preventDefault();
+  const files = event.dataTransfer.files;
+  setFileDragging(false);
+  addPendingFiles(files);
+});
+window.addEventListener('dragover', event => {
+  if (hasDraggedFiles(event)) event.preventDefault();
+});
+window.addEventListener('drop', event => {
+  if (!hasDraggedFiles(event)) return;
+  event.preventDefault();
+  if (!chatRoot.contains(event.target)) setFileDragging(false);
+});
+window.addEventListener('blur', () => setFileDragging(false));
 document.querySelector('.suggestions').addEventListener('click', event => {
   const chip = event.target.closest('.suggestion-chip'); if (!chip) return;
   document.getElementById('userInput').value = chip.textContent.trim(); updateSendButton(); sendMessage();

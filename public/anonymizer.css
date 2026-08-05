@@ -147,6 +147,8 @@ h1 { max-width: 780px; margin-bottom: 14px; font-size: clamp(32px, 5vw, 58px); l
 .large-input { width: 100%; min-height: 280px; padding: 17px; resize: vertical; border: 1px solid var(--stroke); border-radius: 16px; color: var(--text); background: rgba(0, 0, 0, .22); line-height: 1.55; }
 .large-input:focus { border-color: rgba(36, 211, 148, .5); }
 .input-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.char-counter { font-variant-numeric: tabular-nums; }
+.char-counter.over-limit { color: var(--warn); font-weight: 800; }
 .session-panel { margin-top: 18px; padding: 14px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--stroke); border-radius: 14px; background: rgba(255, 255, 255, .025); }
 .session-panel > div { min-width: 220px; margin-right: auto; }
 .session-panel strong, .session-panel span { display: block; }
@@ -221,12 +223,13 @@ h1 { max-width: 780px; margin-bottom: 14px; font-size: clamp(32px, 5vw, 58px); l
 .processing-list div.done { color: var(--text); }
 .processing-list div.done::before { content: "✓"; color: var(--accent); }
 
-.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 22px; }
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
 .metric { padding: 16px; border: 1px solid var(--stroke); border-radius: 15px; background: var(--panel); }
 .metric b { display: block; margin-bottom: 4px; font-size: 24px; }
 .metric span { color: var(--muted); font-size: 12px; }
 .metric.warning b { color: var(--warn); }
 .metric.ok b { color: var(--accent); }
+.metric.qwen-metric b { font-size: 18px; font-variant-numeric: tabular-nums; }
 
 .notice { margin-bottom: 18px; padding: 13px 15px; border: 1px solid rgba(246, 196, 83, .22); border-radius: 13px; color: rgba(255, 235, 185, .9); background: rgba(246, 196, 83, .07); font-size: 13px; }
 .notice.error { border-color: rgba(255, 116, 116, .3); color: #ffd1d1; background: rgba(255, 116, 116, .08); }

@@ -354,7 +354,11 @@ export async function setupQwenChatRoutes(app) {
 
   app.delete('/api/chat/sessions/:id', auth, async (req, res) => {
     if (!isUuid(req.params.id)) return res.status(400).json({ error: 'Некорректный идентификатор чата.' });
-    await query('DELETE FROM ai_chats WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+    const { rows } = await query(
+      'DELETE FROM ai_chats WHERE id = $1 AND user_id = $2 RETURNING id',
+      [req.params.id, req.user.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Чат не найден.' });
     res.json({ ok: true });
   });
 

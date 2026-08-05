@@ -27,10 +27,13 @@ services:
       - NODE_ENV=production
       - PORT=19080
       - DATABASE_URL=postgresql://mik:mik_pass@db:5432/mik_platform
-      - QWEN_API_KEY=${QWEN_API_KEY:-}
-      - QWEN_BASE_URL=${QWEN_BASE_URL:-}
-      - QWEN_MODEL=${QWEN_MODEL:-qwen3.7-plus}
-      - QWEN_TIMEOUT_MS=${QWEN_TIMEOUT_MS:-60000}
+      - QWEN_27B_BASE_URL=${QWEN_27B_BASE_URL:-https://i.moscow/api/dit/proxy/operation/openqwen/model-v43/v1}
+      - QWEN_35B_BASE_URL=${QWEN_35B_BASE_URL:-https://i.moscow/api/dit/proxy/operation/openqwen/model-v41/v1}
+      - QWEN_27B_MODEL=${QWEN_27B_MODEL:-local_huggingface/Qwen3.6-27B}
+      - QWEN_35B_MODEL=${QWEN_35B_MODEL:-local_huggingface/Qwen3.6-35B-A3B}
+      - QWEN_REQUEST_TIMEOUT_MS=${QWEN_REQUEST_TIMEOUT_MS:-2400000}
+      - QWEN_PROXY_TOKEN=${QWEN_PROXY_TOKEN:-}
+      - QWEN_SETTINGS_KEY=${QWEN_SETTINGS_KEY:-}
     volumes:
       - uploads_data:/app/data/uploads
     depends_on:

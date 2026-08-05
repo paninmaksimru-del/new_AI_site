@@ -157,16 +157,16 @@ test("смысловая проверка использует серверны�
   assert.match(script, /mergeEntityCandidates\(ruleEntities, qwenEntities\)/);
   assert.match(script, /Дополнительная проверка временно недоступна\. Документ обработан основным способом\./);
   assert.match(script, /Qwen: \$\{state\.qwenModel/);
-  assert.match(html, /ключ восстановления модели не передаётся/);
+  assert.match(html, /Сервис сам прочитает документ, найдёт чувствительные данные и создаст защищённую копию/);
 });
 
-test("лимит Qwen показан счётчиком для текста, файлов и готового результата", async () => {
+test("лимит ИИ показан счётчиком для текста, файлов и готового результата", async () => {
   const [html, script, css] = await Promise.all([
     readFile(new URL("anonymizer.html", root), "utf8"),
     readFile(new URL("anonymizer.js", root), "utf8"),
     readFile(new URL("anonymizer.css", root), "utf8")
   ]);
-  assert.match(html, /id="pasteCharCount"[^>]*>0 \/ 60 000 знаков для Qwen/);
+  assert.match(html, /id="pasteCharCount"[^>]*>0 \/ 60 000 знаков лимит для ИИ/);
   assert.match(html, /id="qwenCharacterCount">0 \/ 60 000/);
   assert.match(html, /id="qwenCharacterStatus"/);
   assert.match(script, /maxTextLength: Number\(payload\.maxTextLength\)/);

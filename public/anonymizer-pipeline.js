@@ -75,3 +75,37 @@ export function splitDetectionContributions(entities = []) {
 
   return { system, ai };
 }
+
+import { analyzeEntities, assignEntityGroups } from './anonymizer-engine.js';
+import { mapEntityToSource } from './anonymizer-normalize.js';
+
+export function prepareAnonymizerAnalysis(input, options = {}) {
+  const sourceText = String(input || '');
+  const preserveSource = Boolean(options.preserveSource);
+  const analysis = analyzeEntities(sourceText, { ocr: Boolean(options.ocr) });
+
+  if (preserveSource) {
+    return {
+      workingText: sourceText,
+      analysisText: analysis.normalization.text,
+      ruleEntities: analysis.sourceEntities,
+      ruleCandidates: analysis.normalizedEntities,
+      normalization: analysis.normalization,
+      preserveSource: true
+    };
+  }
+
+  return {
+    workingText: analysis.normalization.text,
+    analysisText: analysis.normalization.text,
+    ruleEntities: assignEntityGroups(analysis.normalizedEntities),
+    ruleCandidates: assignEntityGroups(analysis.normalizedEntities),
+    normalization: analysis.normalization,
+    preserveSource: false
+  };
+}
+
+export function mapAnalysisEntitiesToWorkingText(entities = [], prepared) {
+  if (!prepared?.preserveSource) return assignEntityGroups(entities);
+  return assignEntityGroups(entities.map((entity) => mapEntityToSource(entity, prepared.normalization)));
+}

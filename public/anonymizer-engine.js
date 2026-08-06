@@ -1,3 +1,5 @@
+import { mapEntityToSource, normalizeTextWithMap } from "./anonymizer-normalize.js";
+
 const TYPE_DEFINITIONS = {
   PERSON: { label: "ФИО", token: "ФИО", defaultAction: "MASK", critical: true, priority: 100 },
   ADDRESS: { label: "Адрес", token: "АДРЕС", defaultAction: "MASK", critical: true, priority: 95 },
@@ -101,7 +103,8 @@ function addMatches(text, type, regex, output, options = {}) {
       end: start + captured.length,
       action: options.action || TYPE_DEFINITIONS[type]?.defaultAction || "MASK",
       confidence: options.confidence || "medium",
-      source: options.source || "rules"
+      source: options.source || "rules",
+      priority: Number.isFinite(options.priority) ? options.priority : undefined
     });
     if (match[0].length === 0) regex.lastIndex += 1;
   }
@@ -113,8 +116,8 @@ function overlaps(left, right) {
 
 function resolveOverlaps(items) {
   const ordered = [...items].sort((left, right) => {
-    const leftPriority = TYPE_DEFINITIONS[left.type]?.priority || 0;
-    const rightPriority = TYPE_DEFINITIONS[right.type]?.priority || 0;
+    const leftPriority = Number.isFinite(left.priority) ? left.priority : (TYPE_DEFINITIONS[left.type]?.priority || 0);
+    const rightPriority = Number.isFinite(right.priority) ? right.priority : (TYPE_DEFINITIONS[right.type]?.priority || 0);
     return rightPriority - leftPriority || (right.end - right.start) - (left.end - left.start) || left.start - right.start;
   });
   const accepted = [];
@@ -168,7 +171,7 @@ function personIdentity(value) {
 
 export function entityIdentity(item) {
   const type = TYPE_DEFINITIONS[item?.type] ? item.type : "OTHER";
-  const value = String(item?.value || "");
+  const value = String(item?.canonicalValue || item?.normalizedValue || item?.value || "");
   if (type === "PERSON") return `${type}\u0000${personIdentity(value)}`;
   if (["PHONE", "PASSPORT", "SNILS", "INN", "BANK_ACCOUNT", "BIK", "CARD"].includes(type)) {
     return `${type}\u0000${onlyDigits(value)}`;
@@ -187,42 +190,99 @@ export function assignEntityGroups(entities) {
   }));
 }
 
-export function detectEntities(input) {
+function validLuhn(value) {
+  const digits = onlyDigits(value);
+  if (digits.length < 13 || digits.length > 19 || /^(\d)\1+$/u.test(digits)) return false;
+  let sum = 0;
+  let alternate = false;
+  for (let index = digits.length - 1; index >= 0; index -= 1) {
+    let digit = Number(digits[index]);
+    if (alternate) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+    alternate = !alternate;
+  }
+  return sum % 10 === 0;
+}
+
+function detectEntitiesRaw(input) {
   const text = String(input || "");
   const found = [];
 
-  addMatches(text, "EMAIL", /[A-ZА-ЯЁ0-9._%+-]+@[A-ZА-ЯЁ0-9.-]+\.[A-ZА-ЯЁ]{2,}/giu, found, { confidence: "high" });
-  // OCR can split a phone number between lines. Keep the separator window small
-  // so that unrelated digits in neighbouring paragraphs are not joined together.
-  addMatches(text, "PHONE", /(?<!\d)(?:\+7|8)(?:[\s\-()]{0,6}\d){10}(?!\d)/g, found, { confidence: "high" });
-  addMatches(text, "PASSPORT", /(?:паспорт(?:\s+гражданина)?(?:\s+РФ)?|серия)\s*[:№]?\s*((?:\d{2}\s*\d{2}|\d{4})\s*№?\s*\d{6})/giu, found, { group: 1, confidence: "high" });
+  // Контакты: после нормализации поддерживаются пробелы вокруг @, переносы и OCR-цифры.
+  addMatches(text, "EMAIL", /[A-ZА-ЯЁ0-9._%+-]+@[A-ZА-ЯЁ0-9-]+(?:\s*\.\s*[A-ZА-ЯЁ0-9-]+)+/giu, found, { confidence: "high" });
+  addMatches(text, "PHONE", /(?<!\d)(?:\+?7|8)(?:[\s\-()]{0,4}\d){10}(?:\s*(?:доб\.?|добавочный)\s*\d{1,6})?(?!\d)/giu, found, { confidence: "high" });
+  addMatches(text, "PHONE", /(?:тел(?:ефон)?|моб(?:ильный)?|контактный\s+телефон)\s*[:№]?\s*((?:\d[\s\-()]{0,4}){9,11}\d)/giu, found, { group: 1, confidence: "high" });
+
+  // Документы и идентификаторы.
+  addMatches(text, "PASSPORT", /(?:паспорт(?:\s+гражданина)?(?:\s+РФ)?|серия(?:\s+паспорта)?)\s*[:№]?\s*((?:\d{2}\s*\d{2}|\d{4})\s*№?\s*\d{6})/giu, found, { group: 1, confidence: "high" });
   addMatches(text, "SNILS", /(?:СНИЛС\s*[:№]?\s*)?(?<!\d)(\d{3}[\s-]?\d{3}[\s-]?\d{3}[\s-]?\d{2})(?!\d)/giu, found, { group: 1, validate: validSnils, confidence: "high" });
-  addMatches(text, "INN", /(?:ИНН\s*[:№]?\s*)?(\d{10}|\d{12})(?!\d)/giu, found, { group: 1, validate: validInn, confidence: "high" });
-  addMatches(text, "BANK_ACCOUNT", /(?:р\/?с|к\/?с|расч[её]тный\s+сч[её]т|корр(?:еспондентский)?\s+сч[её]т|сч[её]т)\s*[:№]?\s*(\d{20})(?!\d)/giu, found, { group: 1, confidence: "high" });
-  addMatches(text, "BIK", /(?:БИК)\s*[:№]?\s*(\d{9})(?!\d)/giu, found, { group: 1, confidence: "high" });
-  addMatches(text, "CARD", /(?:карта|номер\s+карты)\s*[:№]?\s*((?:\d[ -]?){15}\d)(?!\d)/giu, found, { group: 1, confidence: "medium" });
-  addMatches(text, "BIRTH_DATE", /(?:дата\s+рождения|родил(?:ся|ась))\s*[:\-]?\s*((?:0?[1-9]|[12]\d|3[01])[.\/-](?:0?[1-9]|1[0-2])[.\/-](?:19|20)\d{2})/giu, found, { group: 1, confidence: "high" });
+  addMatches(text, "INN", /(?:ИНН\s*[:№]?\s*)?((?:\d[\s-]?){12}|(?:\d[\s-]?){10})(?![\s-]?\d)/giu, found, { group: 1, validate: validInn, confidence: "high" });
+  addMatches(text, "OTHER", /(?:полис(?:\s+(?:ОМС|ДМС))?|водительск(?:ое|ого)\s+удостоверени[ея]|свидетельство\s+о\s+рождении|заграничный\s+паспорт|вид\s+на\s+жительство)\s*[:№]?\s*([A-ZА-ЯЁ0-9][A-ZА-ЯЁ0-9\s-]{4,30})/giu, found, { group: 1, confidence: "high", source: "rules-document", priority: 160 });
+  addMatches(text, "OTHER", /(?:гос(?:ударственный)?\s*(?:регистрационный)?\s*номер|госномер)\s*[:№]?\s*([А-ЯЁA-Z]\s*\d{3}\s*[А-ЯЁA-Z]{2}\s*\d{2,3})/giu, found, { group: 1, confidence: "medium", source: "rules-document", priority: 160 });
+  addMatches(text, "OTHER", /(?:кадастровый\s+номер)\s*[:№]?\s*(\d{2}:\d{2}:\d{6,7}:\d+)/giu, found, { group: 1, confidence: "high", source: "rules-document", priority: 160 });
+  addMatches(text, "OTHER", /(?:IP(?:-адрес)?|айпи(?:-адрес)?)\s*[:№]?\s*((?:\d{1,3}\.){3}\d{1,3})/giu, found, { group: 1, confidence: "medium", source: "rules-digital", priority: 160 });
+  addMatches(text, "OTHER", /(?:логин|имя\s+пользователя|уч[её]тная\s+запись)\s*[:№]?\s*([A-ZА-ЯЁ0-9._-]{3,64})/giu, found, { group: 1, confidence: "medium", source: "rules-digital", priority: 160 });
+  addMatches(text, "OTHER", /(?:MAC(?:-адрес)?|мак(?:-адрес)?)\s*[:№]?\s*((?:[0-9A-F]{2}[:-]){5}[0-9A-F]{2})/giu, found, { group: 1, confidence: "medium", source: "rules-digital", priority: 160 });
+  addMatches(text, "OTHER", /(?:IMEI|идентификатор\s+устройства)\s*[:№]?\s*(\d{14,16})/giu, found, { group: 1, confidence: "medium", source: "rules-digital", priority: 160 });
 
-  addMatches(text, "PERSON", /(?<![А-ЯЁа-яё-])([А-ЯЁ][а-яё-]{2,30}\s+[А-ЯЁ][а-яё-]{2,30}\s+(?:[А-ЯЁ][а-яё-]{1,24}(?:ович|евич|ич|овна|евна|ична|инична)|[А-ЯЁ][а-яё-]{1,24}\s+(?:оглы|кызы)))(?![А-ЯЁа-яё-])/gu, found, { group: 1, confidence: "medium" });
-  addMatches(text, "PERSON", /(?<![А-ЯЁа-яё-])([А-ЯЁ]{2,30}\s+[А-ЯЁ]{2,30}\s+[А-ЯЁ]{2,24}(?:ОВИЧ|ЕВИЧ|ИЧ|ОВНА|ЕВНА|ИЧНА|ИНИЧНА))(?![А-ЯЁа-яё-])/gu, found, { group: 1, confidence: "medium", source: "rules-ocr" });
-  addMatches(text, "PERSON", /(?<![А-ЯЁа-яё-])([А-ЯЁ]\.\s*[А-ЯЁ]\.\s*[А-ЯЁ][а-яё-]{2,30})(?![А-ЯЁа-яё-])/gu, found, { group: 1, confidence: "medium" });
-  addMatches(text, "PERSON", /(?<![А-ЯЁа-яё-])([А-ЯЁ][а-яё-]{2,30}\s+[А-ЯЁ]\.\s*[А-ЯЁ]\.)(?![А-ЯЁа-яё-])/gu, found, { group: 1, confidence: "medium" });
-  addMatches(text, "PERSON", /(?:ФИО|заявитель|гражданин(?:ка)?|представитель|директор|подписант)\s*[:\-]?\s*([А-ЯЁ][а-яё-]{1,30}\s+[А-ЯЁ][а-яё-]{1,30}(?:\s+[А-ЯЁ][а-яё-]{1,30})?)/gu, found, { group: 1, confidence: "medium" });
-  addMatches(text, "PERSON", /(?:ФИО|заявитель|гражданин(?:ка)?|представитель|директор|подписант|руководитель|начальник)\s*[:\-]?\s*([А-ЯЁ]\.?\s*[А-ЯЁ]\.?\s*[А-ЯЁ][а-яё-]{2,30}|[А-ЯЁ][а-яё-]{2,30}\s+[А-ЯЁ]\.?\s*[А-ЯЁ]\.?)\b/giu, found, { group: 1, confidence: "medium", source: "rules-ocr" });
-  addMatches(text, "ADDRESS", /(?:адрес(?:\s+регистрации|\s+места\s+жительства)?|прожива(?:ет|ющий)|зарегистрирован(?:а)?)\s*[:\-]?\s*([^\n;]{8,160})/giu, found, { group: 1, confidence: "medium" });
+  // Платёжные реквизиты.
+  addMatches(text, "BANK_ACCOUNT", /(?:р\/?с|к\/?с|расч[её]тный\s+сч[её]т|корр(?:еспондентский)?\s+сч[её]т|банковский\s+сч[её]т|сч[её]т)\s*[:№]?\s*((?:\d[\s-]?){20})(?!\d)/giu, found, { group: 1, confidence: "high" });
+  addMatches(text, "BIK", /(?:БИК)\s*[:№]?\s*((?:\d[\s-]?){9})(?!\d)/giu, found, { group: 1, confidence: "high" });
+  addMatches(text, "CARD", /(?:карта|номер\s+карты|банковская\s+карта)\s*[:№]?\s*((?:\d[ -]?){15}\d)(?!\d)/giu, found, { group: 1, validate: validLuhn, confidence: "high" });
+  addMatches(text, "CARD", /(?<!\d)((?:\d[ -]?){15}\d)(?!\d)/g, found, { group: 1, validate: validLuhn, confidence: "medium" });
 
-  addMatches(text, "CONTRACT_NUMBER", /(?:договор[а-яё]*|контракт[а-яё]*|соглашени[а-яё]*|доверенност[а-яё]*)\s*(?:от\s*\d{1,2}[.\/-]\d{1,2}[.\/-]\d{2,4}\s*)?№\s*([A-ZА-ЯЁ0-9](?:[A-ZА-ЯЁ0-9_.\/-]{0,39}[A-ZА-ЯЁ0-9])?)/giu, found, { group: 1, confidence: "medium" });
+  // Даты рождения — цифровые и словесные.
+  addMatches(text, "BIRTH_DATE", /(?:дата\s+рождения|родил(?:ся|ась)|г\.\s*р\.)\s*[:\-]?\s*((?:0?[1-9]|[12]\d|3[01])[.\/-](?:0?[1-9]|1[0-2])[.\/-](?:19|20)\d{2})/giu, found, { group: 1, confidence: "high" });
+  addMatches(text, "BIRTH_DATE", /(?:дата\s+рождения|родил(?:ся|ась)|г\.\s*р\.)\s*[:\-]?\s*((?:0?[1-9]|[12]\d|3[01])\s+(?:января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)\s+(?:19|20)\d{2}(?:\s+года|\s+г\.)?)/giu, found, { group: 1, confidence: "high" });
+
+  // ФИО: полная форма, инициалы, двойные фамилии/имена и частицы иностранных фамилий.
+  const personWord = "[А-ЯЁ][а-яё]{1,30}(?:-[А-ЯЁ]?[а-яё]{1,30})?";
+  const surname = `(?:${personWord}|(?:де|да|ди|дос|ду|дель|делла|ла|ле|ван|фон|дер|ден|тер)(?:\\s+(?:де|ла|дер))?\\s+${personWord})`;
+  const patronymic = `(?:${personWord}(?:ович|евич|ич|овна|евна|ична|инична)|${personWord}\\s+(?:оглы|кызы))`;
+  addMatches(text, "PERSON", new RegExp(`(?<![А-ЯЁа-яё-])(${surname}\\s+${personWord}\\s+${patronymic})(?![А-ЯЁа-яё-])`, "gu"), found, { group: 1, confidence: "high" });
+  addMatches(text, "PERSON", /(?<![А-ЯЁа-яё-])([А-ЯЁ]{2,30}(?:-[А-ЯЁ]{2,30})?\s+[А-ЯЁ]{2,30}(?:-[А-ЯЁ]{2,30})?\s+[А-ЯЁ]{2,30}(?:ОВИЧ|ЕВИЧ|ИЧ|ОВНА|ЕВНА|ИЧНА|ИНИЧНА))(?![А-ЯЁа-яё-])/gu, found, { group: 1, confidence: "medium", source: "rules-ocr" });
+  addMatches(text, "PERSON", new RegExp(`(?<![А-ЯЁа-яё-])([А-ЯЁ]\\.\\s*[А-ЯЁ]\\.\\s*${surname})(?![А-ЯЁа-яё-])`, "gu"), found, { group: 1, confidence: "high" });
+  addMatches(text, "PERSON", new RegExp(`(?<![А-ЯЁа-яё-])(${surname}\\s+[А-ЯЁ]\\.\\s*[А-ЯЁ]\\.)(?![А-ЯЁа-яё-])`, "gu"), found, { group: 1, confidence: "high" });
+  addMatches(text, "PERSON", new RegExp(`(?<![А-ЯЁа-яё-])([А-ЯЁ]\\.[А-ЯЁ]\\.\\s*${surname})(?![А-ЯЁа-яё-])`, "gu"), found, { group: 1, confidence: "high" });
+  addMatches(text, "PERSON", new RegExp(`(?<![А-ЯЁа-яё-])(${surname}\\s+[А-ЯЁ]\\.[А-ЯЁ]\\.)(?![А-ЯЁа-яё-])`, "gu"), found, { group: 1, confidence: "high" });
+  addMatches(text, "PERSON", new RegExp(`(?:ФИО|заявитель|гражданин(?:ка)?|представитель|директор|подписант|руководитель|начальник|получатель|отправитель|обратившийся)\\s*[:\\-]?\\s*(${surname}\\s+${personWord}(?:\\s+${personWord}(?:\\s+(?:оглы|кызы))?)?)`, "giu"), found, { group: 1, confidence: "medium" });
+  addMatches(text, "PERSON", /(?:ФИО|заявитель|гражданин(?:ка)?|представитель|директор|подписант|руководитель|начальник|получатель|отправитель)\s*[:\-]?\s*([А-ЯЁ]\.?\s*[А-ЯЁ]\.?\s*[А-ЯЁ][а-яё-]{2,30}|[А-ЯЁ][а-яё-]{2,30}\s+[А-ЯЁ]\.?\s*[А-ЯЁ]\.?)\b/giu, found, { group: 1, confidence: "medium", source: "rules-ocr" });
+  addMatches(text, "PERSON", /(?:ФИО|заявитель|гражданин(?:ка)?|представитель|получатель)\s*[:\-]?\s*([A-Z][A-Za-z'-]{1,30}\s+[A-Z][A-Za-z'-]{1,30}(?:\s+[A-Z][A-Za-z'-]{1,30})?)/gu, found, { group: 1, confidence: "medium", source: "rules-latin" });
+
+  // Адреса: с явной меткой и типовой структурой без метки.
+  addMatches(text, "ADDRESS", /(?<![-А-ЯЁа-яё])(?:адрес(?:\s+регистрации|\s+места\s+жительства|\s+проживания|\s+корреспонденции)?|прожива(?:ет|ющий)|зарегистрирован(?:а)?|место\s+жительства|место\s+рождения)\s*[:\-]?\s*([^\n;]{8,180})/giu, found, { group: 1, confidence: "high" });
+  addMatches(text, "ADDRESS", /(?<!\d)(\d{6},?\s+(?:г\.?\s*)?[А-ЯЁ][А-ЯЁа-яё .-]{2,50},?\s+(?:ул\.?|улица|пр-т|проспект|пер\.?|переулок|ш\.?|шоссе|наб\.?|набережная)\s+[А-ЯЁ0-9][А-ЯЁа-яё0-9 .-]{1,60},?\s+(?:д\.?|дом)\s*\d+[А-ЯЁа-яё]?(?:\s*,?\s*(?:корп\.?|корпус|стр\.?|строение|кв\.?|квартира)\s*\d+[А-ЯЁа-яё]?)*)/giu, found, { group: 1, confidence: "medium" });
+
+  // Номера документов, суммы и организации сохраняются как отдельные чувствительные категории.
+  addMatches(text, "CONTRACT_NUMBER", /(?:договор[а-яё]*|контракт[а-яё]*|соглашени[а-яё]*|доверенност[а-яё]*|обращени[а-яё]*|заявлени[а-яё]*)\s*(?:от\s*\d{1,2}[.\/-]\d{1,2}[.\/-]\d{2,4}\s*)?№\s*([A-ZА-ЯЁ0-9](?:[A-ZА-ЯЁ0-9_.\/-]{0,39}[A-ZА-ЯЁ0-9])?)/giu, found, { group: 1, confidence: "medium" });
   addMatches(text, "MONEY", /(?<!\w)(\d{1,3}(?:[ \u00a0]\d{3})*(?:[.,]\d{1,2})?|\d+)(?:\s*)(?:₽|руб(?:\.|лей|ля)?)/giu, found, { confidence: "medium" });
-  addMatches(text, "ORGANIZATION", /(?:ООО|АО|ПАО|НКО|Фонд|ГБУ|ГКУ)\s+[«"][^»"\n]{2,70}[»"]/g, found, {
+  addMatches(text, "ORGANIZATION", /(?:ООО|АО|ПАО|НКО|Фонд|ГБУ|ГКУ|ИП)\s+[«"][^»"\n]{2,70}[»"]/g, found, {
     confidence: "medium",
     reject: isPublicOrganization
   });
-  addMatches(text, "ORGANIZATION", /(?:ООО|АО|ПАО|НКО|Фонд|ГБУ|ГКУ)\s+[А-ЯЁA-Z0-9][А-ЯЁа-яёA-Z0-9 .&-]{1,60}(?=[,;\n]|$)/g, found, {
+  addMatches(text, "ORGANIZATION", /(?:ООО|АО|ПАО|НКО|Фонд|ГБУ|ГКУ|ИП)\s+[А-ЯЁA-Z0-9][А-ЯЁа-яёA-Z0-9 .&-]{1,60}(?=[,;\n]|$)/g, found, {
     confidence: "low",
     reject: isPublicOrganization
   });
 
   return assignEntityGroups(resolveOverlaps(found));
+}
+
+export function analyzeEntities(input, options = {}) {
+  const source = String(input || "");
+  const normalization = normalizeTextWithMap(source, { ocr: Boolean(options.ocr) });
+  const normalizedEntities = detectEntitiesRaw(normalization.text);
+  const sourceEntities = assignEntityGroups(resolveOverlaps(
+    normalizedEntities.map((entity) => mapEntityToSource(entity, normalization))
+  ));
+  return { source, normalization, normalizedEntities, sourceEntities };
+}
+
+export function detectEntities(input, options = {}) {
+  return analyzeEntities(input, options).sourceEntities;
 }
 
 export function addManualEntity(text, value, type = "OTHER", scope = "all") {
@@ -494,20 +554,78 @@ export function validateIntegrity(original, anonymized, replacements) {
   };
 }
 
-export function scanResidual(input) {
+function normalizedContains(haystack, needle) {
+  const source = String(haystack || "");
+  const target = String(needle || "");
+  if (target.length < 3) return false;
+  let offset = 0;
+  while ((offset = source.indexOf(target, offset)) !== -1) {
+    const before = source[offset - 1] || "";
+    const after = source[offset + target.length] || "";
+    const startsWithWord = /^[\p{L}\p{N}]/u.test(target);
+    const endsWithWord = /[\p{L}\p{N}]$/u.test(target);
+    if ((!startsWithWord || !/[\p{L}\p{N}]/u.test(before))
+      && (!endsWithWord || !/[\p{L}\p{N}]/u.test(after))) return true;
+    offset += Math.max(1, target.length);
+  }
+  return false;
+}
+
+function mapLeakCandidates(text, map) {
+  const normalizedSafe = normalizeTextWithMap(text, { ocr: true }).text.toLocaleLowerCase("ru-RU");
+  const leaks = [];
+  const seen = new Set();
+  for (const entry of map?.entries || []) {
+    const values = [entry.original, ...(entry.aliases || []).map((alias) => alias?.value)].filter(Boolean);
+    for (const value of values) {
+      const normalizedValue = normalizeTextWithMap(value, { ocr: true }).text.toLocaleLowerCase("ru-RU");
+      if (!normalizedContains(normalizedSafe, normalizedValue)) continue;
+      const key = `${entry.type}\u0000${normalizedValue}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      leaks.push({
+        id: `residual-map-${leaks.length}`,
+        type: TYPE_DEFINITIONS[entry.type] ? entry.type : "OTHER",
+        value: "",
+        start: -1,
+        end: -1,
+        action: "REVIEW",
+        confidence: "high",
+        source: "residual-map",
+        token: entry.token || null
+      });
+    }
+  }
+  return leaks;
+}
+
+export function scanResidual(input, options = {}) {
   const text = String(input || "");
   // Context rules may rediscover a placeholder after labels such as "адрес:".
   // Ignore it when removing placeholders leaves only punctuation or a short
   // grammatical tail (for example "по адресу [[EMAIL_001]]" -> "у").
-  const remaining = detectEntities(text).filter((item) => {
+  const detected = detectEntities(text, { ocr: true }).filter((item) => {
     const withoutTokens = item.value.replace(new RegExp(TOKEN_PATTERN.source, TOKEN_PATTERN.flags), "");
     if (withoutTokens === item.value) return true;
     return withoutTokens.replace(/[^\p{L}\p{N}]/gu, "").length >= 4;
   });
+  const mapLeaks = mapLeakCandidates(text, options.map);
+  const combined = [...detected];
+  for (const leak of mapLeaks) {
+    if (!combined.some((item) => item.type === leak.type && item.source === "residual-map")) combined.push(leak);
+  }
+
+  const hasMap = Boolean(options.map && Array.isArray(options.map.entries));
+  const knownTokens = new Set((options.map?.entries || []).map((entry) => entry.token).filter(Boolean));
+  const unknownTokens = hasMap ? extractTokens(text).filter((token) => !knownTokens.has(token)) : [];
+  const criticalItems = combined.filter((item) => TYPE_DEFINITIONS[item.type]?.critical);
   return {
-    critical: remaining.filter((item) => TYPE_DEFINITIONS[item.type]?.critical).length,
-    warnings: remaining.filter((item) => !TYPE_DEFINITIONS[item.type]?.critical).length,
-    items: remaining
+    critical: criticalItems.length + unknownTokens.length,
+    warnings: combined.length - criticalItems.length,
+    items: combined,
+    mapLeaks,
+    unknownTokens,
+    passed: criticalItems.length === 0 && mapLeaks.length === 0 && unknownTokens.length === 0
   };
 }
 

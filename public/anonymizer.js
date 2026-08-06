@@ -17,7 +17,13 @@ import {
   validateIntegrity,
   validateMap
 } from "./anonymizer-engine.js";
-import { mergeEntityCandidates, pageNeedsOcr, splitDetectionContributions } from "./anonymizer-pipeline.js";
+import {
+  mapAnalysisEntitiesToWorkingText,
+  mergeEntityCandidates,
+  pageNeedsOcr,
+  prepareAnonymizerAnalysis,
+  splitDetectionContributions
+} from "./anonymizer-pipeline.js";
 import {
   createAnonymizedDocx,
   createClassicDocx,
@@ -72,7 +78,8 @@ const state = {
   qwenDiagnostics: null,
   qwenTrace: null,
   sourceBinary: null,
-  docxModel: null
+  docxModel: null,
+  normalization: null
 };
 
 let activeOcrWorker = null;
@@ -293,6 +300,7 @@ function setView(viewName) {
 
 function setMode(mode) {
   state.mode = mode;
+  document.body.dataset.mode = mode;
   const restore = mode === "restore";
   $("anonymizeModeButton").classList.toggle("active", !restore);
   $("restoreModeButton").classList.toggle("active", restore);
@@ -447,6 +455,7 @@ function prepareProcessing(source) {
   state.qwenTrace = null;
   state.sourceBinary = null;
   state.docxModel = null;
+  state.normalization = null;
   setDetectionDetailsExpanded(false);
   state.restoreResult = null;
   state.restoreSourceName = "";
@@ -457,7 +466,7 @@ function prepareProcessing(source) {
   $("progressBar").style.width = "8%";
 }
 
-async function requestQwenEntities(text, ruleEntities, source) {
+async function requestQwenEntities(analysisText, ruleCandidates, source, normalization = null) {
   const authToken = localStorage.getItem("auth_token") || "";
   if (!authToken) throw new Error("QWEN_AUTH_REQUIRED");
   const response = await fetch("/api/anonymizer/qwen/entities", {
@@ -467,11 +476,17 @@ async function requestQwenEntities(text, ruleEntities, source) {
       "x-auth-token": authToken
     },
     body: JSON.stringify({
-      text,
-      ruleCandidates: ruleEntities,
+      text: analysisText,
+      ruleCandidates,
       document: {
         format: source?.format || (source?.kind === "text" ? "text" : "unknown"),
-        size: Number(source?.size) || 0
+        size: Number(source?.size) || 0,
+        normalization: normalization ? {
+          mode: normalization.mode,
+          changed: normalization.changed,
+          correctionCount: normalization.correctionCount,
+          corrections: normalization.corrections
+        } : null
       },
       confirmed: true
     })
@@ -789,7 +804,7 @@ function recalculate(save = true) {
   }
   state.tokenAssignments = state.result.tokenAssignments;
   state.integrity = validateIntegrity(state.text, state.result.text, state.result.replacements);
-  state.residual = scanResidual(state.result.text);
+  state.residual = scanResidual(state.result.text, { map: state.result.map });
   if (save) autoSaveSession();
 }
 
@@ -797,7 +812,12 @@ async function processSource(text, source, options = {}) {
   if (!String(text || "").trim()) return showToast("Добавьте непустой текст.");
   if (!options.prepared) prepareProcessing(source);
   state.source = source;
-  state.text = text;
+  const preparedAnalysis = prepareAnonymizerAnalysis(text, {
+    ocr: state.ocrPages.length > 0,
+    preserveSource: Boolean(options.docxModel)
+  });
+  state.text = preparedAnalysis.workingText;
+  state.normalization = preparedAnalysis.normalization;
   state.entities = [];
   state.registry = [];
   state.tokenAssignments = {};
@@ -819,30 +839,36 @@ async function processSource(text, source, options = {}) {
   clearRestoreResult();
   $("processingFileName").textContent = source.name;
   const sourceMeta = source.kind === "text" ? "Вставленный текст" : formatBytes(source.size);
-  $("processingFileMeta").textContent = `${sourceMeta} · Qwen: ${qwenCounterText(text.length)} знаков`;
+  $("processingFileMeta").textContent = `${sourceMeta} · Qwen: ${qwenCounterText(preparedAnalysis.analysisText.length)} знаков`;
 
   $("progressBar").style.width = "20%";
   markTask("read");
   if (source.kind === "text" || !String(source.name || "").toLowerCase().endsWith(".pdf")) markTask("ocr");
   await sleep(120);
   $("progressBar").style.width = "48%";
-  const ruleEntities = detectEntities(text);
+  const ruleEntities = preparedAnalysis.ruleEntities;
   state.entities = ruleEntities;
   markTask("detect");
   await sleep(140);
   $("progressBar").style.width = "66%";
   await ensureQwenStatus();
-  $("processingFileMeta").textContent = `${sourceMeta} · Qwen: ${qwenCounterText(text.length)} знаков`;
-  const qwenOverLimit = text.length > qwenTextLimit();
+  $("processingFileMeta").textContent = `${sourceMeta} · Qwen: ${qwenCounterText(preparedAnalysis.analysisText.length)} знаков`;
+  const qwenOverLimit = preparedAnalysis.analysisText.length > qwenTextLimit();
   const qwenTask = document.querySelector('[data-task="qwen"]');
   if (qwenTask) qwenTask.textContent = qwenOverLimit && qwenConfiguration.configured
-    ? `Qwen пропущен: ${qwenCounterText(text.length)} знаков`
+    ? `Qwen пропущен: ${qwenCounterText(preparedAnalysis.analysisText.length)} знаков`
     : qwenConfiguration.configured
       ? "Дополнительно проверяем с помощью ИИ"
       : "Завершаем локальную проверку";
   if (qwenConfiguration.configured && !qwenOverLimit) {
     try {
-      const qwenEntities = await requestQwenEntities(text, ruleEntities, source);
+      const qwenAnalysisEntities = await requestQwenEntities(
+        preparedAnalysis.analysisText,
+        preparedAnalysis.ruleCandidates,
+        source,
+        preparedAnalysis.normalization
+      );
+      const qwenEntities = mapAnalysisEntitiesToWorkingText(qwenAnalysisEntities, preparedAnalysis);
       state.entities = assignEntityGroups(mergeEntityCandidates(ruleEntities, qwenEntities));
       state.qwenStatus = "used";
     } catch (error) {
@@ -864,7 +890,13 @@ async function processSource(text, source, options = {}) {
     qwenModel: state.qwenModel,
     qwenStatus: state.qwenStatus,
     qwenDiagnostics: state.qwenDiagnostics,
-    qwenTrace: state.qwenTrace
+    qwenTrace: state.qwenTrace,
+    normalization: {
+      mode: state.normalization?.mode || "standard",
+      changed: Boolean(state.normalization?.changed),
+      correctionCount: state.normalization?.correctionCount || 0,
+      corrections: state.normalization?.corrections || {}
+    }
   };
   $("progressBar").style.width = "82%";
   recalculate();
@@ -1991,5 +2023,6 @@ bindActions();
 bindNavigation();
 initializeDraftStorage();
 setInputTab("file");
+document.body.dataset.mode = "anonymize";
 setView("input");
 loadCurrentSession();

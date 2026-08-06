@@ -4,11 +4,12 @@ import { readFile } from "node:fs/promises";
 
 const root = new URL("../public/", import.meta.url);
 
-test("безопасная копия — read-only документ, а исходник находится в расширенных настройках", async () => {
+test("безопасная копия — read-only документ и скрыта в расширенных настройках рядом с таблицей сущностей", async () => {
   const html = await readFile(new URL("anonymizer.html", root), "utf8");
   assert.match(html, /id="safePreview" role="document"/);
   assert.doesNotMatch(html, /textarea[^>]+id="safePreview"/);
   assert.match(html, /<details class="advanced-panel">[\s\S]*id="sourcePreview"/);
+  assert.match(html, /<details class="advanced-panel">[\s\S]*class="source-details safe-preview-details"[\s\S]*id="safePreview"/);
 });
 
 test("цветные токены и чёрный восстановленный текст заданы стилями", async () => {
@@ -116,7 +117,7 @@ test("выделение с готовыми токенами объединяе
     readFile(new URL("anonymizer.js", root), "utf8")
   ]);
   assert.match(html, /id="undoSelectionButton"/);
-  assert.ok(html.indexOf('id="selectionBanner"') < html.indexOf('<details class="advanced-panel">'));
+  assert.match(html, /class="source-details safe-preview-details"[\s\S]*id="selectionBanner"/);
   assert.match(script, /atomic:\s*true/);
   assert.match(script, /overlappingReplacements/);
   assert.match(script, /uncoveredSelectionText\(start, end, overlappingReplacements\)/);
@@ -155,7 +156,8 @@ test("смысловая проверка использует серверны�
   assert.match(script, /"x-auth-token": authToken/);
   assert.match(script, /confirmed: true/);
   assert.match(script, /document: \{/);
-  assert.match(script, /const qwenEntities = await requestQwenEntities\(text, ruleEntities, source\)/);
+  assert.match(script, /const qwenAnalysisEntities = await requestQwenEntities\([\s\S]*preparedAnalysis\.analysisText/);
+  assert.match(script, /mapAnalysisEntitiesToWorkingText\(qwenAnalysisEntities, preparedAnalysis\)/);
   assert.match(script, /state\.qwenTrace = error\?\.trace \|\| null/);
   assert.match(script, /mergeEntityCandidates\(ruleEntities, qwenEntities\)/);
   assert.match(script, /Дополнительная проверка временно недоступна\. Документ обработан основным способом\./);
@@ -174,14 +176,14 @@ test("лимит ИИ показан счётчиком для текста, ф�
   assert.match(html, /id="qwenCharacterStatus"/);
   assert.match(html, /id="qwenDiagnosticsDetails"/);
   assert.match(script, /maxTextLength: Number\(payload\.maxTextLength\)/);
-  assert.match(script, /text\.length > qwenTextLimit\(\)/);
-  assert.match(script, /Qwen пропущен: \$\{qwenCounterText\(text\.length\)\}/);
+  assert.match(script, /preparedAnalysis\.analysisText\.length > qwenTextLimit\(\)/);
+  assert.match(script, /Qwen пропущен: \$\{qwenCounterText\(preparedAnalysis\.analysisText\.length\)\}/);
   assert.match(script, /Лимит Qwen — \$\{qwenTextLimit\(\)\.toLocaleString/);
   assert.match(script, /Qwen: вернул \$\{diagnostics\.returned\}, исправлено \$\{diagnostics\.repaired \|\| 0\}, добавлено/);
   assert.match(script, /до ИИ вырезано опасных инструкций/);
   assert.match(script, /qwenDiagnostics: state\.qwenDiagnostics/);
   assert.match(script, /qwenTrace: state\.qwenTrace/);
-  assert.match(script, /processingFileMeta[^\n]+qwenCounterText\(text\.length\)/);
+  assert.match(script, /processingFileMeta[^\n]+qwenCounterText\(preparedAnalysis\.analysisText\.length\)/);
   assert.match(css, /\.char-counter\.over-limit/);
   assert.match(css, /\.metric\.qwen-metric b/);
   assert.match(css, /\.metric \.qwen-diagnostics/);

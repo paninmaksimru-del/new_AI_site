@@ -61,3 +61,31 @@ test('вклад системы и ИИ считается по источник
   assert.deepEqual(contributions.system.map((item) => item.id), ['rule-1', 'ocr-1', 'legacy-rule']);
   assert.deepEqual(contributions.ai.map((item) => item.id), ['qwen-1']);
 });
+
+test('подготовка анализа нормализует OCR-текст и использует результат как рабочий текст', async () => {
+  const { prepareAnonymizerAnalysis } = await import('../public/anonymizer-pipeline.js');
+  const prepared = prepareAnonymizerAnalysis('И в а н о в а, +7 (9З5) 12З-45-67', { ocr: true });
+  assert.equal(prepared.workingText, 'Иванова, +7 (935) 123-45-67');
+  assert.equal(prepared.analysisText, prepared.workingText);
+  assert.ok(prepared.ruleEntities.some((item) => item.type === 'PHONE'));
+});
+
+test('DOCX анализируется по нормализованной копии, но сущности возвращаются в исходные координаты', async () => {
+  const { prepareAnonymizerAnalysis } = await import('../public/anonymizer-pipeline.js');
+  const source = 'Получатель И в а н о в а Мария Александровна.';
+  const prepared = prepareAnonymizerAnalysis(source, { ocr: true, preserveSource: true });
+  assert.equal(prepared.workingText, source);
+  assert.match(prepared.analysisText, /Иванова/u);
+  const person = prepared.ruleEntities.find((item) => item.type === 'PERSON');
+  assert.equal(person.value, 'И в а н о в а Мария Александровна');
+});
+
+test('Qwen-сущности из нормализованного DOCX возвращаются к исходному диапазону', async () => {
+  const { mapAnalysisEntitiesToWorkingText, prepareAnonymizerAnalysis } = await import('../public/anonymizer-pipeline.js');
+  const source = 'ФИО: И в а н о в а Мария';
+  const prepared = prepareAnonymizerAnalysis(source, { ocr: true, preserveSource: true });
+  const start = prepared.analysisText.indexOf('Иванова');
+  const mapped = mapAnalysisEntitiesToWorkingText([{ type: 'PERSON', value: 'Иванова', start, end: start + 7, source: 'qwen' }], prepared);
+  assert.equal(mapped[0].value, 'И в а н о в а');
+  assert.equal(mapped[0].normalizedValue, 'Иванова');
+});

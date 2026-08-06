@@ -1,7 +1,11 @@
 import crypto from 'crypto';
-import { query } from './db.js';
 
 const STORAGE_KEY = 'qwen_chat_settings';
+
+async function databaseQuery(sql, params = []) {
+  const { query } = await import('./db.js');
+  return query(sql, params);
+}
 
 export const QWEN_VALUE_KEYS = Object.freeze([
   'QWEN_27B_BASE_URL',
@@ -85,7 +89,7 @@ function sanitize(value) {
 }
 
 export async function loadQwenSettings() {
-  const { rows } = await query('SELECT value FROM kv WHERE key = $1', [STORAGE_KEY]);
+  const { rows } = await databaseQuery('SELECT value FROM kv WHERE key = $1', [STORAGE_KEY]);
   if (!rows[0]?.value) {
     stored = { values: {}, secrets: {} };
     return;
@@ -164,7 +168,7 @@ export async function saveAdminQwenSettings(payload = {}) {
     if (value) next.secrets[key] = encryptSecret(value);
   }
 
-  await query(
+  await databaseQuery(
     `INSERT INTO kv (key, value) VALUES ($1, $2)
      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
     [STORAGE_KEY, JSON.stringify(next)]

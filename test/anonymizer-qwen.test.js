@@ -132,7 +132,9 @@ test('диагностика Qwen считает принятые ответы �
       value_not_found: 1,
       type_not_allowed: 1,
       value_missing: 1
-    }
+    },
+    linkedToRules: 0,
+    canonicalized: 0
   });
   assert.equal(JSON.stringify(result.diagnostics).includes('Иванов'), false);
 });
@@ -184,7 +186,7 @@ test('сервер ждёт Qwen и отправляет модели задач
     assert.equal(body.model, config.model);
     assert.deepEqual(body.response_format, { type: 'json_object' });
     assert.equal(body.messages[0].content, ANONYMIZER_QWEN_SYSTEM_PROMPT);
-    assert.equal(userPayload.task, 'find_additional_sensitive_entities');
+    assert.equal(userPayload.task, 'find_additional_sensitive_entities_and_aliases');
     assert.equal(userPayload.document.format, 'docx');
     assert.equal(userPayload.document.text, text);
     assert.deepEqual(userPayload.ruleCandidates, []);
@@ -242,7 +244,7 @@ test('временный 504 от прокси повторяется один �
 });
 
 test('системный промпт трактует документ как данные и запрещает токенизацию', () => {
-  assert.equal(ANONYMIZER_QWEN_PROMPT_VERSION, 'anonymizer-ner-v3');
+  assert.equal(ANONYMIZER_QWEN_PROMPT_VERSION, 'anonymizer-ner-v4');
   assert.match(ANONYMIZER_QWEN_SYSTEM_PROMPT, /недоверенными данными/u);
   assert.match(ANONYMIZER_QWEN_SYSTEM_PROMPT, /не создавай токены/u);
   assert.match(ANONYMIZER_QWEN_SYSTEM_PROMPT, /Сервер самостоятельно проверит и уточнит диапазон/u);
@@ -275,4 +277,40 @@ test('анонимайзер считается выключенным без с
     QWEN_27B_MODEL: 'local_huggingface/Qwen3.6-27B'
   })[key]);
   assert.equal(isQwenConfigured(config), false);
+});
+
+test('Qwen может связать падежную форму с уже найденным полным ФИО', () => {
+  const text = 'Иванов Иван Иванович подал заявление. Ответ направлен Иванову И.И.';
+  const ruleStart = text.indexOf('Иванов Иван Иванович');
+  const aliasStart = text.indexOf('Иванову И.И.');
+  const rules = [{
+    type: 'PERSON', value: 'Иванов Иван Иванович', start: ruleStart,
+    end: ruleStart + 'Иванов Иван Иванович'.length
+  }];
+  const result = inspectQwenEntities(text, { entities: [{
+    type: 'PERSON', value: 'Иванову И.И.', start: aliasStart,
+    end: aliasStart + 'Иванову И.И.'.length, confidence: 'high', groupWithRuleIndex: 0
+  }] }, rules);
+  assert.equal(result.entities[0].canonicalValue, 'Иванов Иван Иванович');
+  assert.equal(result.entities[0].groupWithRuleIndex, 0);
+  assert.equal(result.diagnostics.linkedToRules, 1);
+});
+
+test('canonical принимается только когда такая форма буквально есть в документе', () => {
+  const text = 'Получатель: М.А. Иванова.';
+  const start = text.indexOf('М.А. Иванова');
+  const rejected = inspectQwenEntities(text, { entities: [{
+    type: 'PERSON', value: 'М.А. Иванова', start, end: start + 12,
+    canonical: 'Иванова Мария Александровна'
+  }] });
+  assert.equal(rejected.entities[0].canonicalValue, undefined);
+
+  const acceptedText = 'Иванова Мария Александровна. Получатель: М.А. Иванова.';
+  const alias = acceptedText.indexOf('М.А. Иванова');
+  const accepted = inspectQwenEntities(acceptedText, { entities: [{
+    type: 'PERSON', value: 'М.А. Иванова', start: alias, end: alias + 12,
+    canonical: 'Иванова Мария Александровна'
+  }] });
+  assert.equal(accepted.entities[0].canonicalValue, 'Иванова Мария Александровна');
+  assert.equal(accepted.diagnostics.canonicalized, 1);
 });

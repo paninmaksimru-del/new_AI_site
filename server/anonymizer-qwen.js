@@ -161,7 +161,7 @@ function resolvedCandidateRange(sourceText, value, type, reportedStart, reported
   return { ...available[0], repaired: true };
 }
 
-export function inspectQwenEntities(text, payload) {
+export function inspectQwenEntities(text, payload, ruleCandidates = []) {
   const sourceText = String(text || '');
   const hasEntityArray = Array.isArray(payload?.entities);
   const entities = hasEntityArray ? payload.entities : [];
@@ -173,7 +173,9 @@ export function inspectQwenEntities(text, payload) {
     repaired: 0,
     accepted: 0,
     rejected: 0,
-    reasons: {}
+    reasons: {},
+    linkedToRules: 0,
+    canonicalized: 0
   };
 
   if (!hasEntityArray) diagnostics.responseIssues = ['entities_not_array'];
@@ -220,6 +222,18 @@ export function inspectQwenEntities(text, payload) {
     seen.add(key);
     diagnostics.located += 1;
     if (range.repaired) diagnostics.repaired += 1;
+    const ruleIndex = Number(candidate.groupWithRuleIndex);
+    const linkedRule = Number.isInteger(ruleIndex) && ruleIndex >= 0 && ruleIndex < ruleCandidates.length
+      ? ruleCandidates[ruleIndex]
+      : null;
+    const requestedCanonical = String(candidate.canonical || '').trim();
+    const canonicalValue = linkedRule
+      ? String(linkedRule.canonicalValue || linkedRule.normalizedValue || linkedRule.value || '').trim()
+      : requestedCanonical && requestedCanonical.length <= 240 && sourceText.includes(requestedCanonical)
+        ? requestedCanonical
+        : '';
+    if (linkedRule) diagnostics.linkedToRules += 1;
+    else if (canonicalValue) diagnostics.canonicalized += 1;
     accepted.push({
       id: `qwen-${type}-${start}-${accepted.length}`,
       type,
@@ -229,6 +243,8 @@ export function inspectQwenEntities(text, payload) {
       action: 'REVIEW',
       confidence: ALLOWED_CONFIDENCE.has(candidate.confidence) ? candidate.confidence : 'low',
       reason: String(candidate?.reason || '').slice(0, 240),
+      canonicalValue: canonicalValue || undefined,
+      groupWithRuleIndex: linkedRule ? ruleIndex : undefined,
       source: 'qwen'
     });
   }
@@ -285,9 +301,25 @@ function normalizeDocumentContext(value) {
   const format = String(value?.format || 'text').toLowerCase();
   const allowedFormat = ['text', 'txt', 'docx', 'pdf'].includes(format) ? format : 'unknown';
   const size = Number(value?.size);
+  const correctionCount = Number(value?.normalization?.correctionCount);
+  const corrections = {};
+  if (value?.normalization?.corrections && typeof value.normalization.corrections === 'object') {
+    for (const [key, raw] of Object.entries(value.normalization.corrections)) {
+      const count = Number(raw);
+      if (/^[a-z][a-zA-Z0-9]{0,48}$/u.test(key) && Number.isFinite(count) && count > 0) {
+        corrections[key] = Math.min(100_000, Math.round(count));
+      }
+    }
+  }
   return {
     format: allowedFormat,
-    size: Number.isFinite(size) && size >= 0 ? Math.round(size) : null
+    size: Number.isFinite(size) && size >= 0 ? Math.round(size) : null,
+    normalization: {
+      mode: value?.normalization?.mode === 'ocr' ? 'ocr' : 'standard',
+      changed: Boolean(value?.normalization?.changed),
+      correctionCount: Number.isFinite(correctionCount) && correctionCount > 0 ? Math.round(correctionCount) : 0,
+      corrections
+    }
   };
 }
 
@@ -362,9 +394,18 @@ export async function findEntitiesWithQwen(text, ruleCandidates, config = anonym
           {
             role: 'user',
             content: JSON.stringify({
-              task: 'find_additional_sensitive_entities',
+              task: 'find_additional_sensitive_entities_and_aliases',
               document: { format: document.format, text: sanitized.text },
-              ruleCandidates: ruleCandidates.map(({ type, value, start, end }) => ({ type, value, start, end }))
+              normalization: document.normalization,
+              ruleSummary: ruleCandidates.reduce((summary, candidate) => {
+                const type = String(candidate?.type || 'OTHER');
+                summary[type] = (summary[type] || 0) + 1;
+                return summary;
+              }, {}),
+              ruleCandidates: ruleCandidates.map(({ type, value, start, end, normalizedValue, canonicalValue }, index) => ({
+                index, type, value, start, end,
+                canonical: canonicalValue || normalizedValue || value
+              }))
             })
           }
         ]
@@ -381,7 +422,7 @@ export async function findEntitiesWithQwen(text, ruleCandidates, config = anonym
       if (!shouldRetry) throw qwenHttpError(response.status, attempts);
       await waitForRetry(retryDelayMs * attempts, controller.signal);
     }
-    const inspected = inspectQwenEntities(sanitized.text, parseQwenResponse(await response.json()));
+    const inspected = inspectQwenEntities(sanitized.text, parseQwenResponse(await response.json()), ruleCandidates);
     inspected.diagnostics.promptInjectionSegmentsRemoved = sanitized.segmentsRemoved;
     inspected.diagnostics.promptInjectionCharactersRemoved = sanitized.charactersRemoved;
     const entities = selectQwenAdditions(inspected.entities, ruleCandidates, inspected.diagnostics);

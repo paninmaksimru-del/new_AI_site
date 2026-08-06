@@ -282,3 +282,110 @@ test("повторная проверка не принимает токены �
   const safe = "Адрес регистрации: [[АДРЕС_001]]\nВ адрес [[АДРЕС_002]]\nДоступна по адресу [[EMAIL_001]].";
   assert.equal(scanResidual(safe).critical, 0);
 });
+
+test("нормализованный OCR-текст обнаруживает ПД и заменяет исходный разорванный фрагмент", () => {
+  const text = "Получатель И в а н о в а Мария Александровна, телефон +7 (9З5) 12З-45-67.";
+  const entities = detectEntities(text, { ocr: true });
+  const result = applyReplacements(text, entities);
+  assert.match(result.text, /\[\[ФИО_001\]\]/);
+  assert.match(result.text, /\[\[ТЕЛЕФОН_001\]\]/);
+  assert.doesNotMatch(result.text, /И в а н о в а|9З5/u);
+  assert.equal(restoreText(result.text, result.map), text);
+});
+
+test("ФИО с инициалами распознаётся в обоих порядках и без пробелов между инициалами", () => {
+  const text = "Иванова М.А. подписала документ. М.А. Иванова направила ответ.";
+  const result = applyReplacements(text, detectEntities(text));
+  assert.equal(result.map.entries.filter((item) => item.type === "PERSON").length, 1);
+  assert.equal(result.text.match(/\[\[ФИО_001\]\]/g)?.length, 2);
+});
+
+test("двойная фамилия и двойное имя входят в одну сущность PERSON", () => {
+  const text = "Чернышёва-Лебедева Мария-Луиса Александровна направила заявление.";
+  const person = detectEntities(text).find((item) => item.type === "PERSON");
+  assert.equal(person.value, "Чернышёва-Лебедева Мария-Луиса Александровна");
+});
+
+test("иностранная фамильная частица сохраняется внутри ФИО", () => {
+  const text = "Заявитель: де ла Крус Мария-Луиса Хавьеровна.";
+  const person = detectEntities(text).find((item) => item.type === "PERSON");
+  assert.equal(person.value, "де ла Крус Мария-Луиса Хавьеровна");
+});
+
+test("дата рождения словами распознаётся как BIRTH_DATE", () => {
+  const text = "Дата рождения: 7 ноября 1989 года.";
+  assert.equal(detectEntities(text).find((item) => item.type === "BIRTH_DATE")?.value, "7 ноября 1989 года");
+});
+
+test("валидный номер карты определяется и без явной подписи", () => {
+  const text = "Для возврата указана карта 4111 1111 1111 1111.";
+  assert.equal(detectEntities(text).filter((item) => item.type === "CARD").length, 1);
+});
+
+test("полис, водительское удостоверение, госномер и IP попадают в OTHER", () => {
+  const text = "Полис ОМС № 1234 5678901234; водительское удостоверение 77 11 123456; госномер А123ВС77; IP-адрес 192.168.10.25.";
+  const others = detectEntities(text).filter((item) => item.type === "OTHER");
+  assert.ok(others.length >= 4);
+});
+
+test("структурированный почтовый адрес распознаётся без слова адрес", () => {
+  const text = "Ответ направить: 123456, г. Москва, ул. Тверская, д. 12, кв. 45.";
+  assert.equal(detectEntities(text).filter((item) => item.type === "ADDRESS").length, 1);
+});
+
+test("электронная почта с OCR-пробелами находится по нормализованной копии", () => {
+  const text = "E-mail: ivanov @ example.ru";
+  const email = detectEntities(text).find((item) => item.type === "EMAIL");
+  assert.equal(email.value, "ivanov @ example.ru");
+  assert.equal(email.normalizedValue, "ivanov@example.ru");
+});
+
+test("остаточный контроль подтверждает полностью обезличенный результат", () => {
+  const text = "Иванов Иван Иванович, телефон +7 999 123-45-67.";
+  const result = applyReplacements(text, detectEntities(text));
+  const residual = scanResidual(result.text, { map: result.map });
+  assert.equal(residual.passed, true);
+  assert.equal(residual.critical, 0);
+  assert.deepEqual(residual.mapLeaks, []);
+});
+
+test("остаточный контроль замечает значение из карты, оставшееся в тексте", () => {
+  const map = { entries: [{
+    type: "PERSON", token: "[[ФИО_001]]", original: "Иванов Иван Иванович",
+    aliases: [{ value: "Иванов Иван Иванович", count: 1 }]
+  }] };
+  const residual = scanResidual("Получатель: И в а н о в Иван Иванович.", { map });
+  assert.equal(residual.passed, false);
+  assert.ok(residual.mapLeaks.some((item) => item.type === "PERSON"));
+});
+
+test("остаточный контроль замечает токен, которого нет в ключе", () => {
+  const residual = scanResidual("Получатель [[ФИО_999]].", { map: { entries: [] } });
+  assert.deepEqual(residual.unknownTokens, ["[[ФИО_999]]"]);
+  assert.equal(residual.critical, 1);
+});
+
+test("матрица типовых написаний ПД распознаётся локальными правилами", () => {
+  const samples = [
+    ["PHONE", "Телефон 8 999 123 45 67"],
+    ["EMAIL", "Почта ivanov @ example . ru"],
+    ["PASSPORT", "Паспорт РФ 45 11 № 123456"],
+    ["SNILS", "СНИЛС 112-233-445 95"],
+    ["INN", "ИНН 7 7 0 7 0 8 3 8 9 3"],
+    ["BANK_ACCOUNT", "Расчётный счёт 4070 2810 9000 0012 3456"],
+    ["BIK", "БИК 044 525 225"],
+    ["CARD", "Карта 4111-1111-1111-1111"],
+    ["BIRTH_DATE", "Дата рождения 01/12/1990"],
+    ["CONTRACT_NUMBER", "Договор № МИК-2026/17"],
+    ["OTHER", "MAC-адрес 00:1A:2B:3C:4D:5E"],
+    ["OTHER", "IMEI 490154203237518"]
+  ];
+  for (const [type, text] of samples) {
+    assert.ok(detectEntities(text).some((item) => item.type === type), `${type}: ${text}`);
+  }
+});
+
+test("обычные номера судебных дел, законов и дат не маскируются после расширения правил", () => {
+  const text = "Дело № А40-177621/2017 рассмотрено 12.03.2026. Федеральный закон № 152-ФЗ применяется судом.";
+  assert.equal(applyReplacements(text, detectEntities(text)).text, text);
+});

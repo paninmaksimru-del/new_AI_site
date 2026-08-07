@@ -21,8 +21,7 @@ import {
   mapAnalysisEntitiesToWorkingText,
   mergeEntityCandidates,
   pageNeedsOcr,
-  prepareAnonymizerAnalysis,
-  splitDetectionContributions
+  prepareAnonymizerAnalysis
 } from "./anonymizer-pipeline.js";
 import {
   createAnonymizedDocx,
@@ -77,6 +76,7 @@ const state = {
   qwenStatus: "idle",
   qwenDiagnostics: null,
   qwenTrace: null,
+  downloadWarning: false,
   sourceBinary: null,
   docxModel: null,
   normalization: null
@@ -102,6 +102,24 @@ function qwenCounterText(length) {
   return `${Number(length || 0).toLocaleString("ru-RU")} / ${qwenTextLimit().toLocaleString("ru-RU")}`;
 }
 
+function qwenAuthAvailable() {
+  return Boolean(localStorage.getItem("auth_token"));
+}
+
+function renderQwenAvailabilityNote() {
+  const note = $("qwenAvailabilityNote");
+  if (!note) return;
+  if (qwenConfiguration.localOnly) {
+    note.textContent = "Локальный предпросмотр: Qwen здесь не запускается. На сервере он проверяется отдельно.";
+  } else if (qwenConfiguration.configured && qwenAuthAvailable()) {
+    note.textContent = "Локальные правила работают всегда, затем документ дополнительно проверяет Qwen.";
+  } else if (qwenConfiguration.configured) {
+    note.innerHTML = 'Локальные правила работают всегда. Для проверки Qwen <a href="/login">войдите в аккаунт</a>.';
+  } else {
+    note.textContent = "Сейчас доступны только локальные правила; Qwen на сервере не настроен или недоступен.";
+  }
+}
+
 function updatePasteCounter() {
   const counter = $("pasteCharCount");
   if (!counter) return;
@@ -122,7 +140,7 @@ function renderQwenCharacterMetric() {
   details.textContent = "";
   details.classList.add("hidden");
   details.classList.remove("has-warning");
-  metric.classList.toggle("warning", overLimit || state.qwenStatus === "error");
+  metric.classList.toggle("warning", overLimit || ["auth", "error"].includes(state.qwenStatus));
   metric.classList.toggle("ok", state.qwenUsed);
   if (overLimit) {
     status.textContent = "лимит Qwen превышен — применены локальные правила";
@@ -162,6 +180,8 @@ function renderQwenCharacterMetric() {
       details.classList.toggle("has-warning", Boolean(diagnostics.rejected || diagnostics.responseIssues?.length));
       status.title = details.textContent;
     }
+  } else if (state.qwenStatus === "auth") {
+    status.textContent = "Qwen требует входа — применены локальные правила";
   } else if (!qwenConfiguration.configured) {
     status.textContent = "Qwen не настроен — применены локальные правила";
   } else {
@@ -205,40 +225,6 @@ function renderDetectionEntityList(element, entities, emptyMessage) {
     item.append(type, value);
     element.appendChild(item);
   });
-}
-
-function renderDetectionContributions() {
-  const { system, ai } = splitDetectionContributions(state.entities);
-  $("systemDetectedCount").textContent = system.length.toLocaleString("ru-RU");
-  $("aiAddedCount").textContent = ai.length.toLocaleString("ru-RU");
-  $("systemDetectedDetailsCount").textContent = system.length.toLocaleString("ru-RU");
-  $("aiAddedDetailsCount").textContent = ai.length.toLocaleString("ru-RU");
-
-  const aiStatus = $("aiContributionStatus");
-  if (state.qwenUsed) {
-    aiStatus.textContent = ai.length
-      ? "Новые объекты, которых не было среди находок системы"
-      : "Новых объектов ПД диагностика с ИИ не добавила";
-  } else if (state.qwenStatus === "limit") {
-    aiStatus.textContent = "Диагностика с ИИ пропущена: превышен лимит текста";
-  } else if (state.qwenStatus === "error") {
-    aiStatus.textContent = "Диагностика с ИИ была недоступна";
-  } else {
-    aiStatus.textContent = "Диагностика с ИИ не выполнялась";
-  }
-
-  renderDetectionEntityList(
-    $("systemDetectedItems"),
-    system,
-    "Основная система не обнаружила объектов ПД."
-  );
-  renderDetectionEntityList(
-    $("aiAddedItems"),
-    ai,
-    state.qwenUsed
-      ? "Диагностика с ИИ не добавила новых объектов ПД."
-      : "Диагностика с ИИ не выполнялась или была недоступна."
-  );
 }
 
 function showToast(message) {
@@ -324,6 +310,17 @@ function setInputTab(name) {
   $("fileTabButton").setAttribute("aria-selected", String(fileMode));
   $("textTabButton").setAttribute("aria-selected", String(!fileMode));
   if (!fileMode) $("pasteInput").focus();
+}
+
+function setRestoreInputTab(name) {
+  const fileMode = name === "file";
+  $("restoreFileInputPanel").classList.toggle("hidden", !fileMode);
+  $("restoreTextInputPanel").classList.toggle("hidden", fileMode);
+  $("restoreFileTabButton").classList.toggle("active", fileMode);
+  $("restoreTextTabButton").classList.toggle("active", !fileMode);
+  $("restoreFileTabButton").setAttribute("aria-selected", String(fileMode));
+  $("restoreTextTabButton").setAttribute("aria-selected", String(!fileMode));
+  if (!fileMode) $("restoreInput").focus();
 }
 
 async function extractDocx(file) {
@@ -531,6 +528,7 @@ async function loadQwenStatus() {
     qwenConfiguration = { configured: false, model: null, promptVersion: null, maxTextLength: DEFAULT_QWEN_TEXT_LIMIT, localOnly: true };
   }
   updatePasteCounter();
+  renderQwenAvailabilityNote();
   if (state.result) renderQwenCharacterMetric();
   return qwenConfiguration;
 }
@@ -854,13 +852,16 @@ async function processSource(text, source, options = {}) {
   await ensureQwenStatus();
   $("processingFileMeta").textContent = `${sourceMeta} · Qwen: ${qwenCounterText(preparedAnalysis.analysisText.length)} знаков`;
   const qwenOverLimit = preparedAnalysis.analysisText.length > qwenTextLimit();
+  const qwenAuthorized = qwenAuthAvailable();
   const qwenTask = document.querySelector('[data-task="qwen"]');
   if (qwenTask) qwenTask.textContent = qwenOverLimit && qwenConfiguration.configured
     ? `Qwen пропущен: ${qwenCounterText(preparedAnalysis.analysisText.length)} знаков`
-    : qwenConfiguration.configured
+    : qwenConfiguration.configured && qwenAuthorized
       ? "Дополнительно проверяем с помощью ИИ"
+      : qwenConfiguration.configured
+        ? "Qwen доступен после входа в аккаунт"
       : "Завершаем локальную проверку";
-  if (qwenConfiguration.configured && !qwenOverLimit) {
+  if (qwenConfiguration.configured && !qwenOverLimit && qwenAuthorized) {
     try {
       const qwenAnalysisEntities = await requestQwenEntities(
         preparedAnalysis.analysisText,
@@ -880,6 +881,9 @@ async function processSource(text, source, options = {}) {
   } else if (qwenOverLimit && qwenConfiguration.configured) {
     state.qwenStatus = "limit";
     showToast(`Лимит Qwen — ${qwenTextLimit().toLocaleString("ru-RU")} знаков. Документ обработан локальными правилами.`);
+  } else if (qwenConfiguration.configured && !qwenAuthorized) {
+    state.qwenStatus = "auth";
+    showToast("Qwen настроен, но для дополнительной проверки нужно войти в аккаунт.");
   } else {
     state.qwenStatus = "local";
   }
@@ -1324,8 +1328,8 @@ function renderEntityRows() {
     const actionCell = document.createElement("td");
     const actionSelect = document.createElement("select");
     actionSelect.className = "action-select";
-    actionSelect.innerHTML = '<option value="MASK">Скрыть</option><option value="KEEP">Не скрывать</option>';
-    actionSelect.value = group.action === "KEEP" ? "KEEP" : "MASK";
+    actionSelect.innerHTML = '<option value="MASK">Скрыть</option><option value="REVIEW">Нужно проверить</option><option value="KEEP">Не скрывать</option>';
+    actionSelect.value = ["MASK", "REVIEW", "KEEP"].includes(group.action) ? group.action : "REVIEW";
     actionSelect.addEventListener("change", () => setGroupAction(group.id, actionSelect.value));
     actionCell.appendChild(actionSelect);
 
@@ -1356,51 +1360,65 @@ function renderIntegrityNotice() {
   const notice = $("resultNotice");
   const actions = $("integrityActions");
   const override = $("warningOverrideLabel");
-  $("resultEyebrow").textContent = "Готово";
+  const overrideText = $("warningOverrideText");
+  const reviewCount = state.registry.filter((group) => group.action === "REVIEW").length;
+  const noFindingsWarning = resultSafetyStatus(state.text.length, state.result.replacements.length).level === "warning";
+  const qwenIncomplete = state.qwenStatus !== "used";
+  state.downloadWarning = false;
   $("resultTitle").textContent = "Безопасная копия создана";
   actions.classList.toggle("hidden", state.integrity.ok);
-  override.classList.toggle("hidden", state.integrity.ok);
 
   if (!state.integrity.ok) {
-    $("resultEyebrow").textContent = "Нужна проверка";
+    state.downloadWarning = true;
     $("resultTitle").textContent = "Проверьте безопасную копию";
     notice.className = "notice error";
     notice.textContent = "При проверке результата обнаружено отличие. Пересчитайте документ или откройте расширенные настройки.";
     $("integrityDetails").textContent = `Первое отличие: позиция ${state.integrity.firstDifference}\n\nОжидалось:\n${state.integrity.expectedSnippet}\n\nПолучено:\n${state.integrity.actualSnippet}`;
+  } else if (reviewCount > 0) {
+    state.downloadWarning = true;
+    $("resultTitle").textContent = `Проверьте находки: ${reviewCount}`;
+    notice.className = "notice";
+    notice.textContent = "ИИ нашёл возможные персональные данные, но уверенности недостаточно для автоматической замены. Откройте настройки и для каждой находки выберите «Скрыть» или «Не скрывать».";
+    document.querySelector(".advanced-panel")?.setAttribute("open", "");
   } else if (state.residual.critical > 0) {
-    $("resultEyebrow").textContent = "Нужна проверка";
+    state.downloadWarning = true;
     $("resultTitle").textContent = "Проверьте безопасную копию";
     notice.className = "notice";
     notice.textContent = `В защищённой копии могут остаться чувствительные данные: ${state.residual.critical}. Откройте расширенные настройки и проверьте результат.`;
-  } else if (state.docxModel?.mediaCount > 0) {
-    $("resultEyebrow").textContent = "Проверьте изображения";
-    $("resultTitle").textContent = "Текст Word защищён";
-    notice.className = "notice";
-    notice.textContent = `В Word сохранены изображения: ${state.docxModel.mediaCount}. Текст внутри изображений пока не распознаётся — проверьте их перед использованием файла.`;
-  } else {
+  } else if (qwenIncomplete) {
+    $("resultTitle").textContent = "Проверьте результат перед скачиванием";
+    notice.className = "notice zero-warning";
+    notice.textContent = state.qwenStatus === "limit"
+      ? "Документ превышает лимит Qwen и обработан только локальными правилами."
+      : state.qwenStatus === "auth"
+        ? "Qwen настроен, но дополнительная проверка требует входа в аккаунт. Документ обработан локальными правилами."
+      : state.qwenStatus === "error"
+        ? "Qwen не завершил дополнительную проверку. Документ обработан локальными правилами."
+        : "Дополнительная проверка Qwen не выполнялась. Документ обработан локальными правилами.";
+  } else if (noFindingsWarning) {
     const status = resultSafetyStatus(state.text.length, state.result.replacements.length);
-    notice.className = status.level === "warning" ? "notice zero-warning" : "notice success";
+    notice.className = "notice zero-warning";
     notice.textContent = status.message;
-    $("resultEyebrow").textContent = status.title;
-    $("resultTitle").textContent = status.level === "warning" ? "Проверьте безопасную копию" : "Безопасная копия создана";
+    $("resultTitle").textContent = "Проверьте безопасную копию";
+  } else {
+    notice.className = "notice success";
+    notice.textContent = "Персональные данные скрыты, результат проверен локальными правилами и Qwen.";
   }
+
+  override.classList.toggle("hidden", !state.downloadWarning);
+  if (overrideText) overrideText.textContent = reviewCount
+    ? "Я проверил сомнительные находки и принимаю решение скачать текущую версию."
+    : "Я проверил предупреждение и принимаю решение скачать текущую версию.";
 }
 
 function renderResult(renderRows = true) {
   closeOccurrenceNavigator();
-  const categories = new Set(state.registry.map((group) => group.type));
-  const review = state.registry.filter((group) => group.action === "REVIEW");
   const methods = ["обработано автоматически"];
   if (state.ocrPages.length) methods.push(`OCR: ${state.ocrPages.length} стр.`);
   if (state.qwenUsed) methods.push(`Qwen: ${state.qwenModel || "дополнительная проверка"}`);
   $("resultFileName").textContent = `${state.source?.name || "Материал"} · ${methods.join(" · ")}`;
-  $("foundCount").textContent = state.result.replacements.length;
-  $("entityCount").textContent = state.registry.length;
-  $("reviewCount").textContent = review.length;
-  $("categoryCount").textContent = categories.size;
   $("sourceLength").textContent = `${state.text.length.toLocaleString("ru-RU")} знаков`;
   $("safeLength").textContent = `${state.result.text.length.toLocaleString("ru-RU")} знаков`;
-  renderDetectionContributions();
   renderQwenCharacterMetric();
   renderDocumentPage($("sourcePreview"), state.text, { docxModel: state.docxModel });
   renderDocumentPage($("safePreview"), state.result.text, {
@@ -1419,7 +1437,7 @@ function renderResult(renderRows = true) {
 }
 
 function updateDownloadState() {
-  const warningAccepted = state.integrity?.ok || $("warningOverrideCheckbox").checked;
+  const warningAccepted = !state.downloadWarning || $("warningOverrideCheckbox").checked;
   const enabled = Boolean(state.result) && warningAccepted;
   $("downloadWordButton").disabled = !enabled;
   $("downloadTextButton").disabled = !enabled;
@@ -1451,6 +1469,7 @@ function resetApplication() {
   state.qwenStatus = "idle";
   state.qwenDiagnostics = null;
   state.qwenTrace = null;
+  state.downloadWarning = false;
   state.sourceBinary = null;
   state.docxModel = null;
   state.restoreResult = null;
@@ -1743,10 +1762,7 @@ function updateRestoreMapStatus() {
 function clearRestoreResult() {
   state.restoreResult = null;
   $("restoreNotice").classList.add("hidden");
-  $("restoreMetrics").classList.add("hidden");
-  $("restorePreviewGrid").classList.add("hidden");
   $("restoreActions").classList.add("hidden");
-  $("restoreAfterPreview").replaceChildren();
 }
 
 function setRestoreInput(text, options = {}) {
@@ -1771,6 +1787,7 @@ async function loadRestoreSource(file) {
       const text = await extractText(file);
       setRestoreInput(text, { name: file.name, format: extension || "text" });
     }
+    setRestoreInputTab("file");
     showToast("Документ для восстановления загружен.");
   } catch (error) {
     showToast(errorMessage(error));
@@ -1780,6 +1797,7 @@ async function loadRestoreSource(file) {
 function seedRestoreFromCurrent() {
   if (!state.result || $("restoreInput").value.trim()) return;
   setRestoreInput(state.result.text, { name: `${outputBaseName()}_обезличено.txt`, format: "text" });
+  setRestoreInputTab("text");
 }
 
 async function loadRestoreMap(file) {
@@ -1806,14 +1824,7 @@ function runRestoration() {
   const result = restoreWithDiagnostics(text, map);
   state.restoreResult = result;
   $("restoreNotice").classList.remove("hidden");
-  $("restoreMetrics").classList.remove("hidden");
-  $("restorePreviewGrid").classList.remove("hidden");
   $("restoreActions").classList.remove("hidden");
-  renderDocumentPage($("restoreAfterPreview"), result.restored, { classic: true });
-  $("restoredCount").textContent = result.replacedCount || 0;
-  $("unknownTokenCount").textContent = result.unknownTokens.length;
-  $("unusedTokenCount").textContent = result.unusedTokens.length;
-  $("mapEntryCount").textContent = map.entries.length;
   const notice = $("restoreNotice");
   if (result.errors.length) {
     notice.className = "notice error";
@@ -1826,7 +1837,7 @@ function runRestoration() {
     notice.textContent = `Часть данных восстановлена, но неизвестные обозначения оставлены без изменения: ${result.unknownTokens.join(", ")}.`;
   } else {
     notice.className = "notice success";
-    notice.textContent = "Данные восстановлены. Будет создан новый Word в классическом офисном оформлении.";
+    notice.textContent = "Данные восстановлены. Выберите формат скачивания.";
   }
 }
 
@@ -1912,10 +1923,11 @@ function bindUpload() {
 function bindActions() {
   $("anonymizeModeButton").addEventListener("click", () => setMode("anonymize"));
   $("restoreModeButton").addEventListener("click", () => setMode("restore"));
-  $("openRestoreButton").addEventListener("click", () => setMode("restore"));
-  $("backToAnonymizeButton").addEventListener("click", () => setMode("anonymize"));
+  $("openRestoreButton")?.addEventListener("click", () => setMode("restore"));
   $("fileTabButton").addEventListener("click", () => setInputTab("file"));
   $("textTabButton").addEventListener("click", () => setInputTab("text"));
+  $("restoreFileTabButton").addEventListener("click", () => setRestoreInputTab("file"));
+  $("restoreTextTabButton").addEventListener("click", () => setRestoreInputTab("text"));
   $("pasteInput").addEventListener("input", () => {
     updatePasteCounter();
   });
@@ -1924,9 +1936,6 @@ function bindActions() {
     processSource(text, { name: "Вставленный текст.txt", size: new Blob([text]).size, kind: "text", mime: "text/plain" });
   });
   $("newDocumentButton").addEventListener("click", resetApplication);
-  $("detectionDetailsButton").addEventListener("click", () => {
-    setDetectionDetailsExpanded($("detectionDetailsButton").getAttribute("aria-expanded") !== "true");
-  });
   $("addManualButton").addEventListener("click", addManualValue);
   $("findSimilarButton").addEventListener("click", findSimilarValues);
   $("undoSelectionButton").addEventListener("click", undoLastManualChange);

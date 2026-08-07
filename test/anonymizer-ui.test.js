@@ -12,11 +12,10 @@ test("безопасная копия — read-only документ и скры
   assert.match(html, /<details class="advanced-panel">[\s\S]*class="source-details safe-preview-details"[\s\S]*id="safePreview"/);
 });
 
-test("цветные токены и чёрный восстановленный текст заданы стилями", async () => {
+test("цветные токены заданы стилями", async () => {
   const css = await readFile(new URL("anonymizer.css", root), "utf8");
   assert.match(css, /\.token-person\s*\{/);
   assert.match(css, /\.token-phone, \.token-email\s*\{/);
-  assert.match(css, /\.preview-text\.restored\s*\{\s*color:\s*#111827/);
 });
 
 test("показ в документе использует плавающую навигацию, прокрутку и временную подсветку", async () => {
@@ -36,7 +35,7 @@ test("показ в документе использует плавающую �
   assert.doesNotMatch(script, /insertBefore\([^\n]*occurrence/);
 });
 
-test("большие выделения, именованные черновики и одиночный результат восстановления доступны в интерфейсе", async () => {
+test("большие выделения и именованные черновики доступны без предпросмотра восстановления", async () => {
   const [html, script] = await Promise.all([
     readFile(new URL("anonymizer.html", root), "utf8"),
     readFile(new URL("anonymizer.js", root), "utf8")
@@ -45,7 +44,9 @@ test("большие выделения, именованные черновик
   assert.match(html, /id="savedDraftList"/);
   assert.match(html, /textarea id="manualValue"/);
   assert.doesNotMatch(html, /id="restoreBeforePreview"/);
-  assert.equal((html.match(/id="restoreAfterPreview"/g) || []).length, 1);
+  assert.doesNotMatch(html, /id="restoreAfterPreview"/);
+  assert.doesNotMatch(html, /id="restorePreviewGrid"/);
+  assert.doesNotMatch(html, /id="restoreMetrics"/);
   assert.match(script, /MAX_MANUAL_SELECTION = 20_000/);
   assert.match(script, /snapshot\.draftName/);
   assert.match(script, /Из черновика: \$\{snapshot\.draftName \|\| snapshot\.source\?\.name/);
@@ -127,7 +128,7 @@ test("выделение с готовыми токенами объединяе
   assert.match(script, /Этот фрагмент уже скрыт/);
 });
 
-test("восстановление поддерживает перетаскивание и всегда создаёт новый классический Word", async () => {
+test("восстановление повторяет простой ввод файла или текста и создаёт классический Word", async () => {
   const [html, script, css] = await Promise.all([
     readFile(new URL("anonymizer.html", root), "utf8"),
     readFile(new URL("anonymizer.js", root), "utf8"),
@@ -135,18 +136,26 @@ test("восстановление поддерживает перетаскив
   ]);
   assert.match(html, /id="restoreSourceDropzone"/);
   assert.match(html, /id="restoreMapDropzone"/);
+  assert.match(html, /id="restoreFileTabButton"/);
+  assert.match(html, /id="restoreTextTabButton"/);
+  assert.match(html, /id="restoreFileInputPanel"/);
+  assert.match(html, /id="restoreTextInputPanel"/);
   assert.doesNotMatch(html, /id="restoreOriginalMode"/);
   assert.doesNotMatch(html, /id="restoreClassicMode"/);
-  assert.match(html, /Восстановленный текст будет оформлен в Times New Roman 14/);
+  assert.doesNotMatch(html, /На выходе — новый Word/);
+  assert.doesNotMatch(html, /Вернуться к обезличиванию/);
+  assert.doesNotMatch(html, /id="restoreAfterPreview"/);
+  assert.doesNotMatch(html, /id="restoreMetrics"/);
   assert.match(html, /id="downloadRestoredWordButton"/);
   assert.match(script, /createClassicDocx\(state\.restoreResult\.restored/);
   assert.doesNotMatch(script, /createRestoredDocx/);
   assert.doesNotMatch(script, /restoreDocxModel/);
   assert.match(script, /bindRestoreDropzone/);
+  assert.match(script, /function setRestoreInputTab\(name\)/);
   assert.match(css, /Times New Roman/);
 });
 
-test("смысловая проверка использует серверный Qwen Chat и сохраняет локальный fallback", async () => {
+test("смысловая проверка использует серверный Qwen Chat и честно показывает fallback", async () => {
   const [html, script] = await Promise.all([
     readFile(new URL("anonymizer.html", root), "utf8"),
     readFile(new URL("anonymizer.js", root), "utf8")
@@ -162,19 +171,25 @@ test("смысловая проверка использует серверны�
   assert.match(script, /mergeEntityCandidates\(ruleEntities, qwenEntities\)/);
   assert.match(script, /Дополнительная проверка временно недоступна\. Документ обработан основным способом\./);
   assert.match(script, /Qwen: \$\{state\.qwenModel/);
-  assert.match(html, /Сервис сам прочитает документ, найдёт чувствительные данные и создаст защищённую копию/);
+  assert.match(script, /state\.downloadWarning/);
+  assert.match(html, /id="qwenAvailabilityNote"/);
+  assert.match(script, /function qwenAuthAvailable\(\)/);
+  assert.match(script, /Qwen настроен, но для дополнительной проверки нужно войти в аккаунт/);
+  assert.match(script, /state\.qwenStatus = "auth"/);
+  assert.match(html, /id="warningOverrideText"/);
+  assert.match(html, /<h1[^>]*>Обезличить документ<\/h1>/);
+  assert.doesNotMatch(html, /class="steps"/);
 });
 
-test("лимит ИИ показан счётчиком для текста, файлов и готового результата", async () => {
+test("лимит ИИ показан у ввода и во время обработки без отдельной панели статистики", async () => {
   const [html, script, css] = await Promise.all([
     readFile(new URL("anonymizer.html", root), "utf8"),
     readFile(new URL("anonymizer.js", root), "utf8"),
     readFile(new URL("anonymizer.css", root), "utf8")
   ]);
   assert.match(html, /id="pasteCharCount"[^>]*>0 \/ 60 000 знаков лимит для ИИ/);
-  assert.match(html, /id="qwenCharacterCount">0 \/ 60 000/);
-  assert.match(html, /id="qwenCharacterStatus"/);
-  assert.match(html, /id="qwenDiagnosticsDetails"/);
+  assert.doesNotMatch(html, /id="qwenCharacterCount"/);
+  assert.doesNotMatch(html, /id="qwenDiagnosticsDetails"/);
   assert.match(script, /maxTextLength: Number\(payload\.maxTextLength\)/);
   assert.match(script, /preparedAnalysis\.analysisText\.length > qwenTextLimit\(\)/);
   assert.match(script, /Qwen пропущен: \$\{qwenCounterText\(preparedAnalysis\.analysisText\.length\)\}/);
@@ -185,25 +200,22 @@ test("лимит ИИ показан счётчиком для текста, ф�
   assert.match(script, /qwenTrace: state\.qwenTrace/);
   assert.match(script, /processingFileMeta[^\n]+qwenCounterText\(preparedAnalysis\.analysisText\.length\)/);
   assert.match(css, /\.char-counter\.over-limit/);
-  assert.match(css, /\.metric\.qwen-metric b/);
-  assert.match(css, /\.metric \.qwen-diagnostics/);
 });
 
-test("результат отдельно показывает находки системы и дополнения диагностики с ИИ", async () => {
+test("результат показывает статус в одном сообщении без статистики и технических плашек", async () => {
   const [html, script, css] = await Promise.all([
     readFile(new URL("anonymizer.html", root), "utf8"),
     readFile(new URL("anonymizer.js", root), "utf8"),
     readFile(new URL("anonymizer.css", root), "utf8")
   ]);
 
-  assert.match(html, /id="systemDetectedCount"/);
-  assert.match(html, /id="aiAddedCount"/);
-  assert.match(html, /id="detectionDetailsButton"[^>]+aria-controls="detectionDetailsPanel"/);
-  assert.match(html, /id="systemDetectedItems"/);
-  assert.match(html, /id="aiAddedItems"/);
-  assert.match(script, /splitDetectionContributions\(state\.entities\)/);
-  assert.match(script, /function renderDetectionEntityList/);
-  assert.match(script, /setDetectionDetailsExpanded/);
-  assert.match(css, /\.detection-contribution-grid/);
-  assert.match(css, /\.detection-entity-list/);
+  assert.match(html, /class="draft-explainer"/);
+  assert.match(script, /Персональные данные скрыты, результат проверен локальными правилами и Qwen/);
+  assert.doesNotMatch(html, /id="processingSummary"/);
+  assert.doesNotMatch(html, /class="diagnostics-panel"/);
+  assert.doesNotMatch(html, /id="systemDetectedCount"/);
+  assert.doesNotMatch(html, /class="download-count"/);
+  assert.doesNotMatch(html, /id="resultEyebrow"/);
+  assert.doesNotMatch(html, /class="technical-note"/);
+  assert.doesNotMatch(script, /В Word сохранены изображения/);
 });

@@ -71,11 +71,56 @@ test("организация в кавычках выделяется без з�
   assert.doesNotMatch(applyReplacements(text, detectEntities(text)).text, /Ромашка/);
 });
 
-test("REVIEW автоматически скрывается и только KEEP оставляет исходный текст", () => {
+test("REVIEW не скрывается без подтверждения пользователя", () => {
   const text = "ООО «Секрет» подписало документ.";
   const review = [{ id: "1", type: "ORGANIZATION", value: "ООО «Секрет»", start: 0, end: 12, action: "REVIEW" }];
-  assert.equal(applyReplacements(text, review).text, "[[ОРГ_001]] подписало документ.");
+  const pending = applyReplacements(text, review);
+  assert.equal(pending.text, text);
+  assert.equal(pending.map.entries.length, 0);
+  assert.equal(applyReplacements(text, [{ ...review[0], action: "MASK" }]).text, "[[ОРГ_001]] подписало документ.");
   assert.equal(applyReplacements(text, [{ ...review[0], action: "KEEP" }]).text, text);
+});
+
+test("должности и служебные фразы не превращаются в ФИО", () => {
+  const text = "Директор Проекта Развития представил результаты. Руководитель Рабочей Группы согласовал повестку.";
+  assert.equal(detectEntities(text).filter((item) => item.type === "PERSON").length, 0);
+});
+
+test("служебная фраза со словом адрес не захватывается как почтовый адрес", () => {
+  const text = "Адрес электронной почты указан на официальном сайте ведомства.";
+  assert.equal(detectEntities(text).filter((item) => item.type === "ADDRESS").length, 0);
+});
+
+test("обычные фразы из реального документа не превращаются в адреса или ФИО", () => {
+  const text = "В результате накопились ошибки в расчётах. Его нельзя загружать в систему. Метод и применение влияют на результат. Сформулированы допустимые выводы. Получатель корреспонденции проживает временно.";
+  const entities = detectEntities(text);
+  assert.equal(entities.filter((item) => item.type === "ADDRESS").length, 0);
+  assert.equal(entities.filter((item) => item.type === "PERSON").length, 0);
+});
+
+test("адрес заканчивается вместе с предложением и не захватывает следующий текст", () => {
+  const text = "Адрес регистрации: 125009, г. Москва, ул. Тверская, д. 10, кв. 15. Место проживания: Санкт-Петербург, Невский проспект, 28. Получатель корреспонденции проживает в Казани на улице Баумана в доме 7.";
+  const entities = detectEntities(text);
+  const addresses = entities.filter((item) => item.type === "ADDRESS");
+  assert.equal(entities.filter((item) => item.type === "PERSON").length, 0);
+  assert.equal(addresses.length, 3);
+  assert.equal(addresses[0].value, "125009, г. Москва, ул. Тверская, д. 10, кв. 15");
+  assert.equal(addresses[1].value, "Санкт-Петербург, Невский проспект, 28");
+  assert.equal(addresses[2].value, "в Казани на улице Баумана в доме 7");
+  assert.ok(addresses.every((item) => !item.value.includes("Место проживания")));
+});
+
+test("реальное обращение скрывает ПД, но сохраняет окружающую деловую лексику", () => {
+  const text = "Директор Проекта Развития рассмотрел обращение. Заявитель: Иванов Иван Иванович. Телефон +7 (999) 123-45-67. Адрес электронной почты указан на сайте.";
+  const entities = detectEntities(text);
+  const result = applyReplacements(text, entities);
+  assert.equal(entities.filter((item) => item.type === "PERSON").length, 1);
+  assert.equal(entities.filter((item) => item.type === "PHONE").length, 1);
+  assert.equal(entities.filter((item) => item.type === "ADDRESS").length, 0);
+  assert.match(result.text, /^Директор Проекта Развития рассмотрел обращение\./u);
+  assert.match(result.text, /Заявитель: \[\[ФИО_001\]\]/u);
+  assert.match(result.text, /Телефон \[\[ТЕЛЕФОН_001\]\]/u);
+  assert.equal(restoreText(result.text, result.map), text);
 });
 
 test("крупный документ без замен получает заметное предупреждение", () => {

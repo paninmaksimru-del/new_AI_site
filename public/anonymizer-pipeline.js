@@ -52,12 +52,27 @@ function overlaps(left, right) {
   return left.start < right.end && right.start < left.end;
 }
 
+const QWEN_AUTO_MASK_TYPES = new Set([
+  'PERSON', 'ADDRESS', 'PHONE', 'EMAIL', 'PASSPORT', 'SNILS', 'INN',
+  'BANK_ACCOUNT', 'BIK', 'CARD', 'BIRTH_DATE'
+]);
+
+export function qwenCandidateAction(candidate) {
+  const confidence = String(candidate?.confidence || '').toLowerCase();
+  const type = String(candidate?.type || '').toUpperCase();
+  return confidence === 'high' && QWEN_AUTO_MASK_TYPES.has(type) ? 'MASK' : 'REVIEW';
+}
+
 export function mergeEntityCandidates(ruleEntities = [], qwenEntities = []) {
   const merged = [...ruleEntities];
   for (const candidate of qwenEntities) {
     if (!candidate || !Number.isInteger(candidate.start) || !Number.isInteger(candidate.end)) continue;
     if (merged.some((current) => overlaps(current, candidate))) continue;
-    merged.push({ ...candidate, action: 'MASK', source: 'qwen' });
+    // Низкая уверенность слишком шумная для пользовательского реестра. Средняя
+    // остаётся REVIEW, а автоматически меняют документ только high-confidence
+    // находки по типам персональных данных с понятной семантикой.
+    if (String(candidate.confidence || '').toLowerCase() === 'low') continue;
+    merged.push({ ...candidate, action: qwenCandidateAction(candidate), source: 'qwen' });
   }
   return merged.sort((left, right) => left.start - right.start || left.end - right.end);
 }

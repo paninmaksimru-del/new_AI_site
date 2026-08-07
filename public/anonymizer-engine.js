@@ -248,12 +248,32 @@ function detectEntitiesRaw(input) {
   addMatches(text, "PERSON", new RegExp(`(?<![А-ЯЁа-яё-])(${surname}\\s+[А-ЯЁ]\\.\\s*[А-ЯЁ]\\.)(?![А-ЯЁа-яё-])`, "gu"), found, { group: 1, confidence: "high" });
   addMatches(text, "PERSON", new RegExp(`(?<![А-ЯЁа-яё-])([А-ЯЁ]\\.[А-ЯЁ]\\.\\s*${surname})(?![А-ЯЁа-яё-])`, "gu"), found, { group: 1, confidence: "high" });
   addMatches(text, "PERSON", new RegExp(`(?<![А-ЯЁа-яё-])(${surname}\\s+[А-ЯЁ]\\.[А-ЯЁ]\\.)(?![А-ЯЁа-яё-])`, "gu"), found, { group: 1, confidence: "high" });
-  addMatches(text, "PERSON", new RegExp(`(?:ФИО|заявитель|гражданин(?:ка)?|представитель|директор|подписант|руководитель|начальник|получатель|отправитель|обратившийся)\\s*[:\\-]?\\s*(${surname}\\s+${personWord}(?:\\s+${personWord}(?:\\s+(?:оглы|кызы))?)?)`, "giu"), found, { group: 1, confidence: "medium" });
+  // Двухсловные ФИО без отчества принимаем только после явной метки с
+  // разделителем. Иначе фразы вроде «директор Проекта Развития» превращались
+  // в человека и маскировали обычные слова.
+  addMatches(text, "PERSON", new RegExp(`(?:ФИО|заявитель|гражданин(?:ка)?|представитель|получатель|отправитель|обратившийся)\\s*[:\\-]\\s*(${surname}\\s+${personWord}(?:\\s+${personWord}(?:\\s+(?:оглы|кызы))?)?)`, "giu"), found, { group: 1, confidence: "medium" });
   addMatches(text, "PERSON", /(?:ФИО|заявитель|гражданин(?:ка)?|представитель|директор|подписант|руководитель|начальник|получатель|отправитель)\s*[:\-]?\s*([А-ЯЁ]\.?\s*[А-ЯЁ]\.?\s*[А-ЯЁ][а-яё-]{2,30}|[А-ЯЁ][а-яё-]{2,30}\s+[А-ЯЁ]\.?\s*[А-ЯЁ]\.?)\b/giu, found, { group: 1, confidence: "medium", source: "rules-ocr" });
   addMatches(text, "PERSON", /(?:ФИО|заявитель|гражданин(?:ка)?|представитель|получатель)\s*[:\-]?\s*([A-Z][A-Za-z'-]{1,30}\s+[A-Z][A-Za-z'-]{1,30}(?:\s+[A-Z][A-Za-z'-]{1,30})?)/gu, found, { group: 1, confidence: "medium", source: "rules-latin" });
 
   // Адреса: с явной меткой и типовой структурой без метки.
-  addMatches(text, "ADDRESS", /(?<![-А-ЯЁа-яё])(?:адрес(?:\s+регистрации|\s+места\s+жительства|\s+проживания|\s+корреспонденции)?|прожива(?:ет|ющий)|зарегистрирован(?:а)?|место\s+жительства|место\s+рождения)\s*[:\-]?\s*([^\n;]{8,180})/giu, found, { group: 1, confidence: "high" });
+  // Свободный текст после слова «адрес» больше не захватываем. Метка должна
+  // быть отделена двоеточием/тире; фразы «адрес электронной почты указан…»
+  // остаются обычным текстом, а сам e-mail найдёт отдельное строгое правило.
+  // Точку считаем концом адреса, кроме общеупотребительных сокращений
+  // «г.», «ул.», «д.» и т. п. Это не даёт одному совпадению съесть следующие
+  // предложения документа.
+  const addressClause = String.raw`(?:(?:\b(?:г|ул|д|кв|корп|стр|пер|ш|наб)\.)|[^.\n;]){8,180}`;
+  const hasAddressEvidence = (value) => /(?:\b\d{6}\b|(?:\b(?:г|ул|д|кв|корп|стр|пер|ш|наб)\.|город(?:е|а)?|улиц(?:а|е|у|ы)|проспект(?:е|а)?|переулок(?:е|а)?|шоссе|набережн(?:ая|ой)|дом(?:е|а)?|квартир(?:а|е|у))[^.\n;]{0,100}\d)/iu.test(value);
+  addMatches(text, "ADDRESS", new RegExp(`(?<![-А-ЯЁа-яё])(?:адрес(?:\\s+регистрации|\\s+места\\s+жительства|\\s+проживания|\\s+корреспонденции)?|место\\s+(?:жительства|рождения|проживания))\\s*[:\\-]\\s*(${addressClause})`, "giu"), found, {
+    group: 1,
+    confidence: "high",
+    reject: (value) => !hasAddressEvidence(value)
+  });
+  addMatches(text, "ADDRESS", new RegExp(`(?:прожива(?:ет|ющий)|зарегистрирован(?:а)?)\\s+(?:по\\s+адресу\\s+)?(${addressClause})`, "giu"), found, {
+    group: 1,
+    confidence: "medium",
+    reject: (value) => !hasAddressEvidence(value)
+  });
   addMatches(text, "ADDRESS", /(?<!\d)(\d{6},?\s+(?:г\.?\s*)?[А-ЯЁ][А-ЯЁа-яё .-]{2,50},?\s+(?:ул\.?|улица|пр-т|проспект|пер\.?|переулок|ш\.?|шоссе|наб\.?|набережная)\s+[А-ЯЁ0-9][А-ЯЁа-яё0-9 .-]{1,60},?\s+(?:д\.?|дом)\s*\d+[А-ЯЁа-яё]?(?:\s*,?\s*(?:корп\.?|корпус|стр\.?|строение|кв\.?|квартира)\s*\d+[А-ЯЁа-яё]?)*)/giu, found, { group: 1, confidence: "medium" });
 
   // Номера документов, суммы и организации сохраняются как отдельные чувствительные категории.
@@ -398,7 +418,7 @@ export function buildEntityRegistry(entities, options = {}) {
 
   registry.forEach((group) => {
     group.original = canonicalOverrides[group.id] || group.original;
-    if (group.action === "KEEP") return;
+    if (group.action !== "MASK") return;
     let token = tokenAssignments[group.id];
     const expectedPrefix = `[[${TYPE_DEFINITIONS[group.type]?.token || TYPE_DEFINITIONS.OTHER.token}_`;
     if (!String(token || "").startsWith(expectedPrefix)) {
@@ -422,9 +442,9 @@ function replaceRanges(text, replacements) {
 
 export function applyReplacements(input, entities, options = {}) {
   const text = String(input || "");
-  // Безопасность по умолчанию: REVIEW — только отметка уверенности, а не разрешение
-  // оставить исходные данные. Не маскируется только явное действие KEEP.
-  const selected = resolveOverlaps(assignEntityGroups(entities).filter((item) => item.action !== "KEEP"));
+  // Только подтверждённое действие MASK меняет документ. REVIEW остаётся в
+  // реестре для решения человеком и не получает токен автоматически.
+  const selected = resolveOverlaps(assignEntityGroups(entities).filter((item) => item.action === "MASK"));
   const { registry, tokenAssignments } = buildEntityRegistry(selected, options);
   const groupById = new Map(registry.map((group) => [group.id, group]));
   const replacements = selected.map((item) => ({ ...item, token: groupById.get(item.groupId).token }));

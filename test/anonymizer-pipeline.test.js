@@ -4,6 +4,7 @@ import {
   looksLikeBrokenOcrText,
   mergeEntityCandidates,
   pageNeedsOcr,
+  qwenCandidateAction,
   splitDetectionContributions
 } from '../public/anonymizer-pipeline.js';
 
@@ -36,16 +37,24 @@ test('обычный русский и английский текст не сч
   assert.equal(pageNeedsOcr(english, 30), false);
 });
 
-test('Qwen добавляет только непересекающиеся кандидаты в автоматическую маскировку', () => {
+test('Qwen автоматически скрывает только уверенные критичные ПД', () => {
   const rules = [{ id: 'rule-1', type: 'EMAIL', value: 'a@b.ru', start: 10, end: 16, action: 'MASK', source: 'rules' }];
   const qwen = [
-    { id: 'qwen-1', type: 'PERSON', value: 'Иванов', start: 0, end: 6, action: 'MASK', source: 'qwen' },
-    { id: 'qwen-2', type: 'OTHER', value: 'a@b', start: 10, end: 13, action: 'MASK', source: 'qwen' }
+    { id: 'qwen-1', type: 'PERSON', value: 'Иванов', start: 0, end: 6, confidence: 'high', source: 'qwen' },
+    { id: 'qwen-2', type: 'OTHER', value: 'a@b', start: 10, end: 13, confidence: 'high', source: 'qwen' },
+    { id: 'qwen-3', type: 'ORGANIZATION', value: 'Проект', start: 20, end: 26, confidence: 'high', source: 'qwen' },
+    { id: 'qwen-4', type: 'ADDRESS', value: 'Москва', start: 30, end: 36, confidence: 'medium', source: 'qwen' },
+    { id: 'qwen-5', type: 'PERSON', value: 'Слово', start: 40, end: 45, confidence: 'low', source: 'qwen' }
   ];
   const merged = mergeEntityCandidates(rules, qwen);
-  assert.equal(merged.length, 2);
-  assert.equal(merged.find((item) => item.source === 'qwen').action, 'MASK');
+  assert.equal(merged.length, 4);
+  assert.equal(merged.find((item) => item.id === 'qwen-1').action, 'MASK');
   assert.equal(merged.some((item) => item.id === 'qwen-2'), false);
+  assert.equal(merged.find((item) => item.id === 'qwen-3').action, 'REVIEW');
+  assert.equal(merged.find((item) => item.id === 'qwen-4').action, 'REVIEW');
+  assert.equal(merged.some((item) => item.id === 'qwen-5'), false);
+  assert.equal(qwenCandidateAction({ type: 'PHONE', confidence: 'high' }), 'MASK');
+  assert.equal(qwenCandidateAction({ type: 'OTHER', confidence: 'high' }), 'REVIEW');
 });
 
 test('вклад системы и ИИ считается по источнику без ручных объектов', () => {

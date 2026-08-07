@@ -30,13 +30,9 @@
   <main class="page-shell">
     <section class="hero" aria-labelledby="pageTitle">
       <div class="hero-copy">
-        <span class="eyebrow">Безопасная работа с документами</span>
-        <h1 id="pageTitle">Скрыть данные.<br>Вернуть — когда нужно.</h1>
-        <p>Загрузите документ. Сервис подготовит обезличенную копию и отдельный ключ восстановления.</p>
-      </div>
-      <div class="hero-status" aria-label="Возможности сервиса">
-        <span class="status-dot" aria-hidden="true"></span>
-        <div><strong>Работает автоматически</strong><small>DOCX, PDF, сканы и обычный текст</small></div>
+        <span class="eyebrow">Защита персональных данных</span>
+        <h1 id="pageTitle">Обезличить документ</h1>
+        <p>Загрузите файл — получите безопасную копию и отдельный ключ восстановления.</p>
       </div>
     </section>
 
@@ -46,28 +42,19 @@
         <button class="mode-button" id="restoreModeButton" type="button" role="tab" aria-selected="false"><span class="mode-icon" aria-hidden="true">↺</span><span class="mode-copy"><strong>Восстановить</strong><small>Вернуть данные с помощью ключа</small></span></button>
       </div>
 
-      <div class="steps" aria-label="Этапы работы">
-        <div class="step active" data-step="input"><b>1</b> Документ</div>
-        <div class="step" data-step="process"><b>2</b> Обработка</div>
-        <div class="step" data-step="result"><b>3</b> Результат</div>
-        <div class="step restore-step" data-step="restore"><b>4</b> Восстановление</div>
-      </div>
-
       <section class="view" id="inputView">
         <div class="view-head">
           <div>
-            <h2>Добавьте документ</h2>
-            <p>Выберите файл или вставьте текст — настройки не требуются.</p>
+            <h2>Выберите документ</h2>
+            <p>Обработка начнётся сразу после выбора файла.</p>
           </div>
           <span class="format-pill">TXT · DOCX · PDF · до 10 МБ</span>
         </div>
 
         <div class="input-tabs" role="tablist" aria-label="Способ ввода">
-          <button class="input-tab active" id="fileTabButton" type="button" role="tab" aria-selected="true">Загрузить документ</button>
-          <button class="input-tab" id="textTabButton" type="button" role="tab" aria-selected="false">Вставить текст</button>
+          <button class="input-tab active" id="fileTabButton" type="button" role="tab" aria-selected="true">Файл</button>
+          <button class="input-tab" id="textTabButton" type="button" role="tab" aria-selected="false">Текст</button>
         </div>
-
-        <div class="automatic-info"><span aria-hidden="true">✓</span><div><strong>Автоматическая защита</strong><p>Сервис сам прочитает документ, найдёт чувствительные данные и создаст защищённую копию</p></div></div>
 
         <div id="fileInputPanel">
           <label class="dropzone" id="dropzone" for="fileInput">
@@ -77,7 +64,7 @@
             <span class="btn primary">Выбрать документ</span>
             <input id="fileInput" type="file" accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
           </label>
-          <div class="support-note">PDF-сканы без текстового слоя распознаются автоматически. Первый запуск OCR может занять больше времени.</div>
+          <div class="support-note" id="qwenAvailabilityNote">Проверяем доступность Qwen. Локальные правила работают всегда.</div>
         </div>
 
         <div class="hidden" id="textInputPanel">
@@ -128,12 +115,10 @@
       <section class="view hidden" id="resultView">
         <div class="view-head">
           <div>
-            <span class="eyebrow" id="resultEyebrow">Готово</span>
             <h2 id="resultTitle">Безопасная копия создана</h2>
             <p id="resultFileName"></p>
           </div>
           <div class="head-actions">
-            <button class="btn ghost" id="openRestoreButton" type="button">Перейти к восстановлению</button>
             <button class="btn ghost" id="newDocumentButton" type="button">Другой документ</button>
           </div>
         </div>
@@ -144,47 +129,28 @@
           <details><summary>Показать отличие</summary><pre id="integrityDetails"></pre></details>
         </div>
 
-        <details class="diagnostics-panel">
-          <summary><span><strong>Как обработан документ</strong><small>Диагностика и статистика</small></span><i aria-hidden="true">⌄</i></summary>
-          <div class="diagnostics-body">
-        <section class="detection-contribution" aria-label="Вклад основной системы и диагностики с ИИ">
-          <div class="detection-contribution-grid">
-            <article class="detection-contribution-card system-contribution">
-              <span>Основная система</span>
-              <b id="systemDetectedCount">0</b>
-              <strong>объектов ПД обнаружила система</strong>
-              <small>До дополнительной диагностики с ИИ</small>
-            </article>
-            <article class="detection-contribution-card ai-contribution">
-              <span>Диагностика с ИИ</span>
-              <b id="aiAddedCount">0</b>
-              <strong>объектов ПД дополнил ИИ</strong>
-              <small id="aiContributionStatus">Новые объекты, которых не было среди находок системы</small>
-            </article>
-          </div>
-          <button class="btn ghost compact detection-details-button" id="detectionDetailsButton" type="button" aria-expanded="false" aria-controls="detectionDetailsPanel">Подробнее</button>
-          <div class="detection-details hidden" id="detectionDetailsPanel">
-            <div class="detection-details-column">
-              <h3>Обнаружила система <span id="systemDetectedDetailsCount">0</span></h3>
-              <ol class="detection-entity-list" id="systemDetectedItems"></ol>
-            </div>
-            <div class="detection-details-column ai-details-column">
-              <h3>Добавила диагностика с ИИ <span id="aiAddedDetailsCount">0</span></h3>
-              <ol class="detection-entity-list" id="aiAddedItems"></ol>
-            </div>
-            <p class="detection-details-note">Показаны отдельные вхождения. Объекты, добавленные пользователем вручную, в эти счётчики не входят.</p>
-          </div>
-        </section>
+        <label class="confirmation warning-confirm hidden" id="warningOverrideLabel">
+          <input id="warningOverrideCheckbox" type="checkbox">
+          <span><strong>Требуется ваше решение</strong><span id="warningOverrideText">Я проверил предупреждение и принимаю решение скачать текущую версию.</span></span>
+        </label>
 
-        <div class="summary-grid">
-          <div class="metric ok"><b id="foundCount">0</b><span>фрагментов скрыто</span></div>
-          <div class="metric"><b id="entityCount">0</b><span>разных значений</span></div>
-          <div class="metric"><b id="categoryCount">0</b><span>типов данных</span></div>
-          <div class="metric qwen-metric" id="qwenCharacterMetric"><b id="qwenCharacterCount">0 / 60 000</b><span id="qwenCharacterStatus">знаков для проверки Qwen</span><small class="qwen-diagnostics hidden" id="qwenDiagnosticsDetails"></small></div>
-          <div class="metric hidden"><b id="reviewCount">0</b><span>ожидают решения</span></div>
-        </div>
+        <section class="download-zone" aria-label="Скачать результат">
+          <div class="download-zone-head">
+            <div><span class="eyebrow">Результат</span><h3>Скачайте два файла</h3><p>Безопасную копию можно передать в работу. Ключ храните отдельно.</p></div>
           </div>
-        </details>
+          <div class="primary-actions">
+            <button class="btn primary" id="downloadWordButton" type="button" disabled>Скачать Word (.docx)</button>
+            <button class="btn key-button" id="downloadMapButton" type="button" disabled>Скачать ключ восстановления</button>
+          </div>
+          <details class="secondary-downloads">
+            <summary>Другие варианты скачивания</summary>
+            <div class="actions">
+              <button class="btn ghost" id="downloadTextButton" type="button" disabled>Скачать защищённый текст</button>
+              <button class="btn secondary" id="copyTextButton" type="button" disabled>Скопировать текст</button>
+              <button class="btn ghost" id="downloadBundleButton" type="button" disabled>Скачать всё одним ZIP</button>
+            </div>
+          </details>
+        </section>
 
         <details class="advanced-panel">
           <summary><span>Изменить автоматическую обработку</span><small>Необязательно</small></summary>
@@ -250,22 +216,11 @@
         </details>
 
         <details class="utility-panel result-utility">
-          <summary><span><strong>Сохранить работу как черновик</strong><small>Необязательно</small></span><i aria-hidden="true">⌄</i></summary>
+          <summary><span><strong>Сохранить черновик</strong><small>Чтобы вернуться к работе позже</small></span><i aria-hidden="true">⌄</i></summary>
           <div class="utility-body">
-            <section class="plain-help-grid">
-              <article class="plain-help-card">
-                <strong>Черновик работы</strong>
-                <p>Сохранённое состояние обработки, к которому можно вернуться позже.</p>
-              </article>
-              <article class="plain-help-card">
-                <strong>Ключ восстановления</strong>
-                <p>Содержит исходные значения. Храните его отдельно от безопасной копии.</p>
-              </article>
-            </section>
-
+            <p class="draft-explainer"><strong>Черновик работы</strong> — сохраните, чтобы продолжить позже. <strong>Ключ восстановления</strong> — скачайте отдельно вместе с результатом.</p>
             <section class="session-panel">
               <div>
-                <strong>Черновик работы</strong>
                 <span id="sessionStatus">Пока черновик не сохранён. После сохранения он останется в этом браузере.</span>
               </div>
               <label class="draft-name-field"><span>Название</span><input id="draftNameInput" type="text" maxlength="80" placeholder="Например, договор с подрядчиком"></label>
@@ -275,78 +230,55 @@
           </div>
         </details>
 
-        <label class="confirmation warning-confirm hidden" id="warningOverrideLabel">
-          <input id="warningOverrideCheckbox" type="checkbox">
-          <span><strong>Скачать несмотря на предупреждение</strong>Я понимаю, что контроль целостности требует внимания, и принимаю решение продолжить.</span>
-        </label>
-
-        <section class="download-zone" aria-label="Скачать результат">
-          <div class="download-zone-head">
-            <div><span class="eyebrow">Результат</span><h3>Скачайте два файла</h3><p>Безопасную копию можно передать в работу. Ключ храните отдельно.</p></div>
-            <span class="download-count">2</span>
-          </div>
-          <div class="primary-actions">
-            <button class="btn primary" id="downloadWordButton" type="button" disabled>Скачать Word (.docx)</button>
-            <button class="btn key-button" id="downloadMapButton" type="button" disabled>Скачать ключ восстановления</button>
-          </div>
-          <details class="secondary-downloads">
-            <summary>Другие варианты скачивания</summary>
-            <div class="actions">
-              <button class="btn ghost" id="downloadTextButton" type="button" disabled>Скачать защищённый текст</button>
-              <button class="btn secondary" id="copyTextButton" type="button" disabled>Скопировать текст</button>
-              <button class="btn ghost" id="downloadBundleButton" type="button" disabled>Скачать всё одним ZIP</button>
-            </div>
-          </details>
-        </section>
       </section>
 
       <section class="view hidden" id="restoreView">
         <div class="view-head">
           <div>
-            <span class="eyebrow">Восстановление</span>
-            <h2>Верните исходные данные</h2>
+            <h2>Восстановить данные</h2>
             <p>Добавьте защищённый документ и соответствующий ключ.</p>
           </div>
-          <button class="btn ghost" id="backToAnonymizeButton" type="button">Вернуться к обезличиванию</button>
         </div>
 
-        <div class="restore-output-note"><strong>На выходе — новый Word</strong><span>Восстановленный текст будет оформлен в Times New Roman 14 с обычными полями, абзацами и списками.</span></div>
-        <details class="technical-note"><summary>Техническая информация</summary><div class="local-model-stub">Смысловая обработка моделью пока не подключена. Сервис локально восстанавливает токены и оформляет уже готовый текст.</div></details>
+        <div class="input-tabs" role="tablist" aria-label="Способ ввода защищённого документа">
+          <button class="input-tab active" id="restoreFileTabButton" type="button" role="tab" aria-selected="true">Файл</button>
+          <button class="input-tab" id="restoreTextTabButton" type="button" role="tab" aria-selected="false">Текст</button>
+        </div>
 
-        <div class="restore-input-grid">
-          <article class="restore-card restore-dropzone" id="restoreSourceDropzone">
-            <div class="card-title"><strong>1. Защищённый текст</strong><label class="btn ghost compact" for="restoreFileInput">Загрузить файл<input id="restoreFileInput" type="file" accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden></label></div>
-            <p class="restore-drop-hint">Перетащите сюда TXT, DOCX или PDF либо вставьте текст ниже.</p>
-            <textarea class="large-input restore-input" id="restoreInput" placeholder="Вставьте защищённый текст с обозначениями вроде [[ФИО_001]]…"></textarea>
-            <div class="restore-file-status"><span class="muted" id="restoreCharCount">0 знаков</span><span class="muted" id="restoreSourceStatus">Файл не выбран</span></div>
-          </article>
-          <article class="restore-card restore-dropzone" id="restoreMapDropzone">
-            <div class="card-title"><strong>2. Ключ восстановления</strong><label class="btn ghost compact" for="restoreMapFileInput">Загрузить ключ<input id="restoreMapFileInput" type="file" accept=".json,application/json" hidden></label></div>
-            <p class="restore-drop-hint">Перетащите сюда JSON-ключ.</p>
-            <p class="key-help">Ключ содержит исходные значения. Храните его отдельно от защищённого документа.</p>
-            <select id="restoreMapSelect" aria-label="Ключ восстановления">
-              <option value="current">Ключ текущего документа</option>
-            </select>
-            <div class="map-source-status" id="restoreMapStatus">Ключ для текущего документа пока не создан.</div>
+        <div id="restoreFileInputPanel">
+          <label class="dropzone restore-dropzone" id="restoreSourceDropzone" for="restoreFileInput">
+            <span class="drop-icon" aria-hidden="true">⇧</span>
+            <strong>Перетащите защищённый файл сюда</strong>
+            <p>TXT, DOCX или PDF</p>
+            <span class="btn primary">Выбрать документ</span>
+            <input id="restoreFileInput" type="file" accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+          </label>
+          <div class="support-note" id="restoreSourceStatus">Файл не выбран</div>
+        </div>
+
+        <div class="hidden" id="restoreTextInputPanel">
+          <label class="field-label" for="restoreInput">Защищённый текст</label>
+          <textarea class="large-input restore-input" id="restoreInput" placeholder="Вставьте защищённый текст с обозначениями вроде [[ФИО_001]]…"></textarea>
+          <div class="input-footer"><span class="muted" id="restoreCharCount">0 знаков</span></div>
+        </div>
+
+        <section class="restore-key-section" aria-labelledby="restoreKeyTitle">
+          <div class="restore-key-copy">
+            <strong id="restoreKeyTitle">Ключ восстановления</strong>
+            <span>Загрузите JSON-ключ, который был создан вместе с защищённым документом.</span>
+          </div>
+          <label class="btn ghost restore-key-dropzone" id="restoreMapDropzone" for="restoreMapFileInput">Выбрать ключ<input id="restoreMapFileInput" type="file" accept=".json,application/json" hidden></label>
+          <select id="restoreMapSelect" aria-label="Ключ восстановления">
+            <option value="current">Ключ текущего документа</option>
+          </select>
+          <div class="restore-submit">
             <button class="btn primary" id="restoreRunButton" type="button">Восстановить данные</button>
-          </article>
-        </div>
+          </div>
+          <div class="map-source-status" id="restoreMapStatus">Ключ для текущего документа пока не создан.</div>
+        </section>
 
         <div class="notice hidden" id="restoreNotice"></div>
-        <div class="summary-grid restore-metrics hidden" id="restoreMetrics">
-          <div class="metric ok"><b id="restoredCount">0</b><span>замен восстановлено</span></div>
-          <div class="metric warning"><b id="unknownTokenCount">0</b><span>неизвестных обозначений</span></div>
-          <div class="metric"><b id="unusedTokenCount">0</b><span>замен не использовано</span></div>
-          <div class="metric"><b id="mapEntryCount">0</b><span>значений в ключе</span></div>
-        </div>
-
-        <div class="document-preview-grid hidden" id="restorePreviewGrid">
-          <article class="preview-card document-window protected-document">
-            <header><span><i class="word-mark safe-mark" aria-hidden="true">✓</i> Восстановленный документ</span><span></span></header>
-            <div class="document-desk"><div class="preview-text restored document-page" id="restoreAfterPreview" role="document" aria-label="Восстановленный документ"></div></div>
-          </article>
-        </div>
-        <div class="actions hidden" id="restoreActions">
+        <div class="actions restore-actions hidden" id="restoreActions">
           <button class="btn primary" id="downloadRestoredWordButton" type="button">Скачать восстановленный Word</button>
           <button class="btn ghost" id="downloadRestoredButton" type="button">Скачать восстановленный текст</button>
           <button class="btn secondary" id="copyRestoredButton" type="button">Скопировать результат</button>

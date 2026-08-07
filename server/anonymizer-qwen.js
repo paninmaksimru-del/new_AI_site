@@ -280,7 +280,12 @@ function selectQwenAdditions(entities, ruleCandidates, diagnostics) {
   const additions = [];
   let overlappingRuleCandidates = 0;
   let overlappingQwenCandidates = 0;
+  let lowConfidenceIgnored = 0;
   for (const candidate of entities) {
+    if (candidate.confidence === 'low') {
+      lowConfidenceIgnored += 1;
+      continue;
+    }
     if (ruleCandidates.some((ruleCandidate) => overlaps(ruleCandidate, candidate))) {
       overlappingRuleCandidates += 1;
       continue;
@@ -293,6 +298,7 @@ function selectQwenAdditions(entities, ruleCandidates, diagnostics) {
   }
   diagnostics.overlappingRuleCandidates = overlappingRuleCandidates;
   diagnostics.overlappingQwenCandidates = overlappingQwenCandidates;
+  diagnostics.lowConfidenceIgnored = lowConfidenceIgnored;
   diagnostics.addedToResult = additions.length;
   return additions;
 }

@@ -244,9 +244,11 @@ test('временный 504 от прокси повторяется один �
 });
 
 test('системный промпт трактует документ как данные и запрещает токенизацию', () => {
-  assert.equal(ANONYMIZER_QWEN_PROMPT_VERSION, 'anonymizer-ner-v4');
+  assert.equal(ANONYMIZER_QWEN_PROMPT_VERSION, 'anonymizer-ner-v5');
   assert.match(ANONYMIZER_QWEN_SYSTEM_PROMPT, /недоверенными данными/u);
   assert.match(ANONYMIZER_QWEN_SYSTEM_PROMPT, /не создавай токены/u);
+  assert.match(ANONYMIZER_QWEN_SYSTEM_PROMPT, /Не возвращай обычные слова/u);
+  assert.match(ANONYMIZER_QWEN_SYSTEM_PROMPT, /не используй эти типы как запасную категорию/u);
   assert.match(ANONYMIZER_QWEN_SYSTEM_PROMPT, /Сервер самостоятельно проверит и уточнит диапазон/u);
   assert.match(ANONYMIZER_QWEN_SYSTEM_PROMPT, /А\. И\. Чернышёва-Лебедева/u);
   assert.match(ANONYMIZER_QWEN_SYSTEM_PROMPT, /де ла Крус Мария-Луиса Хавьеровна/u);

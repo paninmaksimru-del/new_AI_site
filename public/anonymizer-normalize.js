@@ -165,9 +165,12 @@ function normalizeEmailSpacing(units, corrections) {
   };
   compactAround('@');
 
-  // Dots are compacted only inside a token that already contains @.
+  // Dots are compacted only inside an email-shaped token with a plausible
+  // top-level domain. This repairs OCR forms such as "example . ru", but does
+  // not join the sentence boundary in "example.test. Address".
   const text = textOf(output);
-  const emailWindow = /[^\s<>;,]+@[^\s<>;,]+/gu;
+  const topLevelDomain = "(?:[A-Z]{2}|COM|NET|ORG|GOV|EDU|INFO|BIZ|ONLINE|SITE|TECH|PRO|NAME|AERO|MUSEUM|TRAVEL|XYZ|TOP|SHOP|STORE|APP|DEV|CLOUD|TEST)";
+  const emailWindow = new RegExp(`[A-Z0-9._%+-]+@[A-Z0-9-]+(?:\\s*\\.\\s*[A-Z0-9-]+)*?\\s*\\.\\s*${topLevelDomain}(?![A-Z0-9-])`, "giu");
   const ranges = [];
   let match;
   while ((match = emailWindow.exec(text)) !== null) ranges.push({ start: match.index, end: match.index + match[0].length });

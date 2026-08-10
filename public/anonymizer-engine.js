@@ -3,7 +3,7 @@ import { mapEntityToSource, normalizeTextWithMap } from "./anonymizer-normalize.
 const TYPE_DEFINITIONS = {
   PERSON: { label: "ФИО", token: "ФИО", defaultAction: "MASK", critical: true, priority: 100 },
   ADDRESS: { label: "Адрес", token: "АДРЕС", defaultAction: "MASK", critical: true, priority: 95 },
-  PHONE: { label: "Телефон", token: "ТЕЛЕФОН", defaultAction: "MASK", critical: true, priority: 120 },
+  PHONE: { label: "Телефон", token: "ТЕЛЕФОН", defaultAction: "MASK", critical: true, priority: 155 },
   EMAIL: { label: "Электронная почта", token: "EMAIL", defaultAction: "MASK", critical: true, priority: 125 },
   PASSPORT: { label: "Паспорт", token: "ПАСПОРТ", defaultAction: "MASK", critical: true, priority: 150 },
   SNILS: { label: "СНИЛС", token: "СНИЛС", defaultAction: "MASK", critical: true, priority: 145 },
@@ -212,7 +212,10 @@ function detectEntitiesRaw(input) {
   const found = [];
 
   // Контакты: после нормализации поддерживаются пробелы вокруг @, переносы и OCR-цифры.
-  addMatches(text, "EMAIL", /[A-ZА-ЯЁ0-9._%+-]+@[A-ZА-ЯЁ0-9-]+(?:\s*\.\s*[A-ZА-ЯЁ0-9-]+)+/giu, found, { confidence: "high" });
+  // Нормализация уже убирает OCR-пробелы вокруг @ и точек. Здесь домен
+  // намеренно ASCII-only: иначе точка в конце email и следующее русское слово
+  // (например, «. Адрес») ошибочно становились продолжением домена.
+  addMatches(text, "EMAIL", /[A-Z0-9._%+-]+@[A-Z0-9-]+(?:\.[A-Z0-9-]+)+/giu, found, { confidence: "high" });
   addMatches(text, "PHONE", /(?<!\d)(?:\+?7|8)(?:[\s\-()]{0,4}\d){10}(?:\s*(?:доб\.?|добавочный)\s*\d{1,6})?(?!\d)/giu, found, { confidence: "high" });
   addMatches(text, "PHONE", /(?:тел(?:ефон)?|моб(?:ильный)?|контактный\s+телефон)\s*[:№]?\s*((?:\d[\s\-()]{0,4}){9,11}\d)/giu, found, { group: 1, confidence: "high" });
 
@@ -255,15 +258,15 @@ function detectEntitiesRaw(input) {
   addMatches(text, "PERSON", /(?:ФИО|заявитель|гражданин(?:ка)?|представитель|директор|подписант|руководитель|начальник|получатель|отправитель)\s*[:\-]?\s*([А-ЯЁ]\.?\s*[А-ЯЁ]\.?\s*[А-ЯЁ][а-яё-]{2,30}|[А-ЯЁ][а-яё-]{2,30}\s+[А-ЯЁ]\.?\s*[А-ЯЁ]\.?)\b/giu, found, { group: 1, confidence: "medium", source: "rules-ocr" });
   addMatches(text, "PERSON", /(?:ФИО|заявитель|гражданин(?:ка)?|представитель|получатель)\s*[:\-]?\s*([A-Z][A-Za-z'-]{1,30}\s+[A-Z][A-Za-z'-]{1,30}(?:\s+[A-Z][A-Za-z'-]{1,30})?)/gu, found, { group: 1, confidence: "medium", source: "rules-latin" });
 
-  // Адреса: с явной меткой и типовой структурой без метки.
-  // Свободный текст после слова «адрес» больше не захватываем. Метка должна
-  // быть отделена двоеточием/тире; фразы «адрес электронной почты указан…»
-  // остаются обычным текстом, а сам e-mail найдёт отдельное строгое правило.
-  // Точку считаем концом адреса, кроме общеупотребительных сокращений
-  // «г.», «ул.», «д.» и т. п. Это не даёт одному совпадению съесть следующие
-  // предложения документа.
-  const addressClause = String.raw`(?:(?:\b(?:г|ул|д|кв|корп|стр|пер|ш|наб)\.)|[^.\n;]){8,180}`;
-  const hasAddressEvidence = (value) => /(?:\b\d{6}\b|(?:\b(?:г|ул|д|кв|корп|стр|пер|ш|наб)\.|город(?:е|а)?|улиц(?:а|е|у|ы)|проспект(?:е|а)?|переулок(?:е|а)?|шоссе|набережн(?:ая|ой)|дом(?:е|а)?|квартир(?:а|е|у))[^.\n;]{0,100}\d)/iu.test(value);
+  // Адреса: строгая метка с разделителем и типовая структура без метки.
+  // Свободный текст после слова «адрес» не захватываем, поэтому фраза
+  // «адрес электронной почты указан…» остаётся обычным текстом.
+  const addressAbbreviation = String.raw`(?<![А-ЯЁа-яё])(?:г|ул|д|кв|корп|стр|пер|ш|наб|оф)\.`;
+  const addressClause = String.raw`(?:(?:${addressAbbreviation})|[^.\n;]){8,180}`;
+  const addressEvidence = new RegExp(`(?:\\b\\d{6}\\b|${addressAbbreviation}\\s*[А-ЯЁ0-9]|(?:город|улиц(?:а|е|у|ы)|проспект(?:е|а)?|переулок(?:е|а)?|шоссе|набережн(?:ая|ой)|дом(?:е|а)?|квартир(?:а|е|у)|офис)\\s+[А-ЯЁ0-9]|[А-ЯЁ][А-ЯЁа-яё0-9 .'’-]{1,60}\\s+(?:улица|проспект|переулок|шоссе|набережная|бульвар)\\s*,?\\s*\\d)`, "iu");
+  const hasAddressEvidence = (value) => addressEvidence.test(value);
+  const addressNumber = String.raw`\d+(?:[А-ЯЁа-яё](?![А-ЯЁа-яё]))?`;
+  const structuredAddress = String.raw`(?:\d{6},?\s*)?(?:(?:(?:г\.?|город)\s+)?[А-ЯЁ][А-ЯЁа-яё .-]{1,50},\s*)?(?:(?:ул\.?|улица|пр-т|проспект|пер\.?|переулок|ш\.?|шоссе|наб\.?|набережная|б-р|бульвар)\s+[А-ЯЁ0-9][А-ЯЁа-яё0-9 .'’-]{1,60}|[А-ЯЁ0-9][А-ЯЁа-яё0-9 .'’-]{1,60}?\s+(?:улица|проспект|переулок|шоссе|набережная|бульвар))\s*,?\s*(?:д\.?|дом)\s*${addressNumber}(?:\s*,?\s*(?:корп\.?|корпус|стр\.?|строение|кв\.?|квартира|оф\.?|офис)\s*${addressNumber})*`;
   addMatches(text, "ADDRESS", new RegExp(`(?<![-А-ЯЁа-яё])(?:адрес(?:\\s+регистрации|\\s+места\\s+жительства|\\s+проживания|\\s+корреспонденции)?|место\\s+(?:жительства|рождения|проживания))\\s*[:\\-]\\s*(${addressClause})`, "giu"), found, {
     group: 1,
     confidence: "high",
@@ -274,7 +277,19 @@ function detectEntitiesRaw(input) {
     confidence: "medium",
     reject: (value) => !hasAddressEvidence(value)
   });
-  addMatches(text, "ADDRESS", /(?<!\d)(\d{6},?\s+(?:г\.?\s*)?[А-ЯЁ][А-ЯЁа-яё .-]{2,50},?\s+(?:ул\.?|улица|пр-т|проспект|пер\.?|переулок|ш\.?|шоссе|наб\.?|набережная)\s+[А-ЯЁ0-9][А-ЯЁа-яё0-9 .-]{1,60},?\s+(?:д\.?|дом)\s*\d+[А-ЯЁа-яё]?(?:\s*,?\s*(?:корп\.?|корпус|стр\.?|строение|кв\.?|квартира)\s*\d+[А-ЯЁа-яё]?)*)/giu, found, { group: 1, confidence: "medium" });
+  // Word иногда склеивает подпись ячейки и значение: «Адрес регистрацииг.…».
+  // Структурная проверка позволяет безопасно принять такой вариант без
+  // возврата к широкому захвату любого текста после слова «адрес».
+  addMatches(text, "ADDRESS", new RegExp(`(?:адрес(?:\\s+регистрации|\\s+места\\s+жительства|\\s+проживания|\\s+корреспонденции))\\s*(${structuredAddress})`, "giu"), found, {
+    group: 1,
+    confidence: "high",
+    priority: 110
+  });
+  addMatches(text, "ADDRESS", new RegExp(`(?<![А-ЯЁа-яёA-Z0-9-])(${structuredAddress})`, "giu"), found, {
+    group: 1,
+    confidence: "high",
+    priority: 105
+  });
 
   // Номера документов, суммы и организации сохраняются как отдельные чувствительные категории.
   addMatches(text, "CONTRACT_NUMBER", /(?:договор[а-яё]*|контракт[а-яё]*|соглашени[а-яё]*|доверенност[а-яё]*|обращени[а-яё]*|заявлени[а-яё]*)\s*(?:от\s*\d{1,2}[.\/-]\d{1,2}[.\/-]\d{2,4}\s*)?№\s*([A-ZА-ЯЁ0-9](?:[A-ZА-ЯЁ0-9_.\/-]{0,39}[A-ZА-ЯЁ0-9])?)/giu, found, { group: 1, confidence: "medium" });

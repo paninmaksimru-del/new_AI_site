@@ -316,3 +316,14 @@ test('canonical принимается только когда такая фор
   assert.equal(accepted.entities[0].canonicalValue, 'Иванова Мария Александровна');
   assert.equal(accepted.diagnostics.canonicalized, 1);
 });
+
+test('Qwen-кандидат с оборванным адресным сокращением отклоняется', () => {
+  const text = 'Адрес проживания: 190000, г. Санкт-Петербург, Невский проспект, д. 28.';
+  const value = '190000, г';
+  const start = text.indexOf(value);
+  const result = inspectQwenEntities(text, { entities: [{
+    type: 'ADDRESS', value, start, end: start + value.length, confidence: 'high'
+  }] });
+  assert.equal(result.entities.length, 0);
+  assert.equal(result.diagnostics.reasons.address_incomplete, 1);
+});

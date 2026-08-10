@@ -434,3 +434,58 @@ test("обычные номера судебных дел, законов и д�
   const text = "Дело № А40-177621/2017 рассмотрено 12.03.2026. Федеральный закон № 152-ФЗ применяется судом.";
   assert.equal(applyReplacements(text, detectEntities(text)).text, text);
 });
+
+test("email не захватывает следующее русское слово даже без пробела", () => {
+  for (const separator of [". ", "."]) {
+    const text = `Почта: ivanov.test@example.test${separator}Адрес регистрации: 125009, г. Москва, ул. Тверская, д. 10.`;
+    const entities = detectEntities(text);
+    const email = entities.find((item) => item.type === "EMAIL");
+    assert.equal(email?.value, "ivanov.test@example.test");
+    assert.equal(entities.find((item) => item.type === "ADDRESS")?.value, "125009, г. Москва, ул. Тверская, д. 10");
+  }
+});
+
+test("адрес с сокращениями не обрывается после г. и поддерживает тип улицы после названия", () => {
+  const text = "Адрес проживания: 190000, г. Санкт-Петербург, Невский проспект, д. 28.";
+  const address = detectEntities(text).find((item) => item.type === "ADDRESS");
+  assert.equal(address?.value, "190000, г. Санкт-Петербург, Невский проспект, д. 28");
+});
+
+test("адрес без индекса и адрес из склеенных ячеек Word маскируются полностью", () => {
+  const regular = "Адрес: г. Москва, ул. Тверская, д. 7, корп. 2, оф. 314";
+  assert.equal(
+    detectEntities(regular).find((item) => item.type === "ADDRESS")?.value,
+    "г. Москва, ул. Тверская, д. 7, корп. 2, оф. 314"
+  );
+
+  const glued = "Адрес регистрацииг. Москва, ул. Тверская, д. 7, корп. 2, оф. 314Дата рождения01.01.1980";
+  const entities = detectEntities(glued);
+  assert.equal(
+    entities.find((item) => item.type === "ADDRESS")?.value,
+    "г. Москва, ул. Тверская, д. 7, корп. 2, оф. 314"
+  );
+  assert.equal(entities.find((item) => item.type === "BIRTH_DATE")?.value, "01.01.1980");
+});
+
+test("телефон с валидной контрольной суммой ИНН остаётся телефоном", () => {
+  for (const phone of ["+7 900 104-04-04", "+7 900 112-12-12"]) {
+    const entities = detectEntities(`Телефон: ${phone}`);
+    assert.equal(entities.find((item) => item.type === "PHONE")?.value, phone);
+    assert.equal(entities.some((item) => item.type === "INN"), false);
+  }
+});
+
+test("безопасные деловые фразы не маскируются и ПД в конце текста свыше лимита Qwen находятся", () => {
+  const safeParagraph = "Директор Проекта Развития рассмотрел результаты. Адрес электронной почты указан в инструкции. Получатель корреспонденции проживает временно. По результатам проверки накопились ошибки. ";
+  const prefix = safeParagraph.repeat(Math.ceil(61_000 / safeParagraph.length));
+  const tail = "Заявитель: Иванов Иван Иванович. Телефон: +7 902 111-22-33. Почта: end.person@example.test. Адрес: 420111, г. Казань, ул. Баумана, д. 7.";
+  const text = `${prefix}${tail}`;
+  const entities = detectEntities(text);
+  assert.ok(text.length > 60_000);
+  assert.deepEqual(
+    entities.map((item) => item.type),
+    ["PERSON", "PHONE", "EMAIL", "ADDRESS"]
+  );
+  assert.equal(entities.find((item) => item.type === "EMAIL")?.value, "end.person@example.test");
+  assert.equal(entities.find((item) => item.type === "ADDRESS")?.value, "420111, г. Казань, ул. Баумана, д. 7");
+});

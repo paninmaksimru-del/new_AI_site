@@ -200,6 +200,14 @@ export function inspectQwenEntities(text, payload, ruleCandidates = []) {
       countRejection(diagnostics, 'value_missing');
       continue;
     }
+    // Модель иногда возвращает только индекс и первое сокращение полного
+    // адреса (например, «190000, г»). Такой диапазон формально точный, но после
+    // маскировки оставляет город, улицу и дом открытыми, поэтому не принимаем
+    // заведомо оборванные адресные кандидаты.
+    if (type === 'ADDRESS' && /(?:^|[,\s])(?:г|ул|д|кв|корп|стр|пер|ш|наб|оф)\.?$/iu.test(value.trim())) {
+      countRejection(diagnostics, 'address_incomplete');
+      continue;
+    }
     const range = resolvedCandidateRange(sourceText, value, type, reportedStart, reportedEnd, seen);
     if (range?.duplicate) {
       countRejection(diagnostics, 'duplicate');

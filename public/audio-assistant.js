@@ -283,7 +283,7 @@ $("#transcriptionForm").addEventListener("submit", async event => {
     return;
   }
   const progressId=makeProgressId();
-  const data=new FormData(); data.append("audio",file); data.append("language",$("#language").value); data.append("timestamp_granularity",$("#timestamps").value); data.append("speaker_labels",$("#speakers").checked ? "true":"false"); data.append("progress_id",progressId); if ($("#contextHint").value.trim()) data.append("context_hint",$("#contextHint").value.trim());
+  const data=new FormData(); data.append("audio",file); data.append("progress_id",progressId);
   const button=$("#transcribeButton"); setBusy(button,true,"Транскрибировать");
   const started=Date.now();
   transcriptionStartedAt=Date.now(); activeTranscriptionProgressId=progressId;

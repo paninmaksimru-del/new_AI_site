@@ -59,6 +59,9 @@ test('страница показывает форматы файлов и со�
   assert.match(routes, /transcriptionServiceUrl\('health'\)/);
   assert.doesNotMatch(routes, /voice-log-server/);
   assert.match(html, /WAV, MP3, MP4, AVI, MOV, MKV, WEBM и др\./);
+  assert.match(html, /язык, таймкоды и спикеры определяются автоматически/);
+  assert.doesNotMatch(html, /id="language"|id="timestamps"|id="speakers"|id="contextHint"/);
+  assert.doesNotMatch(script, /data\.append\("(?:language|timestamp_granularity|speaker_labels|context_hint)"/);
   assert.match(script, /health\.transcription_service\?\.healthy===true/);
   assert.match(script, /mode==="real"\?"Работает":"Недоступен"/);
 });

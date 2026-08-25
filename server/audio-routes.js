@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import multer from 'multer';
 import { query } from './db.js';
 import { optionalAuth, requireAdmin, requireKbAuth } from './auth.js';
-import { MAX_AUDIO_UPLOAD_BYTES, MEDIA_COMPRESSION_THRESHOLD_BYTES, prepareMedia } from './audio-media.js';
+import { MAX_AUDIO_UPLOAD_BYTES, MEDIA_COMPRESSION_TARGET_BYTES, prepareMedia } from './audio-media.js';
 import { getAdminAudioSettings, getAudioSetting, loadAudioSettings, saveAdminAudioSettings } from './audio-settings.js';
 import { DEFAULT_WHISPERX_BASE_URL, parseWhisperXCombinedResponse, parseWhisperXHealth, whisperXUrl } from './whisperx.js';
 
@@ -812,7 +812,8 @@ export async function setupAudioRoutes(app) {
       transcription_real_mode_allowed: !isMock && String(getAudioSetting('TRANSCRIPTION_PROXY_CONTRACT_VERIFIED')).toLowerCase() === 'true',
       summarizer_real_mode_allowed: !isMock && String(getAudioSetting('SUMMARIZER_PROXY_CONTRACT_VERIFIED')).toLowerCase() === 'true',
       max_upload_bytes: MAX_UPLOAD_BYTES,
-      compression_threshold_bytes: Math.max(1, Number(process.env.AUDIO_ASSISTANT_COMPRESSION_THRESHOLD_BYTES) || MEDIA_COMPRESSION_THRESHOLD_BYTES)
+      compression_enabled: true,
+      compression_target_bytes: Math.max(1, Number(process.env.AUDIO_ASSISTANT_COMPRESSION_TARGET_BYTES) || MEDIA_COMPRESSION_TARGET_BYTES)
     });
   });
 

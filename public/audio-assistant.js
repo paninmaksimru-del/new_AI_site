@@ -13,7 +13,6 @@ let activeTranscriptionProgressId = null;
 let isAuthenticated = Boolean(localStorage.getItem("auth_token"));
 let profileName = "";
 let maxUploadBytes = 1000 * 1024 * 1024;
-let compressionThresholdBytes = 50 * 1024 * 1024;
 const supportedFileFormats = "Принимаются форматы: WAV, MP3, MP4, AVI, MOV, MKV, WEBM и др.";
 
 function activeTranscriptionStorageKey() {
@@ -109,18 +108,15 @@ function renderFileHint(file = $("#audioFile")?.files?.[0]) {
   const limit = bytes(maxUploadBytes);
   hint.dataset.state = "";
   if (!file) {
-    hint.textContent = `Максимальный размер — ${limit}; сжатие включается от ${bytes(compressionThresholdBytes)}. ${supportedFileFormats}`;
+    hint.textContent = `Максимальный размер — ${limit}; каждый файл сжимается перед отправкой. ${supportedFileFormats}`;
     return;
   }
   if (file.size > maxUploadBytes) {
     hint.dataset.state = "error";
     hint.textContent = `${bytes(file.size)} — файл превышает лимит ${limit}. ${supportedFileFormats}`;
-  } else if (file.size >= compressionThresholdBytes) {
+  } else {
     hint.dataset.state = "compress";
     hint.textContent = `${bytes(file.size)} из допустимых ${limit} · файл будет сжат перед отправкой. ${supportedFileFormats}`;
-  } else {
-    hint.dataset.state = "ok";
-    hint.textContent = `${bytes(file.size)} из допустимых ${limit} · готов к загрузке. ${supportedFileFormats}`;
   }
 }
 
@@ -384,7 +380,6 @@ async function initialize() {
   try {
     const health=await api("/api/audio-assistant/health");
     maxUploadBytes=Number(health.max_upload_bytes) || maxUploadBytes;
-    compressionThresholdBytes=Number(health.compression_threshold_bytes) || compressionThresholdBytes;
     renderFileHint();
     applyAuthState(Boolean(health.authenticated));
     const serviceHealthy=health.transcription_service?.healthy===true;

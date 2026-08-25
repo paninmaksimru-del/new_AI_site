@@ -64,7 +64,11 @@ test('страница показывает форматы файлов и со�
   assert.equal(MAX_AUDIO_UPLOAD_BYTES, 1000 * 1024 * 1024);
   assert.match(envExample, /AUDIO_ASSISTANT_MAX_UPLOAD_BYTES=1048576000/);
   assert.match(compose, /AUDIO_ASSISTANT_MAX_UPLOAD_BYTES=\$\{AUDIO_ASSISTANT_MAX_UPLOAD_BYTES:-1048576000\}/);
+  assert.match(compose, /AUDIO_ASSISTANT_COMPRESSED_BITRATES=\$\{AUDIO_ASSISTANT_COMPRESSED_BITRATES:-32k,24k,16k\}/);
   assert.match(html, /Максимальный размер — 1 000 МБ \(1 ГБ\)/);
+  assert.match(html, /Все файлы сжимаются перед отправкой/);
+  assert.match(script, /каждый файл сжимается перед отправкой/);
+  assert.doesNotMatch(script, /compressionThresholdBytes|compression_threshold_bytes/);
   assert.match(script, /maxUploadBytes = 1000 \* 1024 \* 1024/);
   assert.match(html, /WAV, MP3, MP4, AVI, MOV, MKV, WEBM и др\./);
   assert.match(html, /язык, таймкоды и спикеры определяются автоматически/);

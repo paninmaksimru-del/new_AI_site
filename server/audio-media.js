@@ -7,8 +7,7 @@ import { promisify } from 'util';
 const execFileAsync = promisify(execFile);
 const DIRECT_MEDIA_TYPES = new Set(['audio/wav', 'audio/x-wav', 'audio/mpeg', 'audio/mp4', 'audio/aac', 'audio/ogg', 'audio/webm', 'audio/flac', 'video/mp4', 'video/webm']);
 const CONVERTIBLE_MEDIA_EXTENSIONS = new Set(['.3g2', '.3gp', '.aif', '.aiff', '.amr', '.avi', '.caf', '.flv', '.m4a', '.m4v', '.mka', '.mkv', '.mov', '.mts', '.m2ts', '.oga', '.opus', '.ra', '.rm', '.wma', '.wmv']);
-export const MEDIA_COMPRESSION_THRESHOLD_BYTES = 50 * 1024 * 1024;
-const MEDIA_COMPRESSION_TARGET_BYTES = 50 * 1024 * 1024;
+export const MEDIA_COMPRESSION_TARGET_BYTES = 50 * 1024 * 1024;
 
 export const MAX_AUDIO_UPLOAD_BYTES = 1000 * 1024 * 1024;
 
@@ -39,24 +38,9 @@ export async function prepareMedia(file) {
   const extension = extname(file.originalname || '').toLowerCase() || '.bin';
   const isDirectMedia = DIRECT_MEDIA_TYPES.has(sourceType);
   const isMedia = sourceType.startsWith('audio/') || sourceType.startsWith('video/') || CONVERTIBLE_MEDIA_EXTENSIONS.has(extension);
-  const compressionThreshold = positiveNumber(process.env.AUDIO_ASSISTANT_COMPRESSION_THRESHOLD_BYTES, MEDIA_COMPRESSION_THRESHOLD_BYTES);
   const compressionTarget = positiveNumber(process.env.AUDIO_ASSISTANT_COMPRESSION_TARGET_BYTES, MEDIA_COMPRESSION_TARGET_BYTES);
   const maxUploadBytes = positiveNumber(process.env.AUDIO_ASSISTANT_MAX_UPLOAD_BYTES, MAX_AUDIO_UPLOAD_BYTES);
-  const needsCompression = file.size >= compressionThreshold;
 
-  if (isDirectMedia && !needsCompression) {
-    return {
-      ...file,
-      converted: false,
-      compressed: false,
-      compressionBitrate: null,
-      compressionRatio: null,
-      compressionTargetMet: null,
-      preparationSteps: [],
-      sourceType,
-      sourceSize: file.size
-    };
-  }
   if (!isMedia) {
     const error = new Error('Файл не похож на поддерживаемое аудио или видео.');
     error.code = 'unsupported_media_format';
@@ -68,8 +52,7 @@ export async function prepareMedia(file) {
   const inputPath = join(workDir, `input${extension}`);
   try {
     await writeFile(inputPath, file.buffer);
-    const convertedBitrate = /^\d+k$/i.test(String(process.env.AUDIO_ASSISTANT_BITRATE || '64k')) ? process.env.AUDIO_ASSISTANT_BITRATE || '64k' : '64k';
-    const bitrates = needsCompression ? compressionBitrates() : [convertedBitrate];
+    const bitrates = compressionBitrates();
     let buffer = Buffer.alloc(0);
     let compressionBitrate = bitrates.at(-1);
 
@@ -86,7 +69,7 @@ export async function prepareMedia(file) {
       });
       buffer = await readFile(outputPath);
       compressionBitrate = bitrate;
-      if (buffer.length && (!needsCompression || buffer.length <= compressionTarget)) break;
+      if (buffer.length && buffer.length <= compressionTarget) break;
     }
 
     if (!buffer.length) {
@@ -112,7 +95,7 @@ export async function prepareMedia(file) {
       compressed: true,
       compressionBitrate,
       compressionRatio: Number((buffer.length / file.size).toFixed(4)),
-      compressionTargetMet: needsCompression ? buffer.length <= compressionTarget : null,
+      compressionTargetMet: buffer.length <= compressionTarget,
       preparationSteps: [!isDirectMedia ? 'convert' : null, 'compress'].filter(Boolean),
       sourceType,
       sourceSize: file.size

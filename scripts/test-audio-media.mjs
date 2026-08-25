@@ -27,7 +27,6 @@ function makeWave({ durationSeconds = 2, frequency = 880, sampleRate = 16000 } =
 const source = makeWave();
 const sourceFile = { buffer: source, size: source.length, mimetype: 'audio/wav', originalname: 'test.wav' };
 
-process.env.AUDIO_ASSISTANT_COMPRESSION_THRESHOLD_BYTES = '100';
 process.env.AUDIO_ASSISTANT_COMPRESSION_TARGET_BYTES = '5000';
 const compressed = await prepareMedia(sourceFile);
 assert.equal(compressed.mimetype, 'audio/mpeg');
@@ -37,10 +36,12 @@ assert.equal(compressed.compressionBitrate, '16k');
 assert.ok(compressed.size > 0 && compressed.size < source.length);
 assert.equal(compressed.compressionTargetMet, true);
 
-process.env.AUDIO_ASSISTANT_COMPRESSION_THRESHOLD_BYTES = '999999999';
-const passthrough = await prepareMedia(sourceFile);
-assert.equal(passthrough.compressed, false);
-assert.equal(passthrough.buffer, source);
+process.env.AUDIO_ASSISTANT_COMPRESSION_TARGET_BYTES = '999999999';
+const alwaysCompressed = await prepareMedia(sourceFile);
+assert.equal(alwaysCompressed.compressed, true);
+assert.equal(alwaysCompressed.mimetype, 'audio/mpeg');
+assert.equal(alwaysCompressed.compressionBitrate, '32k');
+assert.notEqual(alwaysCompressed.buffer, source);
 
 const converted = await prepareMedia({ ...sourceFile, mimetype: 'application/octet-stream', originalname: 'тест (видео).avi' });
 assert.equal(converted.converted, true);

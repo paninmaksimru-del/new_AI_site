@@ -34,6 +34,7 @@ services:
       - QWEN_REQUEST_TIMEOUT_MS=${QWEN_REQUEST_TIMEOUT_MS:-2400000}
       - QWEN_PROXY_TOKEN=${QWEN_PROXY_TOKEN:-}
       - QWEN_SETTINGS_KEY=${QWEN_SETTINGS_KEY:-}
+      - AUDIO_ASSISTANT_MAX_UPLOAD_BYTES=${AUDIO_ASSISTANT_MAX_UPLOAD_BYTES:-1048576000}
     volumes:
       - uploads_data:/app/data/uploads
     depends_on:

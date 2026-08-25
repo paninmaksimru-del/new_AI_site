@@ -7,6 +7,7 @@ import {
   parseWhisperXHealth,
   whisperXUrl
 } from '../server/whisperx.js';
+import { MAX_AUDIO_UPLOAD_BYTES } from '../server/audio-media.js';
 
 const root = new URL('../', import.meta.url);
 
@@ -49,15 +50,22 @@ test('health считается успешным только при загру�
 });
 
 test('страница показывает форматы файлов и состояние реального health-check', async () => {
-  const [routes, html, script] = await Promise.all([
+  const [routes, html, script, envExample, compose] = await Promise.all([
     readFile(new URL('server/audio-routes.js', root), 'utf8'),
     readFile(new URL('public/audio-assistant.html', root), 'utf8'),
-    readFile(new URL('public/audio-assistant.js', root), 'utf8')
+    readFile(new URL('public/audio-assistant.js', root), 'utf8'),
+    readFile(new URL('.env.example', root), 'utf8'),
+    readFile(new URL('docker-compose.yml', root), 'utf8')
   ]);
 
   assert.match(routes, /transcriptionServiceUrl\('api\/v1\/combined'\)/);
   assert.match(routes, /transcriptionServiceUrl\('health'\)/);
   assert.doesNotMatch(routes, /voice-log-server/);
+  assert.equal(MAX_AUDIO_UPLOAD_BYTES, 1000 * 1024 * 1024);
+  assert.match(envExample, /AUDIO_ASSISTANT_MAX_UPLOAD_BYTES=1048576000/);
+  assert.match(compose, /AUDIO_ASSISTANT_MAX_UPLOAD_BYTES=\$\{AUDIO_ASSISTANT_MAX_UPLOAD_BYTES:-1048576000\}/);
+  assert.match(html, /Максимальный размер — 1 000 МБ \(1 ГБ\)/);
+  assert.match(script, /maxUploadBytes = 1000 \* 1024 \* 1024/);
   assert.match(html, /WAV, MP3, MP4, AVI, MOV, MKV, WEBM и др\./);
   assert.match(html, /язык, таймкоды и спикеры определяются автоматически/);
   assert.doesNotMatch(html, /id="language"|id="timestamps"|id="speakers"|id="contextHint"/);

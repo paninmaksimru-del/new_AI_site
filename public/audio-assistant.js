@@ -12,7 +12,7 @@ let transcriptionProgressHideTimer = null;
 let activeTranscriptionProgressId = null;
 let isAuthenticated = Boolean(localStorage.getItem("auth_token"));
 let profileName = "";
-let maxUploadBytes = 200 * 1024 * 1024;
+let maxUploadBytes = 1000 * 1024 * 1024;
 let compressionThresholdBytes = 50 * 1024 * 1024;
 const supportedFileFormats = "Принимаются форматы: WAV, MP3, MP4, AVI, MOV, MKV, WEBM и др.";
 
@@ -126,7 +126,7 @@ function renderFileHint(file = $("#audioFile")?.files?.[0]) {
 
 function setBusy(button, busy, normal) { button.disabled = busy; button.toggleAttribute("aria-busy", busy); button.textContent = busy ? "Обработка…" : normal; }
 function statusLabel(value) { return ({created:"Создано",processing:"В работе",pending:"Ожидает",completed:"Готово",failed:"Ошибка",timeout:"Таймаут"})[value] || value; }
-function bytes(value) { return value < 1048576 ? `${(value/1024).toFixed(1)} КБ` : `${(value/1048576).toFixed(1)} МБ`; }
+function bytes(value) { return value < 1048576 ? `${(value/1024).toFixed(1)} КБ` : `${new Intl.NumberFormat("ru-RU",{maximumFractionDigits:1}).format(value/1048576)} МБ`; }
 function time(value) { if (value == null) return "--:--"; const n=Math.max(0,Math.floor(Number(value))); return `${Math.floor(n/60)}:${String(n%60).padStart(2,"0")}`; }
 
 function startTranscriptionClock() {

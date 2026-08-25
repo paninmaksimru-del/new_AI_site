@@ -10,7 +10,7 @@ const CONVERTIBLE_MEDIA_EXTENSIONS = new Set(['.3g2', '.3gp', '.aif', '.aiff', '
 export const MEDIA_COMPRESSION_THRESHOLD_BYTES = 50 * 1024 * 1024;
 const MEDIA_COMPRESSION_TARGET_BYTES = 50 * 1024 * 1024;
 
-export const MAX_AUDIO_UPLOAD_BYTES = 200 * 1024 * 1024;
+export const MAX_AUDIO_UPLOAD_BYTES = 1000 * 1024 * 1024;
 
 function positiveNumber(value, fallback) {
   const parsed = Number(value);

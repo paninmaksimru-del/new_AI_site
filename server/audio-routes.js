@@ -4,6 +4,7 @@ import { query } from './db.js';
 import { optionalAuth, requireAdmin, requireKbAuth } from './auth.js';
 import { MAX_AUDIO_UPLOAD_BYTES, MEDIA_COMPRESSION_THRESHOLD_BYTES, prepareMedia } from './audio-media.js';
 import { getAdminAudioSettings, getAudioSetting, loadAudioSettings, saveAdminAudioSettings } from './audio-settings.js';
+import { DEFAULT_WHISPERX_BASE_URL, parseWhisperXCombinedResponse, parseWhisperXHealth, whisperXUrl } from './whisperx.js';
 
 const MAX_UPLOAD_BYTES = Math.max(1, Number(process.env.AUDIO_ASSISTANT_MAX_UPLOAD_BYTES) || MAX_AUDIO_UPLOAD_BYTES);
 const upload = multer({
@@ -371,13 +372,10 @@ async function externalFetch({ operation, url, method, headers, body, timeoutMs,
   }
 }
 
-function iMoscowUrl(suffix = '') {
-  const base = (process.env.IMOSCOW_BASE_URL || 'https://i.moscow').replace(/\/$/, '');
-  const operation = (process.env.IMOSCOW_TRANSCRIPTION_OPERATION_PATH || '/api/dit/proxy/operation/voice-log-server').replace(/^\/?/, '/').replace(/\/$/, '');
+function transcriptionServiceUrl(suffix = '') {
+  const base = process.env.IMOSCOW_TRANSCRIPTION_BASE_URL || DEFAULT_WHISPERX_BASE_URL;
   const token = getAudioSetting('IMOSCOW_PROXY_TOKEN') || '';
-  const url = new URL(`${base}${operation}/${suffix}`.replace(/\/$/, ''));
-  if (token) url.searchParams.set('token', token);
-  return url;
+  return whisperXUrl(suffix, { baseUrl: base, token });
 }
 
 function iMoscowHeaders(extra = {}) {
@@ -414,46 +412,15 @@ function ensureRealModeConfigured(kind) {
   }
 }
 
-function findJobId(body) {
-  if (!body || typeof body !== 'object') return null;
-  for (const key of ['job_id', 'task_id', 'operation_id', 'request_id', 'id']) if (typeof body[key] === 'string' || typeof body[key] === 'number') return String(body[key]);
-  for (const key of ['data', 'result', 'prediction', 'output', 'response']) {
-    const found = findJobId(body[key]);
-    if (found) return found;
-  }
-  return null;
-}
-
-function normalizedSegments(body) {
-  function findSegments(value, depth = 0) {
-    if (!value || depth > 8) return [];
-    if (Array.isArray(value)) return value;
-    if (typeof value !== 'object') return [];
-    for (const key of ['segments', 'chunks', 'words']) if (Array.isArray(value[key])) return value[key];
-    for (const key of ['result', 'data', 'output', 'outputs', 'response']) {
-      const found = findSegments(value[key], depth + 1);
-      if (found.length) return found;
-    }
-    return [];
-  }
-  const candidates = findSegments(body);
-  return candidates.map(item => ({
-    text: String(item?.text || item?.transcript || item?.word || '').trim(),
-    start_seconds: Number.isFinite(Number(item?.start_seconds ?? item?.start)) ? Number(item.start_seconds ?? item.start) : null,
-    end_seconds: Number.isFinite(Number(item?.end_seconds ?? item?.end)) ? Number(item.end_seconds ?? item.end) : null,
-    speaker: item?.speaker || item?.speaker_id || item?.channel ? String(item.speaker || item.speaker_id || item.channel) : null
-  })).filter(item => item.text);
-}
-
 async function submitTranscription(file, context = {}) {
   ensureRealModeConfigured('transcription');
   const form = new FormData();
   const fieldName = process.env.IMOSCOW_UPLOAD_FIELD || 'file';
   form.append(fieldName, new Blob([file.buffer], { type: file.mimetype || 'application/octet-stream' }), file.originalname || 'audio');
   const method = process.env.IMOSCOW_UPLOAD_METHOD || 'POST';
-  const url = iMoscowUrl('upload');
+  const url = transcriptionServiceUrl('api/v1/combined');
   const { response, body, requestId } = await externalFetch({
-    operation: 'transcription.upload',
+    operation: 'transcription.combined',
     url,
     method,
     headers: iMoscowHeaders(),
@@ -463,45 +430,24 @@ async function submitTranscription(file, context = {}) {
     context
   });
   if (!response.ok) throw Object.assign(new Error('Внешний сервис отклонил аудиофайл.'), { code: 'external_unavailable', status: 502, details: { external_status: response.status, request_id: requestId } });
-  const transcript = textFromUnknown(body);
-  if (transcript) return { status: 'completed', transcript, language: body.language || body.detected_language || null, segments: normalizedSegments(body) };
-  const jobId = findJobId(body);
-  if (!jobId) throw Object.assign(new Error('Внешний сервис не вернул идентификатор задачи.'), { code: 'unknown_external_response', status: 502 });
-  return { status: 'processing', jobId };
+  const result = parseWhisperXCombinedResponse(body);
+  if (!result) throw Object.assign(new Error('Внешний сервис вернул результат неизвестного формата.'), { code: 'unknown_external_response', status: 502, details: { request_id: requestId } });
+  return { status: 'completed', ...result };
 }
 
-async function pollExternalTranscription(jobId, context = {}) {
+async function checkTranscriptionService(context = {}) {
   ensureRealModeConfigured('transcription');
-  const statusMethod = process.env.IMOSCOW_STATUS_METHOD || 'GET';
-  const statusUrl = iMoscowUrl(`process/${encodeURIComponent(jobId)}`);
-  const { response: statusResponse, body: statusBody, requestId: statusRequestId } = await externalFetch({
-    operation: 'transcription.status',
-    url: statusUrl,
-    method: statusMethod,
+  const url = transcriptionServiceUrl('health');
+  const { response, body, requestId } = await externalFetch({
+    operation: 'transcription.health',
+    url,
+    method: 'GET',
     headers: iMoscowHeaders(),
-    timeoutMs: Number(process.env.IMOSCOW_TIMEOUT_MS) || 300000,
-    requestMeta: { task_id: jobId },
+    timeoutMs: Number(process.env.IMOSCOW_HEALTH_TIMEOUT_MS) || 15000,
+    requestMeta: {},
     context
   });
-  if (!statusResponse.ok) throw Object.assign(new Error('Не удалось получить статус обработки.'), { code: 'external_unavailable', status: 502, details: { external_status: statusResponse.status, request_id: statusRequestId } });
-  const externalStatus = String(statusBody.status || statusBody.data?.status || '').toLowerCase();
-  if (['created', 'pending', 'processing', 'running', 'queued', ''].includes(externalStatus)) return { status: 'processing' };
-  if (['failed', 'error', 'cancelled'].includes(externalStatus)) throw Object.assign(new Error('Внешний сервис не смог обработать файл.'), { code: 'external_processing_failed', status: 502 });
-  const resultMethod = process.env.IMOSCOW_RESULT_METHOD || 'GET';
-  const resultUrl = iMoscowUrl(`result/${encodeURIComponent(jobId)}`);
-  const { response: resultResponse, body: resultBody, requestId: resultRequestId } = await externalFetch({
-    operation: 'transcription.result',
-    url: resultUrl,
-    method: resultMethod,
-    headers: iMoscowHeaders(),
-    timeoutMs: Number(process.env.IMOSCOW_TIMEOUT_MS) || 300000,
-    requestMeta: { task_id: jobId },
-    context
-  });
-  if (!resultResponse.ok) throw Object.assign(new Error('Не удалось получить результат обработки.'), { code: 'external_unavailable', status: 502, details: { external_status: resultResponse.status, request_id: resultRequestId } });
-  const transcript = textFromUnknown(resultBody);
-  if (!transcript) throw Object.assign(new Error('Внешний сервис вернул результат неизвестного формата.'), { code: 'unknown_external_response', status: 502 });
-  return { status: 'completed', transcript, language: resultBody.language || resultBody.detected_language || null, segments: normalizedSegments(resultBody) };
+  return { ...parseWhisperXHealth(body, response.ok), request_id: requestId };
 }
 
 function splitSentences(text) {
@@ -840,16 +786,31 @@ export async function setupAudioRoutes(app) {
     res.status(202).json({ diagnostic_id: diagnosticId });
   });
 
-  app.get('/api/audio-assistant/health', optionalUser, (req, res) => {
+  app.get('/api/audio-assistant/health', optionalUser, async (req, res) => {
+    const isMock = mockMode();
+    let transcriptionService = { healthy: false, status: 'mock', device: null, models_loaded: { whisper: false, diarization: false } };
+    if (!isMock) {
+      try {
+        transcriptionService = await checkTranscriptionService({ user_id: req.user?.id || null });
+      } catch (error) {
+        transcriptionService = {
+          healthy: false,
+          status: ['external_contract_unverified', 'external_auth_failed'].includes(error.code) ? 'not_configured' : 'unavailable',
+          device: null,
+          models_loaded: { whisper: false, diarization: false }
+        };
+      }
+    }
     res.json({
       status: 'ok',
       authenticated: Boolean(req.user),
       env: getAudioSetting('APP_ENV'),
       auth_mode: getAudioSetting('AUTH_MODE'),
       setup_mode: getAudioSetting('AUDIO_TEXT_ASSISTANT_SETUP_MODE'),
-      mock_mode: mockMode(),
-      transcription_real_mode_allowed: !mockMode() && String(getAudioSetting('TRANSCRIPTION_PROXY_CONTRACT_VERIFIED')).toLowerCase() === 'true',
-      summarizer_real_mode_allowed: !mockMode() && String(getAudioSetting('SUMMARIZER_PROXY_CONTRACT_VERIFIED')).toLowerCase() === 'true',
+      mock_mode: isMock,
+      transcription_service: transcriptionService,
+      transcription_real_mode_allowed: !isMock && String(getAudioSetting('TRANSCRIPTION_PROXY_CONTRACT_VERIFIED')).toLowerCase() === 'true',
+      summarizer_real_mode_allowed: !isMock && String(getAudioSetting('SUMMARIZER_PROXY_CONTRACT_VERIFIED')).toLowerCase() === 'true',
       max_upload_bytes: MAX_UPLOAD_BYTES,
       compression_threshold_bytes: Math.max(1, Number(process.env.AUDIO_ASSISTANT_COMPRESSION_THRESHOLD_BYTES) || MEDIA_COMPRESSION_THRESHOLD_BYTES)
     });
@@ -1019,58 +980,13 @@ export async function setupAudioRoutes(app) {
   });
 
   app.get('/api/transcriptions/:id', optionalUser, async (req, res) => {
-    const progressId = String(req.query?.progress_id || '').trim() || null;
     if (!req.user) {
       const item = guestTranscription(req.params.id);
       if (!item) return apiError(res, 404, 'not_found', 'Временная расшифровка не найдена или уже удалена.');
-      if (!mockMode() && item.status === 'processing' && item.external_job_id) {
-        try {
-          setTranscriptionProgress(req, progressId, 'running', 'waiting', 3, 'Проверяем готовность расшифровки во внешнем сервисе');
-          const pollDiagnosticId = item.parameters?.diagnostic_id;
-          const result = await pollExternalTranscription(item.external_job_id, { diagnostic_id: pollDiagnosticId, user_id: null, transcription_id: null });
-          if (result.status === 'completed') {
-            setTranscriptionProgress(req, progressId, 'running', 'saving', 4, 'Сохраняем полученную расшифровку');
-            Object.assign(item, { status: 'completed', transcript: result.transcript, detected_language: result.language, segments: result.segments || [], error: null });
-            await recordAudioDiagnostic({ diagnostic_id: pollDiagnosticId, source: 'platform', stage: 'request.completed', message: 'Расшифровка завершена после фоновой обработки.', details: { external_job_id: item.external_job_id } });
-            setTranscriptionProgress(req, progressId, 'completed', 'completed', TRANSCRIPTION_PROGRESS_TOTAL, 'Расшифровка готова');
-          } else {
-            setTranscriptionProgress(req, progressId, 'running', 'waiting', 3, 'Внешний сервис продолжает обрабатывать запись');
-          }
-        } catch (error) {
-          const diagnosticMessage = `${error.message}${item.parameters?.diagnostic_id ? ` ID диагностики: ${item.parameters.diagnostic_id}` : ''}`;
-          Object.assign(item, { status: 'failed', error: { code: error.code || 'processing_failed', message: diagnosticMessage } });
-          await recordAudioDiagnostic({ diagnostic_id: item.parameters?.diagnostic_id, source: 'platform', stage: 'request.failed', severity: 'error', code: error.code || 'processing_failed', message: error.message, details: { external_request_id: error.details?.request_id || null } });
-          setTranscriptionProgress(req, progressId, 'failed', 'failed', 3, diagnosticMessage || 'Не удалось получить расшифровку');
-        }
-        item.touched_at = Date.now();
-      }
       return res.json(publicGuestTranscription(item));
     }
-    let row = await getOwnedTranscription(req.params.id, req.user.id);
+    const row = await getOwnedTranscription(req.params.id, req.user.id);
     if (!row) return apiError(res, 404, 'not_found', 'Транскрибация не найдена.');
-    const canRecoverCompletedResult = row.status === 'failed' && row.error_code === 'unknown_external_response';
-    if (!mockMode() && (['created', 'pending', 'processing'].includes(row.status) || canRecoverCompletedResult) && row.external_job_id) {
-      try {
-        setTranscriptionProgress(req, progressId, 'running', 'waiting', 3, 'Проверяем готовность расшифровки во внешнем сервисе');
-        const pollDiagnosticId = parseJson(row.parameters, {}).diagnostic_id;
-        const result = await pollExternalTranscription(row.external_job_id, { diagnostic_id: pollDiagnosticId, user_id: req.user.id, transcription_id: row.id });
-        if (result.status === 'completed') {
-          setTranscriptionProgress(req, progressId, 'running', 'saving', 4, 'Сохраняем полученную расшифровку');
-          await query(`UPDATE audio_transcriptions SET status='completed', transcript=$2, detected_language=$3, segments=$4, error_code=NULL, error_message=NULL, updated_at=NOW(), completed_at=NOW() WHERE id=$1`, [row.id, result.transcript, result.language, JSON.stringify(result.segments || [])]);
-          await recordAudioDiagnostic({ diagnostic_id: pollDiagnosticId, user_id: req.user.id, transcription_id: row.id, source: 'platform', stage: 'request.completed', message: 'Расшифровка завершена после фоновой обработки.', details: { external_job_id: row.external_job_id } });
-          setTranscriptionProgress(req, progressId, 'completed', 'completed', TRANSCRIPTION_PROGRESS_TOTAL, 'Расшифровка готова');
-        } else {
-          setTranscriptionProgress(req, progressId, 'running', 'waiting', 3, 'Внешний сервис продолжает обрабатывать запись');
-        }
-      } catch (error) {
-        const storedDiagnosticId = parseJson(row.parameters, {}).diagnostic_id;
-        const diagnosticMessage = `${error.message}${storedDiagnosticId ? ` ID диагностики: ${storedDiagnosticId}` : ''}`;
-        await query(`UPDATE audio_transcriptions SET status='failed', error_code=$2, error_message=$3, updated_at=NOW() WHERE id=$1`, [row.id, error.code || 'processing_failed', diagnosticMessage]);
-        await recordAudioDiagnostic({ diagnostic_id: parseJson(row.parameters, {}).diagnostic_id, user_id: req.user.id, transcription_id: row.id, source: 'platform', stage: 'request.failed', severity: 'error', code: error.code || 'processing_failed', message: error.message, details: { external_request_id: error.details?.request_id || null } });
-        setTranscriptionProgress(req, progressId, 'failed', 'failed', 3, diagnosticMessage || 'Не удалось получить расшифровку');
-      }
-      row = await getOwnedTranscription(req.params.id, req.user.id);
-    }
     res.json(await publicTranscription(row, req.user.id));
   });
 

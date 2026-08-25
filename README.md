@@ -52,6 +52,7 @@ docker compose up -d
 - `GET/POST /api/transcriptions` — история и создание расшифровок
 - `GET /api/transcriptions/:id` — статус и результат расшифровки
 - `GET /api/transcriptions/progress/:progressId` — прогресс загрузки, сжатия и расшифровки
+- `GET /api/audio-assistant/health` — состояние платформы и реальная проверка WhisperX через его `/health`
 - `POST /api/summarizer/summaries` — суммаризация произвольного текста
 - `GET/PUT /api/admin/audio-assistant-settings` — защищённые настройки Audio Text Assistant (только admin)
 - `GET /api/admin/audio-assistant-logs` — очищенный журнал внешних запросов (только admin)
@@ -67,6 +68,8 @@ docker compose up -d
 В журнал входят HTTP-статус, длительность, безопасные заголовки, тип задачи, размер и SHA-256 исходного текста, а также очищенное тело ошибки. Токены, cookies, исходный текст, расшифровка и результат суммаризации не сохраняются в диагностическом журнале.
 
 Файлы размером от 50 МБ автоматически переводятся в mono MP3 с частотой 16 кГц. Сервер последовательно пробует 32, 24 и 16 кбит/с, чтобы приблизить результат к 50 МБ; порог, целевой размер и набор битрейтов настраиваются переменными `AUDIO_ASSISTANT_COMPRESSION_*` из `.env.example`.
+
+В реальном режиме файл отправляется полем `file` на WhisperX `POST /api/v1/combined`; ответ с транскрибацией, таймкодами и спикерами возвращается синхронно в `segments`. Базовый прокси-адрес задаётся переменной `IMOSCOW_TRANSCRIPTION_BASE_URL`.
 
 - `GET /api/anonymizer/qwen/status` — статус настройки Qwen
 - `POST /api/anonymizer/qwen/entities` — автоматический поиск дополнительных сущностей Qwen

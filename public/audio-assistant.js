@@ -14,6 +14,7 @@ let isAuthenticated = Boolean(localStorage.getItem("auth_token"));
 let profileName = "";
 let maxUploadBytes = 200 * 1024 * 1024;
 let compressionThresholdBytes = 50 * 1024 * 1024;
+const supportedFileFormats = "Принимаются форматы: WAV, MP3, MP4, AVI, MOV, MKV, WEBM и др.";
 
 function activeTranscriptionStorageKey() {
   const login = localStorage.getItem("auth_login") || "anonymous";
@@ -108,18 +109,18 @@ function renderFileHint(file = $("#audioFile")?.files?.[0]) {
   const limit = bytes(maxUploadBytes);
   hint.dataset.state = "";
   if (!file) {
-    hint.textContent = `Максимальный размер — ${limit}; сжатие включается от ${bytes(compressionThresholdBytes)}.`;
+    hint.textContent = `Максимальный размер — ${limit}; сжатие включается от ${bytes(compressionThresholdBytes)}. ${supportedFileFormats}`;
     return;
   }
   if (file.size > maxUploadBytes) {
     hint.dataset.state = "error";
-    hint.textContent = `${bytes(file.size)} — файл превышает лимит ${limit}.`;
+    hint.textContent = `${bytes(file.size)} — файл превышает лимит ${limit}. ${supportedFileFormats}`;
   } else if (file.size >= compressionThresholdBytes) {
     hint.dataset.state = "compress";
-    hint.textContent = `${bytes(file.size)} из допустимых ${limit} · файл будет сжат перед отправкой.`;
+    hint.textContent = `${bytes(file.size)} из допустимых ${limit} · файл будет сжат перед отправкой. ${supportedFileFormats}`;
   } else {
     hint.dataset.state = "ok";
-    hint.textContent = `${bytes(file.size)} из допустимых ${limit} · готов к загрузке.`;
+    hint.textContent = `${bytes(file.size)} из допустимых ${limit} · готов к загрузке. ${supportedFileFormats}`;
   }
 }
 
@@ -386,9 +387,11 @@ async function initialize() {
     compressionThresholdBytes=Number(health.compression_threshold_bytes) || compressionThresholdBytes;
     renderFileHint();
     applyAuthState(Boolean(health.authenticated));
-    const mode=health.mock_mode?"mock":"real";
-    $("#serviceStatus").textContent=mode==="mock"?"Mock":"Real";
+    const serviceHealthy=health.transcription_service?.healthy===true;
+    const mode=health.mock_mode?"mock":serviceHealthy?"real":"offline";
+    $("#serviceStatus").textContent=mode==="mock"?"Mock-режим":mode==="real"?"Работает":"Недоступен";
     $("#serviceState").dataset.mode=mode;
+    $("#serviceState").title=mode==="real"?"WhisperX доступен и модели загружены":mode==="mock"?"Файлы не отправляются во внешний сервис":"WhisperX не ответил или не настроен";
     if (isAuthenticated) {
       localStorage.removeItem("activeTranscription");
       await loadHistory();
